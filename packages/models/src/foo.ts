@@ -15,7 +15,6 @@ export interface Foo {
   priority: number; // INTEGER
   isActive: boolean; // BOOLEAN
   metadata: Record<string, any>; // JSONB
-  config: Record<string, any>; // JSON
   tags: string[]; // TEXT[] (array type)
   score: number; // DECIMAL/NUMERIC
   largeText: string; // TEXT (for large content)
@@ -30,7 +29,6 @@ export interface CreateFoo extends Pick<Foo, "name"> {
   priority?: number;
   isActive?: boolean;
   metadata?: Record<string, any>;
-  config?: Record<string, any>;
   tags?: string[];
   score?: number;
   largeText?: string;
