@@ -15,7 +15,6 @@ export interface Foo {
   priority: number; // INTEGER
   isActive: boolean; // BOOLEAN
   metadata: Record<string, any>; // JSONB
-  config: object; // JSON
   tags: string[]; // TEXT[] (array type)
   score: number; // DECIMAL/NUMERIC
   largeText: string; // TEXT (for large content)
