@@ -1,5 +1,5 @@
 {
-  "name": "@workspace/analytical-base",
+  "name": "analytical-base",
   "version": "0.0",
   "scripts": {
     "moose": "moose-cli",
