@@ -1,24 +1,24 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { AppSidebar } from "@workspace/ui/components/app-sidebar"
-import { ChartAreaInteractive } from "@workspace/ui/components/chart-area-interactive"
-import { DataTable } from "@workspace/ui/components/data-table"
-import { SectionCards } from "@workspace/ui/components/section-cards"
-import { SiteHeader } from "@workspace/ui/components/site-header"
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { AppSidebar } from "@workspace/ui/components/app-sidebar";
+import { ChartAreaInteractive } from "@workspace/ui/components/chart-area-interactive";
+import { DataTable } from "@workspace/ui/components/data-table";
+import { SectionCards } from "@workspace/ui/components/section-cards";
+import { SiteHeader } from "@workspace/ui/components/site-header";
 import {
   SidebarInset,
   SidebarProvider,
-} from "@workspace/ui/components/sidebar"
-import { Foo } from '@workspace/models'
+} from "@workspace/ui/components/sidebar";
+import { Foo } from "@workspace/models";
 
-const API_BASE = 'http://localhost:8081/api'
+const API_BASE = "http://localhost:8082/api";
 
 // API Functions
 const fetchFoos = async (): Promise<Foo[]> => {
-  const response = await fetch(`${API_BASE}/foo`)
-  if (!response.ok) throw new Error('Failed to fetch foos')
-  return response.json()
-}
+  const response = await fetch(`${API_BASE}/foo`);
+  if (!response.ok) throw new Error("Failed to fetch foos");
+  return response.json();
+};
 
 // Transform Foo data to match DataTable schema
 const transformFoosToTableData = (foos: Foo[]) => {
@@ -26,20 +26,24 @@ const transformFoosToTableData = (foos: Foo[]) => {
     id: index + 1, // DataTable expects number id
     header: foo.name,
     type: foo.status,
-    status: foo.isActive ? 'Done' : 'Inactive',
+    status: foo.isActive ? "Done" : "Inactive",
     target: foo.priority.toString(),
     limit: foo.priority.toString(),
-    reviewer: foo.isActive ? 'Eddie Lake' : 'Assign reviewer',
-  }))
-}
+    reviewer: foo.isActive ? "Eddie Lake" : "Assign reviewer",
+  }));
+};
 
 function IndexPage() {
-  const { data: foos = [], isLoading, error } = useQuery({
-    queryKey: ['foos'],
+  const {
+    data: foos = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["foos"],
     queryFn: fetchFoos,
-  })
+  });
 
-  const tableData = transformFoosToTableData(foos)
+  const tableData = transformFoosToTableData(foos);
 
   return (
     <SidebarProvider
@@ -69,7 +73,9 @@ function IndexPage() {
               ) : error ? (
                 <div className="px-4 lg:px-6">
                   <div className="flex items-center justify-center p-8">
-                    <p className="text-red-500">Error loading foos: {error.message}</p>
+                    <p className="text-red-500">
+                      Error loading foos: {error.message}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -80,9 +86,9 @@ function IndexPage() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: IndexPage,
-})
+});

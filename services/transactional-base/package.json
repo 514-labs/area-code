@@ -20,7 +20,7 @@
     "db:logs": "docker compose logs -f db supavisor",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "npx tsx src/scripts/migrate.ts",
-    "db:seed": "npx tsx src/scripts/seed.ts",
+    "db:seed": "chmod +x ./src/scripts/run-sql-seed.sh &&./src/scripts/run-sql-seed.sh",
     "db:studio": "drizzle-kit studio",
     "test:realtime": "node dist/test-realtime.js",
     "test:realtime:dev": "npx tsx tests/test-realtime.ts",

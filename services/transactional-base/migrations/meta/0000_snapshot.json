@@ -67,12 +67,8 @@
           "name": "bar_foo_id_foo_id_fk",
           "tableFrom": "bar",
           "tableTo": "foo",
-          "columnsFrom": [
-            "foo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["foo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -105,7 +101,7 @@
         },
         "status": {
           "name": "status",
-          "type": "varchar(50)",
+          "type": "foo_status",
           "primaryKey": false,
           "notNull": true,
           "default": "'active'"
@@ -123,6 +119,41 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'"
+        },
+        "config": {
+          "name": "config",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'"
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'"
+        },
+        "score": {
+          "name": "score",
+          "type": "numeric(10,2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0.00'"
+        },
+        "large_text": {
+          "name": "large_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "''"
         },
         "created_at": {
           "name": "created_at",
@@ -194,12 +225,8 @@
           "name": "foo_bar_foo_id_foo_id_fk",
           "tableFrom": "foo_bar",
           "tableTo": "foo",
-          "columnsFrom": [
-            "foo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["foo_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -207,12 +234,8 @@
           "name": "foo_bar_bar_id_bar_id_fk",
           "tableFrom": "foo_bar",
           "tableTo": "bar",
-          "columnsFrom": [
-            "bar_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["bar_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -221,7 +244,17 @@
       "uniqueConstraints": {}
     }
   },
-  "enums": {},
+  "enums": {
+    "foo_status": {
+      "name": "foo_status",
+      "values": {
+        "active": "active",
+        "inactive": "inactive",
+        "pending": "pending",
+        "archived": "archived"
+      }
+    }
+  },
   "schemas": {},
   "_meta": {
     "columns": {},
