@@ -27,6 +27,8 @@
 import { Task, Workflow } from "@514labs/moose-lib";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
+import { createFooThingEvent, createBarThingEvent } from "@workspace/models";
+import axios from "axios";
 
 // Load environment variables
 dotenv.config();
@@ -58,22 +60,52 @@ function handleFooChange(payload: any) {
   const { eventType, new: newRecord, old: oldRecord } = payload;
 
   switch (eventType) {
-    case "INSERT":
+    case "INSERT": {
       console.log(`🔔 Business Logic: New foo "${newRecord.name}" created`);
-      // Add your sync logic here
+      // Send FooThingEvent to Moose ingestion pipeline
+      const event = createFooThingEvent({
+        fooId: newRecord.id,
+        action: "created",
+        previousData: newRecord, // For insert, previousData can be same as new
+        currentData: newRecord,
+        changes: Object.keys(newRecord),
+      });
+      axios.post("http://localhost:4100/ingest/FooThingEvent", event).catch(console.error);
       break;
-    case "UPDATE":
+    }
+    case "UPDATE": {
       if (oldRecord.status !== newRecord.status) {
         console.log(
           `🔔 Business Logic: Foo "${newRecord.name}" status changed from "${oldRecord.status}" to "${newRecord.status}"`
         );
       }
-      // Add your sync logic here
+      // Send FooThingEvent to Moose ingestion pipeline
+      const changedFields = Object.keys(newRecord).filter(
+        (key) => newRecord[key] !== oldRecord[key]
+      );
+      const event = createFooThingEvent({
+        fooId: newRecord.id,
+        action: "updated",
+        previousData: oldRecord,
+        currentData: newRecord,
+        changes: changedFields,
+      });
+      axios.post("http://localhost:4100/ingest/FooThingEvent", event).catch(console.error);
       break;
-    case "DELETE":
+    }
+    case "DELETE": {
       console.log(`🔔 Business Logic: Foo "${oldRecord.name}" was deleted`);
-      // Add your sync logic here
+      // Send FooThingEvent to Moose ingestion pipeline
+      const event = createFooThingEvent({
+        fooId: oldRecord.id,
+        action: "deleted",
+        previousData: oldRecord,
+        currentData: oldRecord,
+        changes: Object.keys(oldRecord),
+      });
+      axios.post("http://localhost:4100/ingest/FooThingEvent", event).catch(console.error);
       break;
+    }
   }
 }
 
@@ -81,26 +113,62 @@ function handleBarChange(payload: any) {
   const { eventType, new: newRecord, old: oldRecord } = payload;
 
   switch (eventType) {
-    case "INSERT":
+    case "INSERT": {
       console.log(
         `🔔 Business Logic: New bar with value ${newRecord.value} created`
       );
-      // Add your sync logic here
+      // Send BarThingEvent to Moose ingestion pipeline
+      const event = createBarThingEvent({
+        barId: newRecord.id,
+        fooId: newRecord.fooId,
+        action: "created",
+        previousData: newRecord, // For insert, previousData can be same as new
+        currentData: newRecord,
+        changes: Object.keys(newRecord),
+        value: newRecord.value,
+      });
+      axios.post("http://localhost:4100/ingest/BarThingEvent", event).catch(console.error);
       break;
-    case "UPDATE":
+    }
+    case "UPDATE": {
       if (oldRecord.value !== newRecord.value) {
         console.log(
           `🔔 Business Logic: Bar value changed from ${oldRecord.value} to ${newRecord.value}`
         );
       }
-      // Add your sync logic here
+      // Send BarThingEvent to Moose ingestion pipeline
+      const changedFields = Object.keys(newRecord).filter(
+        (key) => newRecord[key] !== oldRecord[key]
+      );
+      const event = createBarThingEvent({
+        barId: newRecord.id,
+        fooId: newRecord.fooId,
+        action: "updated",
+        previousData: oldRecord,
+        currentData: newRecord,
+        changes: changedFields,
+        value: newRecord.value,
+      });
+      axios.post("http://localhost:4100/ingest/BarThingEvent", event).catch(console.error);
       break;
-    case "DELETE":
+    }
+    case "DELETE": {
       console.log(
         `🔔 Business Logic: Bar with value ${oldRecord.value} was deleted`
       );
-      // Add your sync logic here
+      // Send BarThingEvent to Moose ingestion pipeline
+      const event = createBarThingEvent({
+        barId: oldRecord.id,
+        fooId: oldRecord.fooId,
+        action: "deleted",
+        previousData: oldRecord,
+        currentData: oldRecord,
+        changes: Object.keys(oldRecord),
+        value: oldRecord.value,
+      });
+      axios.post("http://localhost:4100/ingest/BarThingEvent", event).catch(console.error);
       break;
+    }
   }
 }
 
