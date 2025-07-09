@@ -4,7 +4,6 @@ export {
   type Foo,
   type CreateFoo,
   type UpdateFoo,
-  type FooStatusType,
 } from "./foo";
 
 // Export all bar-related types and interfaces

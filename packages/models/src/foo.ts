@@ -29,7 +29,6 @@ export interface CreateFoo extends Pick<Foo, "name"> {
   priority?: number;
   isActive?: boolean;
   metadata?: Record<string, any>;
-  config?: object;
   tags?: string[];
   score?: number;
   largeText?: string;
