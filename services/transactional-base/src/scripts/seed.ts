@@ -5,6 +5,7 @@ import { foo, bar } from "../database/schema";
 import { config as dotenvConfig } from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { generateFooSeedData } from "./fooSeed";
 
 // Get current directory in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -12,6 +13,11 @@ const __dirname = path.dirname(__filename);
 
 // Load environment variables from .env file in parent directory
 dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
+
+// Helper functions for generating random data
+const randomInt = (min: number, max: number): number =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+const randomBoolean = (): boolean => Math.random() < 0.5;
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -22,72 +28,34 @@ async function main() {
     await db.delete(bar);
     await db.delete(foo);
 
-    // Insert test foo items
+    // Generate and insert random foo items
     console.log("📦 Creating foo items...");
-    const fooItems = await db
-      .insert(foo)
-      .values([
-        {
-          name: "Test Foo 1",
-          description: "This is the first test foo item",
-          status: "active",
-          priority: 1,
-          isActive: true,
-        },
-        {
-          name: "Test Foo 2",
-          description: "This is the second test foo item",
-          status: "inactive",
-          priority: 2,
-          isActive: false,
-        },
-        {
-          name: "High Priority Foo",
-          description: "This is a high priority foo item",
-          status: "active",
-          priority: 5,
-          isActive: true,
-        },
-      ])
-      .returning();
+    const fooData = generateFooSeedData(75);
+
+    const fooItems = await db.insert(foo).values(fooData).returning();
 
     console.log(`✅ Created ${fooItems.length} foo items`);
 
-    // Insert test bar items
+    // Insert test bar items (using some of the created foo items)
     console.log("📊 Creating bar items...");
-    const barItems = await db
-      .insert(bar)
-      .values([
-        {
-          fooId: fooItems[0].id,
-          value: 100,
-          label: "First Bar",
-          notes: "This bar belongs to the first foo",
-          isEnabled: true,
-        },
-        {
-          fooId: fooItems[0].id,
-          value: 150,
-          label: "Second Bar",
-          notes: "This is another bar for the first foo",
-          isEnabled: true,
-        },
-        {
-          fooId: fooItems[1].id,
-          value: 200,
-          label: "Third Bar",
-          notes: "This bar belongs to the second foo",
-          isEnabled: false,
-        },
-        {
-          fooId: fooItems[2].id,
-          value: 500,
-          label: "High Value Bar",
-          notes: "This is a high value bar for high priority foo",
-          isEnabled: true,
-        },
-      ])
-      .returning();
+    const selectedFooItems = fooItems.slice(0, 10); // Use first 10 foo items
+    const barData = [];
+
+    for (const fooItem of selectedFooItems) {
+      // Create 1-3 bar items for each foo
+      const barCount = randomInt(1, 3);
+      for (let i = 0; i < barCount; i++) {
+        barData.push({
+          fooId: fooItem.id,
+          value: randomInt(10, 1000),
+          label: `Bar ${i + 1} for ${fooItem.name}`,
+          notes: `This bar belongs to ${fooItem.name}`,
+          isEnabled: randomBoolean(),
+        });
+      }
+    }
+
+    const barItems = await db.insert(bar).values(barData).returning();
 
     console.log(`✅ Created ${barItems.length} bar items`);
 

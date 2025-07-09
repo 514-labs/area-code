@@ -1,3 +1,9 @@
+DO $$ BEGIN
+ CREATE TYPE "foo_status" AS ENUM('active', 'inactive', 'pending', 'archived');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "bar" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"foo_id" uuid NOT NULL,
@@ -13,9 +19,14 @@ CREATE TABLE IF NOT EXISTS "foo" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"description" text,
-	"status" varchar(50) DEFAULT 'active' NOT NULL,
+	"status" "foo_status" DEFAULT 'active' NOT NULL,
 	"priority" integer DEFAULT 1 NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
+	"metadata" jsonb DEFAULT '{}',
+	"config" json DEFAULT '{}',
+	"tags" text[] DEFAULT '{}',
+	"score" numeric(10,2) DEFAULT '0.00',
+	"large_text" text DEFAULT '',
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
