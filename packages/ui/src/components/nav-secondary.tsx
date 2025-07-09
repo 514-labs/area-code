@@ -33,7 +33,11 @@ export function NavSecondary({
             return (
               <SidebarMenuItem key={item.title}>
                 {item.action ? (
-                  <SidebarMenuButton onClick={item.action} isActive={isActive}>
+                  <SidebarMenuButton
+                    onClick={item.action}
+                    isActive={isActive}
+                    className="cursor-pointer"
+                  >
                     <item.icon />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
