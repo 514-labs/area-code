@@ -403,12 +403,12 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
       {/* Server pagination info */}
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600">
-          Showing {serverPagination.offset + 1} to{" "}
+          Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
           {Math.min(
             serverPagination.offset + serverPagination.limit,
             serverPagination.total
-          )}{" "}
-          of {serverPagination.total} items
+          ).toLocaleString()}{" "}
+          of {serverPagination.total.toLocaleString()} items
           {serverPagination.hasMore && " (more available)"}
         </div>
       )}
