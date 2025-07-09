@@ -1,9 +1,29 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
+from pydantic import BaseModel
+from enum import Enum
 import random
 import string
 import uuid
-from app.ingest.models import Foo, FooStatus
+
+class FooStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+    ARCHIVED = "archived"
+
+class Foo(BaseModel):
+    id: str
+    name: str
+    description: Optional[str]
+    status: FooStatus
+    priority: int
+    is_active: bool
+    tags: List[str]
+    score: float
+    large_text: str
+    # created_at: datetime
+    # updated_at: datetime
 
 def random_string(length: int) -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))

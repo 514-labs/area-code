@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import TypeVar, Union, Optional, Generic
-from app.connectors.s3connector import S3Connector, S3ConnectorConfig
+from .s3connector import S3Connector, S3ConnectorConfig
 
 T = TypeVar('T')
 
