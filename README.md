@@ -1,3 +1,5 @@
+<img width="1076" alt="Hero 25" src="https://github.com/user-attachments/assets/98b7fe13-df60-4a56-bf01-f84d0f5beca2" />
+
 # Starter Application
 
 Area Code is a starter repo with all the necessary building blocks for a production ready repository that can be used to build multi-modal applications.
