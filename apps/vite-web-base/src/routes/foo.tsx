@@ -166,7 +166,7 @@ function FooManagement() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-64">
         <Card>
           <CardContent className="p-6">
             <p>Loading foos...</p>
@@ -177,175 +177,39 @@ function FooManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link to="/">
-              <Button variant="outline" size="icon">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold">Foo Management</h1>
-              <p className="text-muted-foreground">
-                Create and manage your foos
-              </p>
-            </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link to="/">
+            <Button variant="outline" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">Foo Management</h1>
+            <p className="text-muted-foreground">Create and manage your foos</p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Foo
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Foo</DialogTitle>
-                <DialogDescription>
-                  Add a new foo to your collection.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, status: value as FooStatus })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={FooStatus.ACTIVE}>Active</SelectItem>
-                      <SelectItem value={FooStatus.INACTIVE}>
-                        Inactive
-                      </SelectItem>
-                      <SelectItem value={FooStatus.PENDING}>Pending</SelectItem>
-                      <SelectItem value={FooStatus.ARCHIVED}>
-                        Archived
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="priority">Priority</Label>
-                  <Input
-                    id="priority"
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={formData.priority}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        priority: parseInt(e.target.value) || 1,
-                      })
-                    }
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={formData.isActive}
-                    onChange={(e) =>
-                      setFormData({ ...formData, isActive: e.target.checked })
-                    }
-                  />
-                  <Label htmlFor="isActive">Is Active</Label>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || !formData.name}
-                  >
-                    {isSubmitting ? "Creating..." : "Create"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsCreateOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
         </div>
-
-        {/* Error Display */}
-        {(error || mutationError) && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <p className="text-red-800">
-                {error?.message ||
-                  mutationError?.message ||
-                  "An error occurred"}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Data Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Foos ({foos.length})</CardTitle>
-            <CardDescription>Manage your foo collection</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {foos.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No foos found</p>
-                <Button onClick={() => setIsCreateOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create your first foo
-                </Button>
-              </div>
-            ) : (
-              <FooDataTable data={foos} />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Edit Dialog */}
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Foo
+            </Button>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Foo</DialogTitle>
-              <DialogDescription>Update the foo details.</DialogDescription>
+              <DialogTitle>Create New Foo</DialogTitle>
+              <DialogDescription>
+                Add a new foo to your collection.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="edit-name">Name *</Label>
+                <Label htmlFor="name">Name *</Label>
                 <Input
-                  id="edit-name"
+                  id="name"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
@@ -354,9 +218,9 @@ function FooManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-description">Description</Label>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
-                  id="edit-description"
+                  id="description"
                   value={formData.description || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -364,7 +228,7 @@ function FooManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-status">Status</Label>
+                <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) =>
@@ -383,9 +247,9 @@ function FooManagement() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit-priority">Priority</Label>
+                <Label htmlFor="priority">Priority</Label>
                 <Input
-                  id="edit-priority"
+                  id="priority"
                   type="number"
                   min="1"
                   max="10"
@@ -401,26 +265,22 @@ function FooManagement() {
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  id="edit-isActive"
+                  id="isActive"
                   checked={formData.isActive}
                   onChange={(e) =>
                     setFormData({ ...formData, isActive: e.target.checked })
                   }
                 />
-                <Label htmlFor="edit-isActive">Is Active</Label>
+                <Label htmlFor="isActive">Is Active</Label>
               </div>
               <div className="flex space-x-2">
                 <Button type="submit" disabled={isSubmitting || !formData.name}>
-                  {isSubmitting ? "Updating..." : "Update"}
+                  {isSubmitting ? "Creating..." : "Create"}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    setIsEditOpen(false);
-                    setEditingFoo(null);
-                    resetForm();
-                  }}
+                  onClick={() => setIsCreateOpen(false)}
                 >
                   Cancel
                 </Button>
@@ -429,6 +289,133 @@ function FooManagement() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Error Display */}
+      {(error || mutationError) && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <p className="text-red-800">
+              {error?.message || mutationError?.message || "An error occurred"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Data Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Foos ({foos.length})</CardTitle>
+          <CardDescription>Manage your foo collection</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {foos.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">No foos found</p>
+              <Button onClick={() => setIsCreateOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create your first foo
+              </Button>
+            </div>
+          ) : (
+            <FooDataTable data={foos} />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Foo</DialogTitle>
+            <DialogDescription>Update the foo details.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Name *</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.description || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value as FooStatus })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={FooStatus.ACTIVE}>Active</SelectItem>
+                  <SelectItem value={FooStatus.INACTIVE}>Inactive</SelectItem>
+                  <SelectItem value={FooStatus.PENDING}>Pending</SelectItem>
+                  <SelectItem value={FooStatus.ARCHIVED}>Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-priority">Priority</Label>
+              <Input
+                id="edit-priority"
+                type="number"
+                min="1"
+                max="10"
+                value={formData.priority}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    priority: parseInt(e.target.value) || 1,
+                  })
+                }
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="edit-isActive"
+                checked={formData.isActive}
+                onChange={(e) =>
+                  setFormData({ ...formData, isActive: e.target.checked })
+                }
+              />
+              <Label htmlFor="edit-isActive">Is Active</Label>
+            </div>
+            <div className="flex space-x-2">
+              <Button type="submit" disabled={isSubmitting || !formData.name}>
+                {isSubmitting ? "Updating..." : "Update"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsEditOpen(false);
+                  setEditingFoo(null);
+                  resetForm();
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
