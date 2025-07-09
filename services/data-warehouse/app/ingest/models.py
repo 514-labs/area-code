@@ -20,8 +20,8 @@ class Foo(BaseModel):
     tags: List[str]
     score: float
     large_text: str
-    created_at: datetime
-    updated_at: datetime
+    # created_at: datetime
+    # updated_at: datetime
 
 fooModel = IngestPipeline[Foo]("Foo", IngestPipelineConfig(
     ingest=True,

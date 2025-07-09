@@ -26,6 +26,6 @@ def random_foo() -> Foo:
         tags=[random_string(4) for _ in range(random.randint(1, 5))],
         score=round(random.random() * 100, 2),
         large_text=random_string(100),
-        created_at=random_date(),
-        updated_at=random_date()
+        # created_at=random_date(),
+        # updated_at=random_date()
     )
