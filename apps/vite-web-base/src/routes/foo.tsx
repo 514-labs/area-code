@@ -20,7 +20,6 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { Badge } from "@workspace/ui/components/badge";
 import {
   Select,
   SelectContent,
@@ -33,7 +32,7 @@ import { Plus, ArrowLeft } from "lucide-react";
 import { FooDataTable } from "../model-components/foo/foo.data-table";
 import { Foo, FooStatus, CreateFoo } from "@workspace/models";
 
-const API_BASE = "http://localhost:8081/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 // API Functions
 const fetchFoos = async (): Promise<Foo[]> => {

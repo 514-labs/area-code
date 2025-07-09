@@ -22,12 +22,12 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import { Foo, FooStatus } from "@workspace/models";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
@@ -260,8 +260,32 @@ const columns: ColumnDef<Foo>[] = [
   },
 ];
 
-export function FooDataTable({ data: initialData }: { data: Foo[] }) {
-  const [data, setData] = React.useState(() => initialData);
+const API_BASE = import.meta.env.VITE_API_BASE;
+
+// API Response Types
+interface FooResponse {
+  data: Foo[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
+
+// API Functions
+const fetchFoos = async (
+  limit: number = 10,
+  offset: number = 0
+): Promise<FooResponse> => {
+  const response = await fetch(
+    `${API_BASE}/foo?limit=${limit}&offset=${offset}`
+  );
+  if (!response.ok) throw new Error("Failed to fetch foos");
+  return response.json();
+};
+
+export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -273,6 +297,25 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
     pageIndex: 0,
     pageSize: 10,
   });
+
+  // Use React Query to fetch data based on pagination state
+  const {
+    data: fooResponse,
+    isLoading,
+    error,
+    isPlaceholderData,
+  } = useQuery({
+    queryKey: ["foos", pagination.pageIndex, pagination.pageSize],
+    queryFn: () =>
+      fetchFoos(
+        pagination.pageSize,
+        pagination.pageIndex * pagination.pageSize
+      ),
+    placeholderData: (previousData) => previousData,
+  });
+
+  const data = fooResponse?.data || [];
+  const serverPagination = fooResponse?.pagination;
 
   const table = useReactTable({
     data,
@@ -293,10 +336,14 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    // Server-side pagination
+    manualPagination: true,
+    pageCount: serverPagination
+      ? Math.ceil(serverPagination.total / pagination.pageSize)
+      : 0,
   });
 
   return (
@@ -352,6 +399,20 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
           </Button>
         </div>
       </div>
+
+      {/* Server pagination info */}
+      {serverPagination && (
+        <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600">
+          Showing {serverPagination.offset + 1} to{" "}
+          {Math.min(
+            serverPagination.offset + serverPagination.limit,
+            serverPagination.total
+          )}{" "}
+          of {serverPagination.total} items
+          {serverPagination.hasMore && " (more available)"}
+        </div>
+      )}
+
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg border">
           <Table>
@@ -374,11 +435,35 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {isLoading && !isPlaceholderData ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <IconLoader className="animate-spin" />
+                      Loading...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    <div className="text-red-500">
+                      Error loading data: {error.message}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className={isPlaceholderData ? "opacity-50" : ""}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -442,7 +527,7 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
                 onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
+                disabled={!table.getCanPreviousPage() || isLoading}
               >
                 <span className="sr-only">Go to first page</span>
                 <IconChevronsLeft />
@@ -452,7 +537,7 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
                 className="size-8"
                 size="icon"
                 onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                disabled={!table.getCanPreviousPage() || isLoading}
               >
                 <span className="sr-only">Go to previous page</span>
                 <IconChevronLeft />
@@ -462,7 +547,7 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
                 className="size-8"
                 size="icon"
                 onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                disabled={!table.getCanNextPage() || isLoading}
               >
                 <span className="sr-only">Go to next page</span>
                 <IconChevronRight />
@@ -472,7 +557,7 @@ export function FooDataTable({ data: initialData }: { data: Foo[] }) {
                 className="hidden size-8 lg:flex"
                 size="icon"
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
+                disabled={!table.getCanNextPage() || isLoading}
               >
                 <span className="sr-only">Go to last page</span>
                 <IconChevronsRight />
