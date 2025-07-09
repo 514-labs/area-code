@@ -13,6 +13,9 @@ import {
   IconCircleX,
   IconClock,
   IconArchive,
+  IconArrowUp,
+  IconArrowDown,
+  IconArrowsSort,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -91,16 +94,53 @@ const getStatusIcon = (status: FooStatus) => {
 const getStatusColor = (status: FooStatus) => {
   switch (status) {
     case FooStatus.ACTIVE:
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      return "bg-green-100 border-green-700 text-green-800 dark:bg-green-900 dark:text-green-300";
     case FooStatus.INACTIVE:
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      return "bg-red-100 border-red-700  text-red-800 dark:bg-red-900 dark:text-red-300";
     case FooStatus.PENDING:
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      return "bg-yellow-100 border-yellow-700 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
     case FooStatus.ARCHIVED:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
     default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
   }
+};
+
+// Add a sortable header component
+const SortableHeader = ({
+  column,
+  children,
+  className,
+}: {
+  column: any;
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  if (!column.getCanSort()) {
+    return <div className={className}>{children}</div>;
+  }
+
+  const handleSort = () => {
+    const currentSort = column.getIsSorted();
+    column.toggleSorting(currentSort === "asc");
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      onClick={handleSort}
+      className={`-ml-3 h-8 data-[state=open]:bg-accent ${className}`}
+    >
+      <span>{children}</span>
+      {column.getIsSorted() === "desc" ? (
+        <IconArrowDown className="ml-2 h-4 w-4" />
+      ) : column.getIsSorted() === "asc" ? (
+        <IconArrowUp className="ml-2 h-4 w-4" />
+      ) : (
+        <IconArrowsSort className="ml-2 h-4 w-4" />
+      )}
+    </Button>
+  );
 };
 
 const columns: ColumnDef<Foo>[] = [
@@ -132,15 +172,20 @@ const columns: ColumnDef<Foo>[] = [
   },
   {
     accessorKey: "name",
-    header: "Name",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Name</SortableHeader>
+    ),
     cell: ({ row }) => {
       return <TableCellViewer item={row.original} />;
     },
     enableHiding: false,
+    enableSorting: true,
   },
   {
     accessorKey: "description",
-    header: "Description",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Description</SortableHeader>
+    ),
     cell: ({ row }) => (
       <div
         className="max-w-xs truncate"
@@ -149,30 +194,43 @@ const columns: ColumnDef<Foo>[] = [
         {row.original.description || "No description"}
       </div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Status</SortableHeader>
+    ),
     cell: ({ row }) => (
       <Badge
         variant="outline"
-        className={`px-2 py-1 ${getStatusColor(row.original.status)}`}
+        className={`py-[3px] ${getStatusColor(row.original.status)}`}
       >
         {getStatusIcon(row.original.status)}
         <span className="ml-1 capitalize">{row.original.status}</span>
       </Badge>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "priority",
-    header: () => <div className="text-center">Priority</div>,
+    header: ({ column }) => (
+      <SortableHeader column={column} className="text-center">
+        Priority
+      </SortableHeader>
+    ),
     cell: ({ row }) => (
       <div className="text-center font-medium">{row.original.priority}</div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "isActive",
-    header: () => <div className="text-center">Active</div>,
+    header: ({ column }) => (
+      <SortableHeader column={column} className="text-center">
+        Active
+      </SortableHeader>
+    ),
     cell: ({ row }) => (
       <div className="text-center">
         {row.original.isActive ? (
@@ -182,19 +240,27 @@ const columns: ColumnDef<Foo>[] = [
         )}
       </div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "score",
-    header: () => <div className="text-right">Score</div>,
+    header: ({ column }) => (
+      <SortableHeader column={column} className="text-right">
+        Score
+      </SortableHeader>
+    ),
     cell: ({ row }) => (
       <div className="text-right font-medium">
         {row.original.score.toFixed(2)}
       </div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "tags",
-    header: "Tags",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Tags</SortableHeader>
+    ),
     cell: ({ row }) => {
       if (!row.original.tags) return null;
       const validTags = row.original.tags.filter((tag) => tag !== null);
@@ -215,27 +281,36 @@ const columns: ColumnDef<Foo>[] = [
         </div>
       );
     },
+    // Remove custom sortingFn for server-side sorting
+    enableSorting: true,
   },
   {
     accessorKey: "createdAt",
-    header: "Created",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Created</SortableHeader>
+    ),
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
         {new Date(row.original.createdAt).toLocaleDateString()}
       </div>
     ),
+    enableSorting: true,
   },
   {
     accessorKey: "updatedAt",
-    header: "Updated",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Updated</SortableHeader>
+    ),
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
         {new Date(row.original.updatedAt).toLocaleDateString()}
       </div>
     ),
+    enableSorting: true,
   },
   {
     id: "actions",
+    header: () => <div className="text-center">Actions</div>,
     cell: () => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -257,6 +332,7 @@ const columns: ColumnDef<Foo>[] = [
         </DropdownMenuContent>
       </DropdownMenu>
     ),
+    enableSorting: false,
   },
 ];
 
@@ -276,11 +352,21 @@ interface FooResponse {
 // API Functions
 const fetchFoos = async (
   limit: number = 10,
-  offset: number = 0
+  offset: number = 0,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc"
 ): Promise<FooResponse> => {
-  const response = await fetch(
-    `${API_BASE}/foo?limit=${limit}&offset=${offset}`
-  );
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+  });
+
+  if (sortBy && sortOrder) {
+    params.append("sortBy", sortBy);
+    params.append("sortOrder", sortOrder);
+  }
+
+  const response = await fetch(`${API_BASE}/foo?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   return response.json();
 };
@@ -298,19 +384,25 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
     pageSize: 10,
   });
 
-  // Use React Query to fetch data based on pagination state
+  // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
     data: fooResponse,
     isLoading,
     error,
     isPlaceholderData,
+    refetch,
   } = useQuery({
-    queryKey: ["foos", pagination.pageIndex, pagination.pageSize],
-    queryFn: () =>
-      fetchFoos(
+    queryKey: ["foos", pagination.pageIndex, pagination.pageSize, sorting],
+    queryFn: () => {
+      const sortBy = sorting[0]?.id;
+      const sortOrder = sorting[0]?.desc ? "desc" : "asc";
+      return fetchFoos(
         pagination.pageSize,
-        pagination.pageIndex * pagination.pageSize
-      ),
+        pagination.pageIndex * pagination.pageSize,
+        sortBy,
+        sortOrder
+      );
+    },
     placeholderData: (previousData) => previousData,
   });
 
@@ -330,17 +422,21 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
     getRowId: (row) => row.id,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => {
+      setSorting(updater);
+      // Reset to first page when sorting changes
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    },
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    // Server-side pagination
+    // Server-side pagination and sorting
     manualPagination: true,
+    manualSorting: true,
     pageCount: serverPagination
       ? Math.ceil(serverPagination.total / pagination.pageSize)
       : 0,
@@ -400,7 +496,7 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
         </div>
       </div>
 
-      {/* Server pagination info */}
+      {/* Server pagination and sorting info */}
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600">
           Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
@@ -410,6 +506,11 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
           ).toLocaleString()}{" "}
           of {serverPagination.total.toLocaleString()} items
           {serverPagination.hasMore && " (more available)"}
+          {sorting.length > 0 && (
+            <span className="ml-2 text-blue-600">
+              • Sorted by {sorting[0].id} ({sorting[0].desc ? "desc" : "asc"})
+            </span>
+          )}
         </div>
       )}
 
