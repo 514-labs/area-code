@@ -280,3 +280,6 @@ export const supabaseListenerWorkflow = new Workflow("supabase-listener", {
   // Run indefinitely until manually stopped
   timeout: "24h",
 });
+
+// TODO: Refactor so postgres sync is separate and gets exported here
+export * from "./s3";
