@@ -20,6 +20,7 @@ export function NavSecondary({
     title: string;
     url: string;
     icon: LucideIcon;
+    action?: () => void;
   }[];
   currentPath?: string;
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
@@ -31,12 +32,19 @@ export function NavSecondary({
             const isActive = currentPath === item.url;
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild isActive={isActive}>
-                  <a href={item.url}>
+                {item.action ? (
+                  <SidebarMenuButton onClick={item.action} isActive={isActive}>
                     <item.icon />
                     <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
+                  </SidebarMenuButton>
+                ) : (
+                  <SidebarMenuButton asChild isActive={isActive}>
+                    <a href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                )}
               </SidebarMenuItem>
             );
           })}

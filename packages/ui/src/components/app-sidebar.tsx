@@ -7,11 +7,14 @@ import {
   HelpCircle,
   Search,
   Zap,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 import { NavMain } from "@workspace/ui/components/nav-main";
 import { NavSecondary } from "@workspace/ui/components/nav-secondary";
 import { NavUser } from "@workspace/ui/components/nav-user";
+import { useTheme } from "@workspace/ui/components/theme-provider";
 import {
   Sidebar,
   SidebarContent,
@@ -71,6 +74,14 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar> & {
   currentPath?: string;
 }) {
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const themeIcon = theme === "dark" ? Sun : Moon;
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -91,7 +102,15 @@ export function AppSidebar({
       <SidebarContent>
         <NavMain items={data.navMain} currentPath={currentPath} />
         <NavSecondary
-          items={data.navSecondary}
+          items={[
+            ...data.navSecondary,
+            {
+              title: `Theme: ${theme === "dark" ? "Dark" : "Light"}`,
+              url: "#",
+              icon: themeIcon,
+              action: toggleTheme,
+            },
+          ]}
           currentPath={currentPath}
           className="mt-auto"
         />
