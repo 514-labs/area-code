@@ -6,5 +6,25 @@
   ],
   "yaml.schemas": {
     "https://spec.openapis.org/oas/3.1/schema/2022-10-07": "file:///Users/timdelisle/Dev/area-code/services/transactional-base/openapi.yml"
-  }
+  },
+  "tailwindCSS.experimental.configFile": {
+    "apps/vite-web-base/src/index.css": "apps/vite-web-base/src/**",
+    "packages/ui/src/styles/globals.css": "packages/ui/src/**"
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "css.validate": false,
+  "css.customData": [".vscode/tailwindcss.json"],
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "class:list",
+    ".*[Ss]tyles.*",
+    ".*[Cc]lasses.*"
+  ]
 }

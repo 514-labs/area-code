@@ -8,7 +8,7 @@
  * 2. An 'anon' API key with minimal permissions
  * 3. A 'service_role' API key with full permissions
  *
- * Usage: node generate-jwt.js [--quiet]
+ * Usage: node generate-jwt.js [--quiet] [-o <filename>]
  */
 
 import crypto from "crypto";
@@ -70,13 +70,25 @@ function generateSecurePassword(length = 32) {
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);
+  const outputIndex = args.indexOf('-o');
+  let outputFile = null;
+  
+  if (outputIndex !== -1) {
+    if (outputIndex + 1 >= args.length) {
+      console.error("❌ Error: -o option requires a filename");
+      process.exit(1);
+    }
+    outputFile = args[outputIndex + 1];
+  }
+  
   return {
-    quiet: args.includes('--quiet')
+    quiet: args.includes('--quiet'),
+    outputFile
   };
 }
 
-function main() {
-  const { quiet } = parseArgs();
+async function main() {
+  const { quiet, outputFile } = parseArgs();
   
   if (!quiet) {
     console.log("🔐 Generating Supabase JWT Secret and API Keys...\n");
@@ -120,28 +132,44 @@ function main() {
   const postgresPassword = generateSecurePassword(32);
   const dashboardPassword = generateSecurePassword(16);
 
-  if (!quiet) {
-    console.log("\n📋 Copy these values to your .env file:\n");
+  // Prepare environment variables content
+  const envContent = `# JWT Configuration
+JWT_SECRET=${jwtSecret}
+ANON_KEY=${anonKey}
+SERVICE_ROLE_KEY=${serviceKey}
+
+# Additional Secrets
+SECRET_KEY_BASE=${secretKeyBase}
+VAULT_ENC_KEY=${vaultEncKey}
+
+# Database
+POSTGRES_PASSWORD=${postgresPassword}
+
+# Dashboard
+DASHBOARD_USERNAME=supabase
+DASHBOARD_PASSWORD=${dashboardPassword}
+
+# Pooler
+POOLER_TENANT_ID=your-tenant-id
+`;
+
+  if (outputFile) {
+    try {
+      const fs = await import('fs/promises');
+      await fs.writeFile(outputFile, envContent, 'utf8');
+      if (!quiet) {
+        console.log(`✅ Environment variables saved to: ${outputFile}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error writing to file ${outputFile}:`, error.message);
+      process.exit(1);
+    }
+  } else {
+    if (!quiet) {
+      console.log("\n📋 Copy these values to your .env file:\n");
+    }
+    console.log(envContent);
   }
-  
-  console.log("# JWT Configuration");
-  console.log(`JWT_SECRET=${jwtSecret}`);
-  console.log(`ANON_KEY=${anonKey}`);
-  console.log(`SERVICE_ROLE_KEY=${serviceKey}`);
-  console.log("");
-  console.log("# Additional Secrets");
-  console.log(`SECRET_KEY_BASE=${secretKeyBase}`);
-  console.log(`VAULT_ENC_KEY=${vaultEncKey}`);
-  console.log("");
-  console.log("# Database");
-  console.log(`POSTGRES_PASSWORD=${postgresPassword}`);
-  console.log("");
-  console.log("# Dashboard");
-  console.log(`DASHBOARD_USERNAME=supabase`);
-  console.log(`DASHBOARD_PASSWORD=${dashboardPassword}`);
-  console.log("");
-  console.log("# Pooler");
-  console.log(`POOLER_TENANT_ID=your-tenant-id`);
   
   if (!quiet) {
     console.log("");
@@ -155,6 +183,12 @@ function main() {
     console.log("");
     console.log("🚀 After updating .env, restart your services:");
     console.log("   docker compose down && docker compose up -d");
+    console.log("");
+    console.log("💡 Usage examples:");
+    console.log("   node generate-jwt.mjs                    # Output to console");
+    console.log("   node generate-jwt.mjs --quiet            # Quiet mode");
+    console.log("   node generate-jwt.mjs -o .env            # Save to .env file");
+    console.log("   node generate-jwt.mjs -o .env --quiet    # Save to .env file (quiet)");
   }
 }
 
