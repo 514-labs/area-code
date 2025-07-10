@@ -1,5 +1,5 @@
 {
-  "name": "@repo/tailwind-config",
+  "name": "@workspace/tailwind-config",
   "version": "0.0.0",
   "main": "./shared-styles.css",
   "exports": {
