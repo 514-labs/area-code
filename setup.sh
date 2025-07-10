@@ -11,6 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICES=(
     "transactional-base"
     "retrieval-base"
+    "analytical-base"
 )
 
 # Function to show help
@@ -104,6 +105,10 @@ start_service() {
             # For retrieval service, use the start command
             "$script_path" start
             ;;
+        "analytical-base")
+            # For analytical service, use the start command
+            "$script_path" start
+            ;;
         *)
             echo "❌ Unknown service: $service"
             return 1
@@ -139,6 +144,10 @@ stop_service() {
             ;;
         "retrieval-base")
             # For retrieval service, use the stop command
+            "$script_path" stop
+            ;;
+        "analytical-base")
+            # For analytical service, use the stop command
             "$script_path" stop
             ;;
         *)
@@ -187,6 +196,10 @@ show_service_status() {
             # For retrieval service, use the status command
             "$script_path" status
             ;;
+        "analytical-base")
+            # For analytical service, use the status command
+            "$script_path" status
+            ;;
         *)
             echo "❌ Unknown service: $service"
             return 1
@@ -224,6 +237,10 @@ setup_service() {
             # For retrieval service, use the setup command
             "$script_path" setup
             ;;
+        "analytical-base")
+            # For analytical service, use the setup command
+            "$script_path" setup
+            ;;
         *)
             echo "❌ Unknown service: $service"
             return 1
@@ -259,6 +276,10 @@ reset_service() {
             ;;
         "retrieval-base")
             # For retrieval service, use the reset command
+            "$script_path" reset
+            ;;
+        "analytical-base")
+            # For analytical service, use the reset command
             "$script_path" reset
             ;;
         *)
