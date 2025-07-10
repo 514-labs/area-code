@@ -8,6 +8,7 @@ class GetFoosQuery(BaseModel):
     status: Optional[str] = None  # Changed from FooStatus to str
     limit: int = 100
     offset: int = 0
+    tag: Optional[str] = None  # New: filter by tag
 
 # Define the response model
 class GetFoosResponse(BaseModel):
@@ -46,7 +47,13 @@ def get_foos(client, params: GetFoosQuery) -> GetFoosResponse:
         except ValueError:
             # If invalid status, return empty result
             return GetFoosResponse(items=[], total=0)
-    
+
+    # Add tag filter if provided and not 'All'
+    if params.tag is not None and params.tag != "All":
+        # ClickHouse array filter
+        query += " AND has(tags, {tag})"
+        query_params["tag"] = params.tag
+
     # Add count query to get total records
     count_query = query.replace("SELECT id, name, description, status, priority, is_active, tags, score, large_text", "SELECT COUNT(*) as total_count")
     
