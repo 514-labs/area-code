@@ -67,11 +67,27 @@ try:
     items = data.get("items", [])
     if items:
         df = pd.DataFrame(items)
+        # Restrict tags filter widget to only 'All', 'S3', 'Datadog'
+        tags_options = ["All", "S3", "Datadog"]
+        selected_tag = st.selectbox("Filter by Tag", tags_options, index=0)
+
+        # Always include tag in API call
+        api_url = f"http://localhost:4001/getFoos?tag={selected_tag}"
+        try:
+            response = requests.get(api_url)
+            response.raise_for_status()
+            data = response.json()
+            items = data.get("items", [])
+            df = pd.DataFrame(items)
+        except Exception as e:
+            st.error(f"Failed to fetch data from API: {e}")
+            df = pd.DataFrame()
+
         st.subheader("API Results Table")
         st.dataframe(df)
 
         # Graph panel: Bar chart of name vs score
-        if 'name' in df.columns and 'score' in df.columns:
+        if 'name' in df.columns and 'score' in df.columns and not df.empty:
             st.subheader("Score by Name")
             chart_data = df[["name", "score"]].set_index("name")
             st.bar_chart(chart_data)
