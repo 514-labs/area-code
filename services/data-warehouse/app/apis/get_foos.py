@@ -8,6 +8,7 @@ class GetFoosQuery(BaseModel):
     status: Optional[str] = None  # Changed from FooStatus to str
     limit: int = 100
     offset: int = 0
+    tag: Optional[str] = None
 
 # Define the response model
 class GetFoosResponse(BaseModel):
@@ -47,8 +48,13 @@ def get_foos(client, params: GetFoosQuery) -> GetFoosResponse:
             # If invalid status, return empty result
             return GetFoosResponse(items=[], total=0)
     
+    # Add tag filter if provided and not 'All'
+    if params.tag is not None and params.tag != "All":
+        # Use ClickHouse has() function to filter by tag
+        query += f" AND has(tags, '{params.tag}')"
+    
     # Add count query to get total records
-    count_query = query.replace("SELECT id, name, description, status, priority, is_active, tags, score, large_text", "SELECT COUNT(*) as total_count")
+    count_query = "SELECT COUNT(*) as total_count"; #query.replace("SELECT id, name, description, status, priority, is_active, tags, score, large_text", "SELECT COUNT(*) as total_count")
     
     # Add pagination to the main query
     query += " LIMIT {limit} OFFSET {offset}"
@@ -70,6 +76,7 @@ def get_foos(client, params: GetFoosQuery) -> GetFoosResponse:
             total = list(first_row.values())[0]
     
     # Execute main query
+    print("Final SQL query:", query)
     result = client.query.execute(query, query_params)
     
     # Convert results to Foo objects
