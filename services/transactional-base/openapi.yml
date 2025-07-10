@@ -17,6 +17,11 @@ paths:
       responses:
         "200":
           description: Default Response
+  /api/foo/average-score:
+    get:
+      responses:
+        "200":
+          description: Default Response
   /api/foo:
     get:
       responses:

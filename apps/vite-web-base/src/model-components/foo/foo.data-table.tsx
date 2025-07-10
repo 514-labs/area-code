@@ -443,7 +443,7 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <div className="flex items-center justify-between px-4 lg:px-6 mb-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Input
             placeholder="Filter by name..."
@@ -513,7 +513,7 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
         </div>
       )}
 
-      <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
+      <div className="relative flex flex-col gap-4 overflow-auto">
         <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">
