@@ -1,6 +1,6 @@
 from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
-from app.connectors.connector_factory import ConnectorFactory, ConnectorType
-from app.connectors.s3connector import S3ConnectorConfig
+from connectors.connector_factory import ConnectorFactory, ConnectorType
+from connectors.s3connector import S3ConnectorConfig
 from app.ingest.models import Foo
 import requests
 import json
