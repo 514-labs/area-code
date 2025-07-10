@@ -10,7 +10,7 @@ def run_task() -> None:
 
     connector = ConnectorFactory[Foo].create(
         ConnectorType.S3,
-        S3ConnectorConfig(batch_size=1)
+        S3ConnectorConfig(batch_size=100)
     )
 
     data = connector.extract()
