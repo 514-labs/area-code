@@ -19,14 +19,9 @@ echo "🌱 Running SQL seed script..."
 echo "📊 Target database: ${DB_HOST}:${DB_PORT}/${DB_NAME}"
 echo "⏱️  Starting at: $(date)"
 
-# Check if psql is available locally
-if command -v psql >/dev/null 2>&1; then
-    echo "📡 Using local psql..."
-    psql "${CONNECTION_STRING}" -f src/scripts/seed-million-rows.sql
-else
-    echo "🐳 Using Docker container..."
-    # Find the PostgreSQL container (try common names)
-    DB_CONTAINER=$(docker ps --format "table {{.Names}}" | grep -E "(db|postgres|supabase)" | head -1)
+echo "🐳 Using Docker container..."
+# Find the PostgreSQL container (try common names)
+DB_CONTAINER=$(docker ps --format "table {{.Names}}" | grep -E "(db|postgres|supabase)" | grep -v "temporal" | head -1)
     
     if [ -z "$DB_CONTAINER" ]; then
         echo "❌ Could not find PostgreSQL Docker container"
@@ -76,6 +71,5 @@ else
     
     # Clean up
     docker exec "$DB_CONTAINER" rm -f /tmp/seed-million-rows.sql 2>/dev/null || true
-fi
 
 echo "✅ SQL seed completed at: $(date)" 

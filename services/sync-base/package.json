@@ -12,7 +12,8 @@
     "@514labs/moose-lib": "latest",
     "typia": "^7.6.0",
     "@supabase/supabase-js": "^2.39.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "@workspace/models": "workspace:*"
   },
   "devDependencies": {
     "@514labs/moose-cli": "latest",

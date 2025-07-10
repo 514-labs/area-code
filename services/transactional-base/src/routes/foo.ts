@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eq, sql, asc, desc } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../database/connection";
 import {
   foo,
@@ -101,8 +101,6 @@ export async function fooRoutes(fastify: FastifyInstance) {
     Querystring: {
       limit?: string;
       offset?: string;
-      sortBy?: string;
-      sortOrder?: string;
     };
     Reply:
       | {
@@ -119,8 +117,6 @@ export async function fooRoutes(fastify: FastifyInstance) {
     try {
       const limit = parseInt(request.query.limit || "10");
       const offset = parseInt(request.query.offset || "0");
-      const sortBy = request.query.sortBy;
-      const sortOrder = request.query.sortOrder || "asc";
 
       // Validate pagination parameters
       if (limit < 1 || limit > 100) {
@@ -132,60 +128,8 @@ export async function fooRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: "Offset must be non-negative" });
       }
 
-      // Build query with sorting - simplified approach
-      let orderByClause;
-      if (sortBy) {
-        switch (sortBy) {
-          case "name":
-            orderByClause =
-              sortOrder === "desc" ? desc(foo.name) : asc(foo.name);
-            break;
-          case "description":
-            orderByClause =
-              sortOrder === "desc"
-                ? desc(foo.description)
-                : asc(foo.description);
-            break;
-          case "status":
-            orderByClause =
-              sortOrder === "desc" ? desc(foo.status) : asc(foo.status);
-            break;
-          case "priority":
-            orderByClause =
-              sortOrder === "desc" ? desc(foo.priority) : asc(foo.priority);
-            break;
-          case "isActive":
-            orderByClause =
-              sortOrder === "desc" ? desc(foo.isActive) : asc(foo.isActive);
-            break;
-          case "score":
-            orderByClause =
-              sortOrder === "desc" ? desc(foo.score) : asc(foo.score);
-            break;
-          case "createdAt":
-            orderByClause =
-              sortOrder === "desc" ? desc(foo.createdAt) : asc(foo.createdAt);
-            break;
-          case "updatedAt":
-            orderByClause =
-              sortOrder === "desc" ? desc(foo.updatedAt) : asc(foo.updatedAt);
-            break;
-          default:
-            // Default sorting by createdAt desc for invalid sortBy
-            orderByClause = desc(foo.createdAt);
-        }
-      } else {
-        // Default sorting by createdAt desc
-        orderByClause = desc(foo.createdAt);
-      }
-
-      // Execute query with sorting and pagination
-      const fooItems = await db
-        .select()
-        .from(foo)
-        .orderBy(orderByClause)
-        .limit(limit)
-        .offset(offset);
+      // Get paginated results
+      const fooItems = await db.select().from(foo).limit(limit).offset(offset);
 
       // Get total count for pagination metadata
       const totalResult = await db
@@ -207,7 +151,6 @@ export async function fooRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      console.error("Error fetching foo items:", error);
       return reply.status(500).send({ error: "Failed to fetch foo items" });
     }
   });
