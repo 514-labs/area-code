@@ -6,6 +6,10 @@ import {
   integer,
   text,
   boolean,
+  jsonb,
+  json,
+  decimal,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 // Import models from the shared package
@@ -16,16 +20,30 @@ import type {
   Bar,
   CreateBar,
   UpdateBar,
+  FooStatus,
 } from "@workspace/models";
+
+// Create PostgreSQL enum for status
+export const fooStatusEnum = pgEnum("foo_status", [
+  "active",
+  "inactive",
+  "pending",
+  "archived",
+]);
 
 // Foo table - matches models package exactly
 export const foo = pgTable("foo", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  status: varchar("status", { length: 50 }).notNull().default("active"),
+  status: fooStatusEnum("status").notNull().default("active"),
   priority: integer("priority").notNull().default(1),
   isActive: boolean("is_active").notNull().default(true),
+  metadata: jsonb("metadata").default({}),
+  config: json("config").default({}),
+  tags: text("tags").array().default([]),
+  score: decimal("score", { precision: 10, scale: 2 }).default("0.00"),
+  largeText: text("large_text").default(""),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

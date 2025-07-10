@@ -19,9 +19,9 @@ export interface BaseEvent {
 export interface FooThingParams {
   fooId: string;
   action: "created" | "updated" | "deleted" | "activated" | "deactivated";
-  previousData?: Foo; // Use existing Foo model
-  currentData?: Foo;  // Use existing Foo model
-  changes?: string[]; // List of changed fields
+  previousData: Foo; // Use existing Foo model
+  currentData: Foo;  // Use existing Foo model
+  changes: string[]; // List of changed fields
 }
 
 // BarThing event parameters - Moose compliant
@@ -29,9 +29,9 @@ export interface BarThingParams {
   barId: string;
   fooId: string; // Related foo ID
   action: "created" | "updated" | "deleted" | "enabled" | "disabled";
-  previousData?: Bar; // Use existing Bar model
-  currentData?: Bar;  // Use existing Bar model
-  changes?: string[]; // List of changed fields
+  previousData: Bar; // Use existing Bar model
+  currentData: Bar;  // Use existing Bar model
+  changes: string[]; // List of changed fields
   value?: number; // Specific to bar operations
 }
 

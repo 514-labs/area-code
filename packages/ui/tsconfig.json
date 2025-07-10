@@ -1,6 +1,22 @@
 {
   "extends": "@repo/typescript-config/base.json",
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Default",
   "compilerOptions": {
+    "esModuleInterop": true,
+    "incremental": false,
+    "isolatedModules": true,
+    "lib": ["es2022", "DOM", "DOM.Iterable"],
+    "module": "NodeNext",
+    "moduleDetection": "force",
+    "moduleResolution": "NodeNext",
+    "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
     "baseUrl": ".",
     "paths": {
       "@workspace/ui/*": ["./src/*"]
@@ -8,8 +24,7 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist",
-    "jsx": "react-jsx"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+    "jsx": "react-jsx",
+    "rootDir": "."
+  }
 }

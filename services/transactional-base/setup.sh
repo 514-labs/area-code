@@ -191,19 +191,21 @@ seed_database() {
         fi
     fi
     
-    # Run seeding
-    echo "🌱 Running database seeding..."
-    if [ -f "src/scripts/seed.ts" ]; then
-        npx tsx src/scripts/seed.ts
+    # Run SQL seeding
+    echo "🌱 Running SQL database seeding..."
+    if [ -f "src/scripts/run-sql-seed.sh" ]; then
+        # Make the script executable and run it
+        chmod +x ./src/scripts/run-sql-seed.sh
+        ./src/scripts/run-sql-seed.sh
         if [ $? -eq 0 ]; then
-            echo "✅ Database seeding completed successfully"
+            echo "✅ SQL database seeding completed successfully"
             return 0
         else
-            echo "❌ Error: Database seeding failed"
+            echo "❌ Error: SQL database seeding failed"
             return 1
         fi
     else
-        echo "❌ Error: Seed script not found at src/scripts/seed.ts"
+        echo "❌ Error: SQL seed script not found at src/scripts/run-sql-seed.sh"
         return 1
     fi
 }
