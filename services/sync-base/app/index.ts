@@ -27,6 +27,12 @@
 import { Task, Workflow } from "@514labs/moose-lib";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
+import { 
+  createFooThingEvent, 
+  createBarThingEvent,
+  type FooThingEvent,
+  type BarThingEvent
+} from "@workspace/models";
 
 // Load environment variables
 dotenv.config();
@@ -41,7 +47,7 @@ interface SyncConfig {
 // Initialize configuration
 const config: SyncConfig = {
   supabaseUrl: process.env.SUPABASE_PUBLIC_URL || "http://localhost:8000",
-  supabaseKey: process.env.ANON_KEY || "",
+  supabaseKey: process.env.SERVICE_ROLE_KEY || "",
   dbSchema: process.env.DB_SCHEMA || "public",
 };
 
@@ -53,54 +59,195 @@ const logEvent = (event: string, table: string, payload: any) => {
   console.log("---");
 };
 
+// HTTP client for sending events to analytical service
+const sendEventToAnalytics = async (event: FooThingEvent | BarThingEvent) => {
+  const analyticsUrl = process.env.ANALYTICS_BASE_URL || "http://localhost:4100";
+  const endpoint = event.type === "foo.thing" ? "FooThingEvent" : "BarThingEvent";
+  const url = `${analyticsUrl}/ingest/${endpoint}`;
+
+  try {
+    console.log(`📤 Sending ${event.type} event to analytics: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(event),
+    });
+
+    if (response.ok) {
+      console.log(`✅ Successfully sent ${event.type} event to analytics`);
+    } else {
+      console.error(`❌ Failed to send ${event.type} event to analytics:`, response.status, response.statusText);
+      const errorText = await response.text();
+      console.error("Response:", errorText);
+    }
+  } catch (error) {
+    console.error(`❌ Error sending ${event.type} event to analytics:`, error);
+  }
+};
+
 // Business logic handlers for each table
-function handleFooChange(payload: any) {
+async function handleFooChange(payload: any) {
   const { eventType, new: newRecord, old: oldRecord } = payload;
+
+  // Determine the action based on event type and changes
+  let action: "created" | "updated" | "deleted" | "activated" | "deactivated";
+  let changes: string[] = [];
 
   switch (eventType) {
     case "INSERT":
+      action = "created";
       console.log(`🔔 Business Logic: New foo "${newRecord.name}" created`);
-      // Add your sync logic here
       break;
     case "UPDATE":
-      if (oldRecord.status !== newRecord.status) {
+      // Determine specific update type
+      if (oldRecord.isActive !== newRecord.isActive) {
+        action = newRecord.isActive ? "activated" : "deactivated";
         console.log(
-          `🔔 Business Logic: Foo "${newRecord.name}" status changed from "${oldRecord.status}" to "${newRecord.status}"`
+          `🔔 Business Logic: Foo "${newRecord.name}" ${action}`
+        );
+      } else {
+        action = "updated";
+        console.log(
+          `🔔 Business Logic: Foo "${newRecord.name}" updated`
         );
       }
-      // Add your sync logic here
+      
+      // Track which fields changed
+      changes = Object.keys(newRecord).filter(key => 
+        JSON.stringify(oldRecord[key]) !== JSON.stringify(newRecord[key])
+      );
       break;
     case "DELETE":
+      action = "deleted";
       console.log(`🔔 Business Logic: Foo "${oldRecord.name}" was deleted`);
-      // Add your sync logic here
       break;
+    default:
+      console.warn(`Unknown event type: ${eventType}`);
+      return;
+  }
+
+  // Create and send FooThingEvent to analytics
+  try {
+    // For INSERT events, create a default previous record with proper default values
+    const createDefaultFooRecord = (record: any) => ({
+      id: "",
+      name: "",
+      description: null,
+      status: "active",
+      priority: 0,
+      isActive: false,
+      metadata: {},
+      tags: [],
+      score: 0,
+      largeText: "",
+      createdAt: new Date(0), // Unix epoch
+      updatedAt: new Date(0), // Unix epoch
+      ...record
+    });
+
+    const fooEvent = createFooThingEvent({
+      fooId: (newRecord?.id || oldRecord?.id) as string,
+      action,
+      previousData: oldRecord ? createDefaultFooRecord(oldRecord) : createDefaultFooRecord({}),
+      currentData: newRecord ? createDefaultFooRecord(newRecord) : createDefaultFooRecord({}),
+      changes,
+    }, {
+      source: "sync-base-realtime",
+      correlationId: `foo-${payload.commit_timestamp || Date.now()}`,
+      metadata: {
+        session: "realtime-sync",
+        user: "system"
+      }
+    });
+
+    await sendEventToAnalytics(fooEvent);
+  } catch (error) {
+    console.error("Error creating/sending FooThingEvent:", error);
   }
 }
 
-function handleBarChange(payload: any) {
+async function handleBarChange(payload: any) {
   const { eventType, new: newRecord, old: oldRecord } = payload;
+
+  // Determine the action based on event type and changes
+  let action: "created" | "updated" | "deleted" | "enabled" | "disabled";
+  let changes: string[] = [];
 
   switch (eventType) {
     case "INSERT":
+      action = "created";
       console.log(
         `🔔 Business Logic: New bar with value ${newRecord.value} created`
       );
-      // Add your sync logic here
       break;
     case "UPDATE":
-      if (oldRecord.value !== newRecord.value) {
+      // Determine specific update type
+      if (oldRecord.isEnabled !== newRecord.isEnabled) {
+        action = newRecord.isEnabled ? "enabled" : "disabled";
         console.log(
-          `🔔 Business Logic: Bar value changed from ${oldRecord.value} to ${newRecord.value}`
+          `🔔 Business Logic: Bar ${action}`
+        );
+      } else {
+        action = "updated";
+        console.log(
+          `🔔 Business Logic: Bar updated`
         );
       }
-      // Add your sync logic here
+      
+      // Track which fields changed
+      changes = Object.keys(newRecord).filter(key => 
+        JSON.stringify(oldRecord[key]) !== JSON.stringify(newRecord[key])
+      );
       break;
     case "DELETE":
+      action = "deleted";
       console.log(
         `🔔 Business Logic: Bar with value ${oldRecord.value} was deleted`
       );
-      // Add your sync logic here
       break;
+    default:
+      console.warn(`Unknown event type: ${eventType}`);
+      return;
+  }
+
+  // Create and send BarThingEvent to analytics
+  try {
+    // For INSERT events, create a default previous record with proper default values
+    const createDefaultBarRecord = (record: any) => ({
+      id: "",
+      fooId: "",
+      value: 0,
+      label: null,
+      notes: null,
+      isEnabled: false,
+      createdAt: new Date(0), // Unix epoch
+      updatedAt: new Date(0), // Unix epoch
+      ...record
+    });
+
+    const barEvent = createBarThingEvent({
+      barId: (newRecord?.id || oldRecord?.id) as string,
+      fooId: (newRecord?.fooId || oldRecord?.fooId) as string,
+      action,
+      previousData: oldRecord ? createDefaultBarRecord(oldRecord) : createDefaultBarRecord({}),
+      currentData: newRecord ? createDefaultBarRecord(newRecord) : createDefaultBarRecord({}),
+      changes,
+      value: newRecord?.value || oldRecord?.value,
+    }, {
+      source: "sync-base-realtime",
+      correlationId: `bar-${payload.commit_timestamp || Date.now()}`,
+      metadata: {
+        session: "realtime-sync",
+        user: "system"
+      }
+    });
+
+    await sendEventToAnalytics(barEvent);
+  } catch (error) {
+    console.error("Error creating/sending BarThingEvent:", error);
   }
 }
 
@@ -138,9 +285,9 @@ export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
       process.env.SUPABASE_PUBLIC_URL || "NOT SET"
     );
     console.log(
-      "- ANON_KEY:",
-      process.env.ANON_KEY
-        ? `${process.env.ANON_KEY.substring(0, 20)}...`
+      "- SERVICE_ROLE_KEY:",
+      process.env.SERVICE_ROLE_KEY
+        ? `${process.env.SERVICE_ROLE_KEY.substring(0, 20)}...`
         : "NOT SET"
     );
     console.log("- DB_SCHEMA:", process.env.DB_SCHEMA || "NOT SET");
@@ -154,15 +301,15 @@ export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
 
     if (!config.supabaseKey || config.supabaseKey === "") {
       console.log(
-        "⚠️  WARNING: ANON_KEY environment variable is empty or not set"
+        "⚠️  WARNING: SERVICE_ROLE_KEY environment variable is empty or not set"
       );
       console.log(
-        "💡 Please set ANON_KEY in your .env file from your transactional-base service"
+        "💡 Please set SERVICE_ROLE_KEY in your .env file from your transactional-base service"
       );
       console.log(
-        "💡 You can find the ANON_KEY in services/transactional-base/.env"
+        "💡 You can find the SERVICE_ROLE_KEY in services/transactional-base/.env"
       );
-      throw new Error("ANON_KEY is required for Supabase connection");
+      throw new Error("SERVICE_ROLE_KEY is required for Supabase connection");
     }
 
     if (!config.dbSchema) {
@@ -200,9 +347,9 @@ export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
           schema: config.dbSchema,
           table: "foo",
         },
-        (payload) => {
+        async (payload) => {
           logEvent("FOO CHANGE", "foo", payload);
-          handleFooChange(payload);
+          await handleFooChange(payload);
         }
       )
       .on(
@@ -212,9 +359,9 @@ export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
           schema: config.dbSchema,
           table: "bar",
         },
-        (payload) => {
+        async (payload) => {
           logEvent("BAR CHANGE", "bar", payload);
-          handleBarChange(payload);
+          await handleBarChange(payload);
         }
       )
       .on(

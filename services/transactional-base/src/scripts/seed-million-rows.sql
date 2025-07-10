@@ -201,7 +201,7 @@ SELECT
     random_tags(),
     round((random() * 100)::numeric, 2),
     random_large_text()
-FROM generate_series(1, 2000000) AS i;
+FROM generate_series(1, 5000) AS i;
 
 -- Log completion
 SELECT 'Completed inserting records at: ' || NOW();
