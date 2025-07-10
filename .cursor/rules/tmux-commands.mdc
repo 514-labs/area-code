@@ -1,7 +1,6 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Cursor Agent Rules for Tmux Integration
 
 ## Command Execution Rules
