@@ -60,6 +60,42 @@ function apiToDbFoo(apiData: any): any {
 }
 
 export async function fooRoutes(fastify: FastifyInstance) {
+  // Get average score of all foo items with query time
+  fastify.get<{
+    Reply:
+      | { averageScore: number; queryTime: number; count: number }
+      | { error: string };
+  }>("/foo/average-score", async (request, reply) => {
+    try {
+      const startTime = Date.now();
+
+      // Get average score and count
+      const result = await db
+        .select({
+          averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(foo);
+
+      const endTime = Date.now();
+      const queryTime = endTime - startTime;
+
+      const averageScore = result[0]?.averageScore || 0;
+      const count = result[0]?.count || 0;
+
+      return reply.send({
+        averageScore: Number(averageScore),
+        queryTime,
+        count,
+      });
+    } catch (error) {
+      console.error("Error calculating average score:", error);
+      return reply
+        .status(500)
+        .send({ error: "Failed to calculate average score" });
+    }
+  });
+
   // Get all foo items with pagination and sorting
   fastify.get<{
     Querystring: {
