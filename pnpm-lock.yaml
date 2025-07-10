@@ -150,6 +150,9 @@ importers:
       eslint-config-prettier:
         specifier: ^9.1.0
         version: 9.1.0(eslint@8.57.1)
+      globals:
+        specifier: ^15.0.0
+        version: 15.15.0
 
   packages/models:
     dependencies:
@@ -438,6 +441,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.50.3
+      '@workspace/models':
+        specifier: workspace:*
+        version: link:../../packages/models
       axios:
         specifier: ^1.7.7
         version: 1.10.0
@@ -4048,6 +4054,10 @@ packages:
   globals@13.24.0:
     resolution: {integrity: sha512-AhO5QUcj8llrbG09iWhPU2B204J1xnPeL8kQmVorSsy+Sjj1sk8gIyh6cUocGmH4L0UuhAJy+hJMRA4mgA4mFQ==}
     engines: {node: '>=8'}
+
+  globals@15.15.0:
+    resolution: {integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==}
+    engines: {node: '>=18'}
 
   globby@10.0.2:
     resolution: {integrity: sha512-7dUi7RvCoT/xast/o/dLN53oqND4yk0nsHkhRgn9w65C4PofCLOoJ39iSOg+qVDdWQPIEj+eszMHQ+aLVwwQSg==}
@@ -9362,6 +9372,8 @@ snapshots:
   globals@13.24.0:
     dependencies:
       type-fest: 0.20.2
+
+  globals@15.15.0: {}
 
   globby@10.0.2:
     dependencies:
