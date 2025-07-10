@@ -10,55 +10,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Modern animated banner
-st.markdown("""
-    <style>
-        .modern-banner {
-            background: linear-gradient(135deg, #7f00ff, #e100ff);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-            font-size: 1.7rem;
-            font-weight: 600;
-            font-family: 'Segoe UI', sans-serif;
-            border-radius: 15px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-            animation: slideFadeIn 0.8s ease-out, pulse 2.5s ease-in-out infinite;
-            margin-bottom: 2rem;
-        }
-
-        @keyframes slideFadeIn {
-            0% {
-                transform: translateY(-20px);
-                opacity: 0;
-            }
-            100% {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
-            }
-            50% {
-                box-shadow: 0 0 28px rgba(255, 255, 255, 0.45);
-            }
-            100% {
-                box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
-            }
-        }
-    </style>
-
-    <div class="modern-banner">
-        Go from prototype to production<br>
-        \n Made with ❤️ MOOSE\n 
-            Learn More: docs.fiveonefour.com/moose
-        Download: bash -i <(curl -fsSL https://fiveonefour.com/install.sh) moose)
-    </div>
-""", unsafe_allow_html=True)
-
 # Sidebar navigation
 page = st.sidebar.radio(
     "Navigation",
@@ -83,6 +34,37 @@ def fetch_data(tag):
         return pd.DataFrame()
 
 if page == "All":
+    # Modern animated banner
+    st.markdown("""
+        <style>
+            .modern-banner {
+                background: black;
+                color: white;
+                padding: 2rem;
+                text-align: center;
+                font-size: 1.7rem;
+                font-weight: 600;
+                font-family: 'Segoe UI', sans-serif;
+                border-radius: 15px;
+                animation: slideFadeIn 0.8s ease-out, pulse 2.5s ease-in-out infinite;
+                margin-bottom: 2rem;
+            }
+            @keyframes slideFadeIn {
+                0% { transform: translateY(-20px); opacity: 0; }
+                100% { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes pulse {
+                0% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
+                50% { box-shadow: 0 0 28px rgba(255, 255, 255, 0.45); }
+                100% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
+            }
+        </style>
+        <div class="modern-banner">
+            Data Warehouse Front-end<br>
+            <span style='font-size:1.2rem;'>Made with ❤️ MOOSE</span><br>
+            <span style='font-size:.8rem;'><a href="https://docs.fiveonefour.com/moose" style="color:#4FC3F7;" target="_blank">Learn More: docs.fiveonefour.com/moose</a></span>
+        </div>
+    """, unsafe_allow_html=True)
     # Tag filter dropdown
     tags_options = ["All", "S3", "Datadog"]
     selected_tag = st.selectbox("Filter by Tag", tags_options, index=0)
