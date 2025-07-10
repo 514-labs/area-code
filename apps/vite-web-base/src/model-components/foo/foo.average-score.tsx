@@ -101,10 +101,9 @@ export function FooAverageScore() {
           </div>
         ) : (
           <div className="">
-            <div className="text-3xl font-bold text-primary">
+            <div className="text-6xl font-bold text-primary">
               {data?.averageScore.toFixed(2) || "0.00"}
             </div>
-            <div className="text-sm text-muted-foreground">Average Score</div>
           </div>
         )}
       </CardContent>
