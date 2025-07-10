@@ -8,7 +8,7 @@
  * 2. An 'anon' API key with minimal permissions
  * 3. A 'service_role' API key with full permissions
  *
- * Usage: node generate-jwt.js
+ * Usage: node generate-jwt.js [--quiet] [-o <filename>]
  */
 
 import crypto from "crypto";
@@ -67,12 +67,38 @@ function generateSecurePassword(length = 32) {
   return result;
 }
 
-function main() {
-  console.log("🔐 Generating Supabase JWT Secret and API Keys...\n");
+// Parse command line arguments
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const outputIndex = args.indexOf('-o');
+  let outputFile = null;
+  
+  if (outputIndex !== -1) {
+    if (outputIndex + 1 >= args.length) {
+      console.error("❌ Error: -o option requires a filename");
+      process.exit(1);
+    }
+    outputFile = args[outputIndex + 1];
+  }
+  
+  return {
+    quiet: args.includes('--quiet'),
+    outputFile
+  };
+}
+
+async function main() {
+  const { quiet, outputFile } = parseArgs();
+  
+  if (!quiet) {
+    console.log("🔐 Generating Supabase JWT Secret and API Keys...\n");
+  }
 
   // Generate JWT secret
   const jwtSecret = generateSecureSecret(40);
-  console.log("✅ Generated JWT Secret");
+  if (!quiet) {
+    console.log("✅ Generated JWT Secret");
+  }
 
   // Generate anon key (public, limited permissions)
   const anonPayload = {
@@ -83,7 +109,9 @@ function main() {
     exp: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60, // 1 year
   };
   const anonKey = generateJWT(anonPayload, jwtSecret);
-  console.log("✅ Generated Anon Key");
+  if (!quiet) {
+    console.log("✅ Generated Anon Key");
+  }
 
   // Generate service role key (private, full permissions)
   const servicePayload = {
@@ -94,7 +122,9 @@ function main() {
     exp: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60, // 1 year
   };
   const serviceKey = generateJWT(servicePayload, jwtSecret);
-  console.log("✅ Generated Service Role Key");
+  if (!quiet) {
+    console.log("✅ Generated Service Role Key");
+  }
 
   // Generate additional secure values
   const secretKeyBase = generateSecureSecret(64);
@@ -102,36 +132,64 @@ function main() {
   const postgresPassword = generateSecurePassword(32);
   const dashboardPassword = generateSecurePassword(16);
 
-  console.log("\n📋 Copy these values to your .env file:\n");
-  console.log("# JWT Configuration");
-  console.log(`JWT_SECRET=${jwtSecret}`);
-  console.log(`ANON_KEY=${anonKey}`);
-  console.log(`SERVICE_ROLE_KEY=${serviceKey}`);
-  console.log("");
-  console.log("# Additional Secrets");
-  console.log(`SECRET_KEY_BASE=${secretKeyBase}`);
-  console.log(`VAULT_ENC_KEY=${vaultEncKey}`);
-  console.log("");
-  console.log("# Database");
-  console.log(`POSTGRES_PASSWORD=${postgresPassword}`);
-  console.log("");
-  console.log("# Dashboard");
-  console.log(`DASHBOARD_USERNAME=supabase`);
-  console.log(`DASHBOARD_PASSWORD=${dashboardPassword}`);
-  console.log("");
-  console.log("# Pooler");
-  console.log(`POOLER_TENANT_ID=your-tenant-id`);
-  console.log("");
-  console.log("⚠️  IMPORTANT:");
-  console.log(
-    "1. Keep these values secure and never commit them to version control"
-  );
-  console.log("2. Use a secrets manager in production");
-  console.log("3. Update SITE_URL and API_EXTERNAL_URL for your domain");
-  console.log("4. Configure SMTP settings for email functionality");
-  console.log("");
-  console.log("🚀 After updating .env, restart your services:");
-  console.log("   docker compose down && docker compose up -d");
+  // Prepare environment variables content
+  const envContent = `# JWT Configuration
+JWT_SECRET=${jwtSecret}
+ANON_KEY=${anonKey}
+SERVICE_ROLE_KEY=${serviceKey}
+
+# Additional Secrets
+SECRET_KEY_BASE=${secretKeyBase}
+VAULT_ENC_KEY=${vaultEncKey}
+
+# Database
+POSTGRES_PASSWORD=${postgresPassword}
+
+# Dashboard
+DASHBOARD_USERNAME=supabase
+DASHBOARD_PASSWORD=${dashboardPassword}
+
+# Pooler
+POOLER_TENANT_ID=your-tenant-id
+`;
+
+  if (outputFile) {
+    try {
+      const fs = await import('fs/promises');
+      await fs.writeFile(outputFile, envContent, 'utf8');
+      if (!quiet) {
+        console.log(`✅ Environment variables saved to: ${outputFile}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error writing to file ${outputFile}:`, error.message);
+      process.exit(1);
+    }
+  } else {
+    if (!quiet) {
+      console.log("\n📋 Copy these values to your .env file:\n");
+    }
+    console.log(envContent);
+  }
+  
+  if (!quiet) {
+    console.log("");
+    console.log("⚠️  IMPORTANT:");
+    console.log(
+      "1. Keep these values secure and never commit them to version control"
+    );
+    console.log("2. Use a secrets manager in production");
+    console.log("3. Update SITE_URL and API_EXTERNAL_URL for your domain");
+    console.log("4. Configure SMTP settings for email functionality");
+    console.log("");
+    console.log("🚀 After updating .env, restart your services:");
+    console.log("   docker compose down && docker compose up -d");
+    console.log("");
+    console.log("💡 Usage examples:");
+    console.log("   node generate-jwt.mjs                    # Output to console");
+    console.log("   node generate-jwt.mjs --quiet            # Quiet mode");
+    console.log("   node generate-jwt.mjs -o .env            # Save to .env file");
+    console.log("   node generate-jwt.mjs -o .env --quiet    # Save to .env file (quiet)");
+  }
 }
 
 // Validate Node.js version

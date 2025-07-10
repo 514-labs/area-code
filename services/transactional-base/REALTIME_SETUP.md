@@ -152,7 +152,7 @@ npm run build && npm run test:realtime
 
 ```bash
 # Run with automatic test data insertion
-npx tsx src/test-realtime-postgres-changes.ts --test-insert
+npx tsx tests/test-realtime-postgres-changes.ts --test-insert
 ```
 
 ### Expected Output

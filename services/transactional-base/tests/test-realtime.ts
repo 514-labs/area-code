@@ -278,7 +278,7 @@ class RealtimeTest {
     if (trackResponse === "ok") {
       console.log("✅ Presence tracking started");
     } else {
-      console.error("❌ Failed to start presence tracking");
+      console.error("❌ Failed to start presence tracking", trackResponse);
     }
 
     console.log("✅ Presence test complete\n");
