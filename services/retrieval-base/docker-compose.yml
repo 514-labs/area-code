@@ -12,6 +12,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     volumes:
       - ./volumes/elasticsearch/data:/usr/share/elasticsearch/data
@@ -43,3 +44,4 @@ services:
 volumes:
   elasticsearch_data:
     driver: local
+
