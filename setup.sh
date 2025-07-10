@@ -81,12 +81,19 @@ get_service_script() {
 start_service() {
     local service="$1"
     local script_path=$(get_service_script "$service")
+    local service_dir="$SCRIPT_DIR/services/$service"
     
     echo "🚀 Starting $service..."
     
     if ! check_and_make_executable "$script_path" "$service"; then
         return 1
     fi
+    
+    # Change to service directory
+    cd "$service_dir" || {
+        echo "❌ Failed to change to service directory: $service_dir"
+        return 1
+    }
     
     case "$service" in
         "transactional-base")
@@ -102,18 +109,28 @@ start_service() {
             return 1
             ;;
     esac
+    
+    # Return to original directory
+    cd "$SCRIPT_DIR"
 }
 
 # Function to stop a service
 stop_service() {
     local service="$1"
     local script_path=$(get_service_script "$service")
+    local service_dir="$SCRIPT_DIR/services/$service"
     
     echo "🛑 Stopping $service..."
     
     if ! check_and_make_executable "$script_path" "$service"; then
         return 1
     fi
+    
+    # Change to service directory
+    cd "$service_dir" || {
+        echo "❌ Failed to change to service directory: $service_dir"
+        return 1
+    }
     
     case "$service" in
         "transactional-base")
@@ -129,6 +146,9 @@ stop_service() {
             return 1
             ;;
     esac
+    
+    # Return to original directory
+    cd "$SCRIPT_DIR"
 }
 
 # Function to restart a service
@@ -144,12 +164,19 @@ restart_service() {
 show_service_status() {
     local service="$1"
     local script_path=$(get_service_script "$service")
+    local service_dir="$SCRIPT_DIR/services/$service"
     
     echo "📊 Checking status of $service..."
     
     if ! check_and_make_executable "$script_path" "$service"; then
         return 1
     fi
+    
+    # Change to service directory
+    cd "$service_dir" || {
+        echo "❌ Failed to change to service directory: $service_dir"
+        return 1
+    }
     
     case "$service" in
         "transactional-base")
@@ -165,18 +192,28 @@ show_service_status() {
             return 1
             ;;
     esac
+    
+    # Return to original directory
+    cd "$SCRIPT_DIR"
 }
 
 # Function to setup a service
 setup_service() {
     local service="$1"
     local script_path=$(get_service_script "$service")
+    local service_dir="$SCRIPT_DIR/services/$service"
     
     echo "🔧 Setting up $service..."
     
     if ! check_and_make_executable "$script_path" "$service"; then
         return 1
     fi
+    
+    # Change to service directory
+    cd "$service_dir" || {
+        echo "❌ Failed to change to service directory: $service_dir"
+        return 1
+    }
     
     case "$service" in
         "transactional-base")
@@ -192,18 +229,28 @@ setup_service() {
             return 1
             ;;
     esac
+    
+    # Return to original directory
+    cd "$SCRIPT_DIR"
 }
 
 # Function to reset a service
 reset_service() {
     local service="$1"
     local script_path=$(get_service_script "$service")
+    local service_dir="$SCRIPT_DIR/services/$service"
     
     echo "🔄 Resetting $service..."
     
     if ! check_and_make_executable "$script_path" "$service"; then
         return 1
     fi
+    
+    # Change to service directory
+    cd "$service_dir" || {
+        echo "❌ Failed to change to service directory: $service_dir"
+        return 1
+    }
     
     case "$service" in
         "transactional-base")
@@ -219,6 +266,9 @@ reset_service() {
             return 1
             ;;
     esac
+    
+    # Return to original directory
+    cd "$SCRIPT_DIR"
 }
 
 # Function to execute command on services
