@@ -382,6 +382,7 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [queryTime, setQueryTime] = React.useState<number | null>(null);
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
@@ -392,15 +393,19 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
     refetch,
   } = useQuery({
     queryKey: ["foos", pagination.pageIndex, pagination.pageSize, sorting],
-    queryFn: () => {
+    queryFn: async () => {
+      const startTime = performance.now();
       const sortBy = sorting[0]?.id;
       const sortOrder = sorting[0]?.desc ? "desc" : "asc";
-      return fetchFoos(
+      const result = await fetchFoos(
         pagination.pageSize,
         pagination.pageIndex * pagination.pageSize,
         sortBy,
         sortOrder
       );
+      const endTime = performance.now();
+      setQueryTime(endTime - startTime);
+      return result;
     },
     placeholderData: (previousData) => previousData,
   });
@@ -443,7 +448,7 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <div className="flex items-center justify-between px-4 lg:px-6 mb-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Input
             placeholder="Filter by name..."
@@ -497,23 +502,30 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
 
       {/* Server pagination and sorting info */}
       {serverPagination && (
-        <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600">
-          Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
-          {Math.min(
-            serverPagination.offset + serverPagination.limit,
-            serverPagination.total
-          ).toLocaleString()}{" "}
-          of {serverPagination.total.toLocaleString()} items
-          {serverPagination.hasMore && " (more available)"}
-          {sorting.length > 0 && (
-            <span className="ml-2 text-blue-600">
-              • Sorted by {sorting[0].id} ({sorting[0].desc ? "desc" : "asc"})
-            </span>
+        <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
+          <div>
+            Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
+            {Math.min(
+              serverPagination.offset + serverPagination.limit,
+              serverPagination.total
+            ).toLocaleString()}{" "}
+            of {serverPagination.total.toLocaleString()} items
+            {serverPagination.hasMore && " (more available)"}
+            {sorting.length > 0 && (
+              <span className="ml-2 text-blue-600">
+                • Sorted by {sorting[0].id} ({sorting[0].desc ? "desc" : "asc"})
+              </span>
+            )}
+          </div>
+          {queryTime !== null && (
+            <div className="text-green-600">
+              Latest query: {queryTime.toFixed(2)}ms
+            </div>
           )}
         </div>
       )}
 
-      <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
+      <div className="relative flex flex-col gap-4 overflow-auto">
         <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">
