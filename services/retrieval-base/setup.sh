@@ -131,7 +131,7 @@ install_dependencies() {
 # Start Elasticsearch
 start_elasticsearch() {
     print_status "Starting Elasticsearch and Kibana..."
-    pnpm es:setup
+    docker-compose up -d
     
     # Wait for Elasticsearch to be ready
     print_status "Waiting for Elasticsearch to be ready..."
@@ -158,14 +158,14 @@ start_elasticsearch() {
 # Initialize indices
 init_indices() {
     print_status "Initializing Elasticsearch indices..."
-    pnpm es:init-indices
+    npx tsx src/scripts/init-indices.ts
     print_success "Indices initialized successfully"
 }
 
 # Seed sample data
 seed_data() {
     print_status "Seeding sample data..."
-    pnpm es:seed
+    npx tsx src/scripts/seed.ts
     print_success "Sample data seeded successfully"
 }
 
@@ -181,7 +181,7 @@ start_service() {
     print_status "API documentation will be available at http://localhost:8082/docs"
     
     # Start the service in the background
-    pnpm dev &
+    npx tsx watch src/server.ts &
     SERVICE_PID=$!
     
     # Wait a moment for the service to start
@@ -288,7 +288,7 @@ start_elasticsearch_only() {
     fi
     
     print_status "Starting Elasticsearch and Kibana..."
-    pnpm es:setup
+    docker-compose up -d
     
     # Wait for Elasticsearch to be ready
     print_status "Waiting for Elasticsearch to be ready..."
@@ -315,14 +315,55 @@ start_elasticsearch_only() {
 # Stop Elasticsearch only
 stop_elasticsearch_only() {
     print_status "Stopping Elasticsearch and Kibana..."
-    pnpm es:stop 2>/dev/null || docker-compose down
+    docker-compose down
     print_success "Elasticsearch and Kibana stopped"
 }
 
 # Reset Elasticsearch data
 reset_elasticsearch() {
     print_status "Resetting Elasticsearch data..."
-    pnpm es:reset
+    
+    # Stop Elasticsearch
+    docker-compose down
+    
+    # Clear Elasticsearch data directory
+    if [ -d "volumes/elasticsearch/data" ]; then
+        rm -rf volumes/elasticsearch/data/* 2>/dev/null || rm -rf volumes/elasticsearch/data/*
+        print_success "Elasticsearch data cleared"
+    else
+        print_warning "Elasticsearch data directory not found"
+    fi
+    
+    # Start Elasticsearch
+    docker-compose up -d
+    
+    # Wait for Elasticsearch to be ready
+    print_status "Waiting for Elasticsearch to be ready..."
+    max_attempts=30
+    attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
+            print_success "Elasticsearch is ready!"
+            break
+        fi
+        
+        print_status "Attempt $attempt/$max_attempts: Waiting for Elasticsearch..."
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    if [ $attempt -gt $max_attempts ]; then
+        print_error "Elasticsearch failed to start within expected time"
+        exit 1
+    fi
+    
+    # Initialize indices
+    npx tsx src/scripts/init-indices.ts
+    
+    # Seed data
+    npx tsx src/scripts/seed.ts
+    
     print_success "Elasticsearch data reset successfully"
 }
 
@@ -345,7 +386,7 @@ full_reset() {
     # Clear Elasticsearch data directory
     print_status "Clearing Elasticsearch data..."
     if [ -d "volumes/elasticsearch/data" ]; then
-        sudo rm -rf volumes/elasticsearch/data/* 2>/dev/null || rm -rf volumes/elasticsearch/data/*
+        rm -rf volumes/elasticsearch/data/* 2>/dev/null || rm -rf volumes/elasticsearch/data/*
         print_success "Elasticsearch data cleared"
     else
         print_warning "Elasticsearch data directory not found"
