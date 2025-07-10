@@ -41,32 +41,10 @@ Follow these steps to start Supabase:
 
 ```bash
 # Navigate to the service directory
-cd services/transactional-base-2
+cd services/transactional-base
 
-# Copy the example environment file (if it doesn't exist)
-cp env.example .env
-
-# Generate JWT secret and API keys (see Securing your services section)
-node generate-jwt.js
-
-# Pull the latest images
-docker compose pull
-
-# Start the services (in detached mode)
-docker compose up -d
-```
-
-After all services have started, check their status:
-
-```bash
-docker compose ps
-```
-
-All services should show status `running (healthy)`. If you see `created` but not `running`, try:
-
-```bash
-docker compose start <service-name>
-```
+# Run setup
+sh setup.sh
 
 ## Accessing your services
 
@@ -122,6 +100,8 @@ postgres://postgres:[POSTGRES_PASSWORD]@localhost:5432/[POSTGRES_DB]
 
 ⚠️ **CRITICAL**: Never deploy with default credentials. Follow all steps below.
 
+If .env.secrets is missing, setup.sh will create it for you.
+
 ### 1. Generate JWT Secret and API Keys
 
 Run the JWT generation script:
@@ -173,8 +153,7 @@ POOLER_TENANT_ID=your-tenant-id
 Apply configuration changes:
 
 ```bash
-docker compose down
-docker compose up -d
+sh setup.sh --restart
 ```
 
 ## Testing Realtime functionality
@@ -185,7 +164,7 @@ This service includes a comprehensive test script for the Supabase Realtime func
 
 1. **Install dependencies**:
    ```bash
-   cd services/transactional-base-2
+   cd services/transactional-base
    pnpm install
    ```
 
@@ -194,7 +173,7 @@ This service includes a comprehensive test script for the Supabase Realtime func
    **Option A: Using Docker (if you don't have psql installed):**
    ```bash
    # Copy the setup script to the database container
-   docker cp services/transactional-base-2/src/setup-test-table.sql supabase-db:/tmp/setup-test-table.sql
+   docker cp services/transactional-base/src/setup-test-table.sql supabase-db:/tmp/setup-test-table.sql
    
    # Run the setup script
    docker exec -it supabase-db psql -U postgres -d postgres -f /tmp/setup-test-table.sql
