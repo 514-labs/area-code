@@ -83,7 +83,15 @@ elif page == "S3":
 elif page == "Datadog":
     df = fetch_data("Datadog")
     st.subheader("Datadog Items Table")
-    st.dataframe(df)
+    if not df.empty:
+        # Assume the log data is in the last column
+        log_col = df.columns[-1]
+        # Split the log field into Level, Timestamp, Message
+        parsed_logs = df[log_col].str.split("|", n=2, expand=True)
+        parsed_logs.columns = ["Level", "Timestamp", "Message"]
+        st.dataframe(parsed_logs, use_container_width=True)
+    else:
+        st.write("No Datadog log data available.")
 
 # Footer
 st.markdown("---")
