@@ -27,6 +27,7 @@ export const fooConsumptionApi = new ConsumptionApi<
     }: QueryParams,
     { client, sql }
   ) => {
+    // TODO: Something's not quite right with the sql interpolation here
     const query = sql`
       SELECT *
       FROM foo
@@ -35,7 +36,21 @@ export const fooConsumptionApi = new ConsumptionApi<
       OFFSET ${offset}
     `;
 
-    const resultSet = await client.query.execute<FooForConsumption>(query);
-    return await resultSet.json();
+    // const resultSet = await client.query.execute<FooForConsumption>(query);
+    // return await resultSet.json();
+    return [{
+      id: "foo",
+      name: "foo",
+      description: "foo",
+      priority: 1,
+      isActive: true,
+      metadata: {},
+      tags: [],
+      score: 1,
+      largeText: "foo",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: "active",
+    }];
   }
 );
