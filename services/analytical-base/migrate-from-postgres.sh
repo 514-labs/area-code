@@ -19,6 +19,7 @@ CH_DB=${CH_DB:-local}
 # Parse command line arguments
 CLEAR_DATA=false
 KEEP_TEMP=false
+COUNT_LIMIT=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -30,6 +31,14 @@ while [[ $# -gt 0 ]]; do
             KEEP_TEMP=true
             shift
             ;;
+        --count)
+            COUNT_LIMIT="$2"
+            if ! [[ "$COUNT_LIMIT" =~ ^[0-9]+$ ]] || [ "$COUNT_LIMIT" -eq 0 ]; then
+                echo "Error: --count must be a positive integer"
+                exit 1
+            fi
+            shift 2
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo "Migrate data from PostgreSQL to ClickHouse"
@@ -37,6 +46,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --clear-data     Clear existing data in ClickHouse before migration"
             echo "  --keep-temp      Keep temporary files after migration"
+            echo "  --count <num>    Limit the number of records to migrate (for testing)"
             echo "  --help           Show this help message"
             exit 0
             ;;
@@ -183,7 +193,15 @@ TEST_FOO_QUERY="
 SELECT 
     id::text as id,
     name,
-    score,
+    COALESCE(description, '') as description,
+    COALESCE(status, 'active') as status,
+    COALESCE(priority, 0) as priority,
+    COALESCE(is_active, false) as is_active,
+    COALESCE(metadata::text, '{}') as metadata,
+    COALESCE(config::text, '{}') as config,
+    COALESCE(array_to_string(tags, ','), '') as tags,
+    COALESCE(score, 0) as score,
+    COALESCE(large_text, '') as large_text,
     date_trunc('second', created_at)::text as created_at,
     date_trunc('second', updated_at)::text as updated_at
 FROM foo 
@@ -193,8 +211,11 @@ LIMIT 1
 TEST_BAR_QUERY="
 SELECT 
     id::text as id,
-    label,
-    value,
+    COALESCE(foo_id::text, '') as foo_id,
+    COALESCE(value, 0) as value,
+    COALESCE(label, '') as label,
+    COALESCE(notes, '') as notes,
+    COALESCE(is_enabled, false) as is_enabled,
     date_trunc('second', created_at)::text as created_at,
     date_trunc('second', updated_at)::text as updated_at
 FROM bar 
@@ -232,10 +253,34 @@ echo "Converting test data to JSONEachRow format..."
 
 # Process foo test data
 if ! awk -F'\t' 'NR > 0 {
+    # Store metadata and config before escaping (they are already valid JSON)
+    metadata_json = $7;
+    config_json = $8;
+    
+    # Escape everything else
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"\",\"status\":\"active\",\"priority\":1,\"isActive\":true,\"metadata\":{},\"tags\":[],\"score\":%s,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $4, $5, $1, $2, $3, $4, $5, $1, $4;
+    
+    # Convert PostgreSQL boolean to JSON boolean
+    is_active_val = ($6 == "t") ? "true" : "false";
+    
+    # Convert PostgreSQL array format for tags
+    tags_field = $9;
+    if (tags_field == "") {
+        tags_json = "[]";
+    } else {
+        # Convert comma-separated string to JSON array
+        split(tags_field, tag_array, ",");
+        tags_json = "[";
+        for (i = 1; i <= length(tag_array); i++) {
+            if (i > 1) tags_json = tags_json ",";
+            tags_json = tags_json "\"" tag_array[i] "\"";
+        }
+        tags_json = tags_json "]";
+    }
+    
+    printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"%s\",\"status\":\"%s\",\"priority\":%s,\"isActive\":%s,\"metadata\":%s,\"tags\":%s,\"score\":%s,\"largeText\":\"%s\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $12, $13, $1, $2, $3, $4, $5, is_active_val, metadata_json, tags_json, $10, $11, $12, $13, $1, $12;
 }' "$TEMP_DIR/test_foo_data.json" > "$TEMP_DIR/test_foo_events.json"; then
     echo "❌ Failed to convert test foo data to JSONEachRow format"
     exit 1
@@ -245,8 +290,12 @@ fi
 if ! awk -F'\t' 'NR > 0 {
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"1\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"1\",\"value\":%s,\"label\":\"%s\",\"notes\":\"\",\"isEnabled\":true,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $4, $5, $1, $3, $2, $4, $5, $3, $1, $4;
+    
+    # Convert PostgreSQL boolean to JSON boolean
+    is_enabled_val = ($6 == "t") ? "true" : "false";
+    
+    printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"%s\",\"value\":%s,\"label\":\"%s\",\"notes\":\"%s\",\"isEnabled\":%s,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $2, $7, $8, $1, $2, $3, $4, $5, is_enabled_val, $7, $8, $3, $1, $7;
 }' "$TEMP_DIR/test_bar_data.json" > "$TEMP_DIR/test_bar_events.json"; then
     echo "❌ Failed to convert test bar data to JSONEachRow format"
     exit 1
@@ -376,9 +425,22 @@ if ! [[ "$BAR_COUNT" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 
-echo "📊 Records to migrate:"
-echo "   - Foo records: $FOO_COUNT"
-echo "   - Bar records: $BAR_COUNT"
+if [ -n "$COUNT_LIMIT" ]; then
+    # Calculate actual migration counts when limit is applied
+    MIGRATE_FOO_COUNT=$((FOO_COUNT < COUNT_LIMIT ? FOO_COUNT : COUNT_LIMIT))
+    MIGRATE_BAR_COUNT=$((BAR_COUNT < COUNT_LIMIT ? BAR_COUNT : COUNT_LIMIT))
+    
+    echo "📊 Records to migrate (limited by --count $COUNT_LIMIT):"
+    echo "   - Foo records: $MIGRATE_FOO_COUNT (of $FOO_COUNT total)"
+    echo "   - Bar records: $MIGRATE_BAR_COUNT (of $BAR_COUNT total)"
+else
+    MIGRATE_FOO_COUNT=$FOO_COUNT
+    MIGRATE_BAR_COUNT=$BAR_COUNT
+    
+    echo "📊 Records to migrate:"
+    echo "   - Foo records: $FOO_COUNT"
+    echo "   - Bar records: $BAR_COUNT"
+fi
 echo ""
 
 # Clear existing data if requested
@@ -390,27 +452,75 @@ if [ "$CLEAR_DATA" = true ]; then
 fi
 
 # Full migration queries
-FOO_QUERY="
-SELECT 
-    id::text as id,
-    name,
-    score,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
-FROM foo 
-ORDER BY created_at
-"
+if [ -n "$COUNT_LIMIT" ]; then
+    FOO_QUERY="
+    SELECT 
+        id::text as id,
+        name,
+        COALESCE(description, '') as description,
+        COALESCE(status, 'active') as status,
+        COALESCE(priority, 0) as priority,
+        COALESCE(is_active, false) as is_active,
+        COALESCE(metadata::text, '{}') as metadata,
+        COALESCE(config::text, '{}') as config,
+        COALESCE(array_to_string(tags, ','), '') as tags,
+        COALESCE(score, 0) as score,
+        COALESCE(large_text, '') as large_text,
+        date_trunc('second', created_at)::text as created_at,
+        date_trunc('second', updated_at)::text as updated_at
+    FROM foo 
+    ORDER BY created_at
+    LIMIT $COUNT_LIMIT
+    "
 
-BAR_QUERY="
-SELECT 
-    id::text as id,
-    label,
-    value,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
-FROM bar 
-ORDER BY created_at
-"
+    BAR_QUERY="
+    SELECT 
+        id::text as id,
+        COALESCE(foo_id::text, '') as foo_id,
+        COALESCE(value, 0) as value,
+        COALESCE(label, '') as label,
+        COALESCE(notes, '') as notes,
+        COALESCE(is_enabled, false) as is_enabled,
+        date_trunc('second', created_at)::text as created_at,
+        date_trunc('second', updated_at)::text as updated_at
+    FROM bar 
+    ORDER BY created_at
+    LIMIT $COUNT_LIMIT
+    "
+else
+    FOO_QUERY="
+    SELECT 
+        id::text as id,
+        name,
+        COALESCE(description, '') as description,
+        COALESCE(status, 'active') as status,
+        COALESCE(priority, 0) as priority,
+        COALESCE(is_active, false) as is_active,
+        COALESCE(metadata::text, '{}') as metadata,
+        COALESCE(config::text, '{}') as config,
+        COALESCE(array_to_string(tags, ','), '') as tags,
+        COALESCE(score, 0) as score,
+        COALESCE(large_text, '') as large_text,
+        date_trunc('second', created_at)::text as created_at,
+        date_trunc('second', updated_at)::text as updated_at
+    FROM foo 
+    ORDER BY created_at
+    "
+
+    BAR_QUERY="
+    SELECT 
+        id::text as id,
+        COALESCE(foo_id::text, '') as foo_id,
+        COALESCE(value, 0) as value,
+        COALESCE(label, '') as label,
+        COALESCE(notes, '') as notes,
+        COALESCE(is_enabled, false) as is_enabled,
+        date_trunc('second', created_at)::text as created_at,
+        date_trunc('second', updated_at)::text as updated_at
+    FROM bar 
+    ORDER BY created_at
+    "
+fi
 
 # Export full data
 echo "Exporting full foo data..."
@@ -432,10 +542,34 @@ echo "Converting full data to JSONEachRow format..."
 
 # Process foo data
 if ! awk -F'\t' 'NR > 0 {
+    # Store metadata and config before escaping (they are already valid JSON)
+    metadata_json = $7;
+    config_json = $8;
+    
+    # Escape everything else
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"\",\"status\":\"active\",\"priority\":1,\"isActive\":true,\"metadata\":{},\"tags\":[],\"score\":%s,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $4, $5, $1, $2, $3, $4, $5, $1, $4;
+    
+    # Convert PostgreSQL boolean to JSON boolean
+    is_active_val = ($6 == "t") ? "true" : "false";
+    
+    # Convert PostgreSQL array format for tags
+    tags_field = $9;
+    if (tags_field == "") {
+        tags_json = "[]";
+    } else {
+        # Convert comma-separated string to JSON array
+        split(tags_field, tag_array, ",");
+        tags_json = "[";
+        for (i = 1; i <= length(tag_array); i++) {
+            if (i > 1) tags_json = tags_json ",";
+            tags_json = tags_json "\"" tag_array[i] "\"";
+        }
+        tags_json = tags_json "]";
+    }
+    
+    printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"%s\",\"status\":\"%s\",\"priority\":%s,\"isActive\":%s,\"metadata\":%s,\"tags\":%s,\"score\":%s,\"largeText\":\"%s\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $12, $13, $1, $2, $3, $4, $5, is_active_val, metadata_json, tags_json, $10, $11, $12, $13, $1, $12;
 }' "$TEMP_DIR/full_foo_data.json" > "$TEMP_DIR/full_foo_events.json"; then
     echo "❌ Failed to convert full foo data to JSONEachRow format"
     exit 1
@@ -445,8 +579,12 @@ fi
 if ! awk -F'\t' 'NR > 0 {
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"1\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"1\",\"value\":%s,\"label\":\"%s\",\"notes\":\"\",\"isEnabled\":true,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $4, $5, $1, $3, $2, $4, $5, $3, $1, $4;
+    
+    # Convert PostgreSQL boolean to JSON boolean
+    is_enabled_val = ($6 == "t") ? "true" : "false";
+    
+    printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"%s\",\"value\":%s,\"label\":\"%s\",\"notes\":\"%s\",\"isEnabled\":%s,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $2, $7, $8, $1, $2, $3, $4, $5, is_enabled_val, $7, $8, $3, $1, $7;
 }' "$TEMP_DIR/full_bar_data.json" > "$TEMP_DIR/full_bar_events.json"; then
     echo "❌ Failed to convert full bar data to JSONEachRow format"
     exit 1
@@ -508,13 +646,13 @@ if ! [[ "$CH_BAR_COUNT" =~ ^[0-9]+$ ]]; then
 fi
 
 echo "📊 Migration results:"
-echo "   - Foo records: $FOO_COUNT → $CH_FOO_COUNT"
-echo "   - Bar records: $BAR_COUNT → $CH_BAR_COUNT"
+echo "   - Foo records: $MIGRATE_FOO_COUNT → $CH_FOO_COUNT"
+echo "   - Bar records: $MIGRATE_BAR_COUNT → $CH_BAR_COUNT"
 
-if [ "$CH_FOO_COUNT" -ne "$FOO_COUNT" ] || [ "$CH_BAR_COUNT" -ne "$BAR_COUNT" ]; then
+if [ "$CH_FOO_COUNT" -ne "$MIGRATE_FOO_COUNT" ] || [ "$CH_BAR_COUNT" -ne "$MIGRATE_BAR_COUNT" ]; then
     echo "❌ Record counts don't match! Migration failed."
-    echo "   - Expected foo: $FOO_COUNT, Got: $CH_FOO_COUNT"
-    echo "   - Expected bar: $BAR_COUNT, Got: $CH_BAR_COUNT"
+    echo "   - Expected foo: $MIGRATE_FOO_COUNT, Got: $CH_FOO_COUNT"
+    echo "   - Expected bar: $MIGRATE_BAR_COUNT, Got: $CH_BAR_COUNT"
     exit 1
 fi
 
