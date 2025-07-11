@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Enable strict error handling
+set -euo pipefail
+
 # Set defaults - don't load .env file to avoid parsing issues
 PG_HOST=${PG_HOST:-localhost}
 PG_PORT=${PG_PORT:-54322}
@@ -59,33 +62,79 @@ run_postgres_query() {
     local query="$1"
     local output_file="$2"
     
-    docker exec -i supabase-db psql -U "$PG_USER" -d "$PG_DB" -t -A -F$'\t' -c "$query" > "$output_file"
-    return $?
+    if ! docker exec -i supabase-db psql -U "$PG_USER" -d "$PG_DB" -t -A -F$'\t' -c "$query" > "$output_file"; then
+        echo "❌ PostgreSQL query failed: $query"
+        return 1
+    fi
+    return 0
+}
+
+# Function to run PostgreSQL query and return result directly
+run_postgres_query_direct() {
+    local query="$1"
+    local result
+    
+    if ! result=$(docker exec -i supabase-db psql -U "$PG_USER" -d "$PG_DB" -t -A -c "$query" 2>&1); then
+        echo "❌ PostgreSQL query failed: $query" >&2
+        echo "   Error: $result" >&2
+        return 1
+    fi
+    
+    echo "$result"
+    return 0
 }
 
 # Function to run ClickHouse query via Docker
 run_clickhouse_query() {
     local query="$1"
+    local result
     
     if [ -n "$CH_PASSWORD" ]; then
-        docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query"
+        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query" 2>&1); then
+            echo "❌ ClickHouse query failed: $query" >&2
+            echo "   Error: $result" >&2
+            return 1
+        fi
     else
-        docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query"
+        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query" 2>&1); then
+            echo "❌ ClickHouse query failed: $query" >&2
+            echo "   Error: $result" >&2
+            return 1
+        fi
     fi
-    return $?
+    
+    echo "$result"
+    return 0
 }
 
 # Function to import JSONEachRow file to ClickHouse
 import_to_clickhouse() {
     local file="$1"
     local table="$2"
+    local result
+    
+    if [ ! -f "$file" ]; then
+        echo "❌ Import file does not exist: $file" >&2
+        return 1
+    fi
     
     if [ -n "$CH_PASSWORD" ]; then
-        docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file"
+        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+            echo "❌ Failed to import data to ClickHouse table: $table" >&2
+            echo "   File: $file" >&2
+            echo "   Error: $result" >&2
+            return 1
+        fi
     else
-        docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file"
+        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+            echo "❌ Failed to import data to ClickHouse table: $table" >&2
+            echo "   File: $file" >&2
+            echo "   Error: $result" >&2
+            return 1
+        fi
     fi
-    return $?
+    
+    return 0
 }
 
 # Test PostgreSQL connection
@@ -106,13 +155,15 @@ echo "✅ ClickHouse connection successful"
 
 # Check if network bridge exists
 echo "Checking network connectivity..."
-if ! docker network ls | grep -q "supabase_default"; then
+NETWORK_CHECK=$(docker network ls | grep "supabase_default" || true)
+if [ -z "$NETWORK_CHECK" ]; then
     echo "❌ supabase_default network not found"
     exit 1
 fi
 
 # Check if ClickHouse container is connected to PostgreSQL network
-if ! docker inspect sync-base-clickhousedb-1 | grep -q "supabase_default"; then
+CONTAINER_NETWORK_CHECK=$(docker inspect sync-base-clickhousedb-1 | grep "supabase_default" || true)
+if [ -z "$CONTAINER_NETWORK_CHECK" ]; then
     echo "Connecting ClickHouse to PostgreSQL network..."
     if ! docker network connect supabase_default sync-base-clickhousedb-1 2>/dev/null; then
         echo "⚠️  Network connection may already exist or failed"
@@ -133,8 +184,8 @@ SELECT
     id::text as id,
     name,
     score,
-    created_at,
-    updated_at
+    date_trunc('second', created_at)::text as created_at,
+    date_trunc('second', updated_at)::text as updated_at
 FROM foo 
 LIMIT 1
 "
@@ -144,8 +195,8 @@ SELECT
     id::text as id,
     label,
     value,
-    created_at,
-    updated_at
+    date_trunc('second', created_at)::text as created_at,
+    date_trunc('second', updated_at)::text as updated_at
 FROM bar 
 LIMIT 1
 "
@@ -180,20 +231,48 @@ echo "✅ Test data exported successfully"
 echo "Converting test data to JSONEachRow format..."
 
 # Process foo test data
-awk -F'\t' 'NR > 0 {
+if ! awk -F'\t' 'NR > 0 {
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"id\":\"%s\",\"name\":\"%s\",\"score\":%s,\"created_at\":\"%s\",\"updated_at\":\"%s\"}\n", 
-           $1, $2, $3, $4, $5;
-}' "$TEMP_DIR/test_foo_data.json" > "$TEMP_DIR/test_foo_events.json"
+    printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"\",\"status\":\"active\",\"priority\":1,\"isActive\":true,\"metadata\":{},\"tags\":[],\"score\":%s,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $4, $5, $1, $2, $3, $4, $5, $1, $4;
+}' "$TEMP_DIR/test_foo_data.json" > "$TEMP_DIR/test_foo_events.json"; then
+    echo "❌ Failed to convert test foo data to JSONEachRow format"
+    exit 1
+fi
 
 # Process bar test data
-awk -F'\t' 'NR > 0 {
+if ! awk -F'\t' 'NR > 0 {
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"id\":\"%s\",\"label\":\"%s\",\"value\":%s,\"created_at\":\"%s\",\"updated_at\":\"%s\"}\n", 
-           $1, $2, $3, $4, $5;
-}' "$TEMP_DIR/test_bar_data.json" > "$TEMP_DIR/test_bar_events.json"
+    printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"1\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"1\",\"value\":%s,\"label\":\"%s\",\"notes\":\"\",\"isEnabled\":true,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $4, $5, $1, $3, $2, $4, $5, $3, $1, $4;
+}' "$TEMP_DIR/test_bar_data.json" > "$TEMP_DIR/test_bar_events.json"; then
+    echo "❌ Failed to convert test bar data to JSONEachRow format"
+    exit 1
+fi
+
+# Verify converted files are not empty and contain valid JSON
+if [ ! -s "$TEMP_DIR/test_foo_events.json" ]; then
+    echo "❌ Test foo events file is empty after conversion"
+    exit 1
+fi
+
+if [ ! -s "$TEMP_DIR/test_bar_events.json" ]; then
+    echo "❌ Test bar events file is empty after conversion"
+    exit 1
+fi
+
+# Basic JSON validation - check if files contain valid JSON structure
+if ! grep -q '{.*}' "$TEMP_DIR/test_foo_events.json"; then
+    echo "❌ Test foo events file does not contain valid JSON structure"
+    exit 1
+fi
+
+if ! grep -q '{.*}' "$TEMP_DIR/test_bar_events.json"; then
+    echo "❌ Test bar events file does not contain valid JSON structure"
+    exit 1
+fi
 
 echo "✅ Test data converted to JSONEachRow format"
 
@@ -214,15 +293,57 @@ echo "✅ Test import successful!"
 
 # Verify test data in ClickHouse
 echo "Verifying test data in ClickHouse..."
-TEST_FOO_COUNT=$(run_clickhouse_query "SELECT count() FROM FooThingEvent WHERE id IN (SELECT id FROM FooThingEvent ORDER BY created_at DESC LIMIT 1)")
-TEST_BAR_COUNT=$(run_clickhouse_query "SELECT count() FROM BarThingEvent WHERE id IN (SELECT id FROM BarThingEvent ORDER BY created_at DESC LIMIT 1)")
 
+# Get the test data counts with error checking
+TEST_FOO_COUNT=$(run_clickhouse_query "SELECT count() FROM FooThingEvent WHERE id IN (SELECT id FROM FooThingEvent ORDER BY timestamp DESC LIMIT 1)")
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to query test foo data count from ClickHouse"
+    exit 1
+fi
+
+TEST_BAR_COUNT=$(run_clickhouse_query "SELECT count() FROM BarThingEvent WHERE id IN (SELECT id FROM BarThingEvent ORDER BY timestamp DESC LIMIT 1)")
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to query test bar data count from ClickHouse"
+    exit 1
+fi
+
+# Verify counts are numeric
+if ! [[ "$TEST_FOO_COUNT" =~ ^[0-9]+$ ]]; then
+    echo "❌ Test foo count is not a valid number: '$TEST_FOO_COUNT'"
+    exit 1
+fi
+
+if ! [[ "$TEST_BAR_COUNT" =~ ^[0-9]+$ ]]; then
+    echo "❌ Test bar count is not a valid number: '$TEST_BAR_COUNT'"
+    exit 1
+fi
+
+# Verify we have at least 1 record for each table
 if [ "$TEST_FOO_COUNT" -lt 1 ] || [ "$TEST_BAR_COUNT" -lt 1 ]; then
     echo "❌ Test data verification failed"
+    echo "   - Foo count: $TEST_FOO_COUNT"
+    echo "   - Bar count: $TEST_BAR_COUNT"
+    exit 1
+fi
+
+# Additional verification - check if we can retrieve actual data
+echo "Performing additional test data verification..."
+TEST_FOO_DATA=$(run_clickhouse_query "SELECT id, params.currentData.name[1] FROM FooThingEvent ORDER BY timestamp DESC LIMIT 1")
+if [ $? -ne 0 ] || [ -z "$TEST_FOO_DATA" ]; then
+    echo "❌ Failed to retrieve test foo data from ClickHouse"
+    exit 1
+fi
+
+TEST_BAR_DATA=$(run_clickhouse_query "SELECT id, params.currentData.label[1] FROM BarThingEvent ORDER BY timestamp DESC LIMIT 1")
+if [ $? -ne 0 ] || [ -z "$TEST_BAR_DATA" ]; then
+    echo "❌ Failed to retrieve test bar data from ClickHouse"
     exit 1
 fi
 
 echo "✅ Test data verified in ClickHouse"
+
+echo ""
+echo "🎉 ALL TEST CHECKS PASSED! Proceeding with full migration..."
 echo ""
 
 # Step 2: Proceed with full migration
@@ -232,8 +353,28 @@ echo "===================================================="
 
 # Get record counts
 echo "Getting record counts..."
-FOO_COUNT=$(run_postgres_query "SELECT COUNT(*) FROM foo")
-BAR_COUNT=$(run_postgres_query "SELECT COUNT(*) FROM bar")
+FOO_COUNT=$(run_postgres_query_direct "SELECT COUNT(*) FROM foo")
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to get foo record count"
+    exit 1
+fi
+
+BAR_COUNT=$(run_postgres_query_direct "SELECT COUNT(*) FROM bar")
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to get bar record count"
+    exit 1
+fi
+
+# Verify counts are numeric
+if ! [[ "$FOO_COUNT" =~ ^[0-9]+$ ]]; then
+    echo "❌ Source foo count is not a valid number: '$FOO_COUNT'"
+    exit 1
+fi
+
+if ! [[ "$BAR_COUNT" =~ ^[0-9]+$ ]]; then
+    echo "❌ Source bar count is not a valid number: '$BAR_COUNT'"
+    exit 1
+fi
 
 echo "📊 Records to migrate:"
 echo "   - Foo records: $FOO_COUNT"
@@ -254,8 +395,8 @@ SELECT
     id::text as id,
     name,
     score,
-    created_at,
-    updated_at
+    date_trunc('second', created_at)::text as created_at,
+    date_trunc('second', updated_at)::text as updated_at
 FROM foo 
 ORDER BY created_at
 "
@@ -265,8 +406,8 @@ SELECT
     id::text as id,
     label,
     value,
-    created_at,
-    updated_at
+    date_trunc('second', created_at)::text as created_at,
+    date_trunc('second', updated_at)::text as updated_at
 FROM bar 
 ORDER BY created_at
 "
@@ -290,20 +431,37 @@ echo "✅ Full data exported"
 echo "Converting full data to JSONEachRow format..."
 
 # Process foo data
-awk -F'\t' 'NR > 0 {
+if ! awk -F'\t' 'NR > 0 {
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"id\":\"%s\",\"name\":\"%s\",\"score\":%s,\"created_at\":\"%s\",\"updated_at\":\"%s\"}\n", 
-           $1, $2, $3, $4, $5;
-}' "$TEMP_DIR/full_foo_data.json" > "$TEMP_DIR/full_foo_events.json"
+    printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"\",\"status\":\"active\",\"priority\":1,\"isActive\":true,\"metadata\":{},\"tags\":[],\"score\":%s,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $4, $5, $1, $2, $3, $4, $5, $1, $4;
+}' "$TEMP_DIR/full_foo_data.json" > "$TEMP_DIR/full_foo_events.json"; then
+    echo "❌ Failed to convert full foo data to JSONEachRow format"
+    exit 1
+fi
 
 # Process bar data
-awk -F'\t' 'NR > 0 {
+if ! awk -F'\t' 'NR > 0 {
     gsub(/\\/, "\\\\");
     gsub(/"/, "\\\"");
-    printf "{\"id\":\"%s\",\"label\":\"%s\",\"value\":%s,\"created_at\":\"%s\",\"updated_at\":\"%s\"}\n", 
-           $1, $2, $3, $4, $5;
-}' "$TEMP_DIR/full_bar_data.json" > "$TEMP_DIR/full_bar_events.json"
+    printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"1\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"1\",\"value\":%s,\"label\":\"%s\",\"notes\":\"\",\"isEnabled\":true,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+            $1, $4, $5, $1, $3, $2, $4, $5, $3, $1, $4;
+}' "$TEMP_DIR/full_bar_data.json" > "$TEMP_DIR/full_bar_events.json"; then
+    echo "❌ Failed to convert full bar data to JSONEachRow format"
+    exit 1
+fi
+
+# Verify converted files are not empty
+if [ ! -s "$TEMP_DIR/full_foo_events.json" ]; then
+    echo "❌ Full foo events file is empty after conversion"
+    exit 1
+fi
+
+if [ ! -s "$TEMP_DIR/full_bar_events.json" ]; then
+    echo "❌ Full bar events file is empty after conversion"
+    exit 1
+fi
 
 echo "✅ Full data converted to JSONEachRow format"
 
@@ -324,21 +482,50 @@ echo "✅ Full data imported successfully!"
 
 # Verify full data
 echo "Verifying full data in ClickHouse..."
+
+# Get final counts with error checking
 CH_FOO_COUNT=$(run_clickhouse_query "SELECT count() FROM FooThingEvent")
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to query final foo data count from ClickHouse"
+    exit 1
+fi
+
 CH_BAR_COUNT=$(run_clickhouse_query "SELECT count() FROM BarThingEvent")
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to query final bar data count from ClickHouse"
+    exit 1
+fi
+
+# Verify counts are numeric
+if ! [[ "$CH_FOO_COUNT" =~ ^[0-9]+$ ]]; then
+    echo "❌ Final foo count is not a valid number: '$CH_FOO_COUNT'"
+    exit 1
+fi
+
+if ! [[ "$CH_BAR_COUNT" =~ ^[0-9]+$ ]]; then
+    echo "❌ Final bar count is not a valid number: '$CH_BAR_COUNT'"
+    exit 1
+fi
 
 echo "📊 Migration results:"
 echo "   - Foo records: $FOO_COUNT → $CH_FOO_COUNT"
 echo "   - Bar records: $BAR_COUNT → $CH_BAR_COUNT"
 
 if [ "$CH_FOO_COUNT" -ne "$FOO_COUNT" ] || [ "$CH_BAR_COUNT" -ne "$BAR_COUNT" ]; then
-    echo "⚠️  Record counts don't match!"
+    echo "❌ Record counts don't match! Migration failed."
+    echo "   - Expected foo: $FOO_COUNT, Got: $CH_FOO_COUNT"
+    echo "   - Expected bar: $BAR_COUNT, Got: $CH_BAR_COUNT"
     exit 1
 fi
 
 echo "✅ Migration completed successfully!"
 
-# Cleanup
+echo ""
+echo "===================================================="
+echo "🎉 PostgreSQL to ClickHouse migration completed!"
+echo "====================================================" 
+
+# Only cleanup on successful completion
 if [ "$KEEP_TEMP" = false ]; then
     echo "Cleaning up temporary files..."
     rm -rf "$TEMP_DIR"
@@ -347,9 +534,4 @@ else
     echo "📁 Temporary files kept in: $TEMP_DIR"
     echo "   - Test files: test_*_events.json"
     echo "   - Full files: full_*_events.json"
-fi
-
-echo ""
-echo "===================================================="
-echo "🎉 PostgreSQL to ClickHouse migration completed!"
-echo "====================================================" 
+fi 
