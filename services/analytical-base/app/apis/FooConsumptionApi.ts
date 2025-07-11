@@ -1,5 +1,6 @@
-import { ConsumptionApi } from "@514labs/moose-lib";
-import { Foo } from "@workspace/models";
+import { ConsumptionApi, ConsumptionHelpers } from "@514labs/moose-lib";
+import { Foo, FooThingEvent } from "@workspace/models";
+import { FooThingEventPipeline } from "../pipelines/eventsPipeline";}
 
 // Define query parameters interface
 interface QueryParams {
@@ -11,6 +12,8 @@ interface QueryParams {
 
 // Use Foo model but replace enum with string for OpenAPI compatibility
 type FooForConsumption = Omit<Foo, "status"> & { status: string };
+
+type FooThingEventForConsumption = Omit<FooThingEvent, "currentData" | "previousData"> & { currentData: FooForConsumption, previousData: FooForConsumption };
 
 // Consumption API following Moose documentation pattern
 export const fooConsumptionApi = new ConsumptionApi<
@@ -27,30 +30,19 @@ export const fooConsumptionApi = new ConsumptionApi<
     }: QueryParams,
     { client, sql }
   ) => {
-    // TODO: Something's not quite right with the sql interpolation here
+    const fooTableName = FooThingEventPipeline.table!;
+    const sortColumn = FooThingEventPipeline.table?.columns["currentData"][sortBy || "createdAt"];
+    console.log("sortColumn", sortColumn)
+
     const query = sql`
-      SELECT *
-      FROM foo
-      ORDER BY ${sortBy || "createdAt"} ${sortOrder === "asc" ? "ASC" : "DESC"}
+      SELECT currentData
+      FROM ${fooTableName}
+      ORDER BY ${sortColumn}
       LIMIT ${limit}
       OFFSET ${offset}
     `;
 
-    // const resultSet = await client.query.execute<FooForConsumption>(query);
-    // return await resultSet.json();
-    return [{
-      id: "foo",
-      name: "foo",
-      description: "foo",
-      priority: 1,
-      isActive: true,
-      metadata: {},
-      tags: [],
-      score: 1,
-      largeText: "foo",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: "active",
-    }];
+    const resultSet = await client.query.execute<FooForConsumption>(query);
+    return await resultSet.json();
   }
 );
