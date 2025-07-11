@@ -10,7 +10,6 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { IconCalculator, IconClock, IconRefresh } from "@tabler/icons-react";
-import { getTransactionApiBase } from "../../env-vars";
 
 interface AverageScoreResponse {
   averageScore: number;
@@ -18,18 +17,23 @@ interface AverageScoreResponse {
   count: number;
 }
 
+interface FooAverageScoreProps {
+  apiEndpoint: string;
+}
+
 // API function to fetch average score
-const fetchAverageScore = async (): Promise<AverageScoreResponse> => {
-  const API_BASE = getTransactionApiBase();
-  const response = await fetch(`${API_BASE}/foo/average-score`);
+const fetchAverageScore = async (
+  apiEndpoint: string
+): Promise<AverageScoreResponse> => {
+  const response = await fetch(apiEndpoint);
   if (!response.ok) throw new Error("Failed to fetch average score");
   return response.json();
 };
 
-export default function FooAverageScore() {
+export default function FooAverageScore({ apiEndpoint }: FooAverageScoreProps) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["foo-average-score"],
-    queryFn: fetchAverageScore,
+    queryKey: ["foo-average-score", apiEndpoint],
+    queryFn: () => fetchAverageScore(apiEndpoint),
   });
 
   const handleRefresh = () => {

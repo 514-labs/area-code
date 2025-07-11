@@ -72,7 +72,6 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { getTransactionApiBase } from "../../env-vars";
 
 const getStatusIcon = (status: FooStatus) => {
   switch (status) {
@@ -112,7 +111,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: any;
+  column: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   children: React.ReactNode;
   className?: string;
 }) => {
@@ -349,6 +348,7 @@ interface FooResponse {
 
 // API Functions
 const fetchFoos = async (
+  fetchApiEndpoint: string,
   limit: number = 10,
   offset: number = 0,
   sortBy?: string,
@@ -364,13 +364,16 @@ const fetchFoos = async (
     params.append("sortOrder", sortOrder);
   }
 
-  const API_BASE = getTransactionApiBase();
-  const response = await fetch(`${API_BASE}/foo?${params.toString()}`);
+  const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   return response.json();
 };
 
-export function FooDataTable() {
+export function FooDataTable({
+  fetchApiEndpoint,
+}: {
+  fetchApiEndpoint: string;
+}) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -397,6 +400,7 @@ export function FooDataTable() {
       const sortBy = sorting[0]?.id;
       const sortOrder = sorting[0]?.desc ? "desc" : "asc";
       const result = await fetchFoos(
+        fetchApiEndpoint,
         pagination.pageSize,
         pagination.pageIndex * pagination.pageSize,
         sortBy,

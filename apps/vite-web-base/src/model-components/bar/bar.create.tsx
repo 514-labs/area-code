@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, ReactNode, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -52,7 +52,7 @@ const fetchFoos = async (): Promise<Foo[]> => {
 };
 
 interface BarCreateFormProps {
-  trigger?: React.ReactNode;
+  trigger?: ReactNode;
   onSuccess?: () => void;
 }
 
@@ -97,7 +97,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     createMutation.mutate(formData);
   };
