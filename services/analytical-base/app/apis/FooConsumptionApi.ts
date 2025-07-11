@@ -1,19 +1,17 @@
-import { ConsumptionApi, ConsumptionHelpers } from "@514labs/moose-lib";
-import { Foo, FooThingEvent } from "@workspace/models";
-import { FooThingEventPipeline } from "../pipelines/eventsPipeline";}
+import { ConsumptionApi } from "@514labs/moose-lib";
+import { Foo } from "@workspace/models";
+import { FooThingEventPipeline } from "../pipelines/eventsPipeline";
 
 // Define query parameters interface
 interface QueryParams {
   limit?: number;
   offset?: number;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: "ASC" | "DESC";
 }
 
 // Use Foo model but replace enum with string for OpenAPI compatibility
 type FooForConsumption = Omit<Foo, "status"> & { status: string };
-
-type FooThingEventForConsumption = Omit<FooThingEvent, "currentData" | "previousData"> & { currentData: FooForConsumption, previousData: FooForConsumption };
 
 // Consumption API following Moose documentation pattern
 export const fooConsumptionApi = new ConsumptionApi<
@@ -26,21 +24,29 @@ export const fooConsumptionApi = new ConsumptionApi<
       limit = 10,
       offset = 0,
       sortBy = "createdAt",
-      sortOrder = "desc",
+      sortOrder = "DESC",
     }: QueryParams,
     { client, sql }
   ) => {
     const fooTableName = FooThingEventPipeline.table!;
-    const sortColumn = FooThingEventPipeline.table?.columns["currentData"][sortBy || "createdAt"];
-    console.log("sortColumn", sortColumn)
 
-    const query = sql`
-      SELECT currentData
-      FROM ${fooTableName}
-      ORDER BY ${sortColumn}
-      LIMIT ${limit}
-      OFFSET ${offset}
-    `;
+    // this is the only way I found to make sort order work....
+    const query =
+      sortOrder === "ASC"
+        ? sql`
+          SELECT params.currentData
+          FROM ${fooTableName}
+          ORDER BY params.currentData.${sortBy} ASC
+          LIMIT ${limit}
+          OFFSET ${offset}
+        `
+        : sql`
+          SELECT params.currentData
+          FROM ${fooTableName}
+          ORDER BY params.currentData.${sortBy} DESC
+          LIMIT ${limit}
+          OFFSET ${offset}
+        `;
 
     const resultSet = await client.query.execute<FooForConsumption>(query);
     return await resultSet.json();
