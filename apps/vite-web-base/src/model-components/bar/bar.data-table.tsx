@@ -69,10 +69,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@workspace/ui/components/dialog";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
+import { getTransactionApiBase } from "../../env-vars";
 
 interface Foo {
   id: string;
@@ -108,6 +106,7 @@ const fetchBars = async (
     params.append("sortOrder", sortOrder);
   }
 
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/bar?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch bars");
   return response.json();

@@ -25,6 +25,7 @@ import { Plus, ArrowLeft } from "lucide-react";
 import { BarDataTable } from "../model-components/bar/bar.data-table";
 import { BarCreateForm } from "../model-components/bar/bar.create";
 import { Bar as BaseBar, CreateBar } from "@workspace/models";
+import { getTransactionApiBase } from "../env-vars";
 
 interface Foo {
   id: string;
@@ -37,9 +38,8 @@ interface Bar extends BaseBar {
   foo?: Foo;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
 const fetchFoos = async (): Promise<Foo[]> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/foo`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   const result = await response.json();

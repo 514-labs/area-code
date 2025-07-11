@@ -72,6 +72,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { getTransactionApiBase } from "../../env-vars";
 
 const getStatusIcon = (status: FooStatus) => {
   switch (status) {
@@ -335,8 +336,6 @@ const columns: ColumnDef<Foo>[] = [
   },
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
 // API Response Types
 interface FooResponse {
   data: Foo[];
@@ -365,12 +364,13 @@ const fetchFoos = async (
     params.append("sortOrder", sortOrder);
   }
 
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/foo?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   return response.json();
 };
 
-export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
+export function FooDataTable() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -390,7 +390,6 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
     isLoading,
     error,
     isPlaceholderData,
-    refetch,
   } = useQuery({
     queryKey: ["foos", pagination.pageIndex, pagination.pageSize, sorting],
     queryFn: async () => {

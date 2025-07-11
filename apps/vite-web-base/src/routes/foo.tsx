@@ -25,11 +25,11 @@ import { Plus, ArrowLeft } from "lucide-react";
 import { FooDataTable } from "../model-components/foo/foo.data-table";
 import { FooCreateForm } from "../model-components/foo/foo.create";
 import { Foo, FooStatus, CreateFoo } from "@workspace/models";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
+import { getTransactionApiBase } from "../env-vars";
 
 // API Functions
 const fetchFoos = async (): Promise<Foo[]> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/foo`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   return response.json();
