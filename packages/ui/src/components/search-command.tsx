@@ -8,6 +8,7 @@ import {
   Clock,
   AlertCircle,
   Loader2,
+  X,
 } from "lucide-react";
 import {
   Command,
@@ -17,11 +18,6 @@ import {
   CommandGroup,
   CommandItem,
 } from "@workspace/ui/components/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@workspace/ui/components/popover";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { cn } from "@workspace/ui/lib/utils";
@@ -45,8 +41,11 @@ export function SearchCommand({
   placeholder = "Search documents...",
   size = "md",
 }: SearchCommandProps) {
-  const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [isFocused, setIsFocused] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   const { recentSearches, addRecentSearch } = useRecentSearches();
   const prefetchSearch = usePrefetchSearch();
@@ -62,12 +61,16 @@ export function SearchCommand({
     {},
     {
       debounceMs: 300,
-      enabled: open, // Only search when popover is open
+      enabled: inputValue.length > 0, // Only search when there's input
     }
   );
 
   // Show loading state if debouncing or loading
   const isSearching = isDebouncing || isLoading;
+
+  // Show dropdown when focused and has content or results
+  const showDropdown =
+    isFocused && (inputValue.length > 0 || recentSearches.length > 0);
 
   const handleSelect = (result: SearchResult) => {
     // Add to recent searches
@@ -76,13 +79,17 @@ export function SearchCommand({
     // Call custom handler
     onSelect?.(result);
 
-    // Close popover and clear input
-    setOpen(false);
+    // Clear input and close dropdown
     setInputValue("");
+    setIsOpen(false);
+    setIsFocused(false);
+    inputRef.current?.blur();
   };
 
   const handleRecentSearch = (searchTerm: string) => {
     setInputValue(searchTerm);
+    setIsFocused(true);
+    inputRef.current?.focus();
     // Prefetch results for better UX
     prefetchSearch({ q: searchTerm, size: 8 });
   };
@@ -96,16 +103,39 @@ export function SearchCommand({
     }
   };
 
-  // Keyboard shortcut
+  const handleClear = () => {
+    setInputValue("");
+    inputRef.current?.focus();
+  };
+
+  // Keyboard shortcut to focus search
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        inputRef.current?.focus();
+      }
+      if (e.key === "Escape" && isFocused) {
+        inputRef.current?.blur();
+        setIsFocused(false);
       }
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
+  }, [isFocused]);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const getResultIcon = (result: SearchResult) => {
@@ -138,157 +168,167 @@ export function SearchCommand({
   };
 
   const sizeClasses = {
-    sm: "w-[250px]",
-    md: "w-[300px]",
-    lg: "w-[400px]",
+    sm: "h-8 text-sm",
+    md: "h-10 text-sm",
+    lg: "h-12 text-base",
   };
 
-  const popoverSizeClasses = {
+  const dropdownSizeClasses = {
     sm: "w-[300px]",
     md: "w-[400px]",
     lg: "w-[500px]",
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
+    <div ref={containerRef} className={cn("relative", className)}>
+      {/* Search Input */}
+      <div className="relative flex items-center">
+        <SearchIcon className="absolute left-3 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          placeholder={placeholder}
           className={cn(
-            sizeClasses[size],
-            "justify-between text-muted-foreground",
-            className
+            "w-full rounded-md border border-input bg-background pl-12 pr-20 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            sizeClasses[size]
+          )}
+        />
+        {inputValue && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-1 h-6 w-6 p-0 hover:bg-muted/50"
+            onClick={handleClear}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+        {!inputValue && (
+          <kbd className="pointer-events-none absolute right-3 inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        )}
+      </div>
+
+      {/* Results Dropdown */}
+      {showDropdown && (
+        <div
+          className={cn(
+            "absolute top-full left-0 z-50 mt-1 rounded-md border bg-popover p-0 text-popover-foreground shadow-md",
+            dropdownSizeClasses[size]
           )}
         >
-          <div className="flex items-center gap-2">
-            <SearchIcon className="h-4 w-4" />
-            <span className="truncate">{placeholder}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className={cn(popoverSizeClasses[size], "p-0")}
-        align="start"
-      >
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search documents, projects, and more..."
-            value={inputValue}
-            onValueChange={handleInputChange}
-          />
-          <CommandList>
-            <CommandEmpty>
-              {isSearching ? (
-                <div className="flex items-center justify-center gap-2 py-6">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Searching...</span>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center gap-2 py-6 text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>Search failed</span>
-                </div>
-              ) : (
-                "No results found."
+          <Command shouldFilter={false} className="max-h-[300px]">
+            <CommandList>
+              <CommandEmpty>
+                {isSearching ? (
+                  <div className="flex items-center justify-center gap-2 py-6">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Searching...</span>
+                  </div>
+                ) : error ? (
+                  <div className="flex items-center justify-center gap-2 py-6 text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Search failed</span>
+                  </div>
+                ) : inputValue.length > 0 ? (
+                  "No results found."
+                ) : null}
+              </CommandEmpty>
+
+              {/* Recent Searches */}
+              {!inputValue && recentSearches.length > 0 && (
+                <CommandGroup heading="Recent Searches">
+                  {recentSearches.map((searchTerm) => (
+                    <CommandItem
+                      key={searchTerm}
+                      onSelect={() => handleRecentSearch(searchTerm)}
+                      className="flex items-center gap-2"
+                    >
+                      <Clock className="h-4 w-4" />
+                      {searchTerm}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
               )}
-            </CommandEmpty>
 
-            {/* Recent Searches */}
-            {!inputValue && recentSearches.length > 0 && (
-              <CommandGroup heading="Recent Searches">
-                {recentSearches.map((searchTerm) => (
-                  <CommandItem
-                    key={searchTerm}
-                    onSelect={() => handleRecentSearch(searchTerm)}
-                    className="flex items-center gap-2"
-                  >
-                    <Clock className="h-4 w-4" />
-                    {searchTerm}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-
-            {/* Search Results */}
-            {results.length > 0 && !isSearching && (
-              <CommandGroup heading={`Results (${results.length})`}>
-                {results.map((result) => (
-                  <CommandItem
-                    key={`${result.type}-${result.id}`}
-                    onSelect={() => handleSelect(result)}
-                    className="flex items-start gap-3"
-                  >
-                    <div className="flex-shrink-0 mt-0.5">
-                      {getResultIcon(result)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">
-                          {result.name}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          {result.type}
-                        </Badge>
-                        {getStatusBadge(result)}
+              {/* Search Results */}
+              {results.length > 0 && !isSearching && (
+                <CommandGroup heading={`Results (${results.length})`}>
+                  {results.map((result) => (
+                    <CommandItem
+                      key={`${result.type}-${result.id}`}
+                      onSelect={() => handleSelect(result)}
+                      className="flex items-start gap-3"
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getResultIcon(result)}
                       </div>
-                      {result.description && (
-                        <p className="text-sm text-muted-foreground truncate mt-0.5">
-                          {result.description}
-                        </p>
-                      )}
-                      {result.metadata && (
-                        <div className="flex items-center gap-2 mt-1">
-                          {result.type === "foo" &&
-                            result.metadata.priority && (
-                              <span className="text-xs text-muted-foreground">
-                                Priority: {result.metadata.priority}
-                              </span>
-                            )}
-                          {result.type === "bar" &&
-                            result.metadata.value !== undefined && (
-                              <span className="text-xs text-muted-foreground">
-                                Value: {result.metadata.value}
-                              </span>
-                            )}
-                          {result.score > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              Score: {result.score.toFixed(2)}
-                            </span>
-                          )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">
+                            {result.name}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {result.type}
+                          </Badge>
+                          {getStatusBadge(result)}
                         </div>
-                      )}
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                        {result.description && (
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">
+                            {result.description}
+                          </p>
+                        )}
+                        {result.metadata && (
+                          <div className="flex items-center gap-2 mt-1">
+                            {result.type === "foo" &&
+                              result.metadata.priority && (
+                                <span className="text-xs text-muted-foreground">
+                                  Priority: {result.metadata.priority}
+                                </span>
+                              )}
+                            {result.type === "bar" &&
+                              result.metadata.value !== undefined && (
+                                <span className="text-xs text-muted-foreground">
+                                  Value: {result.metadata.value}
+                                </span>
+                              )}
+                            {result.score > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                Score: {result.score.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </div>
+      )}
+    </div>
   );
 }
 
 /**
- * Hook for adding keyboard shortcut to open search
+ * Hook for adding keyboard shortcut to focus search
  */
-export function useSearchShortcut(onToggle: () => void) {
+export function useSearchShortcut(inputRef: React.RefObject<HTMLInputElement>) {
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        onToggle();
+        inputRef.current?.focus();
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [onToggle]);
+  }, [inputRef]);
 }
