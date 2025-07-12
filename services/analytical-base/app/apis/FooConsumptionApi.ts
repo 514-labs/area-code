@@ -7,11 +7,22 @@ interface QueryParams {
   limit?: number;
   offset?: number;
   sortBy?: string;
-  sortOrder?: "ASC" | "DESC";
+  sortOrder?: "ASC" | "DESC" | "asc" | "desc";
 }
 
 // Use Foo model but replace enum with string for OpenAPI compatibility
 type FooForConsumption = Omit<Foo, "status"> & { status: string };
+
+// Interface for API response with pagination (matching transactional API)
+interface FooResponse {
+  data: FooForConsumption[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
 
 // Interface for average score response
 interface AverageScoreResponse {
@@ -21,13 +32,11 @@ interface AverageScoreResponse {
 }
 
 // Type for endpoints with no parameters
+// eslint-disable-next-line
 type EmptyParams = {};
 
 // Consumption API following Moose documentation pattern
-export const fooConsumptionApi = new ConsumptionApi<
-  QueryParams,
-  FooForConsumption[]
->(
+export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
   "foo",
   async (
     {
@@ -40,9 +49,12 @@ export const fooConsumptionApi = new ConsumptionApi<
   ) => {
     const fooTableName = FooThingEventPipeline.table!;
 
-    // this is the only way I found to make sort order work....
+    // Convert sortOrder to uppercase for consistency
+    const upperSortOrder = sortOrder.toUpperCase() as "ASC" | "DESC";
+
+    // this is the only way I found to make sort order work within moose....
     const query =
-      sortOrder === "ASC"
+      upperSortOrder === "ASC"
         ? sql`
           SELECT params.currentData
           FROM ${fooTableName}
@@ -58,8 +70,35 @@ export const fooConsumptionApi = new ConsumptionApi<
           OFFSET ${offset}
         `;
 
-    const resultSet = await client.query.execute<FooForConsumption>(query);
-    return await resultSet.json();
+    const resultSet = await client.query.execute<{
+      "params.currentData": [[Foo]];
+    }>(query);
+    const results = (await resultSet.json()) as {
+      "params.currentData": [[Foo]];
+    }[];
+
+    // Extract and convert the Foo objects to FooForConsumption for OpenAPI compatibility
+    const data = results.map((row) => {
+      const fooData = row["params.currentData"][0][0];
+      return {
+        ...fooData,
+        status: fooData.status.toString(),
+      };
+    });
+
+    // Create pagination metadata (matching transactional API format)
+    const total = data.length; // For now, using actual returned count
+    const hasMore = data.length === limit; // Simple heuristic
+
+    return {
+      data,
+      pagination: {
+        limit,
+        offset,
+        total,
+        hasMore,
+      },
+    };
   }
 );
 

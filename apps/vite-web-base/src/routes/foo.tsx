@@ -4,10 +4,35 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { FooDataTable } from "../model-components/foo/foo.data-table";
 import { FooCreateForm } from "../model-components/foo/foo.create";
-import { getTransactionApiBase } from "../env-vars";
+import {
+  getAnalyticalConsumptionApiBase,
+  getTransactionApiBase,
+} from "../env-vars";
+import FooAverageScore from "@/model-components/foo/foo.average-score";
 
-function FooDataTableWrapper() {
+function TransactionalFooAverageScore() {
   const API_BASE = getTransactionApiBase();
+  const apiEndpoint = `${API_BASE}/foo/average-score`;
+
+  return <FooAverageScore apiEndpoint={apiEndpoint} />;
+}
+
+function AnalyticalConsumptionFooAverageScore() {
+  const API_BASE = getAnalyticalConsumptionApiBase();
+  const apiEndpoint = `${API_BASE}/foo-average-score`;
+
+  return <FooAverageScore apiEndpoint={apiEndpoint} />;
+}
+
+function TransactionalFooDataTable() {
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/foo`;
+
+  return <FooDataTable fetchApiEndpoint={fetchApiEndpoint} />;
+}
+
+function AnalyticalConsumptionFooDataTable() {
+  const API_BASE = getAnalyticalConsumptionApiBase();
   const fetchApiEndpoint = `${API_BASE}/foo`;
 
   return <FooDataTable fetchApiEndpoint={fetchApiEndpoint} />;
@@ -32,9 +57,20 @@ function FooManagement() {
         <FooCreateForm />
       </div>
 
-      {/* Data Table */}
-      <div className="col-span-12">
-        <FooDataTableWrapper />
+      <div className="col-span-12 lg:col-span-6">
+        <TransactionalFooAverageScore />
+      </div>
+
+      <div className="col-span-12 lg:col-span-6">
+        <AnalyticalConsumptionFooAverageScore />
+      </div>
+
+      <div className="col-span-12 lg:col-span-6">
+        <TransactionalFooDataTable />
+      </div>
+
+      <div className="col-span-12 lg:col-span-6">
+        <AnalyticalConsumptionFooDataTable />
       </div>
     </div>
   );
