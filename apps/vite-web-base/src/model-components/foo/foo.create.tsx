@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, ReactNode, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -22,11 +22,10 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { Plus, X } from "lucide-react";
 import { Foo, FooStatus, CreateFoo } from "@workspace/models";
+import { getTransactionApiBase } from "../../env-vars";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
-// API function for creating foo
 const createFoo = async (data: CreateFoo): Promise<Foo> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/foo`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -37,7 +36,7 @@ const createFoo = async (data: CreateFoo): Promise<Foo> => {
 };
 
 interface FooCreateFormProps {
-  trigger?: React.ReactNode;
+  trigger?: ReactNode;
   onSuccess?: () => void;
 }
 
@@ -86,7 +85,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
     setMetadataValue("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     createMutation.mutate(formData);
   };

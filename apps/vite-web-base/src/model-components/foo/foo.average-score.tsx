@@ -1,4 +1,3 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -12,26 +11,29 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { IconCalculator, IconClock, IconRefresh } from "@tabler/icons-react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8081/api";
-
 interface AverageScoreResponse {
   averageScore: number;
   queryTime: number;
   count: number;
 }
 
+interface FooAverageScoreProps {
+  apiEndpoint: string;
+}
+
 // API function to fetch average score
-const fetchAverageScore = async (): Promise<AverageScoreResponse> => {
-  const response = await fetch(`${API_BASE}/foo/average-score`);
+const fetchAverageScore = async (
+  apiEndpoint: string
+): Promise<AverageScoreResponse> => {
+  const response = await fetch(apiEndpoint);
   if (!response.ok) throw new Error("Failed to fetch average score");
   return response.json();
 };
 
-export function FooAverageScore() {
+export default function FooAverageScore({ apiEndpoint }: FooAverageScoreProps) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["foo-average-score"],
-    queryFn: fetchAverageScore,
-    // Removed auto-refresh
+    queryKey: ["foo-average-score", apiEndpoint],
+    queryFn: () => fetchAverageScore(apiEndpoint),
   });
 
   const handleRefresh = () => {
@@ -118,5 +120,3 @@ export function FooAverageScore() {
     </Card>
   );
 }
-
-export default FooAverageScore;

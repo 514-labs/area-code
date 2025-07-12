@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, ReactNode, useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -21,8 +21,7 @@ import {
 } from "@workspace/ui/components/select";
 import { Plus } from "lucide-react";
 import { Bar, CreateBar } from "@workspace/models";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
+import { getTransactionApiBase } from "../../env-vars";
 
 interface Foo {
   id: string;
@@ -33,6 +32,7 @@ interface Foo {
 
 // API functions
 const createBar = async (data: CreateBar): Promise<Bar> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/bar`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -43,6 +43,7 @@ const createBar = async (data: CreateBar): Promise<Bar> => {
 };
 
 const fetchFoos = async (): Promise<Foo[]> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/foo`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   const result = await response.json();
@@ -51,7 +52,7 @@ const fetchFoos = async (): Promise<Foo[]> => {
 };
 
 interface BarCreateFormProps {
-  trigger?: React.ReactNode;
+  trigger?: ReactNode;
   onSuccess?: () => void;
 }
 
@@ -96,7 +97,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     createMutation.mutate(formData);
   };

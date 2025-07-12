@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent } from "@workspace/ui/components/card";
@@ -25,6 +25,7 @@ import { Plus, ArrowLeft } from "lucide-react";
 import { BarDataTable } from "../model-components/bar/bar.data-table";
 import { BarCreateForm } from "../model-components/bar/bar.create";
 import { Bar as BaseBar, CreateBar } from "@workspace/models";
+import { getTransactionApiBase } from "../env-vars";
 
 interface Foo {
   id: string;
@@ -37,9 +38,8 @@ interface Bar extends BaseBar {
   foo?: Foo;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
 const fetchFoos = async (): Promise<Foo[]> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/foo`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   const result = await response.json();
@@ -54,6 +54,7 @@ const updateBar = async ({
   id: string;
   data: CreateBar;
 }): Promise<Bar> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/bar/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -64,11 +65,19 @@ const updateBar = async ({
 };
 
 const deleteBar = async (id: string): Promise<void> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/bar/${id}`, {
     method: "DELETE",
   });
   if (!response.ok) throw new Error("Failed to delete bar");
 };
+
+function BarDataTableWrapper() {
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/bar`;
+
+  return <BarDataTable fetchApiEndpoint={fetchApiEndpoint} />;
+}
 
 function BarManagement() {
   const queryClient = useQueryClient();
@@ -83,11 +92,7 @@ function BarManagement() {
   });
 
   // Queries
-  const {
-    data: foos = [],
-    isLoading: foosLoading,
-    error: foosError,
-  } = useQuery({
+  const { data: foos = [], error: foosError } = useQuery({
     queryKey: ["foos"],
     queryFn: fetchFoos,
   });
@@ -120,28 +125,11 @@ function BarManagement() {
     });
   };
 
-  const handleEdit = (bar: Bar) => {
-    setEditingBar(bar);
-    setFormData({
-      fooId: bar.fooId,
-      value: bar.value,
-      label: bar.label || "",
-      notes: bar.notes || "",
-      isEnabled: bar.isEnabled,
-    });
-    setIsEditOpen(true);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingBar) {
       updateMutation.mutate({ id: editingBar.id, data: formData });
     }
-  };
-
-  const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to delete this bar?")) return;
-    deleteMutation.mutate(id);
   };
 
   const isSubmitting = updateMutation.isPending;
@@ -201,7 +189,7 @@ function BarManagement() {
 
       {/* Data Table */}
       <div className="col-span-12">
-        <BarDataTable />
+        <BarDataTableWrapper />
       </div>
 
       {/* Edit Dialog */}
@@ -221,7 +209,7 @@ function BarManagement() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select a foo" />
                 </SelectTrigger>
                 <SelectContent>
                   {foos.map((foo) => (
@@ -266,6 +254,7 @@ function BarManagement() {
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
+                rows={3}
               />
             </div>
             <div className="flex items-center space-x-2">

@@ -69,10 +69,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@workspace/ui/components/dialog";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
+import { getTransactionApiBase } from "../../env-vars";
 
 interface Foo {
   id: string;
@@ -93,6 +91,7 @@ interface BarResponse {
 
 // API Functions
 const fetchBars = async (
+  fetchApiEndpoint: string,
   limit: number = 10,
   offset: number = 0,
   sortBy?: string,
@@ -108,7 +107,7 @@ const fetchBars = async (
     params.append("sortOrder", sortOrder);
   }
 
-  const response = await fetch(`${API_BASE}/bar?${params.toString()}`);
+  const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch bars");
   return response.json();
 };
@@ -120,6 +119,7 @@ const updateBar = async ({
   id: string;
   data: CreateBar;
 }): Promise<Bar> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/bar/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -130,6 +130,7 @@ const updateBar = async ({
 };
 
 const deleteBar = async (id: string): Promise<void> => {
+  const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/bar/${id}`, {
     method: "DELETE",
   });
@@ -428,7 +429,13 @@ function TableRowActions({ row }: { row: any }) {
   );
 }
 
-export function BarDataTable({ data: _initialData }: { data?: Bar[] }) {
+export function BarDataTable({
+  data: _initialData,
+  fetchApiEndpoint,
+}: {
+  data?: Bar[];
+  fetchApiEndpoint: string;
+}) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -456,6 +463,7 @@ export function BarDataTable({ data: _initialData }: { data?: Bar[] }) {
       const sortBy = sorting[0]?.id;
       const sortOrder = sorting[0]?.desc ? "desc" : "asc";
       const result = await fetchBars(
+        fetchApiEndpoint,
         pagination.pageSize,
         pagination.pageIndex * pagination.pageSize,
         sortBy,
