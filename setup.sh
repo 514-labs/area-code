@@ -9,8 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Define available services
 SERVICES=(
-    "transactional-base"
+    "transactional-base" # Has to be first
     "retrieval-base"
+    "sync-base"
 )
 
 # Function to show help
@@ -29,7 +30,7 @@ show_help() {
     echo "  --help              Show this help message"
     echo ""
     echo "Options:"
-    echo "  --service=SERVICE   Target specific service (transactional-base, retrieval-base)"
+    echo "  --service=SERVICE   Target specific service (transactional-base, retrieval-base, sync-base)"
     echo "  --all               Target all services (default)"
     echo ""
     echo "Examples:"
@@ -41,6 +42,7 @@ show_help() {
     echo "  $0 reset                    # Reset all services"
     echo "  $0 start --service=transactional-base    # Start only transactional service"
     echo "  $0 stop --service=retrieval-base         # Stop only retrieval service"
+    echo "  $0 start --service=sync-base             # Start only sync service"
     echo ""
     echo "Available Services:"
     for service in "${SERVICES[@]}"; do
@@ -104,6 +106,10 @@ start_service() {
             # For retrieval service, use the start command
             "$script_path" start
             ;;
+        "sync-base")
+            # For sync service, use the start command
+            "$script_path" start
+            ;;
         *)
             echo "❌ Unknown service: $service"
             return 1
@@ -139,6 +145,10 @@ stop_service() {
             ;;
         "retrieval-base")
             # For retrieval service, use the stop command
+            "$script_path" stop
+            ;;
+        "sync-base")
+            # For sync service, use the stop command
             "$script_path" stop
             ;;
         *)
@@ -187,6 +197,10 @@ show_service_status() {
             # For retrieval service, use the status command
             "$script_path" status
             ;;
+        "sync-base")
+            # For sync service, use the status command
+            "$script_path" status
+            ;;
         *)
             echo "❌ Unknown service: $service"
             return 1
@@ -224,6 +238,10 @@ setup_service() {
             # For retrieval service, use the setup command
             "$script_path" setup
             ;;
+        "sync-base")
+            # For sync service, use the setup command
+            "$script_path" setup
+            ;;
         *)
             echo "❌ Unknown service: $service"
             return 1
@@ -259,6 +277,10 @@ reset_service() {
             ;;
         "retrieval-base")
             # For retrieval service, use the reset command
+            "$script_path" reset
+            ;;
+        "sync-base")
+            # For sync service, use the reset command
             "$script_path" reset
             ;;
         *)
