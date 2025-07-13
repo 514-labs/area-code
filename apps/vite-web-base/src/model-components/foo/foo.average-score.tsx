@@ -19,6 +19,7 @@ interface AverageScoreResponse {
 
 interface FooAverageScoreProps {
   apiEndpoint: string;
+  disableCache?: boolean;
 }
 
 // API function to fetch average score
@@ -30,10 +31,20 @@ const fetchAverageScore = async (
   return response.json();
 };
 
-export default function FooAverageScore({ apiEndpoint }: FooAverageScoreProps) {
+export default function FooAverageScore({
+  apiEndpoint,
+  disableCache = false,
+}: FooAverageScoreProps) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["foo-average-score", apiEndpoint],
+    queryKey: [
+      "foo-average-score",
+      apiEndpoint,
+      ...(disableCache ? [Date.now()] : []),
+    ],
     queryFn: () => fetchAverageScore(apiEndpoint),
+    staleTime: disableCache ? 0 : undefined,
+    gcTime: disableCache ? 0 : undefined,
+    refetchOnMount: disableCache ? "always" : undefined,
   });
 
   const handleRefresh = () => {
