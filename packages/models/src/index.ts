@@ -1,17 +1,9 @@
 // Export all foo-related types and interfaces
-export {
-  FooStatus,
-  type Foo,
-  type CreateFoo,
-  type UpdateFoo,
-} from "./foo";
+export { FooStatus } from "./foo";
+export type { Foo, CreateFoo, UpdateFoo } from "./foo";
 
 // Export all bar-related types and interfaces
-export {
-  type Bar,
-  type CreateBar,
-  type UpdateBar,
-} from "./bar";
+export type { Bar, CreateBar, UpdateBar } from "./bar";
 
 // Export all event-related types and interfaces
 export {
@@ -19,10 +11,12 @@ export {
   createBarThingEvent,
   isFooThingEvent,
   isBarThingEvent,
-  type BaseEvent,
-  type FooThingParams,
-  type BarThingParams,
-  type FooThingEvent,
-  type BarThingEvent,
-  type Event,
-} from "./events"; 
+} from "./events";
+export type {
+  BaseEvent,
+  FooThingParams,
+  BarThingParams,
+  FooThingEvent,
+  BarThingEvent,
+  Event,
+} from "./events";

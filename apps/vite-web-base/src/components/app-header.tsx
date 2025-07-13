@@ -1,0 +1,59 @@
+import { Button } from "@workspace/ui/components/button";
+import { Separator } from "@workspace/ui/components/separator";
+import { SidebarTrigger } from "@workspace/ui/components/sidebar";
+import { SearchCommand } from "@workspace/ui/components/search-command";
+import type { SearchResult } from "@workspace/ui/types/search";
+import { RetrievalWrapper } from "./service-highlight-wrappers";
+
+export function AppHeader() {
+  const handleSearchSelect = (result: SearchResult) => {
+    // Handle navigation based on search result
+    console.log("Navigate to:", result);
+
+    // Example navigation logic - customize based on your routing needs
+    if (result.type === "foo") {
+      // Navigate to foo detail page
+      // In a real app, you'd use your router here (e.g., Next.js router, React Router, etc.)
+      console.log(`Navigate to /foo/${result.id}`);
+    } else if (result.type === "bar") {
+      // Navigate to bar detail page
+      console.log(`Navigate to /bar/${result.id}`);
+    }
+  };
+
+  return (
+    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+        <SidebarTrigger className="-ml-1" />
+        <Separator
+          orientation="vertical"
+          className="mx-2 data-[orientation=vertical]:h-4"
+        />
+        <h1 className="text-base font-medium"></h1>
+
+        {/* Search Integration wrapped with RetrievalWrapper */}
+        <RetrievalWrapper className="flex-1 flex justify-center mx-4">
+          <SearchCommand
+            className="w-full "
+            onSelect={handleSearchSelect}
+            placeholder="Search documents..."
+            size="md"
+          />
+        </RetrievalWrapper>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
+            <a
+              href="https://github.com/514-labs/area-code"
+              rel="noopener noreferrer"
+              target="_blank"
+              className="dark:text-foreground"
+            >
+              GitHub
+            </a>
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+}

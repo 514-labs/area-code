@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import {
   Command,
-  CommandInput,
   CommandList,
   CommandEmpty,
   CommandGroup,
@@ -47,6 +46,12 @@ export function SearchCommand({
   const inputRef = React.useRef<HTMLInputElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
+  // Keep track of displayed results separately to prevent flashing
+  const [displayedResults, setDisplayedResults] = React.useState<
+    SearchResult[]
+  >([]);
+  const [hasSearchedOnce, setHasSearchedOnce] = React.useState(false);
+
   const { recentSearches, addRecentSearch } = useRecentSearches();
   const prefetchSearch = usePrefetchSearch();
 
@@ -61,12 +66,34 @@ export function SearchCommand({
     {},
     {
       debounceMs: 300,
-      enabled: inputValue.length > 0, // Only search when there's input
+      // Ensure search is enabled for any non-empty input
+      enabled: inputValue.trim().length > 0,
     }
   );
 
-  // Show loading state if debouncing or loading
-  const isSearching = isDebouncing || isLoading;
+  // Update displayed results when new results arrive
+  React.useEffect(() => {
+    if (
+      results.length > 0 ||
+      (!isLoading && !isDebouncing && inputValue.trim().length > 0)
+    ) {
+      setDisplayedResults(results);
+      if (inputValue.trim().length > 0) {
+        setHasSearchedOnce(true);
+      }
+    }
+  }, [results, isLoading, isDebouncing, inputValue]);
+
+  // Clear displayed results when input is cleared
+  React.useEffect(() => {
+    if (inputValue.trim().length === 0) {
+      setDisplayedResults([]);
+      setHasSearchedOnce(false);
+    }
+  }, [inputValue]);
+
+  // Show loading state only if actively loading (not while debouncing with existing results)
+  const isSearching = isLoading;
 
   // Show dropdown when focused and has content or results
   const showDropdown =
@@ -173,12 +200,6 @@ export function SearchCommand({
     lg: "h-12 text-base",
   };
 
-  const dropdownSizeClasses = {
-    sm: "w-[300px]",
-    md: "w-[400px]",
-    lg: "w-[500px]",
-  };
-
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       {/* Search Input */}
@@ -217,27 +238,31 @@ export function SearchCommand({
       {showDropdown && (
         <div
           className={cn(
-            "absolute top-full left-0 z-50 mt-1 rounded-md border bg-popover p-0 text-popover-foreground shadow-md",
-            dropdownSizeClasses[size]
+            "absolute top-full left-0 z-50 mt-1 rounded-md border bg-popover p-0 text-popover-foreground shadow-md w-full"
           )}
         >
           <Command shouldFilter={false} className="max-h-[300px]">
             <CommandList>
-              <CommandEmpty>
-                {isSearching ? (
-                  <div className="flex items-center justify-center gap-2 py-6">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Searching...</span>
-                  </div>
-                ) : error ? (
-                  <div className="flex items-center justify-center gap-2 py-6 text-destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>Search failed</span>
-                  </div>
-                ) : inputValue.length > 0 ? (
-                  "No results found."
-                ) : null}
-              </CommandEmpty>
+              {(isSearching ||
+                isDebouncing ||
+                (hasSearchedOnce && displayedResults.length === 0) ||
+                error) && (
+                <CommandEmpty>
+                  {isSearching || isDebouncing ? (
+                    <div className="flex items-center justify-center gap-2 py-6">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Searching...</span>
+                    </div>
+                  ) : error ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Search failed</span>
+                    </div>
+                  ) : hasSearchedOnce && displayedResults.length === 0 ? (
+                    "No results found."
+                  ) : null}
+                </CommandEmpty>
+              )}
 
               {/* Recent Searches */}
               {!inputValue && recentSearches.length > 0 && (
@@ -256,9 +281,9 @@ export function SearchCommand({
               )}
 
               {/* Search Results */}
-              {results.length > 0 && !isSearching && (
-                <CommandGroup heading={`Results (${results.length})`}>
-                  {results.map((result) => (
+              {displayedResults.length > 0 && (
+                <CommandGroup heading={`Results (${displayedResults.length})`}>
+                  {displayedResults.map((result) => (
                     <CommandItem
                       key={`${result.type}-${result.id}`}
                       onSelect={() => handleSelect(result)}

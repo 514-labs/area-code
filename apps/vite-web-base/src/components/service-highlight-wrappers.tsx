@@ -35,3 +35,18 @@ export function AnalyticalWrapper({
     </div>
   );
 }
+
+export function RetrievalWrapper({
+  children,
+  className = "",
+}: ServiceHighlightWrapperProps) {
+  const { retrievalEnabled } = useServiceHighlight();
+
+  return (
+    <div
+      className={`${className} ${retrievalEnabled ? "ring-2 ring-purple-500 rounded-lg" : ""}`}
+    >
+      {children}
+    </div>
+  );
+}

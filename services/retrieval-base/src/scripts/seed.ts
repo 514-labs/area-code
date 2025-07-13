@@ -1,5 +1,5 @@
 import type { CreateFoo, Bar } from "@workspace/models";
-import FooStatus from "@workspace/models";
+import { FooStatus } from "@workspace/models";
 import { bulkIndex } from "../services/search";
 
 // Sample data for testing

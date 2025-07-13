@@ -3,8 +3,10 @@ import { createContext, useContext, useState, ReactNode } from "react";
 interface ServiceHighlightContextType {
   transactionalEnabled: boolean;
   analyticalEnabled: boolean;
+  retrievalEnabled: boolean;
   toggleTransactional: () => void;
   toggleAnalytical: () => void;
+  toggleRetrieval: () => void;
 }
 
 const ServiceHighlightContext = createContext<
@@ -30,6 +32,12 @@ export function ServiceHighlightContextProvider({
     return saved ? JSON.parse(saved) : false;
   });
 
+  const [retrievalEnabled, setRetrievalEnabled] = useState(() => {
+    // Initialize from localStorage or default to false
+    const saved = localStorage.getItem("service-highlight-retrieval");
+    return saved ? JSON.parse(saved) : false;
+  });
+
   const toggleTransactional = () => {
     const newState = !transactionalEnabled;
     setTransactionalEnabled(newState);
@@ -48,11 +56,22 @@ export function ServiceHighlightContextProvider({
     );
   };
 
+  const toggleRetrieval = () => {
+    const newState = !retrievalEnabled;
+    setRetrievalEnabled(newState);
+    localStorage.setItem(
+      "service-highlight-retrieval",
+      JSON.stringify(newState)
+    );
+  };
+
   const value = {
     transactionalEnabled,
     analyticalEnabled,
+    retrievalEnabled,
     toggleTransactional,
     toggleAnalytical,
+    toggleRetrieval,
   };
 
   return (
