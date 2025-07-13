@@ -1,15 +1,12 @@
 import * as React from "react";
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
   IconCircleCheckFilled,
   IconDotsVertical,
-  IconLayoutColumns,
   IconLoader,
-  IconPlus,
   IconCircleX,
   IconClock,
   IconArchive,
@@ -48,7 +45,6 @@ import {
 } from "@workspace/ui/components/drawer";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -111,7 +107,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: any;
+  column: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   children: React.ReactNode;
   className?: string;
 }) => {
@@ -266,7 +262,7 @@ const columns: ColumnDef<Foo>[] = [
       if (validTags.length === 0) return null;
 
       return (
-        <div className="flex flex-wrap gap-1 max-w-xs">
+        <div className="flex gap-1">
           {validTags.slice(0, 2).map((tag: string, index: number) => (
             <Badge key={index} variant="secondary" className="text-xs">
               {tag}
@@ -335,8 +331,6 @@ const columns: ColumnDef<Foo>[] = [
   },
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
 // API Response Types
 interface FooResponse {
   data: Foo[];
@@ -350,6 +344,7 @@ interface FooResponse {
 
 // API Functions
 const fetchFoos = async (
+  fetchApiEndpoint: string,
   limit: number = 10,
   offset: number = 0,
   sortBy?: string,
@@ -365,12 +360,16 @@ const fetchFoos = async (
     params.append("sortOrder", sortOrder);
   }
 
-  const response = await fetch(`${API_BASE}/foo?${params.toString()}`);
+  const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   return response.json();
 };
 
-export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
+export function FooDataTable({
+  fetchApiEndpoint,
+}: {
+  fetchApiEndpoint: string;
+}) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -390,14 +389,20 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
     isLoading,
     error,
     isPlaceholderData,
-    refetch,
   } = useQuery({
-    queryKey: ["foos", pagination.pageIndex, pagination.pageSize, sorting],
+    queryKey: [
+      "foos",
+      fetchApiEndpoint,
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting,
+    ],
     queryFn: async () => {
       const startTime = performance.now();
       const sortBy = sorting[0]?.id;
       const sortOrder = sorting[0]?.desc ? "desc" : "asc";
       const result = await fetchFoos(
+        fetchApiEndpoint,
         pagination.pageSize,
         pagination.pageIndex * pagination.pageSize,
         sortBy,
@@ -448,58 +453,6 @@ export function FooDataTable({ data: _initialData }: { data?: Foo[] }) {
 
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Filter by name..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <IconLayoutColumns />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
-                <IconChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="outline" size="sm">
-            <IconPlus />
-            <span className="hidden lg:inline">Add Foo</span>
-          </Button>
-        </div>
-      </div>
-
       {/* Server pagination and sorting info */}
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
