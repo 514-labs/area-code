@@ -6,6 +6,10 @@ import {
   getTransactionApiBase,
 } from "@/env-vars";
 import { useCache } from "../contexts/cache-context";
+import {
+  TransactionalWrapper,
+  AnalyticalWrapper,
+} from "../components/service-highlight-wrappers";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -70,21 +74,21 @@ function IndexPage() {
 
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5">
-      <div className="col-span-12 lg:col-span-6">
+      <TransactionalWrapper className="col-span-12 lg:col-span-4">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
-      </div>
+      </TransactionalWrapper>
 
-      <div className="col-span-12 lg:col-span-6">
+      <AnalyticalWrapper className="col-span-12 lg:col-span-4">
         <AnalyticalConsumptionFooAverageScore cacheEnabled={cacheEnabled} />
-      </div>
+      </AnalyticalWrapper>
 
-      <div className="col-span-12 lg:col-span-6">
-        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
-      </div>
-
-      <div className="col-span-12 lg:col-span-6">
+      <AnalyticalWrapper className="col-span-12">
         <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
-      </div>
+      </AnalyticalWrapper>
+
+      <TransactionalWrapper className="col-span-12">
+        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
+      </TransactionalWrapper>
     </div>
   );
 }

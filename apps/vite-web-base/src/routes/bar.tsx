@@ -10,6 +10,10 @@ import {
 } from "../env-vars";
 import BarAverageValue from "@/model-components/bar/bar.average-value";
 import { useCache } from "../contexts/cache-context";
+import {
+  TransactionalWrapper,
+  AnalyticalWrapper,
+} from "../components/service-highlight-wrappers";
 
 function TransactionalBarDataTable({
   cacheEnabled,
@@ -80,17 +84,17 @@ function BarManagement() {
         <BarCreateForm />
       </div>
 
-      <div className="col-span-12 lg:col-span-4">
+      <TransactionalWrapper className="col-span-12 lg:col-span-4">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
-      </div>
+      </TransactionalWrapper>
 
-      <div className="col-span-12 lg:col-span-4">
+      <AnalyticalWrapper className="col-span-12 lg:col-span-4">
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
-      </div>
+      </AnalyticalWrapper>
 
-      <div className="col-span-12">
+      <TransactionalWrapper className="col-span-12">
         <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
-      </div>
+      </TransactionalWrapper>
     </div>
   );
 }

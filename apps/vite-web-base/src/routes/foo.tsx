@@ -10,6 +10,10 @@ import {
 } from "../env-vars";
 import FooAverageScore from "@/model-components/foo/foo.average-score";
 import { useCache } from "../contexts/cache-context";
+import {
+  TransactionalWrapper,
+  AnalyticalWrapper,
+} from "../components/service-highlight-wrappers";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -90,21 +94,21 @@ function FooManagement() {
         <FooCreateForm />
       </div>
 
-      <div className="col-span-12 lg:col-span-4">
+      <TransactionalWrapper className="col-span-12 lg:col-span-4">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
-      </div>
+      </TransactionalWrapper>
 
-      <div className="col-span-12 lg:col-span-4">
+      <AnalyticalWrapper className="col-span-12 lg:col-span-4">
         <AnalyticalConsumptionFooAverageScore cacheEnabled={cacheEnabled} />
-      </div>
+      </AnalyticalWrapper>
 
-      <div className="col-span-12">
+      <AnalyticalWrapper className="col-span-12">
         <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
-      </div>
+      </AnalyticalWrapper>
 
-      <div className="col-span-12">
+      <TransactionalWrapper className="col-span-12">
         <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
-      </div>
+      </TransactionalWrapper>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { type NavMainItem } from "@workspace/ui/components/nav-main";
 import { type NavItem } from "@workspace/ui/components/nav-secondary";
 import { SidebarThemeToggle } from "./sidebar-theme-toggle";
 import { SidebarCacheToggle } from "./sidebar-cache-toggle";
+import { SidebarServiceHighlight } from "./sidebar-service-highlight";
 
 export const navigationConfig = {
   user: {
@@ -29,6 +30,7 @@ export const navigationConfig = {
     },
   ] as NavMainItem[],
   navSecondary: [
+    <SidebarServiceHighlight key="service-highlight" />,
     <SidebarThemeToggle key="theme-toggle" />,
     <SidebarCacheToggle key="cache-toggle" />,
   ] as (NavItem | React.ReactNode)[],
