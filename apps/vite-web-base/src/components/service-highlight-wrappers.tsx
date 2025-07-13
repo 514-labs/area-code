@@ -14,7 +14,7 @@ export function TransactionalWrapper({
 
   return (
     <div
-      className={`${className} ${transactionalEnabled ? "ring-2 ring-blue-500 ring-offset-2 rounded-lg" : ""}`}
+      className={`${className} ${transactionalEnabled ? "ring-2 ring-blue-500 rounded-lg" : ""}`}
     >
       {children}
     </div>
@@ -29,7 +29,7 @@ export function AnalyticalWrapper({
 
   return (
     <div
-      className={`${className} ${analyticalEnabled ? "ring-2 ring-green-500 ring-offset-2 rounded-lg" : ""}`}
+      className={`${className} ${analyticalEnabled ? "ring-2 ring-green-500 rounded-lg" : ""}`}
     >
       {children}
     </div>
