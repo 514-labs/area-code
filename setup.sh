@@ -9,9 +9,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Define available services
 SERVICES=(
-    "transactional-base" # Has to be first
-    "retrieval-base"
-    "sync-base"
+    "transactional-base", # Has to be first
+    "retrieval-base",
+    "sync-base",
+    "data-warehouse"
 )
 
 # Function to show help
