@@ -137,8 +137,23 @@ export function useDebouncedSearch(
     [debouncedQuery, additionalParams]
   );
 
+  // Determine if the underlying search should be executed.
+  // If the caller did not explicitly specify `enabled`, we defer execution
+  // until the debounced value has been applied and meets the minimum length
+  // criteria. This avoids an extra request with an empty string each time
+  // the user types and eliminates the flashing behaviour in the results.
+
+  const mergedOptions = {
+    ...searchOptions,
+    enabled:
+      searchOptions.enabled !== undefined
+        ? searchOptions.enabled
+        : !!debouncedQuery.trim() &&
+          debouncedQuery.length >= SEARCH_CONSTANTS.MIN_QUERY_LENGTH,
+  } as UseSearchOptions;
+
   // Use the main search hook with debounced query
-  const searchQuery = useSearch(searchParams, searchOptions);
+  const searchQuery = useSearch(searchParams, mergedOptions);
 
   return {
     ...searchQuery,

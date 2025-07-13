@@ -73,16 +73,23 @@ export function SearchCommand({
 
   // Update displayed results when new results arrive
   React.useEffect(() => {
-    if (
-      results.length > 0 ||
-      (!isLoading && !isDebouncing && inputValue.trim().length > 0)
-    ) {
+    if (results.length > 0) {
+      // Got real hits – show them
       setDisplayedResults(results);
       if (inputValue.trim().length > 0) {
         setHasSearchedOnce(true);
       }
+    } else if (
+      !isLoading &&
+      !isDebouncing &&
+      inputValue.trim().length > 0 &&
+      displayedResults.length === 0
+    ) {
+      // Only show "no results" if we aren't already displaying something
+      setDisplayedResults(results);
+      setHasSearchedOnce(true);
     }
-  }, [results, isLoading, isDebouncing, inputValue]);
+  }, [results, isLoading, isDebouncing, inputValue, displayedResults.length]);
 
   // Clear displayed results when input is cleared
   React.useEffect(() => {
