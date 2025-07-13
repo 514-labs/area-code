@@ -1,59 +1,44 @@
-import type { Foo, Bar } from "@workspace/models";
-import { FooStatus } from "@workspace/models";
+import type { CreateFoo, Bar } from "@workspace/models";
+import FooStatus from "@workspace/models";
 import { bulkIndex } from "../services/search";
 
 // Sample data for testing
-const sampleFoos: Foo[] = [
+const sampleFoos: CreateFoo[] = [
   {
-    id: "foo-1",
     name: "First Foo Item",
     description:
       "This is a detailed description of the first foo item for testing search functionality",
     status: FooStatus.ACTIVE,
     priority: 1,
     isActive: true,
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-01"),
   },
   {
-    id: "foo-2",
     name: "Second Foo Task",
     description: "Another foo with different keywords to test search relevance",
     status: FooStatus.PENDING,
     priority: 2,
     isActive: true,
-    createdAt: new Date("2024-01-02"),
-    updatedAt: new Date("2024-01-02"),
   },
   {
-    id: "foo-3",
     name: "Inactive Foo",
     description: null,
     status: FooStatus.INACTIVE,
     priority: 3,
     isActive: false,
-    createdAt: new Date("2024-01-03"),
-    updatedAt: new Date("2024-01-03"),
   },
   {
-    id: "foo-4",
     name: "Archived Foo Project",
     description: "This foo has been archived but is still searchable",
     status: FooStatus.ARCHIVED,
     priority: 4,
     isActive: false,
-    createdAt: new Date("2024-01-04"),
-    updatedAt: new Date("2024-01-04"),
   },
   {
-    id: "foo-5",
     name: "High Priority Foo",
     description: "Urgent foo task that needs immediate attention",
     status: FooStatus.ACTIVE,
     priority: 1,
     isActive: true,
-    createdAt: new Date("2024-01-05"),
-    updatedAt: new Date("2024-01-05"),
   },
 ];
 

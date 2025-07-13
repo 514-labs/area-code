@@ -40,6 +40,7 @@ show_usage() {
     echo "  restart   - Restart the analytical service"
     echo "  status    - Show service status"
     echo "  reset     - Full reset (stop service, restart)"
+    echo "  migrate   - Run PostgreSQL to ClickHouse migration"
     echo "  infra:start  - Start Moose infrastructure (managed by moose dev)"
     echo "  infra:stop   - Stop Moose infrastructure"
     echo "  infra:reset  - Reset infrastructure data"
@@ -51,6 +52,7 @@ show_usage() {
     echo "  $0 stop      # Stop service"
     echo "  $0 reset     # Full reset"
     echo "  $0 status    # Check status"
+    echo "  $0 migrate   # Run data migration"
     echo ""
     echo "Note: This service uses 'moose dev' to manage infrastructure automatically."
     echo "The service PID is tracked in /tmp/analytical.pid"
@@ -261,6 +263,35 @@ reset_infrastructure() {
     print_success "Infrastructure reset initiated"
 }
 
+# Run PostgreSQL to ClickHouse migration
+run_migration() {
+    print_status "Running PostgreSQL to ClickHouse migration..."
+    
+    # Check if migration script exists
+    if [ ! -f "./migrate-from-postgres.sh" ]; then
+        print_error "Migration script not found: ./migrate-from-postgres.sh"
+        exit 1
+    fi
+    
+    # Check if script is executable
+    if [ ! -x "./migrate-from-postgres.sh" ]; then
+        print_status "Making migration script executable..."
+        chmod +x ./migrate-from-postgres.sh
+    fi
+    
+    print_status "Starting migration process..."
+    print_warning "This will migrate data from PostgreSQL to ClickHouse"
+    print_status "Make sure PostgreSQL is running and contains data to migrate"
+    
+    # Run the migration script
+    if ./migrate-from-postgres.sh; then
+        print_success "Migration completed successfully!"
+    else
+        print_error "Migration failed!"
+        exit 1
+    fi
+}
+
 # Full reset - stop services, clear data, restart
 full_reset() {
     print_status "Performing full reset..."
@@ -310,6 +341,9 @@ full_setup() {
     start_service
     echo ""
     
+    run_migration
+    echo ""
+    
     echo "=========================================="
     print_success "Setup completed successfully!"
     echo "=========================================="
@@ -325,6 +359,7 @@ full_setup() {
     echo ""
     echo "To stop the service: $0 stop"
     echo "To check status: $0 status"
+    echo "To run migration later: $0 migrate"
     echo "Service PID is tracked in: /tmp/analytical.pid"
     echo ""
 }
@@ -349,6 +384,9 @@ main() {
             ;;
         "reset")
             full_reset
+            ;;
+        "migrate")
+            run_migration
             ;;
         "infra:start")
             start_infrastructure_only
