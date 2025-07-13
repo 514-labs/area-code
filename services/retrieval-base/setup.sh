@@ -3,7 +3,7 @@
 # Retrieval Base Service Setup Script
 # Based on README.md instructions
 
-set -e  # Exit on any error
+#set -e  # Exit on any error
 
 # Colors for output
 RED='\033[0;31m'
@@ -40,6 +40,7 @@ show_usage() {
     echo "  restart   - Restart the retrieval service"
     echo "  status    - Show service status"
     echo "  reset     - Full reset (stop services, clear data, restart everything)"
+    echo "  migrate   - Run migration only (init indices and seed data)"
     echo "  es:start  - Start Elasticsearch and Kibana only"
     echo "  es:stop   - Stop Elasticsearch and Kibana"
     echo "  es:reset  - Reset Elasticsearch data (stop, remove volumes, restart)"
@@ -50,6 +51,7 @@ show_usage() {
     echo "  $0 start     # Start service only"
     echo "  $0 stop      # Stop service"
     echo "  $0 reset     # Full reset with fresh data"
+    echo "  $0 migrate   # Run migration only"
     echo "  $0 status    # Check status"
     echo ""
 }
@@ -354,6 +356,26 @@ reset_elasticsearch() {
     print_success "Elasticsearch data reset successfully"
 }
 
+# Run migration only (init indices and seed data)
+run_migration() {
+    print_status "Running migration..."
+    
+    # Check if Elasticsearch is running
+    if ! is_elasticsearch_running; then
+        print_error "Elasticsearch is not running. Please start it first with: $0 es:start"
+        exit 1
+    fi
+    
+    # Initialize indices
+    init_indices
+    
+    # Seed data
+    seed_data
+    
+    ./migrate-from-postgres-to-elasticsearch.sh
+    print_success "Migration completed successfully!"
+}
+
 # Full reset - stop services, clear data, restart
 full_reset() {
     print_status "Performing full reset..."
@@ -469,6 +491,9 @@ main() {
             ;;
         "reset")
             full_reset
+            ;;
+        "migrate")
+            run_migration
             ;;
         "es:start")
             start_elasticsearch_only
