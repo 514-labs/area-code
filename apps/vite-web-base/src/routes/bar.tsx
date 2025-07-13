@@ -9,29 +9,59 @@ import {
   getTransactionApiBase,
 } from "../env-vars";
 import BarAverageValue from "@/model-components/bar/bar.average-value";
+import { useCache } from "../contexts/cache-context";
 
-function TransactionalBarDataTable() {
+function TransactionalBarDataTable({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
   const API_BASE = getTransactionApiBase();
   const fetchApiEndpoint = `${API_BASE}/bar`;
 
-  return <BarDataTable fetchApiEndpoint={fetchApiEndpoint} />;
+  return (
+    <BarDataTable
+      fetchApiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
 }
 
-function TransactionalBarAverageValue() {
+function TransactionalBarAverageValue({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
   const API_BASE = getTransactionApiBase();
   const fetchApiEndpoint = `${API_BASE}/bar/average-value`;
 
-  return <BarAverageValue apiEndpoint={fetchApiEndpoint} />;
+  return (
+    <BarAverageValue
+      apiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
 }
 
-function AnalyticalConsumptionBarAverageValue() {
+function AnalyticalConsumptionBarAverageValue({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
   const API_BASE = getAnalyticalConsumptionApiBase();
   const fetchApiEndpoint = `${API_BASE}/bar-average-value`;
 
-  return <BarAverageValue apiEndpoint={fetchApiEndpoint} />;
+  return (
+    <BarAverageValue
+      apiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
 }
 
 function BarManagement() {
+  const { cacheEnabled } = useCache();
+
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5">
       {/* Header */}
@@ -51,15 +81,15 @@ function BarManagement() {
       </div>
 
       <div className="col-span-12 lg:col-span-4">
-        <TransactionalBarAverageValue />
+        <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
       </div>
 
       <div className="col-span-12 lg:col-span-4">
-        <AnalyticalConsumptionBarAverageValue />
+        <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </div>
 
       <div className="col-span-12">
-        <TransactionalBarDataTable />
+        <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
       </div>
     </div>
   );

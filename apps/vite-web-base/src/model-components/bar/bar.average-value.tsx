@@ -36,15 +36,11 @@ export default function BarAverageValue({
   disableCache = false,
 }: BarAverageValueProps) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: [
-      "bar-average-value",
-      apiEndpoint,
-      ...(disableCache ? [Date.now()] : []),
-    ],
+    queryKey: ["bar-average-value", apiEndpoint],
     queryFn: () => fetchAverageValue(apiEndpoint),
-    staleTime: disableCache ? 0 : undefined,
-    gcTime: disableCache ? 0 : undefined,
-    refetchOnMount: disableCache ? "always" : undefined,
+    staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
+    gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
+    refetchOnMount: disableCache ? "always" : false,
   });
 
   const handleRefresh = () => {

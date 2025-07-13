@@ -3,6 +3,7 @@ import { Home, Package, BarChart } from "lucide-react";
 import { type NavMainItem } from "@workspace/ui/components/nav-main";
 import { type NavItem } from "@workspace/ui/components/nav-secondary";
 import { SidebarThemeToggle } from "./sidebar-theme-toggle";
+import { SidebarCacheToggle } from "./sidebar-cache-toggle";
 
 export const navigationConfig = {
   user: {
@@ -27,8 +28,8 @@ export const navigationConfig = {
       icon: BarChart,
     },
   ] as NavMainItem[],
-  navSecondary: [<SidebarThemeToggle key="theme-toggle" />] as (
-    | NavItem
-    | React.ReactNode
-  )[],
+  navSecondary: [
+    <SidebarThemeToggle key="theme-toggle" />,
+    <SidebarCacheToggle key="cache-toggle" />,
+  ] as (NavItem | React.ReactNode)[],
 };

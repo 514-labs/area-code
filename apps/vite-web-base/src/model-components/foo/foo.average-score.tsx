@@ -36,15 +36,11 @@ export default function FooAverageScore({
   disableCache = false,
 }: FooAverageScoreProps) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: [
-      "foo-average-score",
-      apiEndpoint,
-      ...(disableCache ? [Date.now()] : []),
-    ],
+    queryKey: ["foo-average-score", apiEndpoint],
     queryFn: () => fetchAverageScore(apiEndpoint),
-    staleTime: disableCache ? 0 : undefined,
-    gcTime: disableCache ? 0 : undefined,
-    refetchOnMount: disableCache ? "always" : undefined,
+    staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
+    gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
+    refetchOnMount: disableCache ? "always" : false,
   });
 
   const handleRefresh = () => {

@@ -260,10 +260,10 @@ export function BarDataTable({
   } = useQuery({
     queryKey: [
       "bars",
+      fetchApiEndpoint,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
-      ...(disableCache ? [Date.now()] : []),
     ],
     queryFn: async () => {
       const startTime = performance.now();
@@ -281,9 +281,9 @@ export function BarDataTable({
       return result;
     },
     placeholderData: (previousData) => previousData,
-    staleTime: disableCache ? 0 : undefined,
-    gcTime: disableCache ? 0 : undefined,
-    refetchOnMount: disableCache ? "always" : undefined,
+    staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
+    gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
+    refetchOnMount: disableCache ? "always" : false,
   });
 
   const data = barResponse?.data || [];
