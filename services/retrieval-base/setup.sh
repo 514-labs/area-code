@@ -54,17 +54,28 @@ show_usage() {
     echo ""
 }
 
+# PID file path
+PID_FILE="/tmp/retrieval.pid"
+
 # Function to get service PID
 get_service_pid() {
-    pgrep -f "pnpm dev" | head -1
+    if [ -f "$PID_FILE" ]; then
+        cat "$PID_FILE" 2>/dev/null
+    else
+        echo ""
+    fi
 }
 
 # Function to check if service is running
 is_service_running() {
     local pid=$(get_service_pid)
-    if [ -n "$pid" ]; then
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
         return 0  # Service is running
     else
+        # Clean up stale PID file if it exists
+        if [ -f "$PID_FILE" ]; then
+            rm -f "$PID_FILE"
+        fi
         return 1  # Service is not running
     fi
 }
@@ -128,12 +139,8 @@ install_dependencies() {
     print_success "Dependencies installed successfully"
 }
 
-# Start Elasticsearch
-start_elasticsearch() {
-    print_status "Starting Elasticsearch and Kibana..."
-    docker-compose up -d
-    
-    # Wait for Elasticsearch to be ready
+# Wait for Elasticsearch to be ready
+wait_for_elasticsearch() {
     print_status "Waiting for Elasticsearch to be ready..."
     max_attempts=30
     attempt=1
@@ -141,7 +148,7 @@ start_elasticsearch() {
     while [ $attempt -le $max_attempts ]; do
         if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
             print_success "Elasticsearch is ready!"
-            break
+            return 0
         fi
         
         print_status "Attempt $attempt/$max_attempts: Waiting for Elasticsearch..."
@@ -149,8 +156,16 @@ start_elasticsearch() {
         attempt=$((attempt + 1))
     done
     
-    if [ $attempt -gt $max_attempts ]; then
-        print_error "Elasticsearch failed to start within expected time"
+    print_error "Elasticsearch failed to start within expected time"
+    return 1
+}
+
+# Start Elasticsearch
+start_elasticsearch() {
+    print_status "Starting Elasticsearch and Kibana..."
+    docker-compose up -d
+    
+    if ! wait_for_elasticsearch; then
         exit 1
     fi
 }
@@ -184,13 +199,16 @@ start_service() {
     npx tsx watch src/server.ts &
     SERVICE_PID=$!
     
+    # Store PID in file
+    echo "$SERVICE_PID" > "$PID_FILE"
+    
     # Wait a moment for the service to start
     sleep 3
     
     # Check if service is running
     if curl -s http://localhost:8082/health > /dev/null 2>&1; then
         print_success "Service started successfully!"
-        print_status "Service PID: $SERVICE_PID"
+        print_status "Service PID: $SERVICE_PID (stored in $PID_FILE)"
         print_status "To stop the service, run: $0 stop"
     else
         print_warning "Service may still be starting up..."
@@ -215,6 +233,8 @@ stop_service() {
     while [ $attempts -lt 10 ]; do
         if ! kill -0 "$pid" 2>/dev/null; then
             print_success "Service stopped successfully"
+            # Remove PID file
+            rm -f "$PID_FILE"
             return 0
         fi
         sleep 1
@@ -227,6 +247,9 @@ stop_service() {
         kill -9 "$pid"
         print_success "Service force stopped"
     fi
+    
+    # Remove PID file
+    rm -f "$PID_FILE"
 }
 
 # Restart the service
@@ -287,29 +310,7 @@ start_elasticsearch_only() {
         return 0
     fi
     
-    print_status "Starting Elasticsearch and Kibana..."
-    docker-compose up -d
-    
-    # Wait for Elasticsearch to be ready
-    print_status "Waiting for Elasticsearch to be ready..."
-    max_attempts=30
-    attempt=1
-    
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
-            print_success "Elasticsearch is ready!"
-            break
-        fi
-        
-        print_status "Attempt $attempt/$max_attempts: Waiting for Elasticsearch..."
-        sleep 2
-        attempt=$((attempt + 1))
-    done
-    
-    if [ $attempt -gt $max_attempts ]; then
-        print_error "Elasticsearch failed to start within expected time"
-        exit 1
-    fi
+    start_elasticsearch
 }
 
 # Stop Elasticsearch only
@@ -317,6 +318,16 @@ stop_elasticsearch_only() {
     print_status "Stopping Elasticsearch and Kibana..."
     docker-compose down
     print_success "Elasticsearch and Kibana stopped"
+}
+
+# Clear Elasticsearch data directory
+clear_elasticsearch_data() {
+    if [ -d "volumes/elasticsearch/data" ]; then
+        rm -rf volumes/elasticsearch/data/* 2>/dev/null || rm -rf volumes/elasticsearch/data/*
+        print_success "Elasticsearch data cleared"
+    else
+        print_warning "Elasticsearch data directory not found"
+    fi
 }
 
 # Reset Elasticsearch data
@@ -327,34 +338,10 @@ reset_elasticsearch() {
     docker-compose down
     
     # Clear Elasticsearch data directory
-    if [ -d "volumes/elasticsearch/data" ]; then
-        rm -rf volumes/elasticsearch/data/* 2>/dev/null || rm -rf volumes/elasticsearch/data/*
-        print_success "Elasticsearch data cleared"
-    else
-        print_warning "Elasticsearch data directory not found"
-    fi
+    clear_elasticsearch_data
     
     # Start Elasticsearch
-    docker-compose up -d
-    
-    # Wait for Elasticsearch to be ready
-    print_status "Waiting for Elasticsearch to be ready..."
-    max_attempts=30
-    attempt=1
-    
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
-            print_success "Elasticsearch is ready!"
-            break
-        fi
-        
-        print_status "Attempt $attempt/$max_attempts: Waiting for Elasticsearch..."
-        sleep 2
-        attempt=$((attempt + 1))
-    done
-    
-    if [ $attempt -gt $max_attempts ]; then
-        print_error "Elasticsearch failed to start within expected time"
+    if ! start_elasticsearch; then
         exit 1
     fi
     
@@ -385,16 +372,13 @@ full_reset() {
     
     # Clear Elasticsearch data directory
     print_status "Clearing Elasticsearch data..."
-    if [ -d "volumes/elasticsearch/data" ]; then
-        rm -rf volumes/elasticsearch/data/* 2>/dev/null || rm -rf volumes/elasticsearch/data/*
-        print_success "Elasticsearch data cleared"
-    else
-        print_warning "Elasticsearch data directory not found"
-    fi
+    clear_elasticsearch_data
     
     # Start Elasticsearch
     print_status "Starting Elasticsearch..."
-    start_elasticsearch_only
+    if ! start_elasticsearch_only; then
+        exit 1
+    fi
     
     # Initialize indices
     print_status "Initializing indices..."

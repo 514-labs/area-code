@@ -10,8 +10,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Define available services
 SERVICES=(
     "transactional-base", # Has to be first
-    "retrieval-base",
-    "sync-base",
+    "retrieval-base"
+    "analytical-base"
+    "sync-base"
     "data-warehouse"
 )
 
@@ -107,10 +108,19 @@ start_service() {
             # For retrieval service, use the start command
             "$script_path" start
             ;;
+        "analytical-base")
+            # For analytical service, use the start command
+            "$script_path" start
+            ;;
         "sync-base")
             # For sync service, use the start command
             "$script_path" start
             ;;
+        "data-warehouse")
+            # For data-warehouse service, use the start command
+            "$script_path" start
+            ;;
+            
         *)
             echo "❌ Unknown service: $service"
             return 1
@@ -148,8 +158,16 @@ stop_service() {
             # For retrieval service, use the stop command
             "$script_path" stop
             ;;
+        "analytical-base")
+            # For analytical service, use the stop command
+            "$script_path" stop
+            ;;
         "sync-base")
             # For sync service, use the stop command
+            "$script_path" stop
+            ;;
+        "data-warehouse")
+            # For data-warehouse service, use the stop command
             "$script_path" stop
             ;;
         *)
@@ -198,8 +216,16 @@ show_service_status() {
             # For retrieval service, use the status command
             "$script_path" status
             ;;
+        "analytical-base")
+            # For analytical service, use the status command
+            "$script_path" status
+            ;;
         "sync-base")
             # For sync service, use the status command
+            "$script_path" status
+            ;;
+        "data-warehouse")
+            # For data-warehouse service, use the status command
             "$script_path" status
             ;;
         *)
@@ -239,8 +265,16 @@ setup_service() {
             # For retrieval service, use the setup command
             "$script_path" setup
             ;;
+        "analytical-base")
+            # For analytical service, use the setup command
+            "$script_path" setup
+            ;;
         "sync-base")
             # For sync service, use the setup command
+            "$script_path" setup
+            ;;
+        "data-warehouse")
+            # For data-warehouse service, use the setup command
             "$script_path" setup
             ;;
         *)
@@ -280,8 +314,16 @@ reset_service() {
             # For retrieval service, use the reset command
             "$script_path" reset
             ;;
+        "analytical-base")
+            # For analytical service, use the reset command
+            "$script_path" reset
+            ;;
         "sync-base")
             # For sync service, use the reset command
+            "$script_path" reset
+            ;;
+        "data-warehouse")
+            # For data-warehouse service, use the reset command
             "$script_path" reset
             ;;
         *)
