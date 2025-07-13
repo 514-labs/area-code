@@ -11,6 +11,42 @@ import {
 } from "../database/schema";
 
 export async function barRoutes(fastify: FastifyInstance) {
+  // Get average value of all bar items with query time
+  fastify.get<{
+    Reply:
+      | { averageValue: number; queryTime: number; count: number }
+      | { error: string };
+  }>("/bar/average-value", async (request, reply) => {
+    try {
+      const startTime = Date.now();
+
+      // Get average value and count
+      const result = await db
+        .select({
+          averageValue: sql<number>`AVG(CAST(value AS DECIMAL))`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(bar);
+
+      const endTime = Date.now();
+      const queryTime = endTime - startTime;
+
+      const averageValue = result[0]?.averageValue || 0;
+      const count = result[0]?.count || 0;
+
+      return reply.send({
+        averageValue: Number(averageValue),
+        queryTime,
+        count,
+      });
+    } catch (error) {
+      console.error("Error calculating average value:", error);
+      return reply
+        .status(500)
+        .send({ error: "Failed to calculate average value" });
+    }
+  });
+
   // Get all bar items with pagination and sorting
   fastify.get<{
     Querystring: {

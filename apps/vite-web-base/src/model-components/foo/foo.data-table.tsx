@@ -5,7 +5,6 @@ import {
   IconChevronsLeft,
   IconChevronsRight,
   IconCircleCheckFilled,
-  IconDotsVertical,
   IconLoader,
   IconCircleX,
   IconClock,
@@ -43,13 +42,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@workspace/ui/components/drawer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@workspace/ui/components/dropdown-menu";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import {
@@ -303,32 +295,6 @@ const columns: ColumnDef<Foo>[] = [
     ),
     enableSorting: true,
   },
-  {
-    id: "actions",
-    header: () => <div className="text-center">Actions</div>,
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-    enableSorting: false,
-  },
 ];
 
 // API Response Types
@@ -367,8 +333,10 @@ const fetchFoos = async (
 
 export function FooDataTable({
   fetchApiEndpoint,
+  disableCache = false,
 }: {
   fetchApiEndpoint: string;
+  disableCache?: boolean;
 }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -413,6 +381,9 @@ export function FooDataTable({
       return result;
     },
     placeholderData: (previousData) => previousData,
+    staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
+    gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
+    refetchOnMount: disableCache ? "always" : false,
   });
 
   const data = fooResponse?.data || [];

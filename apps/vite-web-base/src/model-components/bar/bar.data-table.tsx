@@ -1,18 +1,13 @@
 import * as React from "react";
-import { useState } from "react";
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-  IconLayoutColumns,
-  IconPlus,
   IconArrowUp,
   IconArrowDown,
   IconArrowsSort,
-  IconPencil,
-  IconTrash,
+  IconLoader,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -25,28 +20,18 @@ import {
   SortingState,
   useReactTable,
   VisibilityState,
+  Column,
 } from "@tanstack/react-table";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Bar as BaseBar, CreateBar } from "@workspace/models";
+import { useQuery } from "@tanstack/react-query";
+import { Bar as BaseBar } from "@workspace/models";
 
 interface Bar extends BaseBar {
   foo?: Foo;
 }
 
-import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@workspace/ui/components/dropdown-menu";
-import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -62,15 +47,6 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table";
-import { Textarea } from "@workspace/ui/components/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@workspace/ui/components/dialog";
-import { getTransactionApiBase } from "../../env-vars";
 
 interface Foo {
   id: string;
@@ -112,38 +88,13 @@ const fetchBars = async (
   return response.json();
 };
 
-const updateBar = async ({
-  id,
-  data,
-}: {
-  id: string;
-  data: CreateBar;
-}): Promise<Bar> => {
-  const API_BASE = getTransactionApiBase();
-  const response = await fetch(`${API_BASE}/bar/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error("Failed to update bar");
-  return response.json();
-};
-
-const deleteBar = async (id: string): Promise<void> => {
-  const API_BASE = getTransactionApiBase();
-  const response = await fetch(`${API_BASE}/bar/${id}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) throw new Error("Failed to delete bar");
-};
-
 // Add a sortable header component
 const SortableHeader = ({
   column,
   children,
   className,
 }: {
-  column: any;
+  column: Column<Bar, unknown>;
   children: React.ReactNode;
   className?: string;
 }) => {
@@ -278,163 +229,14 @@ const columns: ColumnDef<Bar>[] = [
     ),
     enableSorting: true,
   },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => <TableRowActions row={row} />,
-    enableSorting: false,
-    enableHiding: false,
-  },
 ];
 
-function TableRowActions({ row }: { row: any }) {
-  const queryClient = useQueryClient();
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [formData, setFormData] = useState<CreateBar>({
-    fooId: "",
-    value: 0,
-    label: "",
-    notes: "",
-    isEnabled: true,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: updateBar,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bars"] });
-      setIsEditOpen(false);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteBar,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bars"] });
-    },
-  });
-
-  const handleEdit = () => {
-    setFormData({
-      fooId: row.original.fooId,
-      value: row.original.value,
-      label: row.original.label || "",
-      notes: row.original.notes || "",
-      isEnabled: row.original.isEnabled,
-    });
-    setIsEditOpen(true);
-  };
-
-  const handleDelete = () => {
-    if (!confirm("Are you sure you want to delete this bar?")) return;
-    deleteMutation.mutate(row.original.id);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateMutation.mutate({ id: row.original.id, data: formData });
-  };
-
-  return (
-    <>
-      <div className="flex space-x-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleEdit}
-          className="h-8 w-8"
-        >
-          <IconPencil className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-          className="h-8 w-8"
-        >
-          <IconTrash className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Bar</DialogTitle>
-            <DialogDescription>Update the bar details.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-label">Label</Label>
-              <Input
-                id="edit-label"
-                value={formData.label || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, label: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-value">Value *</Label>
-              <Input
-                id="edit-value"
-                type="number"
-                step="1"
-                value={formData.value}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    value: parseInt(e.target.value) || 0,
-                  })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-notes">Notes</Label>
-              <Textarea
-                id="edit-notes"
-                value={formData.notes || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="edit-isEnabled"
-                checked={formData.isEnabled}
-                onChange={(e) =>
-                  setFormData({ ...formData, isEnabled: e.target.checked })
-                }
-              />
-              <Label htmlFor="edit-isEnabled">Is Enabled</Label>
-            </div>
-            <div className="flex space-x-2">
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Updating..." : "Update"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditOpen(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
 export function BarDataTable({
-  data: _initialData,
   fetchApiEndpoint,
+  disableCache = false,
 }: {
-  data?: Bar[];
   fetchApiEndpoint: string;
+  disableCache?: boolean;
 }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -455,9 +257,14 @@ export function BarDataTable({
     isLoading,
     error,
     isPlaceholderData,
-    refetch,
   } = useQuery({
-    queryKey: ["bars", pagination.pageIndex, pagination.pageSize, sorting],
+    queryKey: [
+      "bars",
+      fetchApiEndpoint,
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting,
+    ],
     queryFn: async () => {
       const startTime = performance.now();
       const sortBy = sorting[0]?.id;
@@ -474,6 +281,9 @@ export function BarDataTable({
       return result;
     },
     placeholderData: (previousData) => previousData,
+    staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
+    gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
+    refetchOnMount: disableCache ? "always" : false,
   });
 
   const data = barResponse?.data || [];
@@ -512,59 +322,8 @@ export function BarDataTable({
       : 0,
   });
 
-  const isMobile = useIsMobile();
-
   return (
     <div className="w-full flex-col justify-start gap-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Filter by label..."
-            value={(table.getColumn("label")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("label")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <IconLayoutColumns />
-                <span className="hidden lg:inline">Customize Columns</span>
-                <span className="lg:hidden">Columns</span>
-                <IconChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {/* Server pagination and sorting info */}
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
           <div>
@@ -611,11 +370,35 @@ export function BarDataTable({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {isLoading && !isPlaceholderData ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <IconLoader className="animate-spin" />
+                      Loading...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    <div className="text-red-500">
+                      Error loading data: {error.message}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className={isPlaceholderData ? "opacity-50" : ""}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -677,7 +460,7 @@ export function BarDataTable({
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
                 onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
+                disabled={!table.getCanPreviousPage() || isLoading}
               >
                 <span className="sr-only">Go to first page</span>
                 <IconChevronsLeft className="h-4 w-4" />
@@ -686,7 +469,7 @@ export function BarDataTable({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                disabled={!table.getCanPreviousPage() || isLoading}
               >
                 <span className="sr-only">Go to previous page</span>
                 <IconChevronLeft className="h-4 w-4" />
@@ -695,7 +478,7 @@ export function BarDataTable({
                 variant="outline"
                 className="h-8 w-8 p-0"
                 onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                disabled={!table.getCanNextPage() || isLoading}
               >
                 <span className="sr-only">Go to next page</span>
                 <IconChevronRight className="h-4 w-4" />
@@ -704,7 +487,7 @@ export function BarDataTable({
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
+                disabled={!table.getCanNextPage() || isLoading}
               >
                 <span className="sr-only">Go to last page</span>
                 <IconChevronsRight className="h-4 w-4" />

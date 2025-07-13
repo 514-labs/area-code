@@ -9,35 +9,35 @@ import {
 } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { IconCalculator, IconClock, IconRefresh } from "@tabler/icons-react";
+import { IconChartBar, IconClock, IconRefresh } from "@tabler/icons-react";
 
-interface AverageScoreResponse {
-  averageScore: number;
+interface AverageValueResponse {
+  averageValue: number;
   queryTime: number;
   count: number;
 }
 
-interface FooAverageScoreProps {
+interface BarAverageValueProps {
   apiEndpoint: string;
   disableCache?: boolean;
 }
 
-// API function to fetch average score
-const fetchAverageScore = async (
+// API function to fetch average value
+const fetchAverageValue = async (
   apiEndpoint: string
-): Promise<AverageScoreResponse> => {
+): Promise<AverageValueResponse> => {
   const response = await fetch(apiEndpoint);
-  if (!response.ok) throw new Error("Failed to fetch average score");
+  if (!response.ok) throw new Error("Failed to fetch average value");
   return response.json();
 };
 
-export default function FooAverageScore({
+export default function BarAverageValue({
   apiEndpoint,
   disableCache = false,
-}: FooAverageScoreProps) {
+}: BarAverageValueProps) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["foo-average-score", apiEndpoint],
-    queryFn: () => fetchAverageScore(apiEndpoint),
+    queryKey: ["bar-average-value", apiEndpoint],
+    queryFn: () => fetchAverageValue(apiEndpoint),
     staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
     gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
     refetchOnMount: disableCache ? "always" : false,
@@ -53,8 +53,8 @@ export default function FooAverageScore({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <IconCalculator className="h-5 w-5" />
-              <CardTitle>Average Score</CardTitle>
+              <IconChartBar className="h-5 w-5" />
+              <CardTitle>Average Value</CardTitle>
             </div>
             <Button
               variant="outline"
@@ -67,7 +67,7 @@ export default function FooAverageScore({
               />
             </Button>
           </div>
-          <CardDescription>Failed to load average score</CardDescription>
+          <CardDescription>Failed to load average value</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-destructive">
@@ -83,7 +83,7 @@ export default function FooAverageScore({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle>Average Score</CardTitle>
+            <CardTitle>Average Value</CardTitle>
             {isFetching && (
               <Badge variant="outline">
                 <IconClock className="h-3 w-3 mr-1" />
@@ -111,7 +111,7 @@ export default function FooAverageScore({
         ) : (
           <div className="">
             <div className="text-6xl font-bold text-primary">
-              {data?.averageScore.toFixed(2) || "0.00"}
+              {data?.averageValue.toFixed(2) || "0.00"}
             </div>
           </div>
         )}

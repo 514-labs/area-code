@@ -6,6 +6,7 @@ import {
   SidebarProvider,
 } from "@workspace/ui/components/sidebar";
 import { CSSProperties, ReactNode } from "react";
+import { navigationConfig } from "./navigation-config";
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,7 +24,13 @@ export function Layout({ children }: LayoutProps) {
         } as CSSProperties
       }
     >
-      <AppSidebar variant="inset" currentPath={location.pathname} />
+      <AppSidebar
+        variant="inset"
+        currentPath={location.pathname}
+        navMain={navigationConfig.navMain}
+        navSecondary={navigationConfig.navSecondary}
+        user={navigationConfig.user}
+      />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
