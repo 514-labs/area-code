@@ -13,6 +13,14 @@ export * from "./components/table";
 export * from "./components/badge";
 export * from "./components/select";
 
+// Export sidebar components
+export * from "./components/sidebar";
+export * from "./components/app-sidebar";
+export * from "./components/nav-main";
+export * from "./components/nav-secondary";
+export * from "./components/nav-user";
+export * from "./components/site-header";
+
 // Export theme components
 export * from "./components/theme-provider";
 export * from "./components/theme-toggle";

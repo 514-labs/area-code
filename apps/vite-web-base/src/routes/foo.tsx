@@ -57,20 +57,20 @@ function FooManagement() {
         <FooCreateForm />
       </div>
 
-      <div className="col-span-12 lg:col-span-6">
+      <div className="col-span-12 lg:col-span-4">
         <TransactionalFooAverageScore />
       </div>
 
-      <div className="col-span-12 lg:col-span-6">
+      <div className="col-span-12 lg:col-span-4">
         <AnalyticalConsumptionFooAverageScore />
       </div>
 
-      <div className="col-span-12 lg:col-span-6">
-        <TransactionalFooDataTable />
+      <div className="col-span-12">
+        <AnalyticalConsumptionFooDataTable />
       </div>
 
-      <div className="col-span-12 lg:col-span-6">
-        <AnalyticalConsumptionFooDataTable />
+      <div className="col-span-12">
+        <TransactionalFooDataTable />
       </div>
     </div>
   );

@@ -62,6 +62,11 @@ paths:
       responses:
         "200":
           description: Default Response
+  /api/bar/average-value:
+    get:
+      responses:
+        "200":
+          description: Default Response
   /api/bar:
     get:
       responses:

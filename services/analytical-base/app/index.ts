@@ -26,3 +26,4 @@
 
 export * from "./pipelines/eventsPipeline";
 export * from "./apis/FooConsumptionApi";
+export * from "./apis/BarConsumptionApi";
