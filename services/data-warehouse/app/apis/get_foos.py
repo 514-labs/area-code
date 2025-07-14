@@ -6,7 +6,7 @@ from typing import List, Optional
 # Define the query parameters model
 class GetFoosQuery(BaseModel):
     status: Optional[str] = None  # Changed from FooStatus to str
-    limit: int = 100
+    limit: int = 1000
     offset: int = 0
     tag: Optional[str] = None
 
