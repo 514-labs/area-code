@@ -30,8 +30,8 @@ REPORTS = ("Connector analytics",)
 
 # Combine main and reports for navigation
 NAV_SECTIONS = [
-    ("Data Warehouse", list(PAGES)),
     ("Reports", list(REPORTS)),
+    ("Data Warehouse", list(PAGES)),
 ]
 
 # Sidebar navigation with section headers
@@ -46,7 +46,7 @@ def sidebar_navigation():
                 selected = item
     # Fallback to query param or default
     if not selected:
-        selected = get_page_from_query() or PAGES[0]
+        selected = get_page_from_query() or REPORTS[0]  # Default to Connector analytics
     return selected
 
 # Use new sidebar navigation
@@ -90,38 +90,6 @@ def fetch_data(tag):
         return pd.DataFrame()
 
 if page == "All":
-    # Modern animated banner
-    st.markdown("""
-        <style>
-            .modern-banner {
-                background: black;
-                color: white;
-                padding: 2rem;
-                text-align: center;
-                font-size: 1.7rem;
-                font-weight: 600;
-                font-family: 'Segoe UI', sans-serif;
-                border-radius: 15px;
-                animation: slideFadeIn 0.8s ease-out, pulse 2.5s ease-in-out infinite;
-                margin-bottom: 2rem;
-            }
-            @keyframes slideFadeIn {
-                0% { transform: translateY(-20px); opacity: 0; }
-                100% { transform: translateY(0); opacity: 1; }
-            }
-            @keyframes pulse {
-                0% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
-                50% { box-shadow: 0 0 28px rgba(255, 255, 255, 0.45); }
-                100% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
-            }
-        </style>
-        <div class="modern-banner">
-            Data Warehouse Front-end<br>
-            <span style='font-size:1.2rem;'>Made with ❤️ MOOSE</span><br>
-            <span style='font-size:.8rem;'><a href="https://docs.fiveonefour.com/moose" style="color:#4FC3F7;" target="_blank">Learn More: docs.fiveonefour.com/moose</a></span>
-        </div>
-    """, unsafe_allow_html=True)
-
     # --- Add Trigger Extracts button (calls both APIs) ---
     def trigger_both_extracts():
         trigger_extract(f"{API_BASE}/extract-s3", "S3")
@@ -225,6 +193,35 @@ elif page == "Datadog":
         st.write("No Datadog log data available.")
 
 elif page == "Connector analytics":
+    # Modern animated banner
+    st.markdown("""
+        <style>
+            .modern-banner {
+                background: black;
+                color: white;
+                padding: 2rem;
+                text-align: center;
+                font-size: 1.7rem;
+                font-weight: 600;
+                font-family: 'Segoe UI', sans-serif;
+                border-radius: 15px;
+                animation: slideFadeIn 0.8s ease-out, pulse 2.5s ease-in-out infinite;
+                margin-bottom: 2rem;
+            }
+            @keyframes slideFadeIn {
+                0% { transform: translateY(-20px); opacity: 0; }
+                100% { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes pulse {
+                0% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
+                50% { box-shadow: 0 0 28px rgba(255, 255, 255, 0.45); }
+                100% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
+            }
+        </style>
+        <div class="modern-banner">
+            Data Warehouse Front-end
+        </div>
+    """, unsafe_allow_html=True)
     st.title("Connector Analytics Report")
     # Add Update button to trigger both extracts
     if st.button("Update"):
@@ -263,7 +260,8 @@ elif page == "Connector analytics":
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center'>
-    Built with Streamlit | Data Warehouse Front-end
+                <span style='font-size:.8rem;'>Made with MOOSE</span><br>
+    <span style='font-size:.8rem;'><a href="https://docs.fiveonefour.com/moose" style="color:#4FC3F7;" target="_blank">Learn More: docs.fiveonefour.com/moose</a></span>
 </div>
 """, unsafe_allow_html=True)
 
