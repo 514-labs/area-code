@@ -31,7 +31,7 @@ def get_bars(client, params: GetBarsQuery) -> GetBarsResponse:
             query_params["status"] = params.status
         except ValueError:
             # If invalid status, return empty result
-            return GetFoosResponse(items=[], total=0)
+            return GetBarsResponse(items=[], total=0)
 
     # Add tag filter if provided and not 'All'
     if params.tag is not None and params.tag != "All":
