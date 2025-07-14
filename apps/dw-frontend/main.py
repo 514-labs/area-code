@@ -11,14 +11,32 @@ st.set_page_config(
     layout="wide"
 )
 
-# Sidebar navigation
+# --- Add extract trigger buttons to sidebar ---
+
+def get_page_from_query():
+    # Use st.query_params (Streamlit 1.30.0+) instead of deprecated experimental API
+    page = st.query_params.get("page", None)
+    return page
+
+def set_page_in_query(page):
+    st.query_params["page"] = page
+
+# List of valid pages
+PAGES = ("All", "S3", "Datadog")
+
+# Get default page from query params, fallback to 'All'
+default_page = get_page_from_query()
+if default_page not in PAGES:
+    default_page = "All"
+
+# Sidebar navigation with query param persistence
 page = st.sidebar.radio(
     "Data Warehouse",
-    ("All", "S3", "Datadog"),
-    index=0
+    PAGES,
+    index=PAGES.index(default_page)
 )
+set_page_in_query(page)
 
-# --- Add extract trigger buttons to sidebar ---
 def trigger_extract(api_url, label):
     batch_size = random.randint(10, 100)
     url = f"{api_url}?batch_size={batch_size}"
