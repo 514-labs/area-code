@@ -5,3 +5,5 @@ from app.datadog.extract import datadog_workflow, datadog_task
 
 import app.apis.get_foo as get_foo_apis
 import app.apis.get_foos as get_foos_apis
+import app.apis.extract_s3 as extract_s3_apis
+import app.apis.extract_datadog as extract_datadog_apis

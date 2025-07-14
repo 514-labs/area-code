@@ -2,15 +2,20 @@ from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLo
 from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.datadog_connector import DatadogConnectorConfig
 from app.ingest.models import Foo
+from pydantic import BaseModel
+from typing import Optional
 import requests
 import json
 
-def run_task() -> None:
+class DatadogExtractParams(BaseModel):
+    batch_size: Optional[int] = 100
+
+def run_task(input: DatadogExtractParams) -> None:
     cli_log(CliLogData(action="DatadogWorkflow", message="Running Datadog task...", message_type="Info"))
 
     connector = ConnectorFactory[Foo].create(
         ConnectorType.Datadog,
-        DatadogConnectorConfig(batch_size=100)
+        DatadogConnectorConfig(batch_size=input.batch_size)
     )
 
     data = connector.extract()
@@ -49,7 +54,7 @@ def run_task() -> None:
             message_type="Error"
         ))
 
-datadog_task = Task[None, None](
+datadog_task = Task[DatadogExtractParams, None](
     name="datadog-task",
     config=TaskConfig(run=run_task)
 )
