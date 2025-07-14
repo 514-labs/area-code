@@ -22,20 +22,29 @@ export function ServiceHighlightContextProvider({
 }: ServiceHighlightContextProviderProps) {
   const [transactionalEnabled, setTransactionalEnabled] = useState(() => {
     // Initialize from localStorage or default to false
-    const saved = localStorage.getItem("service-highlight-transactional");
-    return saved ? JSON.parse(saved) : false;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("service-highlight-transactional");
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
   });
 
   const [analyticalEnabled, setAnalyticalEnabled] = useState(() => {
     // Initialize from localStorage or default to false
-    const saved = localStorage.getItem("service-highlight-analytical");
-    return saved ? JSON.parse(saved) : false;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("service-highlight-analytical");
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
   });
 
   const [retrievalEnabled, setRetrievalEnabled] = useState(() => {
     // Initialize from localStorage or default to false
-    const saved = localStorage.getItem("service-highlight-retrieval");
-    return saved ? JSON.parse(saved) : false;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("service-highlight-retrieval");
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
   });
 
   const toggleTransactional = () => {

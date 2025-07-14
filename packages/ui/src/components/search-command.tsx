@@ -41,7 +41,6 @@ export function SearchCommand({
   size = "md",
 }: SearchCommandProps) {
   const [inputValue, setInputValue] = React.useState("");
-  const [isOpen, setIsOpen] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -115,7 +114,6 @@ export function SearchCommand({
 
     // Clear input and close dropdown
     setInputValue("");
-    setIsOpen(false);
     setIsFocused(false);
     inputRef.current?.blur();
   };

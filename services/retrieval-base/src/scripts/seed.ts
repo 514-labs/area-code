@@ -1,5 +1,6 @@
-import { type Foo, type Bar, FooStatus } from "@workspace/models";
+import type { Foo, Bar } from "@workspace/models";
 import { bulkIndex } from "../services/search";
+import { FooStatus } from "@workspace/models";
 
 // Sample data for testing
 const sampleFoos: Foo[] = [

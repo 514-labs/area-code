@@ -17,8 +17,11 @@ export function CacheContextProvider({ children }: CacheContextProviderProps) {
 
   const [cacheEnabled, setCacheEnabled] = useState(() => {
     // Initialize from localStorage or default to true
-    const saved = localStorage.getItem("cache-enabled");
-    return saved ? JSON.parse(saved) : true;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cache-enabled");
+      return saved ? JSON.parse(saved) : true;
+    }
+    return true;
   });
 
   const toggleCache = () => {
