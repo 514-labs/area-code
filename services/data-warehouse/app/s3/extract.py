@@ -2,15 +2,20 @@ from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLo
 from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.s3connector import S3ConnectorConfig
 from app.ingest.models import Foo
+from pydantic import BaseModel
+from typing import Optional
 import requests
 import json
 
-def run_task() -> None:
+class S3ExtractParams(BaseModel):
+    batch_size: Optional[int] = 100
+
+def run_task(input: S3ExtractParams) -> None:
     cli_log(CliLogData(action="S3Workflow", message="Running S3 task...", message_type="Info"))
 
     connector = ConnectorFactory[Foo].create(
         ConnectorType.S3,
-        S3ConnectorConfig(batch_size=100)
+        S3ConnectorConfig(batch_size=input.batch_size)
     )
 
     data = connector.extract()
@@ -49,7 +54,7 @@ def run_task() -> None:
             message_type="Error"
         ))
 
-s3_task = Task[None, None](
+s3_task = Task[S3ExtractParams, None](
     name="s3-task",
     config=TaskConfig(run=run_task)
 )
