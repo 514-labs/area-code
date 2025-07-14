@@ -1,9 +1,9 @@
 import { Database, DatabaseBackup } from "lucide-react";
 import { SidebarMenuButton } from "@workspace/ui/components/sidebar";
-import { useCache } from "../contexts/cache-context";
+import { useFrontendCaching } from "./cache-context";
 
-export function SidebarCacheToggle() {
-  const { cacheEnabled, toggleCache } = useCache();
+export function SidebarFrontendCacheToggle() {
+  const { cacheEnabled, toggleCache } = useFrontendCaching();
 
   const CacheIcon = cacheEnabled ? Database : DatabaseBackup;
 

@@ -1,25 +1,25 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
-interface ServiceHighlightContextType {
+type OriginHighlightsContextType = {
   transactionalEnabled: boolean;
   analyticalEnabled: boolean;
   retrievalEnabled: boolean;
   toggleTransactional: () => void;
   toggleAnalytical: () => void;
   toggleRetrieval: () => void;
-}
+};
 
-const ServiceHighlightContext = createContext<
-  ServiceHighlightContextType | undefined
+const OriginHighlightsContext = createContext<
+  OriginHighlightsContextType | undefined
 >(undefined);
 
-interface ServiceHighlightContextProviderProps {
+interface OriginHighlightsContextProviderProps {
   children: ReactNode;
 }
 
-export function ServiceHighlightContextProvider({
+export function OriginHighlightsContextProvider({
   children,
-}: ServiceHighlightContextProviderProps) {
+}: OriginHighlightsContextProviderProps) {
   const [transactionalEnabled, setTransactionalEnabled] = useState(() => {
     // Initialize from localStorage or default to false
     if (typeof window !== "undefined") {
@@ -84,14 +84,14 @@ export function ServiceHighlightContextProvider({
   };
 
   return (
-    <ServiceHighlightContext.Provider value={value}>
+    <OriginHighlightsContext.Provider value={value}>
       {children}
-    </ServiceHighlightContext.Provider>
+    </OriginHighlightsContext.Provider>
   );
 }
 
-export function useServiceHighlight(): ServiceHighlightContextType {
-  const context = useContext(ServiceHighlightContext);
+export function useOriginHighlights(): OriginHighlightsContextType {
+  const context = useContext(OriginHighlightsContext);
   if (context === undefined) {
     throw new Error(
       "useServiceHighlight must be used within a ServiceHighlightContextProvider"

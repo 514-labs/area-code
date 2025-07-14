@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import FooAverageScore from "@/model-components/foo/foo.average-score";
-import { FooDataTable } from "@/model-components/foo/foo.data-table";
+import FooAverageScore from "@/features/foo/foo.average-score";
+import { FooDataTable } from "@/features/foo/foo.data-table";
 import {
   getAnalyticalConsumptionApiBase,
   getTransactionApiBase,
 } from "@/env-vars";
-import { useCache } from "../contexts/cache-context";
+import { useFrontendCaching } from "../features/frontend-caching/cache-context";
 import {
-  TransactionalWrapper,
-  AnalyticalWrapper,
-} from "../components/service-highlight-wrappers";
+  TransactionalHighlightWrapper,
+  AnalyticalHighlightWrapper,
+} from "../features/origin-highlights/origin-highlights-wrappers";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -70,25 +70,25 @@ function AnalyticalConsumptionFooDataTable({
 }
 
 function IndexPage() {
-  const { cacheEnabled } = useCache();
+  const { cacheEnabled } = useFrontendCaching();
 
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5">
-      <TransactionalWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
-      </TransactionalWrapper>
+      </TransactionalHighlightWrapper>
 
-      <AnalyticalWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
         <AnalyticalConsumptionFooAverageScore cacheEnabled={cacheEnabled} />
-      </AnalyticalWrapper>
+      </AnalyticalHighlightWrapper>
 
-      <AnalyticalWrapper className="col-span-12">
+      <AnalyticalHighlightWrapper className="col-span-12">
         <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
-      </AnalyticalWrapper>
+      </AnalyticalHighlightWrapper>
 
-      <TransactionalWrapper className="col-span-12">
+      <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
-      </TransactionalWrapper>
+      </TransactionalHighlightWrapper>
     </div>
   );
 }

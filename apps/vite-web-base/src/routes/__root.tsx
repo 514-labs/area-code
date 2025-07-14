@@ -1,19 +1,19 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
-import { Layout } from "../components/layout";
-import { CacheContextProvider } from "../contexts/cache-context";
-import { ServiceHighlightContextProvider } from "../contexts/service-highlight-context";
+import { Layout } from "@/features/layout/layout";
+import { FrontendCachingContextProvider } from "@/features/frontend-caching/cache-context";
+import { OriginHighlightsContextProvider } from "@/features/origin-highlights/origin-highlights-context";
 
 export const Route = createRootRoute({
   component: () => (
     <>
-      <ServiceHighlightContextProvider>
-        <CacheContextProvider>
+      <OriginHighlightsContextProvider>
+        <FrontendCachingContextProvider>
           <Layout>
             <Outlet />
           </Layout>
-        </CacheContextProvider>
-      </ServiceHighlightContextProvider>
+        </FrontendCachingContextProvider>
+      </OriginHighlightsContextProvider>
       <TanStackRouterDevtools />
     </>
   ),

@@ -2,9 +2,9 @@ import * as React from "react";
 import { Home, Package, BarChart } from "lucide-react";
 import { type NavMainItem } from "@workspace/ui/components/nav-main";
 import { type NavItem } from "@workspace/ui/components/nav-secondary";
-import { SidebarThemeToggle } from "./sidebar-theme-toggle";
-import { SidebarCacheToggle } from "./sidebar-cache-toggle";
-import { SidebarServiceHighlight } from "./sidebar-service-highlight";
+import { SidebarThemeToggle } from "../theme/sidebar-theme-toggle";
+import { SidebarFrontendCacheToggle } from "../frontend-caching/sidebar-frontend-cache-toggle";
+import { OriginHighlightsCheckboxes } from "../origin-highlights/origin-highlights-checkboxes";
 
 export const navigationConfig = {
   user: {
@@ -30,8 +30,8 @@ export const navigationConfig = {
     },
   ] as NavMainItem[],
   navSecondary: [
-    <SidebarServiceHighlight key="service-highlight" />,
+    <OriginHighlightsCheckboxes key="origin-highlights-checkboxes" />,
     <SidebarThemeToggle key="theme-toggle" />,
-    <SidebarCacheToggle key="cache-toggle" />,
+    <SidebarFrontendCacheToggle key="cache-toggle" />,
   ] as (NavItem | React.ReactNode)[],
 };

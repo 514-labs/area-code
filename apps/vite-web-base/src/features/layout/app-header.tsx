@@ -3,7 +3,7 @@ import { Separator } from "@workspace/ui/components/separator";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { SearchCommand } from "@workspace/ui/components/search-command";
 import type { SearchResult } from "@workspace/ui/types/search";
-import { RetrievalWrapper } from "./service-highlight-wrappers";
+import { RetrievalHighlightWrapper } from "@/features/origin-highlights/origin-highlights-wrappers";
 
 export function AppHeader() {
   const handleSearchSelect = (result: SearchResult) => {
@@ -32,14 +32,14 @@ export function AppHeader() {
         <h1 className="text-base font-medium"></h1>
 
         {/* Search Integration wrapped with RetrievalWrapper */}
-        <RetrievalWrapper className="flex-1 flex justify-center mx-4">
+        <RetrievalHighlightWrapper className="flex-1 flex justify-center mx-4">
           <SearchCommand
             className="w-full "
             onSelect={handleSearchSelect}
             placeholder="Search documents..."
             size="md"
           />
-        </RetrievalWrapper>
+        </RetrievalHighlightWrapper>
 
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
