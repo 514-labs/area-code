@@ -4,6 +4,9 @@ import requests
 import pandas as pd
 import random
 
+# API base URL
+API_BASE = "http://localhost:4200/consumption"
+
 # Page config
 st.set_page_config(
     page_title="Data Warehouse Front-end",
@@ -52,7 +55,7 @@ set_page_in_query(page)
 
 def trigger_extract(api_url, label):
     batch_size = random.randint(10, 100)
-    url = f"{api_url}?batch_size={batch_size}"
+    url = f"{api_url}/getBars?batch_size={batch_size}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -64,11 +67,8 @@ def trigger_extract(api_url, label):
         st.session_state["extract_status_type"] = "error"
         st.session_state["extract_status_time"] = time.time()
 
-# API base URL
-API_BASE = "http://localhost:4200/getBars"
-
 def fetch_data(tag):
-    api_url = f"{API_BASE}/getFoos?tag={tag}"
+    api_url = f"{API_BASE}/getBars?tag={tag}"
     try:
         response = requests.get(api_url)
         response.raise_for_status()
@@ -228,8 +228,8 @@ elif page == "Connector analytics":
     st.title("Connector Analytics Report")
     # Add Update button to trigger both extracts
     if st.button("Update"):
-        trigger_extract("http://localhost:4000/consumption/extract-s3", "S3")
-        trigger_extract("http://localhost:4000/consumption/extract-datadog", "Datadog")
+        trigger_extract(f"{API_BASE}/extract-s3", "S3")
+        trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
     # Fetch all data (no tag filter)
     df = fetch_data("All")
     if df.empty:
