@@ -12,10 +12,8 @@
     "./styles.css": "./src/styles/globals.css"
   },
   "scripts": {
-    "build:styles": "tailwindcss -i ./src/styles/globals.css -o ./dist/index.css",
     "build:components": "tsc",
     "build": "pnpm run build:styles && pnpm run build:components",
-    "dev:styles": "tailwindcss -i ./src/styles/globals.css -o ./dist/index.css --watch",
     "dev:components": "tsc --watch",
     "dev": "pnpm run dev:styles & pnpm run dev:components",
     "lint": "eslint . --max-warnings 0",
