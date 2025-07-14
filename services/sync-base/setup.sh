@@ -54,7 +54,7 @@ show_usage() {
     echo "  $0 status    # Check status"
     echo "  $0 env:check # Validate environment configuration"
     echo ""
-    echo "Note: This service uses 'moose dev' to manage infrastructure automatically."
+    echo "Note: This service uses 'pnpm dev' to manage infrastructure automatically."
     echo "The service PID is tracked in /tmp/sync-base.pid"
     echo ""
 }
@@ -71,7 +71,7 @@ get_service_pid() {
 # Function to check if service is running
 is_service_running() {
     local pid=$(get_service_pid)
-    if [ -n "$pid" ]; then
+    if [ -n "$pid" ] && ps -p "$pid" > /dev/null 2>&1; then
         return 0  # Service is running
     else
         return 1  # Service is not running
@@ -371,7 +371,7 @@ start_service() {
     print_status "Temporal UI will be available at http://localhost:8080"
     
     # Start the service in the background and track PID
-    moose dev &
+    pnpm dev &
     SERVICE_PID=$!
     
     # Save PID to file
@@ -388,6 +388,14 @@ start_service() {
     else
         print_warning "Service may still be starting up..."
         print_status "Check http://localhost:4000 for service status"
+    fi
+    sleep 5
+    # After startup, check if the service process is still running
+    if ! ps -p "$SERVICE_PID" > /dev/null 2>&1; then
+        rm -f /tmp/sync-base.pid
+        print_error "The sync-base service process stopped unexpectedly after startup."
+        print_error "Check logs or try running the service manually for more information."
+        return 1
     fi
 }
 
@@ -518,11 +526,20 @@ full_reset() {
     # Wait a moment for services to fully stop
     sleep 3
     
+    # Delete .moose folder if it exists
+    if [ -d ".moose" ]; then
+        print_status "Deleting .moose folder..."
+        rm -rf .moose
+        print_success ".moose folder deleted"
+    else
+        print_status ".moose folder not found (already clean)"
+    fi
+    
     print_warning "Note: Moose manages its own infrastructure."
     print_status "To perform a complete reset:"
     print_status "1. Stop any running moose dev processes"
     print_status "2. Clear any local data directories if needed"
-    print_status "3. Restart with 'moose dev'"
+    print_status "3. Restart with 'pnpm dev'"
     
     # Start the service
     print_status "Starting sync service..."
