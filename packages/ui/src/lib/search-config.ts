@@ -6,7 +6,7 @@ import type { SearchConfig } from "../types/search";
  */
 export function createSearchConfig(baseUrl?: string): SearchConfig {
   return {
-    baseUrl: baseUrl || "http://localhost:8082",
+    baseUrl: baseUrl || "http://localhost:8083",
     timeout: 5000,
     defaultPageSize: 8,
     debounceMs: 300,
