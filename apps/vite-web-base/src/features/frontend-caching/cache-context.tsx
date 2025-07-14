@@ -1,18 +1,22 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-interface CacheContextType {
+type FrontendCachingContextType = {
   cacheEnabled: boolean;
   toggleCache: () => void;
-}
+};
 
-const CacheContext = createContext<CacheContextType | undefined>(undefined);
+const FrontendCachingContext = createContext<
+  FrontendCachingContextType | undefined
+>(undefined);
 
-interface CacheContextProviderProps {
+interface FrontendCachingContextProviderProps {
   children: ReactNode;
 }
 
-export function CacheContextProvider({ children }: CacheContextProviderProps) {
+export function FrontendCachingContextProvider({
+  children,
+}: FrontendCachingContextProviderProps) {
   const queryClient = useQueryClient();
 
   const [cacheEnabled, setCacheEnabled] = useState(() => {
@@ -47,14 +51,18 @@ export function CacheContextProvider({ children }: CacheContextProviderProps) {
   };
 
   return (
-    <CacheContext.Provider value={value}>{children}</CacheContext.Provider>
+    <FrontendCachingContext.Provider value={value}>
+      {children}
+    </FrontendCachingContext.Provider>
   );
 }
 
-export function useCache(): CacheContextType {
-  const context = useContext(CacheContext);
+export function useFrontendCaching(): FrontendCachingContextType {
+  const context = useContext(FrontendCachingContext);
   if (context === undefined) {
-    throw new Error("useCache must be used within a CacheContextProvider");
+    throw new Error(
+      "useFrontendCaching must be used within a FrontendCachingContextProvider"
+    );
   }
   return context;
 }

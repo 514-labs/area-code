@@ -1,9 +1,9 @@
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Label } from "@workspace/ui/components/label";
-import { useServiceHighlight } from "../contexts/service-highlight-context";
+import { useOriginHighlights } from "./origin-highlights-context";
 import { Card, CardContent } from "@workspace/ui/components/card";
 
-export function SidebarServiceHighlight() {
+export function OriginHighlightsCheckboxes() {
   const {
     transactionalEnabled,
     analyticalEnabled,
@@ -11,7 +11,7 @@ export function SidebarServiceHighlight() {
     toggleTransactional,
     toggleAnalytical,
     toggleRetrieval,
-  } = useServiceHighlight();
+  } = useOriginHighlights();
 
   return (
     <Card className="py-3">

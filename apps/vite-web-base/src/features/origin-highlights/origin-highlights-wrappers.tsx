@@ -1,16 +1,16 @@
 import React from "react";
-import { useServiceHighlight } from "../contexts/service-highlight-context";
+import { useOriginHighlights } from "./origin-highlights-context";
 
-interface ServiceHighlightWrapperProps {
+interface OriginHighlightsWrapperProps {
   children: React.ReactNode;
   className?: string;
 }
 
-export function TransactionalWrapper({
+export function TransactionalHighlightWrapper({
   children,
   className = "",
-}: ServiceHighlightWrapperProps) {
-  const { transactionalEnabled } = useServiceHighlight();
+}: OriginHighlightsWrapperProps) {
+  const { transactionalEnabled } = useOriginHighlights();
 
   return (
     <div
@@ -21,11 +21,11 @@ export function TransactionalWrapper({
   );
 }
 
-export function AnalyticalWrapper({
+export function AnalyticalHighlightWrapper({
   children,
   className = "",
-}: ServiceHighlightWrapperProps) {
-  const { analyticalEnabled } = useServiceHighlight();
+}: OriginHighlightsWrapperProps) {
+  const { analyticalEnabled } = useOriginHighlights();
 
   return (
     <div
@@ -36,11 +36,11 @@ export function AnalyticalWrapper({
   );
 }
 
-export function RetrievalWrapper({
+export function RetrievalHighlightWrapper({
   children,
   className = "",
-}: ServiceHighlightWrapperProps) {
-  const { retrievalEnabled } = useServiceHighlight();
+}: OriginHighlightsWrapperProps) {
+  const { retrievalEnabled } = useOriginHighlights();
 
   return (
     <div

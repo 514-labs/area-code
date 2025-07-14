@@ -36,7 +36,6 @@ export function SiteHeader() {
             className="w-full max-w-sm"
             onSelect={handleSearchSelect}
             placeholder="Search documents..."
-            size="md"
           />
         </div>
 

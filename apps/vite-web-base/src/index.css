@@ -1,8 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @source "./src/**/*.{js,ts,jsx,tsx}";
-@source "./index.html";
-@source "../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
 
-/* The UI/Dist package is the correct path to the built CSS from the UI package. DO NOT CHANGE unless you've made changes to the UI package. */
-@import "../../../packages/ui/dist/index.css";
+@import "@workspace/ui/styles.css";

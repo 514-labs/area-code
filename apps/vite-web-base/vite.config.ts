@@ -9,13 +9,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react(), tanstackRouter(), tailwindcss()],
-  css: {
-    postcss: path.resolve(__dirname, "./postcss.config.js"),
-  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@workspace/ui": path.resolve(__dirname, "../../packages/ui/src"),
     },
   },
 });
