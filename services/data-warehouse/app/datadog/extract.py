@@ -36,7 +36,7 @@ def run_task(input: DatadogExtractParams) -> None:
     
     try:
         response = requests.post(
-            "http://localhost:4000/ingest/Foo",
+            "http://localhost:4200/ingest/Foo",
             json=data_dicts,
             headers={"Content-Type": "application/json"}
         )

@@ -52,10 +52,10 @@ def trigger_extract(api_url, label):
         st.session_state["extract_status_time"] = time.time()
 
 # API base URL
-API_BASE = "http://localhost:4001/getFoos"
+API_BASE = "http://localhost:4200/consumption"
 
 def fetch_data(tag):
-    api_url = f"{API_BASE}?tag={tag}"
+    api_url = f"{API_BASE}/getFoos?tag={tag}"
     try:
         response = requests.get(api_url)
         response.raise_for_status()
@@ -102,8 +102,8 @@ if page == "All":
 
     # --- Add Trigger Extracts button (calls both APIs) ---
     def trigger_both_extracts():
-        trigger_extract("http://localhost:4000/consumption/extract-s3", "S3")
-        trigger_extract("http://localhost:4000/consumption/extract-datadog", "Datadog")
+        trigger_extract(f"{API_BASE}/extract-s3", "S3")
+        trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
 
     if "refresh_data" not in st.session_state:
         st.session_state["refresh_data"] = False
@@ -152,7 +152,7 @@ elif page == "S3":
         st.session_state["refresh_s3"] = False
     if st.button("Trigger S3 Extract"):
         with st.spinner("Triggering S3 extract and waiting for backend to finish..."):
-            trigger_extract("http://localhost:4000/consumption/extract-s3", "S3")
+            trigger_extract(f"{API_BASE}/extract-s3", "S3")
             time.sleep(1.5)
             st.session_state["refresh_s3"] = True
     if st.session_state.get("refresh_s3", False):
@@ -176,7 +176,7 @@ elif page == "Datadog":
         st.session_state["refresh_datadog"] = False
     if st.button("Trigger Datadog Extract"):
         with st.spinner("Triggering Datadog extract and waiting for backend to finish..."):
-            trigger_extract("http://localhost:4000/consumption/extract-datadog", "Datadog")
+            trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
             time.sleep(1.5)
             st.session_state["refresh_datadog"] = True
     if st.session_state.get("refresh_datadog", False):
