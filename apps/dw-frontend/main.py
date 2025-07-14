@@ -135,7 +135,7 @@ elif page == "S3":
     if st.button("Trigger S3 Extract"):
         with st.spinner("Triggering S3 extract and waiting for backend to finish..."):
             trigger_extract("http://localhost:4000/consumption/extract-s3", "S3")
-            time.sleep(5)
+            time.sleep(1.5)
             st.session_state["refresh_s3"] = True
     if st.session_state.get("refresh_s3", False):
         with st.spinner("Refreshing S3 data after extract..."):
@@ -151,7 +151,7 @@ elif page == "Datadog":
     if st.button("Trigger Datadog Extract"):
         with st.spinner("Triggering Datadog extract and waiting for backend to finish..."):
             trigger_extract("http://localhost:4000/consumption/extract-datadog", "Datadog")
-            time.sleep(5)
+            time.sleep(1.5)
             st.session_state["refresh_datadog"] = True
     if st.session_state.get("refresh_datadog", False):
         with st.spinner("Refreshing Datadog data after extract..."):
