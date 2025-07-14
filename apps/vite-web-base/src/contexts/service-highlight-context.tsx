@@ -3,8 +3,10 @@ import { createContext, useContext, useState, ReactNode } from "react";
 interface ServiceHighlightContextType {
   transactionalEnabled: boolean;
   analyticalEnabled: boolean;
+  retrievalEnabled: boolean;
   toggleTransactional: () => void;
   toggleAnalytical: () => void;
+  toggleRetrieval: () => void;
 }
 
 const ServiceHighlightContext = createContext<
@@ -20,14 +22,29 @@ export function ServiceHighlightContextProvider({
 }: ServiceHighlightContextProviderProps) {
   const [transactionalEnabled, setTransactionalEnabled] = useState(() => {
     // Initialize from localStorage or default to false
-    const saved = localStorage.getItem("service-highlight-transactional");
-    return saved ? JSON.parse(saved) : false;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("service-highlight-transactional");
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
   });
 
   const [analyticalEnabled, setAnalyticalEnabled] = useState(() => {
     // Initialize from localStorage or default to false
-    const saved = localStorage.getItem("service-highlight-analytical");
-    return saved ? JSON.parse(saved) : false;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("service-highlight-analytical");
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
+
+  const [retrievalEnabled, setRetrievalEnabled] = useState(() => {
+    // Initialize from localStorage or default to false
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("service-highlight-retrieval");
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
   });
 
   const toggleTransactional = () => {
@@ -48,11 +65,22 @@ export function ServiceHighlightContextProvider({
     );
   };
 
+  const toggleRetrieval = () => {
+    const newState = !retrievalEnabled;
+    setRetrievalEnabled(newState);
+    localStorage.setItem(
+      "service-highlight-retrieval",
+      JSON.stringify(newState)
+    );
+  };
+
   const value = {
     transactionalEnabled,
     analyticalEnabled,
+    retrievalEnabled,
     toggleTransactional,
     toggleAnalytical,
+    toggleRetrieval,
   };
 
   return (

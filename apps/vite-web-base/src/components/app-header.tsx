@@ -1,10 +1,11 @@
 import { Button } from "@workspace/ui/components/button";
 import { Separator } from "@workspace/ui/components/separator";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { SearchCommand } from "./search-command";
-import type { SearchResult } from "../types/search";
+import { SearchCommand } from "@workspace/ui/components/search-command";
+import type { SearchResult } from "@workspace/ui/types/search";
+import { RetrievalWrapper } from "./service-highlight-wrappers";
 
-export function SiteHeader() {
+export function AppHeader() {
   const handleSearchSelect = (result: SearchResult) => {
     // Handle navigation based on search result
     console.log("Navigate to:", result);
@@ -30,15 +31,15 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium"></h1>
 
-        {/* Search Integration */}
-        <div className="flex-1 flex justify-center max-w-md mx-4">
+        {/* Search Integration wrapped with RetrievalWrapper */}
+        <RetrievalWrapper className="flex-1 flex justify-center mx-4">
           <SearchCommand
-            className="w-full max-w-sm"
+            className="w-full "
             onSelect={handleSearchSelect}
             placeholder="Search documents..."
             size="md"
           />
-        </div>
+        </RetrievalWrapper>
 
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" asChild size="sm" className="hidden sm:flex">

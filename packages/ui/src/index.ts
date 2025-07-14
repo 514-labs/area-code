@@ -25,5 +25,15 @@ export * from "./components/site-header";
 export * from "./components/theme-provider";
 export * from "./components/theme-toggle";
 
+// Export search components and hooks
+export * from "./components/search-command";
+export * from "./hooks/use-search";
+
+// Export search types and utilities
+export * from "./types/search";
+export * from "./lib/search-config";
+export * from "./lib/search-query-keys";
+export * from "./lib/search-client";
+
 // Export hooks
 // Hooks will be added here as they are created

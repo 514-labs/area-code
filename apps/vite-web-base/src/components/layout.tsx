@@ -1,12 +1,12 @@
 import { useLocation } from "@tanstack/react-router";
 import { AppSidebar } from "@workspace/ui/components/app-sidebar";
-import { SiteHeader } from "@workspace/ui/components/site-header";
 import {
   SidebarInset,
   SidebarProvider,
 } from "@workspace/ui/components/sidebar";
 import { CSSProperties, ReactNode } from "react";
 import { navigationConfig } from "./navigation-config";
+import { AppHeader } from "./app-header";
 
 interface LayoutProps {
   children: ReactNode;
@@ -32,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
         user={navigationConfig.user}
       />
       <SidebarInset>
-        <SiteHeader />
+        <AppHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">

@@ -13,9 +13,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true
-    "paths": {
-      "@workspace/models/*": ["../../packages/models/src/*"]
-    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -7,8 +7,10 @@ export function SidebarServiceHighlight() {
   const {
     transactionalEnabled,
     analyticalEnabled,
+    retrievalEnabled,
     toggleTransactional,
     toggleAnalytical,
+    toggleRetrieval,
   } = useServiceHighlight();
 
   return (
@@ -39,6 +41,20 @@ export function SidebarServiceHighlight() {
             className="flex items-center space-x-2 cursor-pointer"
           >
             <span>Analytical</span>
+          </Label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="retrieval"
+            checked={retrievalEnabled}
+            onCheckedChange={() => toggleRetrieval()}
+          />
+          <Label
+            htmlFor="retrieval"
+            className="flex items-center space-x-2 cursor-pointer"
+          >
+            <span>Retrieval</span>
           </Label>
         </div>
       </CardContent>
