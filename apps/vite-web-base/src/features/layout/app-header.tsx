@@ -37,7 +37,6 @@ export function AppHeader() {
             className="w-full "
             onSelect={handleSearchSelect}
             placeholder="Search documents..."
-            size="md"
           />
         </RetrievalHighlightWrapper>
 
