@@ -25,35 +25,19 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
     "/search/foos",
     {
       schema: {
-        querystring: {
-          type: "object",
-          properties: {
-            q: { type: "string" },
-            from: { type: "integer", minimum: 0 },
-            size: { type: "integer", minimum: 1, maximum: 100 },
-            status: { type: "string" },
-            priority: { type: "number" },
-            isActive: { type: "boolean" },
-            sortBy: { type: "string" },
-            sortOrder: { type: "string", enum: ["asc", "desc"] },
-          },
-        },
         response: {
           200: {
             type: "object",
-            required: ["hits", "total", "took"],
             properties: {
               hits: {
                 type: "array",
                 items: {
                   type: "object",
-                  required: ["_id", "_score", "_source"],
                   properties: {
                     _id: { type: "string" },
                     _score: { type: ["number", "null"] },
                     _source: {
                       type: "object",
-                      required: ["id", "name", "status", "priority", "isActive", "createdAt", "updatedAt"],
                       properties: {
                         id: { type: "string" },
                         name: { type: "string" },
@@ -70,7 +54,6 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
               },
               total: {
                 type: "object",
-                required: ["value", "relation"],
                 properties: {
                   value: { type: "number" },
                   relation: { type: "string" },
@@ -111,34 +94,19 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
     "/search/bars",
     {
       schema: {
-        querystring: {
-          type: "object",
-          properties: {
-            q: { type: "string" },
-            from: { type: "integer", minimum: 0 },
-            size: { type: "integer", minimum: 1, maximum: 100 },
-            fooId: { type: "string" },
-            isEnabled: { type: "boolean" },
-            sortBy: { type: "string" },
-            sortOrder: { type: "string", enum: ["asc", "desc"] },
-          },
-        },
         response: {
           200: {
             type: "object",
-            required: ["hits", "total", "took"],
             properties: {
               hits: {
                 type: "array",
                 items: {
                   type: "object",
-                  required: ["_id", "_score", "_source"],
                   properties: {
                     _id: { type: "string" },
                     _score: { type: ["number", "null"] },
                     _source: {
                       type: "object",
-                      required: ["id", "fooId", "value", "isEnabled", "createdAt", "updatedAt"],
                       properties: {
                         id: { type: "string" },
                         fooId: { type: "string" },
@@ -155,7 +123,6 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
               },
               total: {
                 type: "object",
-                required: ["value", "relation"],
                 properties: {
                   value: { type: "number" },
                   relation: { type: "string" },
@@ -198,11 +165,9 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
         response: {
           200: {
             type: "object",
-            required: ["foos", "bars"],
             properties: {
               foos: {
                 type: "object",
-                required: ["hits", "total", "took"],
                 properties: {
                   hits: { type: "array" },
                   total: { type: "object" },
@@ -211,7 +176,6 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
               },
               bars: {
                 type: "object",
-                required: ["hits", "total", "took"],
                 properties: {
                   hits: { type: "array" },
                   total: { type: "object" },
