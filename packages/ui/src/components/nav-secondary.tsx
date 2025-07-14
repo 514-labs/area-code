@@ -11,41 +11,51 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
 
+export interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  action?: () => void;
+}
+
 export function NavSecondary({
   items,
   currentPath,
   ...props
 }: {
-  items: {
-    title: string;
-    url: string;
-    icon: LucideIcon;
-    action?: () => void;
-  }[];
+  items: (NavItem | React.ReactNode)[];
   currentPath?: string;
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => {
-            const isActive = currentPath === item.url;
+          {items.map((item, index) => {
+            // If it's a React node, render it directly
+            if (React.isValidElement(item)) {
+              return <SidebarMenuItem key={index}>{item}</SidebarMenuItem>;
+            }
+
+            // If it's a NavItem object, render it as before
+            const navItem = item as NavItem;
+            const isActive = currentPath === navItem.url;
+
             return (
-              <SidebarMenuItem key={item.title}>
-                {item.action ? (
+              <SidebarMenuItem key={navItem.title}>
+                {navItem.action ? (
                   <SidebarMenuButton
-                    onClick={item.action}
+                    onClick={navItem.action}
                     isActive={isActive}
                     className="cursor-pointer"
                   >
-                    <item.icon />
-                    <span>{item.title}</span>
+                    <navItem.icon />
+                    <span>{navItem.title}</span>
                   </SidebarMenuButton>
                 ) : (
                   <SidebarMenuButton asChild isActive={isActive}>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                    <a href={navItem.url}>
+                      <navItem.icon />
+                      <span>{navItem.title}</span>
                     </a>
                   </SidebarMenuButton>
                 )}

@@ -1,4 +1,5 @@
 language = "Typescript"
+load_infra = false
 
 [redpanda_config]
 broker = "localhost:19092"
@@ -17,8 +18,9 @@ native_port = 9000
 
 [http_server_config]
 host = "localhost"
-port = 4000
-management_port = 5001
+port = 4100
+management_port = 5101
+proxy_port = 4101
 
 [redis_config]
 url = "redis://127.0.0.1:6379"

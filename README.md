@@ -6,6 +6,60 @@ Area Code is a starter repo with all the necessary building blocks for a product
 
 It's built on top of Turborepo. The monorepo contains the following capabilities:
 
+## Getting Started
+
+The project includes an automated setup script that configures all services automatically. No manual configuration is required.
+
+### Quick Start
+
+```bash
+# Setup all services (installs dependencies, initializes data)
+./setup.sh setup
+
+# Start all services
+./setup.sh start
+
+# Check status of all services
+./setup.sh status
+
+# Stop all services
+./setup.sh stop
+```
+
+### Available Commands
+
+- `setup` - Install dependencies and initialize all services
+- `start` - Start all services
+- `stop` - Stop all services  
+- `restart` - Restart all services
+- `status` - Show status of all services
+- `reset` - Reset all services (stop, clear data, restart)
+
+### Targeting Specific Services
+
+You can target individual services using the `--service` flag:
+
+```bash
+# Start only the transactional service
+./setup.sh start --service=transactional-base
+
+# Setup only the retrieval service
+./setup.sh setup --service=retrieval-base
+
+# Check status of analytical service
+./setup.sh status --service=analytical-base
+```
+
+### Available Services
+
+- `transactional-base` - Transactional functionality (payments, orders, etc.)
+- `retrieval-base` - Retrieval functionality (search, recommendations, etc.)
+- `analytical-base` - Analytical functionality (analytics, reporting, dashboards, etc.)
+- `sync-base` - Synchronization functionality
+- `data-warehouse` - Data warehouse functionality
+
+The setup script automatically handles all configuration, dependency installation, and service initialization. No user actions are required beyond running the commands.
+
 ## Apps
 - `web`: a Vite app that serves the frontend
 

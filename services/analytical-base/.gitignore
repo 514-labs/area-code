@@ -8,3 +8,9 @@ node_modules
 dist
 coverage
 .ts-node
+
+# Migration temporary files
+temp_migration/
+*.parquet
+*_events.json
+*_data.json

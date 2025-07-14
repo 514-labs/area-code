@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Elasticsearch
   elasticsearch:
@@ -44,3 +42,4 @@ services:
 volumes:
   elasticsearch_data:
     driver: local
+

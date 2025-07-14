@@ -1,20 +1,12 @@
 import * as React from "react";
-import {
-  Home,
-  Package,
-  BarChart,
-  Settings,
-  HelpCircle,
-  Search,
-  Zap,
-  Moon,
-  Sun,
-} from "lucide-react";
+import { Zap } from "lucide-react";
 
-import { NavMain } from "@workspace/ui/components/nav-main";
-import { NavSecondary } from "@workspace/ui/components/nav-secondary";
+import { NavMain, type NavMainItem } from "@workspace/ui/components/nav-main";
+import {
+  NavSecondary,
+  type NavItem,
+} from "@workspace/ui/components/nav-secondary";
 import { NavUser } from "@workspace/ui/components/nav-user";
-import { useTheme } from "@workspace/ui/components/theme-provider";
 import {
   Sidebar,
   SidebarContent,
@@ -25,63 +17,24 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
 
-const data = {
+export interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  currentPath?: string;
+  navMain: (NavMainItem | React.ReactNode)[];
+  navSecondary: (NavItem | React.ReactNode)[];
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/",
-      icon: Home,
-    },
-    {
-      title: "Foo",
-      url: "/foo",
-      icon: Package,
-    },
-    {
-      title: "Bar",
-      url: "/bar",
-      icon: BarChart,
-    },
-  ],
-  navClouds: [],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: HelpCircle,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: Search,
-    },
-  ],
-};
+    name: string;
+    email: string;
+    avatar: string;
+  };
+}
 
 export function AppSidebar({
   currentPath,
+  navMain,
+  navSecondary,
+  user,
   ...props
-}: React.ComponentProps<typeof Sidebar> & {
-  currentPath?: string;
-}) {
-  const { theme, setTheme } = useTheme();
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
-
-  const themeIcon = theme === "dark" ? Sun : Moon;
-
+}: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -100,23 +53,15 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} currentPath={currentPath} />
+        <NavMain items={navMain} currentPath={currentPath} />
         <NavSecondary
-          items={[
-            ...data.navSecondary,
-            {
-              title: `Theme: ${theme === "dark" ? "Dark" : "Light"}`,
-              url: "#",
-              icon: themeIcon,
-              action: toggleTheme,
-            },
-          ]}
+          items={navSecondary}
           currentPath={currentPath}
           className="mt-auto"
         />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

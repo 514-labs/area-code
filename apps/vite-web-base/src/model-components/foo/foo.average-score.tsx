@@ -1,4 +1,3 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -12,26 +11,36 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { IconCalculator, IconClock, IconRefresh } from "@tabler/icons-react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8081/api";
-
 interface AverageScoreResponse {
   averageScore: number;
   queryTime: number;
   count: number;
 }
 
+interface FooAverageScoreProps {
+  apiEndpoint: string;
+  disableCache?: boolean;
+}
+
 // API function to fetch average score
-const fetchAverageScore = async (): Promise<AverageScoreResponse> => {
-  const response = await fetch(`${API_BASE}/foo/average-score`);
+const fetchAverageScore = async (
+  apiEndpoint: string
+): Promise<AverageScoreResponse> => {
+  const response = await fetch(apiEndpoint);
   if (!response.ok) throw new Error("Failed to fetch average score");
   return response.json();
 };
 
-export function FooAverageScore() {
+export default function FooAverageScore({
+  apiEndpoint,
+  disableCache = false,
+}: FooAverageScoreProps) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["foo-average-score"],
-    queryFn: fetchAverageScore,
-    // Removed auto-refresh
+    queryKey: ["foo-average-score", apiEndpoint],
+    queryFn: () => fetchAverageScore(apiEndpoint),
+    staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
+    gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
+    refetchOnMount: disableCache ? "always" : false,
   });
 
   const handleRefresh = () => {
@@ -101,10 +110,9 @@ export function FooAverageScore() {
           </div>
         ) : (
           <div className="">
-            <div className="text-3xl font-bold text-primary">
+            <div className="text-6xl font-bold text-primary">
               {data?.averageScore.toFixed(2) || "0.00"}
             </div>
-            <div className="text-sm text-muted-foreground">Average Score</div>
           </div>
         )}
       </CardContent>
@@ -119,5 +127,3 @@ export function FooAverageScore() {
     </Card>
   );
 }
-
-export default FooAverageScore;

@@ -1,11 +1,10 @@
-#!/bin/bash -e -x
+#!/bin/bash 
 
 ########################################################
 # Global variables
 ########################################################
 
-ENV_FILES="--env-file .env"
-DOCKER_COMPOSE_CMD="docker compose $ENV_FILES"
+DOCKER_COMPOSE_CMD="docker compose"
 
 ########################################################
 # Utility functions

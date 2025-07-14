@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, asc, sql } from "drizzle-orm";
 import { db } from "../database/connection";
 import {
   bar,
@@ -11,36 +11,157 @@ import {
 } from "../database/schema";
 
 export async function barRoutes(fastify: FastifyInstance) {
-  // Get all bar items with foo details
-  fastify.get<{ Reply: any[] | { error: string } }>(
-    "/bar",
-    async (request, reply) => {
-      try {
-        const allBar = await db
-          .select({
-            id: bar.id,
-            value: bar.value,
-            label: bar.label,
-            notes: bar.notes,
-            isEnabled: bar.isEnabled,
-            createdAt: bar.createdAt,
-            foo: {
-              id: foo.id,
-              name: foo.name,
-              description: foo.description,
-              status: foo.status,
-            },
-          })
-          .from(bar)
-          .leftJoin(foo, eq(bar.fooId, foo.id))
-          .orderBy(desc(bar.createdAt));
+  // Get average value of all bar items with query time
+  fastify.get<{
+    Reply:
+      | { averageValue: number; queryTime: number; count: number }
+      | { error: string };
+  }>("/bar/average-value", async (request, reply) => {
+    try {
+      const startTime = Date.now();
 
-        return reply.send(allBar);
-      } catch (error) {
-        return reply.status(500).send({ error: "Failed to fetch bar items" });
-      }
+      // Get average value and count
+      const result = await db
+        .select({
+          averageValue: sql<number>`AVG(CAST(value AS DECIMAL))`,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(bar);
+
+      const endTime = Date.now();
+      const queryTime = endTime - startTime;
+
+      const averageValue = result[0]?.averageValue || 0;
+      const count = result[0]?.count || 0;
+
+      return reply.send({
+        averageValue: Number(averageValue),
+        queryTime,
+        count,
+      });
+    } catch (error) {
+      console.error("Error calculating average value:", error);
+      return reply
+        .status(500)
+        .send({ error: "Failed to calculate average value" });
     }
-  );
+  });
+
+  // Get all bar items with pagination and sorting
+  fastify.get<{
+    Querystring: {
+      limit?: string;
+      offset?: string;
+      sortBy?: string;
+      sortOrder?: string;
+    };
+    Reply:
+      | {
+          data: any[];
+          pagination: {
+            limit: number;
+            offset: number;
+            total: number;
+            hasMore: boolean;
+          };
+        }
+      | { error: string };
+  }>("/bar", async (request, reply) => {
+    try {
+      const limit = parseInt(request.query.limit || "10");
+      const offset = parseInt(request.query.offset || "0");
+      const sortBy = request.query.sortBy;
+      const sortOrder = request.query.sortOrder || "asc";
+
+      // Validate pagination parameters
+      if (limit < 1 || limit > 100) {
+        return reply
+          .status(400)
+          .send({ error: "Limit must be between 1 and 100" });
+      }
+      if (offset < 0) {
+        return reply.status(400).send({ error: "Offset must be non-negative" });
+      }
+
+      // Build query with sorting
+      let orderByClause;
+      if (sortBy) {
+        switch (sortBy) {
+          case "label":
+            orderByClause =
+              sortOrder === "desc" ? desc(bar.label) : asc(bar.label);
+            break;
+          case "value":
+            orderByClause =
+              sortOrder === "desc" ? desc(bar.value) : asc(bar.value);
+            break;
+          case "isEnabled":
+            orderByClause =
+              sortOrder === "desc" ? desc(bar.isEnabled) : asc(bar.isEnabled);
+            break;
+          case "createdAt":
+            orderByClause =
+              sortOrder === "desc" ? desc(bar.createdAt) : asc(bar.createdAt);
+            break;
+          case "updatedAt":
+            orderByClause =
+              sortOrder === "desc" ? desc(bar.updatedAt) : asc(bar.updatedAt);
+            break;
+          default:
+            // Default sorting by createdAt desc for invalid sortBy
+            orderByClause = desc(bar.createdAt);
+        }
+      } else {
+        // Default sorting by createdAt desc
+        orderByClause = desc(bar.createdAt);
+      }
+
+      // Execute query with sorting and pagination
+      const barItems = await db
+        .select({
+          id: bar.id,
+          fooId: bar.fooId,
+          value: bar.value,
+          label: bar.label,
+          notes: bar.notes,
+          isEnabled: bar.isEnabled,
+          createdAt: bar.createdAt,
+          updatedAt: bar.updatedAt,
+          foo: {
+            id: foo.id,
+            name: foo.name,
+            description: foo.description,
+            status: foo.status,
+          },
+        })
+        .from(bar)
+        .leftJoin(foo, eq(bar.fooId, foo.id))
+        .orderBy(orderByClause)
+        .limit(limit)
+        .offset(offset);
+
+      // Get total count for pagination metadata
+      const totalResult = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(bar);
+
+      const total = totalResult[0].count;
+      const hasMore = offset + limit < total;
+
+      return reply.send({
+        data: barItems,
+        pagination: {
+          limit,
+          offset,
+          total,
+          hasMore,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching bars:", error);
+      return reply.status(500).send({ error: "Failed to fetch bar items" });
+    }
+  });
 
   // Get bar by ID with foo details
   fastify.get<{ Params: { id: string }; Reply: any | { error: string } }>(
@@ -52,6 +173,7 @@ export async function barRoutes(fastify: FastifyInstance) {
         const barWithFoo = await db
           .select({
             id: bar.id,
+            fooId: bar.fooId,
             value: bar.value,
             label: bar.label,
             notes: bar.notes,
@@ -76,6 +198,7 @@ export async function barRoutes(fastify: FastifyInstance) {
 
         return reply.send(barWithFoo[0]);
       } catch (error) {
+        console.error("Error fetching bar:", error);
         return reply.status(500).send({ error: "Failed to fetch bar" });
       }
     }
