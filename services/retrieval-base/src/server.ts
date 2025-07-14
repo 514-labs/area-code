@@ -7,6 +7,7 @@ import { resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { searchRoutes } from "./routes/search";
+import { ingestRoutes } from "./routes/ingest";
 import { esClient } from "./elasticsearch/client";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -77,6 +78,9 @@ fastify.get("/", async (request, reply) => {
       search: "/api/search",
       searchFoos: "/api/search/foos",
       searchBars: "/api/search/bars",
+      ingestFoo: "/api/ingest/foo",
+      ingestBar: "/api/ingest/bar",
+      ingestHealth: "/api/ingest/health",
       health: "/health",
       docs: "/docs",
     },
@@ -85,6 +89,7 @@ fastify.get("/", async (request, reply) => {
 
 // Register route plugins
 await fastify.register(searchRoutes, { prefix: "/api" });
+await fastify.register(ingestRoutes, { prefix: "/api" });
 
 // Manual OpenAPI documentation endpoints
 fastify.get("/documentation/json", async (request, reply) => {

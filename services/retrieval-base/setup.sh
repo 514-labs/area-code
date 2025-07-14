@@ -5,6 +5,9 @@
 
 #set -e  # Exit on any error
 
+# Configuration
+SERVICE_PORT=${PORT:-8082}
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -194,11 +197,11 @@ start_service() {
     fi
     
     print_status "Starting the retrieval service..."
-    print_status "The service will be available at http://localhost:8082"
-    print_status "API documentation will be available at http://localhost:8082/docs"
+    print_status "The service will be available at http://localhost:${SERVICE_PORT}"
+    print_status "API documentation will be available at http://localhost:${SERVICE_PORT}/docs"
     
-    # Start the service in the background
-    npx tsx watch src/server.ts &
+    # Start the service in the background with PORT environment variable
+    PORT=${SERVICE_PORT} npx tsx watch src/server.ts &
     SERVICE_PID=$!
     
     # Store PID in file
@@ -208,13 +211,13 @@ start_service() {
     sleep 3
     
     # Check if service is running
-    if curl -s http://localhost:8082/health > /dev/null 2>&1; then
+    if curl -s http://localhost:${SERVICE_PORT}/health > /dev/null 2>&1; then
         print_success "Service started successfully!"
         print_status "Service PID: $SERVICE_PID (stored in $PID_FILE)"
         print_status "To stop the service, run: $0 stop"
     else
         print_warning "Service may still be starting up..."
-        print_status "Check http://localhost:8082/health for service status"
+        print_status "Check http://localhost:${SERVICE_PORT}/health for service status"
     fi
 }
 
@@ -275,7 +278,7 @@ show_status() {
         print_success "Service is running (PID: $pid)"
         
         # Check if service is responding
-        if curl -s http://localhost:8082/health > /dev/null 2>&1; then
+        if curl -s http://localhost:${SERVICE_PORT}/health > /dev/null 2>&1; then
             print_success "Service is responding to health checks"
         else
             print_warning "Service is running but not responding to health checks"
@@ -297,9 +300,9 @@ show_status() {
     
     echo ""
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:8082"
-    echo "  • Health check: http://localhost:8082/health"
-    echo "  • API docs: http://localhost:8082/docs"
+    echo "  • Service: http://localhost:${SERVICE_PORT}"
+    echo "  • Health check: http://localhost:${SERVICE_PORT}/health"
+    echo "  • API docs: http://localhost:${SERVICE_PORT}/docs"
     echo "  • Kibana: http://localhost:5601"
     echo "  • Elasticsearch: http://localhost:9200"
     echo ""
@@ -419,9 +422,9 @@ full_reset() {
     echo ""
     echo "All services have been restarted with fresh data."
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:8082"
-    echo "  • Health check: http://localhost:8082/health"
-    echo "  • API docs: http://localhost:8082/docs"
+    echo "  • Service: http://localhost:${SERVICE_PORT}"
+    echo "  • Health check: http://localhost:${SERVICE_PORT}/health"
+    echo "  • API docs: http://localhost:${SERVICE_PORT}/docs"
     echo "  • Kibana: http://localhost:5601"
     echo ""
 }
@@ -456,15 +459,15 @@ full_setup() {
     echo "=========================================="
     echo ""
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:8082"
-    echo "  • Health check: http://localhost:8082/health"
-    echo "  • API docs: http://localhost:8082/docs"
+    echo "  • Service: http://localhost:${SERVICE_PORT}"
+    echo "  • Health check: http://localhost:${SERVICE_PORT}/health"
+    echo "  • API docs: http://localhost:${SERVICE_PORT}/docs"
     echo "  • Kibana: http://localhost:5601"
     echo ""
     echo "Example API calls:"
-    echo "  • Search all: curl 'http://localhost:8082/api/search?q=test'"
-    echo "  • Search foos: curl 'http://localhost:8082/api/search/foos?q=urgent'"
-    echo "  • Search bars: curl 'http://localhost:8082/api/search/bars?fooId=foo-1'"
+    echo "  • Search all: curl 'http://localhost:${SERVICE_PORT}/api/search?q=test'"
+    echo "  • Search foos: curl 'http://localhost:${SERVICE_PORT}/api/search/foos?q=urgent'"
+    echo "  • Search bars: curl 'http://localhost:${SERVICE_PORT}/api/search/bars?fooId=foo-1'"
     echo ""
     echo "To reset data: $0 es:reset"
     echo "To view logs: docker logs retrieval-base-elasticsearch"
