@@ -3,12 +3,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@workspace/models": ["../../packages/models/src/index"],
-      "@workspace/models/*": ["../../packages/models/src/*"],
-      "@workspace/ui/*": ["../../packages/ui/src/*"]
-    },
-    "jsx": "react-jsx"
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src/**/*", "vite.config.ts", "index.html"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -19,6 +19,7 @@ import {
 } from "@workspace/ui/components/command";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
+import { Input } from "@workspace/ui/components/input";
 import { cn } from "@workspace/ui/lib/utils";
 import {
   useDebouncedSearch,
@@ -31,14 +32,12 @@ interface SearchCommandProps {
   className?: string;
   onSelect?: (result: SearchResult) => void;
   placeholder?: string;
-  size?: "sm" | "md" | "lg";
 }
 
 export function SearchCommand({
   className,
   onSelect,
   placeholder = "Search documents...",
-  size = "md",
 }: SearchCommandProps) {
   const [inputValue, setInputValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
@@ -199,41 +198,32 @@ export function SearchCommand({
     return null;
   };
 
-  const sizeClasses = {
-    sm: "h-8 text-sm",
-    md: "h-10 text-sm",
-    lg: "h-12 text-base",
-  };
-
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       {/* Search Input */}
-      <div className="relative flex items-center">
-        <SearchIcon className="absolute left-3 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-        <input
+      <div className="relative flex items-center border border-input rounded-md shadow-xs bg-transparent transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] has-[:invalid]:border-destructive has-[:invalid]:ring-destructive/20">
+        <SearchIcon className="ml-3 h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <Input
           ref={inputRef}
           type="text"
           value={inputValue}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
           placeholder={placeholder}
-          className={cn(
-            "w-full rounded-md border border-input bg-background pl-12 pr-20 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-            sizeClasses[size]
-          )}
+          className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 pl-2 pr-2"
         />
         {inputValue && (
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-1 h-6 w-6 p-0 hover:bg-muted/50"
+            className="mr-3 h-6 w-6 p-0 hover:bg-muted/50 flex-shrink-0"
             onClick={handleClear}
           >
             <X className="h-3 w-3" />
           </Button>
         )}
         {!inputValue && (
-          <kbd className="pointer-events-none absolute right-3 inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+          <kbd className="mr-3 inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground flex-shrink-0">
             <span className="text-xs">⌘</span>K
           </kbd>
         )}

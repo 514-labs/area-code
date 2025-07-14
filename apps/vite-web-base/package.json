@@ -37,7 +37,6 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@tailwindcss/postcss": "^4.1.10",
     "@tanstack/router-plugin": "^1.121.41",
     "@types/node": "^24.0.3",
     "@types/react": "^19.1.0",
