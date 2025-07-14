@@ -51,6 +51,10 @@ const config: SyncConfig = {
   dbSchema: process.env.DB_SCHEMA || "public",
 };
 
+// Additional environment variables for service integrations
+const ANALYTICS_BASE_URL = process.env.ANALYTICS_BASE_URL || "http://localhost:4100";
+const RETRIEVAL_BASE_URL = process.env.RETRIEVAL_BASE_URL || "http://localhost:8083";
+
 // Enhanced logging function
 const logEvent = (event: string, table: string, payload: any) => {
   const timestamp = new Date().toISOString();
@@ -61,7 +65,7 @@ const logEvent = (event: string, table: string, payload: any) => {
 
 // HTTP client for sending events to analytical service
 const sendEventToAnalytics = async (event: FooThingEvent | BarThingEvent) => {
-  const analyticsUrl = process.env.ANALYTICS_BASE_URL || "http://localhost:4100";
+  const analyticsUrl = ANALYTICS_BASE_URL;
   const endpoint = event.type === "foo.thing" ? "FooThingEvent" : "BarThingEvent";
   const url = `${analyticsUrl}/ingest/${endpoint}`;
 
@@ -85,6 +89,35 @@ const sendEventToAnalytics = async (event: FooThingEvent | BarThingEvent) => {
     }
   } catch (error) {
     console.error(`❌ Error sending ${event.type} event to analytics:`, error);
+  }
+};
+
+// HTTP client for sending data to Elasticsearch via retrieval service
+const sendDataToElasticsearch = async (type: "foo" | "bar", action: "index" | "delete", data: any) => {
+  console.log("Sending data to Elasticsearch:", type, action, data);
+  const retrievalUrl = RETRIEVAL_BASE_URL;
+  const url = `${retrievalUrl}/api/ingest/${type}`;
+
+  try {
+    console.log(`🔍 Sending ${type} ${action} to Elasticsearch: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, data }),
+    });
+
+    if (response.ok) {
+      console.log(`✅ Successfully sent ${type} ${action} to Elasticsearch`);
+    } else {
+      console.error(`❌ Failed to send ${type} ${action} to Elasticsearch:`, response.status, response.statusText);
+      const errorText = await response.text();
+      console.error("Response:", errorText);
+    }
+  } catch (error) {
+    console.error(`❌ Error sending ${type} ${action} to Elasticsearch:`, error);
   }
 };
 
@@ -164,6 +197,13 @@ async function handleFooChange(payload: any) {
     });
 
     await sendEventToAnalytics(fooEvent);
+
+    // Also send to Elasticsearch for search indexing
+    if (eventType === "DELETE") {
+      await sendDataToElasticsearch("foo", "delete", { id: oldRecord.id });
+    } else {
+      await sendDataToElasticsearch("foo", "index", newRecord);
+    }
   } catch (error) {
     console.error("Error creating/sending FooThingEvent:", error);
   }
@@ -246,6 +286,13 @@ async function handleBarChange(payload: any) {
     });
 
     await sendEventToAnalytics(barEvent);
+
+    // Also send to Elasticsearch for search indexing
+    if (eventType === "DELETE") {
+      await sendDataToElasticsearch("bar", "delete", { id: oldRecord.id });
+    } else {
+      await sendDataToElasticsearch("bar", "index", newRecord);
+    }
   } catch (error) {
     console.error("Error creating/sending BarThingEvent:", error);
   }
