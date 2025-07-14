@@ -3,8 +3,6 @@ import { eq, sql, asc, desc } from "drizzle-orm";
 import { db } from "../database/connection";
 import {
   foo,
-  insertFooSchema,
-  selectFooSchema,
   type Foo,
   type CreateFoo,
   type UpdateFoo,

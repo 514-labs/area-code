@@ -20,7 +20,6 @@ import type {
   Bar,
   CreateBar,
   UpdateBar,
-  FooStatus,
 } from "@workspace/models";
 
 // Create PostgreSQL enum for status

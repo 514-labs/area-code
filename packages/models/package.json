@@ -1,21 +1,10 @@
 {
   "name": "@workspace/models",
-  "version": "0.0.0",
-  "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./foo": "./src/foo.ts",
     "./bar": "./src/bar.ts",
     "./events": "./src/events.ts"
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "lint": "eslint . --max-warnings 0",
-    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@514labs/moose-lib": "latest"
