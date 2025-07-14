@@ -47,7 +47,7 @@ def get_foos(client, params: GetFoosQuery) -> GetFoosResponse:
         except ValueError:
             # If invalid status, return empty result
             return GetFoosResponse(items=[], total=0)
-    
+
     # Add tag filter if provided and not 'All'
     if params.tag is not None and params.tag != "All":
         # Use ClickHouse has() function to filter by tag
