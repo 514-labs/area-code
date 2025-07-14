@@ -144,7 +144,15 @@ elif page == "S3":
     else:
         df = fetch_data("S3")
     st.subheader("S3 Items Table")
-    st.dataframe(df)
+    if not df.empty and "large_text" in df.columns:
+        # Parse the large_text field into columns
+        parsed = df["large_text"].str.split("|", n=3, expand=True)
+        parsed.columns = ["Ingested On", "S3 Location", "Permissions", "Resource size"]
+        # Remove leading/trailing whitespace from each column
+        parsed = parsed.apply(lambda col: col.str.strip())
+        st.dataframe(parsed, use_container_width=True)
+    else:
+        st.write("No S3 log data available.")
 elif page == "Datadog":
     if "refresh_datadog" not in st.session_state:
         st.session_state["refresh_datadog"] = False
