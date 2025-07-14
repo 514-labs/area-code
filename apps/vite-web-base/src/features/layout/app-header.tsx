@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Separator } from "@workspace/ui/components/separator";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { SearchCommand } from "@workspace/ui/components/search-command";
-import type { SearchResult } from "@workspace/ui/types/search";
+import type { SearchResult } from "@workspace/ui";
 import { RetrievalHighlightWrapper } from "@/features/origin-highlights/origin-highlights-wrappers";
 
 export function AppHeader() {
