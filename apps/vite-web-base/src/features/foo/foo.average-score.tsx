@@ -111,7 +111,7 @@ export default function FooAverageScore({
         ) : (
           <div className="">
             <div className="text-6xl font-bold text-primary">
-              {data?.averageScore.toFixed(2) || "0.00"}
+              {data?.averageScore?.toFixed(2) || "0.00"}
             </div>
           </div>
         )}

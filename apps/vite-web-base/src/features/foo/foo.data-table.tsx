@@ -238,7 +238,7 @@ const columns: ColumnDef<Foo>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-right font-medium">
-        {row.original.score.toFixed(2)}
+        {row.original?.score?.toFixed(2) || "0.00"}
       </div>
     ),
     enableSorting: true,
@@ -443,7 +443,7 @@ export function FooDataTable({
           </div>
           {queryTime !== null && (
             <div className="text-green-600">
-              Latest query: {queryTime.toFixed(2)}ms
+              Latest query: {queryTime?.toFixed(2) || "0.00"}ms
             </div>
           )}
         </div>

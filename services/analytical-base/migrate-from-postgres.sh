@@ -16,6 +16,9 @@ CH_USER=${CH_USER:-panda}
 CH_PASSWORD=${CH_PASSWORD:-pandapass}
 CH_DB=${CH_DB:-local}
 
+# Batch size for processing large datasets
+BATCH_SIZE=500000
+
 # Parse command line arguments
 CLEAR_DATA=false
 KEEP_TEMP=false
@@ -191,8 +194,8 @@ echo "===================================================="
 # Test queries
 TEST_FOO_QUERY="
 SELECT 
-    id::text as id,
-    name,
+    COALESCE(id::text, '') as id,
+    COALESCE(name, '') as name,
     COALESCE(description, '') as description,
     COALESCE(status, 'active') as status,
     COALESCE(priority, 0) as priority,
@@ -202,22 +205,22 @@ SELECT
     COALESCE(array_to_string(tags, ','), '') as tags,
     COALESCE(score, 0) as score,
     COALESCE(large_text, '') as large_text,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
+    COALESCE(date_trunc('second', created_at)::text, '') as created_at,
+    COALESCE(date_trunc('second', updated_at)::text, '') as updated_at
 FROM foo 
 LIMIT 1
 "
 
 TEST_BAR_QUERY="
 SELECT 
-    id::text as id,
+    COALESCE(id::text, '') as id,
     COALESCE(foo_id::text, '') as foo_id,
     COALESCE(value, 0) as value,
     COALESCE(label, '') as label,
     COALESCE(notes, '') as notes,
     COALESCE(is_enabled, false) as is_enabled,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
+    COALESCE(date_trunc('second', created_at)::text, '') as created_at,
+    COALESCE(date_trunc('second', updated_at)::text, '') as updated_at
 FROM bar 
 LIMIT 1
 "
@@ -253,19 +256,44 @@ echo "Converting test data to JSONEachRow format..."
 
 # Process foo test data
 if ! awk -F'\t' 'NR > 0 {
-    # Store metadata and config before escaping (they are already valid JSON)
-    metadata_json = $7;
-    config_json = $8;
+    # Handle null/empty values with defaults
+    id_val = ($1 == "" || $1 == "\\N" || $1 == "NULL") ? "" : $1;
+    name_val = ($2 == "" || $2 == "\\N" || $2 == "NULL") ? "" : $2;
+    description_val = ($3 == "" || $3 == "\\N" || $3 == "NULL") ? "" : $3;
+    status_val = ($4 == "" || $4 == "\\N" || $4 == "NULL") ? "active" : $4;
+    priority_val = ($5 == "" || $5 == "\\N" || $5 == "NULL") ? "0" : $5;
+    is_active_val = ($6 == "" || $6 == "\\N" || $6 == "NULL") ? "false" : (($6 == "t") ? "true" : "false");
+    metadata_json = ($7 == "" || $7 == "\\N" || $7 == "NULL") ? "{}" : $7;
+    config_json = ($8 == "" || $8 == "\\N" || $8 == "NULL") ? "{}" : $8;
+    tags_field = ($9 == "" || $9 == "\\N" || $9 == "NULL") ? "" : $9;
+    score_val = ($10 == "" || $10 == "\\N" || $10 == "NULL") ? "0" : $10;
+    large_text_val = ($11 == "" || $11 == "\\N" || $11 == "NULL") ? "" : $11;
+    created_at_val = ($12 == "" || $12 == "\\N" || $12 == "NULL") ? "" : $12;
+    updated_at_val = ($13 == "" || $13 == "\\N" || $13 == "NULL") ? "" : $13;
     
-    # Escape everything else
-    gsub(/\\/, "\\\\");
-    gsub(/"/, "\\\"");
+    # Escape string values
+    gsub(/\\/, "\\\\", name_val);
+    gsub(/"/, "\\\"", name_val);
+    gsub(/\\/, "\\\\", description_val);
+    gsub(/"/, "\\\"", description_val);
+    gsub(/\\/, "\\\\", status_val);
+    gsub(/"/, "\\\"", status_val);
+    gsub(/\\/, "\\\\", large_text_val);
+    gsub(/"/, "\\\"", large_text_val);
+    gsub(/\\/, "\\\\", created_at_val);
+    gsub(/"/, "\\\"", created_at_val);
+    gsub(/\\/, "\\\\", updated_at_val);
+    gsub(/"/, "\\\"", updated_at_val);
     
-    # Convert PostgreSQL boolean to JSON boolean
-    is_active_val = ($6 == "t") ? "true" : "false";
+    # Validate JSON fields
+    if (metadata_json == "" || metadata_json == "\\N" || metadata_json == "NULL") {
+        metadata_json = "{}";
+    }
+    if (config_json == "" || config_json == "\\N" || config_json == "NULL") {
+        config_json = "{}";
+    }
     
     # Convert PostgreSQL array format for tags
-    tags_field = $9;
     if (tags_field == "") {
         tags_json = "[]";
     } else {
@@ -274,13 +302,25 @@ if ! awk -F'\t' 'NR > 0 {
         tags_json = "[";
         for (i = 1; i <= length(tag_array); i++) {
             if (i > 1) tags_json = tags_json ",";
-            tags_json = tags_json "\"" tag_array[i] "\"";
+            # Escape tag values
+            tag_val = tag_array[i];
+            gsub(/\\/, "\\\\", tag_val);
+            gsub(/"/, "\\\"", tag_val);
+            tags_json = tags_json "\"" tag_val "\"";
         }
         tags_json = tags_json "]";
     }
     
+    # Validate numeric fields
+    if (!match(priority_val, /^-?[0-9]+$/)) {
+        priority_val = "0";
+    }
+    if (!match(score_val, /^-?[0-9]*\.?[0-9]+$/)) {
+        score_val = "0";
+    }
+    
     printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"%s\",\"status\":\"%s\",\"priority\":%s,\"isActive\":%s,\"metadata\":%s,\"tags\":%s,\"score\":%s,\"largeText\":\"%s\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $12, $13, $1, $2, $3, $4, $5, is_active_val, metadata_json, tags_json, $10, $11, $12, $13, $1, $12;
+            id_val, created_at_val, updated_at_val, id_val, name_val, description_val, status_val, priority_val, is_active_val, metadata_json, tags_json, score_val, large_text_val, created_at_val, updated_at_val, id_val, created_at_val;
 }' "$TEMP_DIR/test_foo_data.json" > "$TEMP_DIR/test_foo_events.json"; then
     echo "❌ Failed to convert test foo data to JSONEachRow format"
     exit 1
@@ -288,14 +328,37 @@ fi
 
 # Process bar test data
 if ! awk -F'\t' 'NR > 0 {
-    gsub(/\\/, "\\\\");
-    gsub(/"/, "\\\"");
+    # Handle null/empty values with defaults
+    id_val = ($1 == "" || $1 == "\\N" || $1 == "NULL") ? "" : $1;
+    foo_id_val = ($2 == "" || $2 == "\\N" || $2 == "NULL") ? "" : $2;
+    value_val = ($3 == "" || $3 == "\\N" || $3 == "NULL") ? "0" : $3;
+    label_val = ($4 == "" || $4 == "\\N" || $4 == "NULL") ? "" : $4;
+    notes_val = ($5 == "" || $5 == "\\N" || $5 == "NULL") ? "" : $5;
+    is_enabled_val = ($6 == "" || $6 == "\\N" || $6 == "NULL") ? "false" : (($6 == "t") ? "true" : "false");
+    created_at_val = ($7 == "" || $7 == "\\N" || $7 == "NULL") ? "" : $7;
+    updated_at_val = ($8 == "" || $8 == "\\N" || $8 == "NULL") ? "" : $8;
     
-    # Convert PostgreSQL boolean to JSON boolean
-    is_enabled_val = ($6 == "t") ? "true" : "false";
+    # Escape string values
+    gsub(/\\/, "\\\\", id_val);
+    gsub(/"/, "\\\"", id_val);
+    gsub(/\\/, "\\\\", foo_id_val);
+    gsub(/"/, "\\\"", foo_id_val);
+    gsub(/\\/, "\\\\", label_val);
+    gsub(/"/, "\\\"", label_val);
+    gsub(/\\/, "\\\\", notes_val);
+    gsub(/"/, "\\\"", notes_val);
+    gsub(/\\/, "\\\\", created_at_val);
+    gsub(/"/, "\\\"", created_at_val);
+    gsub(/\\/, "\\\\", updated_at_val);
+    gsub(/"/, "\\\"", updated_at_val);
+    
+    # Validate numeric fields
+    if (!match(value_val, /^-?[0-9]*\.?[0-9]+$/)) {
+        value_val = "0";
+    }
     
     printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"%s\",\"value\":%s,\"label\":\"%s\",\"notes\":\"%s\",\"isEnabled\":%s,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $2, $7, $8, $1, $2, $3, $4, $5, is_enabled_val, $7, $8, $3, $1, $7;
+            id_val, foo_id_val, created_at_val, updated_at_val, id_val, foo_id_val, value_val, label_val, notes_val, is_enabled_val, created_at_val, updated_at_val, value_val, id_val, created_at_val;
 }' "$TEMP_DIR/test_bar_data.json" > "$TEMP_DIR/test_bar_events.json"; then
     echo "❌ Failed to convert test bar data to JSONEachRow format"
     exit 1
@@ -463,17 +526,66 @@ echo ""
 # Clear existing data if requested
 if [ "$CLEAR_DATA" = true ]; then
     echo "Clearing existing data from ClickHouse..."
-    run_clickhouse_query "TRUNCATE TABLE FooThingEvent"
-    run_clickhouse_query "TRUNCATE TABLE BarThingEvent"
-    echo "✅ Existing data cleared"
+    
+    # Show counts before clearing
+    BEFORE_FOO=$(run_clickhouse_query "SELECT count() FROM FooThingEvent")
+    BEFORE_BAR=$(run_clickhouse_query "SELECT count() FROM BarThingEvent")
+    echo "   Before clearing: $BEFORE_FOO foo records, $BEFORE_BAR bar records"
+    
+    # Clear the tables
+    if ! run_clickhouse_query "TRUNCATE TABLE FooThingEvent"; then
+        echo "❌ Failed to truncate FooThingEvent table"
+        exit 1
+    fi
+    if ! run_clickhouse_query "TRUNCATE TABLE BarThingEvent"; then
+        echo "❌ Failed to truncate BarThingEvent table" 
+        exit 1
+    fi
+    
+    # Verify tables are actually empty
+    AFTER_FOO=$(run_clickhouse_query "SELECT count() FROM FooThingEvent")
+    AFTER_BAR=$(run_clickhouse_query "SELECT count() FROM BarThingEvent")
+    
+    if [ "$AFTER_FOO" != "0" ] || [ "$AFTER_BAR" != "0" ]; then
+        echo "❌ Failed to clear ClickHouse data completely!"
+        echo "   After truncate: $AFTER_FOO foo records, $AFTER_BAR bar records"
+        exit 1
+    fi
+    
+    echo "✅ Existing data cleared (verified: 0 foo, 0 bar records)"
 fi
 
-# Full migration queries
-if [ -n "$COUNT_LIMIT" ]; then
-    FOO_QUERY="
+
+
+# Calculate number of batches needed
+FOO_BATCHES=$(( (MIGRATE_FOO_COUNT + BATCH_SIZE - 1) / BATCH_SIZE ))
+BAR_BATCHES=$(( (MIGRATE_BAR_COUNT + BATCH_SIZE - 1) / BATCH_SIZE ))
+
+echo "📊 Processing in batches of $BATCH_SIZE records:"
+echo "   - Foo batches: $FOO_BATCHES"
+echo "   - Bar batches: $BAR_BATCHES"
+echo ""
+
+# Process foo data in batches
+echo "Processing foo data in batches..."
+for ((batch=0; batch<FOO_BATCHES; batch++)); do
+    offset=$((batch * BATCH_SIZE))
+    current_batch=$((batch + 1))
+    
+    echo "Processing foo batch $current_batch/$FOO_BATCHES (offset: $offset, limit: $BATCH_SIZE)..."
+    
+    # Build the batched query
+    if [ -n "$COUNT_LIMIT" ]; then
+        remaining=$((COUNT_LIMIT - offset))
+        batch_limit=$((remaining < BATCH_SIZE ? remaining : BATCH_SIZE))
+    else
+        batch_limit=$BATCH_SIZE
+    fi
+    
+    FOO_BATCH_QUERY="
     SELECT 
-        id::text as id,
-        name,
+        COALESCE(id::text, '') as id,
+        COALESCE(name, '') as name,
         COALESCE(description, '') as description,
         COALESCE(status, 'active') as status,
         COALESCE(priority, 0) as priority,
@@ -483,157 +595,185 @@ if [ -n "$COUNT_LIMIT" ]; then
         COALESCE(array_to_string(tags, ','), '') as tags,
         COALESCE(score, 0) as score,
         COALESCE(large_text, '') as large_text,
-        date_trunc('second', created_at)::text as created_at,
-        date_trunc('second', updated_at)::text as updated_at
+        COALESCE(date_trunc('second', created_at)::text, '') as created_at,
+        COALESCE(date_trunc('second', updated_at)::text, '') as updated_at
     FROM foo 
     ORDER BY created_at
-    LIMIT $COUNT_LIMIT
+    LIMIT $batch_limit OFFSET $offset
     "
-
-    BAR_QUERY="
-    SELECT 
-        id::text as id,
-        COALESCE(foo_id::text, '') as foo_id,
-        COALESCE(value, 0) as value,
-        COALESCE(label, '') as label,
-        COALESCE(notes, '') as notes,
-        COALESCE(is_enabled, false) as is_enabled,
-        date_trunc('second', created_at)::text as created_at,
-        date_trunc('second', updated_at)::text as updated_at
-    FROM bar 
-    ORDER BY created_at
-    LIMIT $COUNT_LIMIT
-    "
-else
-    FOO_QUERY="
-    SELECT 
-        id::text as id,
-        name,
-        COALESCE(description, '') as description,
-        COALESCE(status, 'active') as status,
-        COALESCE(priority, 0) as priority,
-        COALESCE(is_active, false) as is_active,
-        COALESCE(metadata::text, '{}') as metadata,
-        COALESCE(config::text, '{}') as config,
-        COALESCE(array_to_string(tags, ','), '') as tags,
-        COALESCE(score, 0) as score,
-        COALESCE(large_text, '') as large_text,
-        date_trunc('second', created_at)::text as created_at,
-        date_trunc('second', updated_at)::text as updated_at
-    FROM foo 
-    ORDER BY created_at
-    "
-
-    BAR_QUERY="
-    SELECT 
-        id::text as id,
-        COALESCE(foo_id::text, '') as foo_id,
-        COALESCE(value, 0) as value,
-        COALESCE(label, '') as label,
-        COALESCE(notes, '') as notes,
-        COALESCE(is_enabled, false) as is_enabled,
-        date_trunc('second', created_at)::text as created_at,
-        date_trunc('second', updated_at)::text as updated_at
-    FROM bar 
-    ORDER BY created_at
-    "
-fi
-
-# Export full data
-echo "Exporting full foo data..."
-if ! run_postgres_query "$FOO_QUERY" "$TEMP_DIR/full_foo_data.json"; then
-    echo "❌ Failed to export full foo data"
-    exit 1
-fi
-
-echo "Exporting full bar data..."
-if ! run_postgres_query "$BAR_QUERY" "$TEMP_DIR/full_bar_data.json"; then
-    echo "❌ Failed to export full bar data"
-    exit 1
-fi
-
-echo "✅ Full data exported"
-
-# Convert full data to JSONEachRow format
-echo "Converting full data to JSONEachRow format..."
-
-# Process foo data
-if ! awk -F'\t' 'NR > 0 {
-    # Store metadata and config before escaping (they are already valid JSON)
-    metadata_json = $7;
-    config_json = $8;
     
-    # Escape everything else
-    gsub(/\\/, "\\\\");
-    gsub(/"/, "\\\"");
+    # Export batch data
+    if ! run_postgres_query "$FOO_BATCH_QUERY" "$TEMP_DIR/foo_batch_${batch}_data.json"; then
+        echo "❌ Failed to export foo batch $current_batch"
+        exit 1
+    fi
     
-    # Convert PostgreSQL boolean to JSON boolean
-    is_active_val = ($6 == "t") ? "true" : "false";
-    
-    # Convert PostgreSQL array format for tags
-    tags_field = $9;
-    if (tags_field == "") {
-        tags_json = "[]";
-    } else {
-        # Convert comma-separated string to JSON array
-        split(tags_field, tag_array, ",");
-        tags_json = "[";
-        for (i = 1; i <= length(tag_array); i++) {
-            if (i > 1) tags_json = tags_json ",";
-            tags_json = tags_json "\"" tag_array[i] "\"";
+    # Convert batch data to JSONEachRow format
+    if ! awk -F'\t' 'NR > 0 {
+        # Handle null/empty values with defaults
+        id_val = ($1 == "" || $1 == "\\N" || $1 == "NULL") ? "" : $1;
+        name_val = ($2 == "" || $2 == "\\N" || $2 == "NULL") ? "" : $2;
+        description_val = ($3 == "" || $3 == "\\N" || $3 == "NULL") ? "" : $3;
+        status_val = ($4 == "" || $4 == "\\N" || $4 == "NULL") ? "active" : $4;
+        priority_val = ($5 == "" || $5 == "\\N" || $5 == "NULL") ? "0" : $5;
+        is_active_val = ($6 == "" || $6 == "\\N" || $6 == "NULL") ? "false" : (($6 == "t") ? "true" : "false");
+        metadata_json = ($7 == "" || $7 == "\\N" || $7 == "NULL") ? "{}" : $7;
+        config_json = ($8 == "" || $8 == "\\N" || $8 == "NULL") ? "{}" : $8;
+        tags_field = ($9 == "" || $9 == "\\N" || $9 == "NULL") ? "" : $9;
+        score_val = ($10 == "" || $10 == "\\N" || $10 == "NULL") ? "0" : $10;
+        large_text_val = ($11 == "" || $11 == "\\N" || $11 == "NULL") ? "" : $11;
+        created_at_val = ($12 == "" || $12 == "\\N" || $12 == "NULL") ? "" : $12;
+        updated_at_val = ($13 == "" || $13 == "\\N" || $13 == "NULL") ? "" : $13;
+        
+        # Escape string values
+        gsub(/\\/, "\\\\", name_val);
+        gsub(/"/, "\\\"", name_val);
+        gsub(/\\/, "\\\\", description_val);
+        gsub(/"/, "\\\"", description_val);
+        gsub(/\\/, "\\\\", status_val);
+        gsub(/"/, "\\\"", status_val);
+        gsub(/\\/, "\\\\", large_text_val);
+        gsub(/"/, "\\\"", large_text_val);
+        gsub(/\\/, "\\\\", created_at_val);
+        gsub(/"/, "\\\"", created_at_val);
+        gsub(/\\/, "\\\\", updated_at_val);
+        gsub(/"/, "\\\"", updated_at_val);
+        
+        # Validate JSON fields
+        if (metadata_json == "" || metadata_json == "\\N" || metadata_json == "NULL") {
+            metadata_json = "{}";
         }
-        tags_json = tags_json "]";
-    }
+        if (config_json == "" || config_json == "\\N" || config_json == "NULL") {
+            config_json = "{}";
+        }
+        
+        # Convert PostgreSQL array format for tags
+        if (tags_field == "") {
+            tags_json = "[]";
+        } else {
+            # Convert comma-separated string to JSON array
+            split(tags_field, tag_array, ",");
+            tags_json = "[";
+            for (i = 1; i <= length(tag_array); i++) {
+                if (i > 1) tags_json = tags_json ",";
+                # Escape tag values
+                tag_val = tag_array[i];
+                gsub(/\\/, "\\\\", tag_val);
+                gsub(/"/, "\\\"", tag_val);
+                tags_json = tags_json "\"" tag_val "\"";
+            }
+            tags_json = tags_json "]";
+        }
+        
+        # Validate numeric fields
+        if (!match(priority_val, /^-?[0-9]+$/)) {
+            priority_val = "0";
+        }
+        if (!match(score_val, /^-?[0-9]*\.?[0-9]+$/)) {
+            score_val = "0";
+        }
+        
+        printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"%s\",\"status\":\"%s\",\"priority\":%s,\"isActive\":%s,\"metadata\":%s,\"tags\":%s,\"score\":%s,\"largeText\":\"%s\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+                id_val, created_at_val, updated_at_val, id_val, name_val, description_val, status_val, priority_val, is_active_val, metadata_json, tags_json, score_val, large_text_val, created_at_val, updated_at_val, id_val, created_at_val;
+    }' "$TEMP_DIR/foo_batch_${batch}_data.json" > "$TEMP_DIR/foo_batch_${batch}_events.json"; then
+        echo "❌ Failed to convert foo batch $current_batch to JSONEachRow format"
+        exit 1
+    fi
     
-    printf "{\"type\":\"foo.thing\",\"params\":[{\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"name\":\"\",\"description\":\"\",\"status\":\"active\",\"priority\":0,\"isActive\":false,\"metadata\":{},\"tags\":[],\"score\":0,\"largeText\":\"\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"name\":\"%s\",\"description\":\"%s\",\"status\":\"%s\",\"priority\":%s,\"isActive\":%s,\"metadata\":%s,\"tags\":%s,\"score\":%s,\"largeText\":\"%s\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"]}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $12, $13, $1, $2, $3, $4, $5, is_active_val, metadata_json, tags_json, $10, $11, $12, $13, $1, $12;
-}' "$TEMP_DIR/full_foo_data.json" > "$TEMP_DIR/full_foo_events.json"; then
-    echo "❌ Failed to convert full foo data to JSONEachRow format"
-    exit 1
-fi
-
-# Process bar data
-if ! awk -F'\t' 'NR > 0 {
-    gsub(/\\/, "\\\\");
-    gsub(/"/, "\\\"");
+    # Import batch to ClickHouse
+    if ! import_to_clickhouse "$TEMP_DIR/foo_batch_${batch}_events.json" "FooThingEvent"; then
+        echo "❌ Failed to import foo batch $current_batch to ClickHouse"
+        exit 1
+    fi
     
-    # Convert PostgreSQL boolean to JSON boolean
-    is_enabled_val = ($6 == "t") ? "true" : "false";
+    echo "✅ Foo batch $current_batch/$FOO_BATCHES completed"
+done
+
+# Process bar data in batches
+echo "Processing bar data in batches..."
+for ((batch=0; batch<BAR_BATCHES; batch++)); do
+    offset=$((batch * BATCH_SIZE))
+    current_batch=$((batch + 1))
     
-    printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"%s\",\"value\":%s,\"label\":\"%s\",\"notes\":\"%s\",\"isEnabled\":%s,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
-            $1, $2, $7, $8, $1, $2, $3, $4, $5, is_enabled_val, $7, $8, $3, $1, $7;
-}' "$TEMP_DIR/full_bar_data.json" > "$TEMP_DIR/full_bar_events.json"; then
-    echo "❌ Failed to convert full bar data to JSONEachRow format"
-    exit 1
-fi
+    echo "Processing bar batch $current_batch/$BAR_BATCHES (offset: $offset, limit: $BATCH_SIZE)..."
+    
+    # Build the batched query
+    if [ -n "$COUNT_LIMIT" ]; then
+        remaining=$((COUNT_LIMIT - offset))
+        batch_limit=$((remaining < BATCH_SIZE ? remaining : BATCH_SIZE))
+    else
+        batch_limit=$BATCH_SIZE
+    fi
+    
+    BAR_BATCH_QUERY="
+    SELECT 
+        COALESCE(id::text, '') as id,
+        COALESCE(foo_id::text, '') as foo_id,
+        COALESCE(value, 0) as value,
+        COALESCE(label, '') as label,
+        COALESCE(notes, '') as notes,
+        COALESCE(is_enabled, false) as is_enabled,
+        COALESCE(date_trunc('second', created_at)::text, '') as created_at,
+        COALESCE(date_trunc('second', updated_at)::text, '') as updated_at
+    FROM bar 
+    ORDER BY created_at
+    LIMIT $batch_limit OFFSET $offset
+    "
+    
+    # Export batch data
+    if ! run_postgres_query "$BAR_BATCH_QUERY" "$TEMP_DIR/bar_batch_${batch}_data.json"; then
+        echo "❌ Failed to export bar batch $current_batch"
+        exit 1
+    fi
+    
+    # Convert batch data to JSONEachRow format
+    if ! awk -F'\t' 'NR > 0 {
+        # Handle null/empty values with defaults
+        id_val = ($1 == "" || $1 == "\\N" || $1 == "NULL") ? "" : $1;
+        foo_id_val = ($2 == "" || $2 == "\\N" || $2 == "NULL") ? "" : $2;
+        value_val = ($3 == "" || $3 == "\\N" || $3 == "NULL") ? "0" : $3;
+        label_val = ($4 == "" || $4 == "\\N" || $4 == "NULL") ? "" : $4;
+        notes_val = ($5 == "" || $5 == "\\N" || $5 == "NULL") ? "" : $5;
+        is_enabled_val = ($6 == "" || $6 == "\\N" || $6 == "NULL") ? "false" : (($6 == "t") ? "true" : "false");
+        created_at_val = ($7 == "" || $7 == "\\N" || $7 == "NULL") ? "" : $7;
+        updated_at_val = ($8 == "" || $8 == "\\N" || $8 == "NULL") ? "" : $8;
+        
+        # Escape string values
+        gsub(/\\/, "\\\\", id_val);
+        gsub(/"/, "\\\"", id_val);
+        gsub(/\\/, "\\\\", foo_id_val);
+        gsub(/"/, "\\\"", foo_id_val);
+        gsub(/\\/, "\\\\", label_val);
+        gsub(/"/, "\\\"", label_val);
+        gsub(/\\/, "\\\\", notes_val);
+        gsub(/"/, "\\\"", notes_val);
+        gsub(/\\/, "\\\\", created_at_val);
+        gsub(/"/, "\\\"", created_at_val);
+        gsub(/\\/, "\\\\", updated_at_val);
+        gsub(/"/, "\\\"", updated_at_val);
+        
+        # Validate numeric fields
+        if (!match(value_val, /^-?[0-9]*\.?[0-9]+$/)) {
+            value_val = "0";
+        }
+        
+        printf "{\"type\":\"bar.thing\",\"params\":[{\"barId\":\"%s\",\"fooId\":\"%s\",\"action\":\"created\",\"previousData\":[{\"id\":\"\",\"fooId\":\"\",\"value\":0,\"label\":\"\",\"notes\":\"\",\"isEnabled\":false,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"currentData\":[{\"id\":\"%s\",\"fooId\":\"%s\",\"value\":%s,\"label\":\"%s\",\"notes\":\"%s\",\"isEnabled\":%s,\"createdAt\":\"%s\",\"updatedAt\":\"%s\"}],\"changes\":[\"migrate\"],\"value\":%s}],\"id\":\"%s\",\"timestamp\":\"%s\",\"source\":\"postgresql-migration\",\"correlationId\":null,\"metadata\":[{\"user\":null,\"session\":null}]}\n", 
+                id_val, foo_id_val, created_at_val, updated_at_val, id_val, foo_id_val, value_val, label_val, notes_val, is_enabled_val, created_at_val, updated_at_val, value_val, id_val, created_at_val;
+    }' "$TEMP_DIR/bar_batch_${batch}_data.json" > "$TEMP_DIR/bar_batch_${batch}_events.json"; then
+        echo "❌ Failed to convert bar batch $current_batch to JSONEachRow format"
+        exit 1
+    fi
+    
+    # Import batch to ClickHouse
+    if ! import_to_clickhouse "$TEMP_DIR/bar_batch_${batch}_events.json" "BarThingEvent"; then
+        echo "❌ Failed to import bar batch $current_batch to ClickHouse"
+        exit 1
+    fi
+    
+    echo "✅ Bar batch $current_batch/$BAR_BATCHES completed"
+done
 
-# Verify converted files are not empty
-if [ ! -s "$TEMP_DIR/full_foo_events.json" ]; then
-    echo "❌ Full foo events file is empty after conversion"
-    exit 1
-fi
-
-if [ ! -s "$TEMP_DIR/full_bar_events.json" ]; then
-    echo "❌ Full bar events file is empty after conversion"
-    exit 1
-fi
-
-echo "✅ Full data converted to JSONEachRow format"
-
-# Import full data to ClickHouse
-echo "Importing full data to ClickHouse..."
-
-if ! import_to_clickhouse "$TEMP_DIR/full_foo_events.json" "FooThingEvent"; then
-    echo "❌ Failed to import full foo data to ClickHouse"
-    exit 1
-fi
-
-if ! import_to_clickhouse "$TEMP_DIR/full_bar_events.json" "BarThingEvent"; then
-    echo "❌ Failed to import full bar data to ClickHouse"
-    exit 1
-fi
-
-echo "✅ Full data imported successfully!"
+echo "✅ All batches processed successfully!"
 
 # Verify full data
 echo "Verifying full data in ClickHouse..."
@@ -688,5 +828,5 @@ if [ "$KEEP_TEMP" = false ]; then
 else
     echo "📁 Temporary files kept in: $TEMP_DIR"
     echo "   - Test files: test_*_events.json"
-    echo "   - Full files: full_*_events.json"
+    echo "   - Batch files: foo_batch_*_events.json, bar_batch_*_events.json"
 fi 

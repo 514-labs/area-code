@@ -182,12 +182,7 @@ init_indices() {
     print_success "Indices initialized successfully"
 }
 
-# Seed sample data
-seed_data() {
-    print_status "Seeding sample data..."
-    npx tsx src/scripts/seed.ts
-    print_success "Sample data seeded successfully"
-}
+# Removed seed_data function - no longer needed, data comes from PostgreSQL migration
 
 # Start the service
 start_service() {
@@ -367,10 +362,7 @@ reset_elasticsearch() {
     # Initialize indices
     npx tsx src/scripts/init-indices.ts
     
-    # Seed data
-    npx tsx src/scripts/seed.ts
-    
-    print_success "Elasticsearch data reset successfully"
+    print_success "Elasticsearch data reset successfully (indices recreated)"
 }
 
 # Run migration only (init indices and seed data)
@@ -386,9 +378,7 @@ run_migration() {
     # Initialize indices
     init_indices
     
-    # Seed data
-    seed_data
-    
+    # Migrate real data from PostgreSQL
     ./migrate-from-postgres-to-elasticsearch.sh
     print_success "Migration completed successfully!"
 }
@@ -427,10 +417,6 @@ full_reset() {
     print_status "Initializing indices..."
     init_indices
     
-    # Seed data
-    print_status "Seeding sample data..."
-    seed_data
-    
     # Start the service
     print_status "Starting retrieval service..."
     start_service
@@ -464,9 +450,6 @@ full_setup() {
     echo ""
     
     init_indices
-    echo ""
-    
-    seed_data
     echo ""
     
     start_service

@@ -212,7 +212,7 @@ show_status() {
         print_success "Service is running (PID: $pid)"
         
         # Check if service is responding
-        if curl -s http://localhost:4100 > /dev/null 2>&1; then
+        if curl -s http://localhost:4100/health > /dev/null 2>&1; then
             print_success "Service is responding to requests"
         else
             print_warning "Service is running but not responding to requests"

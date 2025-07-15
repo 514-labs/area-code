@@ -24,7 +24,7 @@ BAR_INDEX="bars"
 CLEAR_DATA=false
 KEEP_TEMP=false
 COUNT_LIMIT=""
-BATCH_SIZE=1000
+BATCH_SIZE=5000
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -177,6 +177,20 @@ bulk_index_to_elasticsearch() {
     if [ -n "$errors" ]; then
         echo "❌ Bulk indexing had errors for index: ${index_name}" >&2
         echo "   Response: $response" >&2
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to refresh Elasticsearch index (makes data immediately searchable)
+refresh_elasticsearch_index() {
+    local index_name="$1"
+    local response
+    
+    if ! response=$(curl -s -f -X POST "${ES_URL}/${index_name}/_refresh" 2>&1); then
+        echo "❌ Failed to refresh Elasticsearch index: ${index_name}" >&2
+        echo "   Error: $response" >&2
         return 1
     fi
     
@@ -348,8 +362,8 @@ SELECT
     COALESCE(array_to_string(tags, ','), '') as tags,
     COALESCE(score, 0) as score,
     COALESCE(large_text, '') as large_text,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
+    to_char(created_at, 'YYYY-MM-DD') || 'T' || to_char(created_at, 'HH24:MI:SS') || '.000Z' as created_at,
+    to_char(updated_at, 'YYYY-MM-DD') || 'T' || to_char(updated_at, 'HH24:MI:SS') || '.000Z' as updated_at
 FROM foo 
 LIMIT 1
 "
@@ -362,8 +376,8 @@ SELECT
     COALESCE(label, '') as label,
     COALESCE(notes, '') as notes,
     COALESCE(is_enabled, false) as is_enabled,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
+    to_char(created_at, 'YYYY-MM-DD') || 'T' || to_char(created_at, 'HH24:MI:SS') || '.000Z' as created_at,
+    to_char(updated_at, 'YYYY-MM-DD') || 'T' || to_char(updated_at, 'HH24:MI:SS') || '.000Z' as updated_at
 FROM bar 
 LIMIT 1
 "
@@ -482,6 +496,14 @@ if ! bulk_index_to_elasticsearch "$TEMP_DIR/test_bar_bulk.json" "$BAR_INDEX"; th
 fi
 
 echo "✅ Test import successful!"
+
+# Refresh indices to make data immediately searchable
+echo "Refreshing Elasticsearch indices..."
+refresh_elasticsearch_index "$FOO_INDEX"
+refresh_elasticsearch_index "$BAR_INDEX"
+
+# Small delay to ensure data is fully indexed
+sleep 2
 
 # Verify test data in Elasticsearch
 echo "Verifying test data in Elasticsearch..."
@@ -690,8 +712,8 @@ SELECT
     COALESCE(array_to_string(tags, ','), '') as tags,
     COALESCE(score, 0) as score,
     COALESCE(large_text, '') as large_text,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
+    to_char(created_at, 'YYYY-MM-DD') || 'T' || to_char(created_at, 'HH24:MI:SS') || '.000Z' as created_at,
+    to_char(updated_at, 'YYYY-MM-DD') || 'T' || to_char(updated_at, 'HH24:MI:SS') || '.000Z' as updated_at
 FROM foo 
 ORDER BY created_at
 "
@@ -704,8 +726,8 @@ SELECT
     COALESCE(label, '') as label,
     COALESCE(notes, '') as notes,
     COALESCE(is_enabled, false) as is_enabled,
-    date_trunc('second', created_at)::text as created_at,
-    date_trunc('second', updated_at)::text as updated_at
+    to_char(created_at, 'YYYY-MM-DD') || 'T' || to_char(created_at, 'HH24:MI:SS') || '.000Z' as created_at,
+    to_char(updated_at, 'YYYY-MM-DD') || 'T' || to_char(updated_at, 'HH24:MI:SS') || '.000Z' as updated_at
 FROM bar 
 ORDER BY created_at
 "
@@ -731,6 +753,14 @@ if ! process_batch "bar" "$BAR_INDEX" "$BAR_QUERY" "$MIGRATE_BAR_COUNT" "$BATCH_
 fi
 
 echo "✅ Full data imported successfully!"
+
+# Refresh indices to make data immediately searchable
+echo "Refreshing Elasticsearch indices..."
+refresh_elasticsearch_index "$FOO_INDEX"
+refresh_elasticsearch_index "$BAR_INDEX"
+
+# Small delay to ensure data is fully indexed
+sleep 3
 
 # Verify full data
 echo "Verifying full data in Elasticsearch..."

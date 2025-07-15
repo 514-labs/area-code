@@ -13,8 +13,7 @@
     "es:stop": "./setup.sh es:stop",
     "es:reset": "./setup.sh es:reset",
     "es:ensure-ready": "sleep 10 && npm run es:init-indices",
-    "es:init-indices": "tsx src/scripts/init-indices.ts",
-    "es:seed": "tsx src/scripts/seed.ts"
+    "es:init-indices": "tsx src/scripts/init-indices.ts"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.15.0",

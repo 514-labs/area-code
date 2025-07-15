@@ -8,9 +8,9 @@
 -- CALL seed_foo_data(); -- default 1M foo records (keeps existing data)
 -- CALL seed_foo_data(5000000); -- 5M foo records (keeps existing data)
 -- CALL seed_foo_data(1000000, true); -- 1M foo records (cleans existing data first)
--- CALL seed_bar_data(); -- default 500K bar records (keeps existing data)
+-- CALL seed_bar_data(); -- default 100K bar records (keeps existing data)
 -- CALL seed_bar_data(2000000); -- 2M bar records (keeps existing data)
--- CALL seed_all_data(); -- 1M foo + 500K bar records (keeps existing data)
+-- CALL seed_all_data(); -- 1M foo + 100K bar records (keeps existing data)
 -- CALL seed_all_data(10000000, 5000000, true); -- 10M foo + 5M bar (cleans first)
 
 -- Drop existing functions and procedures to avoid conflicts
@@ -158,8 +158,7 @@ BEGIN
     -- Clean existing data if requested
     IF clean_existing THEN
         RAISE NOTICE 'Cleaning existing data (clean_existing = true)';
-        DELETE FROM bar;
-        DELETE FROM foo;
+        TRUNCATE TABLE bar, foo CASCADE;
         COMMIT;
     ELSE
         RAISE NOTICE 'Keeping existing data (clean_existing = false)';
@@ -282,14 +281,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- BLAZING FAST Bar seeding procedure (MAXIMUM OPTIMIZATION)
-CREATE OR REPLACE PROCEDURE seed_bar_data(record_count INT DEFAULT 500000, clean_existing BOOLEAN DEFAULT false)
+-- Reliable Bar seeding procedure (WAL-safe optimization)
+CREATE OR REPLACE PROCEDURE seed_bar_data(record_count INT DEFAULT 100000, clean_existing BOOLEAN DEFAULT false)
 LANGUAGE plpgsql AS $$
 DECLARE
     start_time TIMESTAMP;
     end_time TIMESTAMP;
     bar_records BIGINT;
-    batch_size INT := 50000;  -- MASSIVE batch size for maximum speed
+    batch_size INT := 5000;  -- Conservative batch size to prevent WAL issues
     current_batch INT := 0;
     batch_start INT;
     batch_end INT;
@@ -315,7 +314,7 @@ BEGIN
     END IF;
     
     -- Log start
-    RAISE NOTICE 'Starting BLAZING FAST insert of % bar records in % batches of % records each', record_count, total_batches, batch_size;
+    RAISE NOTICE 'Starting reliable insert of % bar records in % batches of % records each', record_count, total_batches, batch_size;
     RAISE NOTICE 'Pre-loaded % foo_ids for referencing', foo_count;
     
     -- Clean existing bar data if requested (but not foo data)
@@ -327,7 +326,7 @@ BEGIN
         RAISE NOTICE 'Keeping existing bar data (clean_existing = false)';
     END IF;
 
-    -- Insert bar records in MASSIVE batches (BLAZING FAST)
+    -- Insert bar records in safe batches (WAL-friendly)
     WHILE current_batch * batch_size < record_count LOOP
         batch_start := current_batch * batch_size + 1;
         batch_end := LEAST((current_batch + 1) * batch_size, record_count);
@@ -339,6 +338,11 @@ BEGIN
         IF current_batch % 2 = 0 THEN
             RAISE NOTICE 'Processing batch % of % (%.1f%% complete)', current_batch + 1, total_batches, 
                         (current_batch::FLOAT / total_batches * 100);
+        END IF;
+        
+        -- Small delay every 10 batches to let WAL catch up
+        IF current_batch % 10 = 0 THEN
+            PERFORM pg_sleep(0.1);
         END IF;
         
         INSERT INTO bar (
@@ -377,14 +381,14 @@ BEGIN
     -- Record end time
     end_time := NOW();
     
-    RAISE NOTICE 'BLAZING FAST bar seed completed! Inserted % bar records in % (%.0f records/second)', 
+    RAISE NOTICE 'Reliable bar seed completed! Inserted % bar records in % (%.0f records/second)', 
                 bar_records, (end_time - start_time), 
                 bar_records / EXTRACT(EPOCH FROM (end_time - start_time));
 END;
 $$;
 
 -- Combined seeding procedure for both foo and bar data
-CREATE OR REPLACE PROCEDURE seed_all_data(foo_count INT DEFAULT 1000000, bar_count INT DEFAULT 500000, clean_existing BOOLEAN DEFAULT false)
+CREATE OR REPLACE PROCEDURE seed_all_data(foo_count INT DEFAULT 1000000, bar_count INT DEFAULT 100000, clean_existing BOOLEAN DEFAULT false)
 LANGUAGE plpgsql AS $$
 BEGIN
     RAISE NOTICE 'Starting combined data seeding: % foo records, % bar records', foo_count, bar_count;
