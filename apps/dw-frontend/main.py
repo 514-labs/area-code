@@ -117,6 +117,7 @@ def sidebar_navigation():
         if (
             "extract_status_msg" in st.session_state and
             "extract_status_type" in st.session_state and
+            "extract_status_time" in st.session_state and
             (time.time() - st.session_state["extract_status_time"]) < 10
         ):
             msg = st.session_state["extract_status_msg"]
