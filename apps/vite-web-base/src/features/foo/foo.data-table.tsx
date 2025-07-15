@@ -207,7 +207,9 @@ const columns: ColumnDef<Foo>[] = [
       </SortableHeader>
     ),
     cell: ({ row }) => (
-      <div className="text-center font-medium">{row.original.priority}</div>
+      <div className="text-center font-medium">
+        {row.original.priority.toLocaleString()}
+      </div>
     ),
     enableSorting: true,
   },
@@ -238,7 +240,10 @@ const columns: ColumnDef<Foo>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-right font-medium">
-        {row.original?.score?.toFixed(2) || "0.00"}
+        {(row.original?.score || 0).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
       </div>
     ),
     enableSorting: true,
@@ -443,7 +448,12 @@ export function FooDataTable({
           </div>
           {queryTime !== null && (
             <div className="text-green-600">
-              Latest query: {queryTime?.toFixed(2) || "0.00"}ms
+              Latest query:{" "}
+              {(queryTime || 0).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+              ms
             </div>
           )}
         </div>

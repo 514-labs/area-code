@@ -52,6 +52,20 @@ export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
     // Convert sortOrder to uppercase for consistency
     const upperSortOrder = sortOrder.toUpperCase() as "ASC" | "DESC";
 
+    // First, get the total count of all records
+    const countQuery = sql`
+      SELECT count() as total
+      FROM ${fooTableName}
+    `;
+
+    const countResultSet = await client.query.execute<{
+      total: number;
+    }>(countQuery);
+    const countResults = (await countResultSet.json()) as {
+      total: number;
+    }[];
+    const totalCount = countResults[0]?.total || 0;
+
     // this is the only way I found to make sort order work within moose....
     const query =
       upperSortOrder === "ASC"
@@ -87,15 +101,14 @@ export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
     });
 
     // Create pagination metadata (matching transactional API format)
-    const total = data.length; // For now, using actual returned count
-    const hasMore = data.length === limit; // Simple heuristic
+    const hasMore = offset + data.length < totalCount;
 
     return {
       data,
       pagination: {
         limit,
         offset,
-        total,
+        total: totalCount,
         hasMore,
       },
     };
