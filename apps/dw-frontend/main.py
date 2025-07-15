@@ -15,6 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- FUNCTION DEFINITIONS ---
 def set_sidebar_min_width():
     st.markdown(
         """
@@ -33,66 +34,12 @@ def set_sidebar_min_width():
         unsafe_allow_html=True,
     )
 
-# Set sidebar to minimum width
-set_sidebar_min_width()
-
 def get_page_from_query():
-    # Use st.query_params (Streamlit 1.30.0+) instead of deprecated experimental API
     page = st.query_params.get("page", None)
     return page
 
 def set_page_in_query(page):
     st.query_params["page"] = page
-
-# List of valid pages
-PAGES = ("All", "S3", "Datadog")
-REPORTS = ("Connector analytics",)
-
-# Combine main and reports for navigation
-NAV_SECTIONS = [
-    ("Reports", list(REPORTS)),
-    ("Data Warehouse", list(PAGES)),
-]
-
-def sidebar_navigation():
-    selected = None
-    with st.sidebar:
-        st.markdown("## Menu")
-        # Reports section
-        st.markdown("**Reports**")
-        for item in REPORTS:
-            if ui.button(text=item, key=f"nav-report-{item}"):
-                set_page_in_query(item)
-                selected = item
-
-        # Data Warehouse section
-        st.markdown("**Views**")
-        for item in PAGES:
-            if ui.button(text=item, key=f"nav-page-{item}"):
-                set_page_in_query(item)
-                selected = item
-
-    if not selected:
-        selected = get_page_from_query() or REPORTS[0]
-    return selected
-
-# Use new sidebar navigation
-page = sidebar_navigation()
-set_page_in_query(page)
-
-def trigger_extract(api_url, label):
-    batch_size = random.randint(10, 100)
-    url = f"{api_url}/getBars?batch_size={batch_size}"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        st.session_state["extract_status_msg"] = f"{label} extract triggered with batch size {batch_size}."
-        st.session_state["extract_status_type"] = "success"
-        st.session_state["extract_status_time"] = time.time()
-    except Exception as e:
-        st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract (batch size {batch_size}): {e}"
-        st.session_state["extract_status_type"] = "error"
-        st.session_state["extract_status_time"] = time.time()
 
 def fetch_data(tag):
     api_url = f"{API_BASE}/getBars?tag={tag}"
@@ -104,22 +51,32 @@ def fetch_data(tag):
         df = pd.DataFrame(items)
         if not df.empty and "transform_timestamp" in df.columns:
             df["Processed On"] = pd.to_datetime(df["transform_timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
-            # Insert as second column
             cols = list(df.columns)
             cols.insert(1, cols.pop(cols.index("Processed On")))
             df = df[cols]
-            # Optionally drop the raw transform_timestamp column if not needed
             df = df.drop(columns=["transform_timestamp"])
         return df
     except Exception as e:
         st.error(f"Failed to fetch data from API: {e}")
         return pd.DataFrame()
 
+def trigger_extract(api_url, label):
+    batch_size = random.randint(10, 100)
+    url = f"{api_url}?batch_size={batch_size}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        st.session_state["extract_status_msg"] = f"{label} extract triggered with batch size {batch_size}."
+        st.session_state["extract_status_type"] = "success"
+        st.session_state["extract_status_time"] = time.time()
+    except Exception as e:
+        st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract (batch size {batch_size}): {e}"
+        st.session_state["extract_status_type"] = "error"
+        st.session_state["extract_status_time"] = time.time()
+
 def trigger_both_extracts():
     trigger_extract(f"{API_BASE}/extract-s3", "S3")
     trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
-
-# Helper for refresh and data fetch logic
 
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
@@ -137,6 +94,68 @@ def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=
     else:
         df = fetch_data(tag)
     return df
+
+def sidebar_navigation():
+    selected = None
+    with st.sidebar:
+        st.markdown("## Menu")
+        # Reports section
+        st.markdown("**Reports**")
+        for item in REPORTS:
+            if ui.button(text=item, key=f"nav-report-{item}"):
+                set_page_in_query(item)
+                st.rerun()
+                return  # Ensure URL updates before further code runs
+        # Data Warehouse section
+        st.markdown("**Views**")
+        for item in PAGES:
+            if ui.button(text=item, key=f"nav-page-{item}"):
+                set_page_in_query(item)
+                st.rerun()
+                return  # Ensure URL updates before further code runs
+        # Display status messages at the bottom of the sidebar
+        if (
+            "extract_status_msg" in st.session_state and
+            "extract_status_type" in st.session_state and
+            (time.time() - st.session_state["extract_status_time"]) < 10
+        ):
+            msg = st.session_state["extract_status_msg"]
+            typ = st.session_state["extract_status_type"]
+            if typ == "success":
+                st.success(msg)
+            elif typ == "error":
+                st.error(msg)
+            elif typ == "warning":
+                st.warning(msg)
+            elif typ == "info":
+                st.info(msg)
+    if not selected:
+        selected = get_page_from_query() or REPORTS[0]
+    return selected
+
+# List of valid pages
+PAGES = ("All", "S3", "Datadog")
+REPORTS = ("Connector analytics",)
+
+# Combine main and reports for navigation
+NAV_SECTIONS = [
+    ("Reports", list(REPORTS)),
+    ("Data Warehouse", list(PAGES)),
+]
+
+# --- MAIN LOGIC ---
+# List of valid pages
+PAGES = ("All", "S3", "Datadog")
+REPORTS = ("Connector analytics",)
+
+# Combine main and reports for navigation
+NAV_SECTIONS = [
+    ("Reports", list(REPORTS)),
+    ("Data Warehouse", list(PAGES)),
+]
+
+# --- PAGE LOGIC ---
+page = get_page_from_query() or REPORTS[0]
 
 if page == "All":
     st.title("Overview")
@@ -157,10 +176,7 @@ if page == "All":
         "extract_status_time" in st.session_state and
         (time.time() - st.session_state["extract_status_time"]) < 10
     ):
-        if st.session_state.get("extract_status_type") == "success":
-            ui.alert(title="Success", description=st.session_state["extract_status_msg"], variant="success", key="alert_success")
-        else:
-            ui.alert(title="Error", description=st.session_state["extract_status_msg"], variant="destructive", key="alert_error")
+        pass  # Status is now shown in sidebar
     else:
         st.session_state.pop("extract_status_msg", None)
         st.session_state.pop("extract_status_type", None)
@@ -210,7 +226,6 @@ elif page == "Datadog":
         st.dataframe(parsed_logs, use_container_width=True)
     else:
         st.write("No Datadog log data available.")
-
 elif page == "Connector analytics":
     # Modern animated banner
     st.markdown("""
@@ -249,7 +264,8 @@ elif page == "Connector analytics":
     # Fetch all data (no tag filter)
     df = fetch_data("All")
     if df.empty:
-        ui.alert(title="Warning", description="No data available for analytics.", variant="warning", key="alert_warning")
+        st.session_state["extract_status_msg"] = "No data available for analytics."
+        st.session_state["extract_status_type"] = "warning"
     else:
         # --- S3 vs Datadog breakdown ---
         def detect_source(tags):
@@ -273,7 +289,16 @@ elif page == "Connector analytics":
             st.subheader("Total Items Per Minute by Connector")
             st.bar_chart(per_min_pivot)
         else:
-            ui.alert(title="Info", description="No timestamp data available for per-minute chart.", variant="info", key="alert_info")
+            st.session_state["extract_status_msg"] = "No timestamp data available for per-minute chart."
+            st.session_state["extract_status_type"] = "info"
+
+# Now render the sidebar with the latest status
+sidebar_navigation()
+
+# After rendering, clear the status so it doesn't persist
+st.session_state.pop("extract_status_msg", None)
+st.session_state.pop("extract_status_type", None)
+st.session_state.pop("extract_status_time", None)
 
 # Footer
 st.markdown("---")
