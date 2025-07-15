@@ -17,7 +17,9 @@
     "dev:turbo": "turbo",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "dev:setup": "./setup.sh",
-    "dev:sequence": "./dev-sequence.sh"
+    "dev:sequence": "./dev-sequence.sh",
+    "dev:workflow": "cd services/sync-base && pnpm dev:workflow",
+    "dev:seed": "cd services/transactional-base && pnpm db:seed"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",

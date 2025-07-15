@@ -102,19 +102,19 @@ cleanup_existing_processes() {
     cd "$SCRIPT_DIR"
     
     # Kill only moose-related processes using our expected ports
-    local ports=(4000 4100 8083)
+    local ports=(4000 4100 8083 5173)
     for port in "${ports[@]}"; do
         # Get processes on this port and filter for moose-related ones
         local pids=$(lsof -ti:$port 2>/dev/null || true)
         if [ -n "$pids" ]; then
             for pid in $pids; do
-                # Check if this process is moose-related
+                # Check if this process is moose-related or frontend-related
                 local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
-                if [[ "$process_info" =~ moose|tsx.*src/server.ts ]]; then
-                    print_step "Killing moose-related process using port $port (PID: $pid)"
+                if [[ "$process_info" =~ moose|tsx.*src/server.ts|vite ]]; then
+                    print_step "Killing dev-related process using port $port (PID: $pid)"
                     kill $pid 2>/dev/null || true
                 else
-                    print_step "Skipping non-moose process on port $port (PID: $pid)"
+                    print_step "Skipping non-dev process on port $port (PID: $pid)"
                 fi
             done
         fi
@@ -299,14 +299,8 @@ main() {
     sleep 3
     echo ""
     
-    # Step 6: Run workflow from sync-base
-    print_step "Step 6: Starting workflow in sync-base"
-    run_in_service_background "sync-base" "pnpm dev:workflow" "workflow" || exit 1
-    wait_for_log_message "$SCRIPT_DIR/services/sync-base/dev-workflow.log" "started successfully" "sync-base workflow" || exit 1
-    echo ""
-    
-    # Step 7: Setup and start retrieval-base
-    print_step "Step 7: Setting up and starting retrieval-base"
+    # Step 6: Setup and start retrieval-base
+    print_step "Step 6: Setting up and starting retrieval-base"
     
     print_step "Running elasticsearch setup..."
     run_in_service "retrieval-base" "pnpm es:setup" || exit 1
@@ -321,21 +315,52 @@ main() {
     }
     echo ""
     
+    # Step 7: Start frontend
+    print_step "Step 7: Starting frontend (vite-web-base)"
+    
+    local frontend_dir="$SCRIPT_DIR/apps/vite-web-base"
+    print_step "Running 'pnpm dev' for frontend..."
+    
+    if [ ! -d "$frontend_dir" ]; then
+        print_error "Frontend directory not found: $frontend_dir"
+        exit 1
+    fi
+    
+    cd "$frontend_dir" || {
+        print_error "Failed to change to frontend directory: $frontend_dir"
+        exit 1
+    }
+    
+    # Start frontend in background
+    nohup bash -c "pnpm dev" > "$frontend_dir/dev-main.log" 2>&1 &
+    local frontend_pid=$!
+    
+    print_success "Started frontend with PID $frontend_pid (logs: $frontend_dir/dev-main.log)"
+    cd "$SCRIPT_DIR"
+    
+    # Wait for frontend to be ready (Vite typically uses port 5173)
+    wait_for_service "frontend" "5173" || {
+        print_warning "frontend may not be fully ready, continuing anyway..."
+    }
+    echo ""
+    
     print_success "🎉 Development environment bootstrap completed!"
     echo ""
     echo "Services started:"
     echo "  • transactional-base: http://localhost:8082"
-    echo "  • sync-base: http://localhost:4000 + workflows"
+    echo "  • sync-base: http://localhost:4000"
     echo "  • analytical-base: http://localhost:4100 (ingest)"
     echo "  • retrieval-base: http://localhost:8083 (search API)"
+    echo "  • frontend: http://localhost:5173 (web UI)"
     echo ""
     echo "Log files:"
     echo "  • transactional-base: services/transactional-base/dev-main.log"
     echo "  • sync-base main: services/sync-base/dev-main.log"
-    echo "  • sync-base workflow: services/sync-base/dev-workflow.log"
     echo "  • analytical-base: services/analytical-base/dev-main.log"
     echo "  • retrieval-base: services/retrieval-base/dev-main.log"
+    echo "  • frontend: apps/vite-web-base/dev-main.log"
     echo ""
+    echo "To start workflows separately, run: pnpm dev:workflow"
     echo "To stop all services, you can use the main setup.sh script: ./setup.sh stop"
 }
 
@@ -351,8 +376,8 @@ show_help() {
     echo "  3. Start sync-base"
     echo "  4. Start analytical-base"
     echo "  5. Touch analytical-base index.ts to trigger file watcher"
-    echo "  6. Start workflow in sync-base"
-    echo "  7. Setup and start retrieval-base with elasticsearch"
+    echo "  6. Setup and start retrieval-base with elasticsearch"
+    echo "  7. Start frontend (vite-web-base)"
     echo ""
     echo "Options:"
     echo "  --help              Show this help message"
