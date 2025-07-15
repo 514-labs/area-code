@@ -41,9 +41,10 @@ show_usage() {
     echo "  status    - Show service status"
     echo "  reset     - Full reset (stop service, restart)"
     echo "  env:check - Check environment configuration"
-    echo "  infra:start  - Start Moose infrastructure (managed by moose dev)"
-    echo "  infra:stop   - Stop Moose infrastructure"
-    echo "  infra:reset  - Reset infrastructure data"
+    # Commented out because unclear what these were for
+    # echo "  infra:start  - Start Moose infrastructure (managed by moose dev)"
+    # echo "  infra:stop   - Stop Moose infrastructure"
+    # echo "  infra:reset  - Reset infrastructure data"
     echo "  help      - Show this help message"
     echo ""
     echo "Examples:"
@@ -55,12 +56,12 @@ show_usage() {
     echo "  $0 env:check # Validate environment configuration"
     echo ""
     echo "Note: This service uses 'moose dev' to manage infrastructure automatically."
-    echo "The service PID is tracked in /tmp/data-warehouse.pid"
+    echo "The service PID is tracked in /tmp/data-warehouse.pid and /tmp/dw-frontend.pid"
     echo ""
 }
 
-# Function to get service PID
-get_service_pid() {
+# Function to get moose service PID
+get_moose_service_id() {
     if [ -f "/tmp/data-warehouse.pid" ]; then
         cat /tmp/data-warehouse.pid 2>/dev/null || echo ""
     else
@@ -68,9 +69,9 @@ get_service_pid() {
     fi
 }
 
-# Function to check if service is running
-is_service_running() {
-    local pid=$(get_service_pid)
+# Function to check if moose service is running
+is_moose_service_running() {
+    local pid=$(get_moose_service_id)
     if [ -n "$pid" ]; then
         return 0  # Service is running
     else
@@ -78,18 +79,105 @@ is_service_running() {
     fi
 }
 
+# Function to get dw-frontend PID
+get_dw_frontend_pid() {
+    if [ -f "/tmp/dw-frontend.pid" ]; then
+        cat /tmp/dw-frontend.pid 2>/dev/null || echo ""
+    else
+        echo ""
+    fi
+}
+
+# Function to check if dw-frontend is running
+is_dw_frontend_running() {
+    local pid=$(get_dw_frontend_pid)
+    if [ -n "$pid" ]; then
+        return 0  # Service is running
+    else
+        return 1  # Service is not running
+    fi
+}
+
+# Virtual environment utility functions
+check_venv_exists() {
+    if [ -d "venv" ]; then
+        return 0  # venv exists
+    else
+        return 1  # venv does not exist
+    fi
+}
+
+create_venv_if_missing() {
+    if ! check_venv_exists; then
+        print_status "Creating Python virtual environment..."
+
+        if python3 -m venv venv; then
+            print_success "Virtual environment created successfully at ./venv"
+        else
+            print_error "Failed to create virtual environment"
+            exit 1
+        fi
+    else
+        print_success "Virtual environment already exists at ./venv"
+    fi
+}
+
+ensure_venv_activated() {
+    # First check if venv exists
+    if ! check_venv_exists; then
+        print_error "Virtual environment not found. Please run '$0 setup' first to create the virtual environment."
+        exit 1
+    fi
+
+    # Check if we're already in the virtual environment
+    if [ -z "$VIRTUAL_ENV" ]; then
+        print_status "Activating virtual environment..."
+        source venv/bin/activate
+
+        if [ -n "$VIRTUAL_ENV" ]; then
+            print_success "Virtual environment activated: $VIRTUAL_ENV"
+        else
+            print_error "Failed to activate virtual environment"
+            exit 1
+        fi
+    else
+        print_success "Virtual environment already active: $VIRTUAL_ENV"
+    fi
+}
+
+# Wait for a process to stop gracefully
+wait_for_process_to_stop() {
+    local pid=$1
+    local service_name=$2
+    local max_attempts=${3:-10}
+    local sleep_interval=${4:-1}
+
+    if [ -z "$pid" ]; then
+        return 0  # No PID, consider it stopped
+    fi
+
+    print_status "Waiting for $service_name to stop gracefully..."
+
+    local attempts=0
+    while [ $attempts -lt $max_attempts ]; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            print_success "$service_name stopped successfully"
+            return 0  # Process stopped
+        fi
+
+        sleep $sleep_interval
+        attempts=$((attempts + 1))
+
+        print_status "Waiting for $service_name to stop... (attempt $attempts/$max_attempts)"
+    done
+
+    return 1  # Process didn't stop within timeout
+}
+
 # Check prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
-    
-    # Check Moose CLI
-    if ! command -v moose &> /dev/null; then
-        print_error "Moose CLI is not installed. Please install it with: npm install -g @514labs/moose-cli"
-        exit 1
-    fi
-    
-    print_success "Moose CLI version: $(moose --version 2>/dev/null || echo 'unknown')"
-    
+
     # Check if transactional-base service is accessible
     local transactional_env_path="../transactional-base/.env"
     if [ ! -f "$transactional_env_path" ]; then
@@ -99,6 +187,13 @@ check_prerequisites() {
     else
         print_success "Found transactional-base/.env - will copy configuration values"
     fi
+}
+
+print_python_install_instructions() {
+    print_status "  • macOS: brew install python@3.12"
+    print_status "  • Ubuntu/Debian: sudo apt install python3.12"
+    print_status "  • Or use pyenv: pyenv install 3.12 && pyenv global 3.12"
+    print_status "  • Or download from: https://www.python.org/downloads/"
 }
 
 # Extract value from transactional-base .env file
@@ -192,6 +287,33 @@ EOF
 
 # Check environment configuration
 check_environment() {
+    print_status "Checking Python version..."
+
+    if ! command -v python3 &> /dev/null; then
+        print_error "Python 3 is not installed"
+        print_status "Install Python 3.12+ using one of these methods:"
+        print_python_install_instructions
+        exit 1
+    else
+        # Get Python version
+        python_version=$(python3 --version 2>&1 | sed 's/Python //')
+
+        # Parse version numbers
+        major=$(echo "$python_version" | cut -d. -f1)
+        minor=$(echo "$python_version" | cut -d. -f2)
+
+        # Check if version is >= 3.12
+        if [ "$major" -lt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -lt 12 ]); then
+            print_error "Python version $python_version is too old (minimum: 3.12)"
+            print_status "Upgrade Python using one of these methods:"
+            print_python_install_instructions
+            exit 1
+        else
+            print_success "Python version: $python_version"
+        fi
+    fi
+    echo ""
+
     print_status "Checking environment configuration..."
     
     # Check if .env file exists, generate if missing
@@ -233,6 +355,39 @@ check_environment() {
 
 # Validate environment configuration (detailed check)
 validate_environment() {
+    local issues=0
+    local warnings=0
+
+    echo "=========================================="
+    echo "  Python Version Validation"
+    echo "=========================================="
+    echo ""
+
+    if ! command -v python3 &> /dev/null; then
+        print_error "Python 3 is not installed"
+        print_status "Install Python 3.12+ using one of these methods:"
+        print_python_install_instructions
+        issues=$((issues + 1))
+    else
+        # Get Python version
+        python_version=$(python3 --version 2>&1 | sed 's/Python //')
+
+        # Parse version numbers
+        major=$(echo "$python_version" | cut -d. -f1)
+        minor=$(echo "$python_version" | cut -d. -f2)
+
+        # Check if version is >= 3.12
+        if [ "$major" -lt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -lt 12 ]); then
+            print_error "Python version $python_version is too old (minimum: 3.12)"
+            print_status "Upgrade Python using one of these methods:"
+            print_python_install_instructions
+            issues=$((issues + 1))
+        else
+            print_success "Python version: $python_version"
+        fi
+    fi
+    echo ""
+
     echo "=========================================="
     echo "  Environment Configuration Validation"
     echo "=========================================="
@@ -247,68 +402,65 @@ validate_environment() {
     
     print_success ".env file found"
     
-    # Check each environment variable
-    local issues=0
-    local warnings=0
-    
-    echo ""
-    echo "Checking environment variables:"
-    echo "--------------------------------"
-    
-    # Check SUPABASE_PUBLIC_URL
-    if [ -z "$SUPABASE_PUBLIC_URL" ]; then
-        print_error "SUPABASE_PUBLIC_URL is not set"
-        issues=$((issues + 1))
-    elif [ "$SUPABASE_PUBLIC_URL" = "http://localhost:8000" ]; then
-        print_warning "SUPABASE_PUBLIC_URL is using default value"
-        warnings=$((warnings + 1))
-    else
-        print_success "SUPABASE_PUBLIC_URL: $SUPABASE_PUBLIC_URL"
-    fi
-    
-    # Check ANON_KEY
-    if [ -z "$ANON_KEY" ]; then
-        print_error "ANON_KEY is not set"
-        print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
-        issues=$((issues + 1))
-    elif [ "$ANON_KEY" = "your_actual_anon_key_from_transactional_base" ]; then
-        print_error "ANON_KEY is using default placeholder value"
-        print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
-        issues=$((issues + 1))
-    else
-        print_success "ANON_KEY: ${ANON_KEY:0:10}... (truncated for security)"
-    fi
-    
-    # Check DB_SCHEMA
-    if [ -z "$DB_SCHEMA" ]; then
-        print_error "DB_SCHEMA is not set"
-        issues=$((issues + 1))
-    elif [ "$DB_SCHEMA" = "public" ]; then
-        print_success "DB_SCHEMA: $DB_SCHEMA (default value is correct)"
-    else
-        print_success "DB_SCHEMA: $DB_SCHEMA"
-    fi
-    
-    # Check SERVICE_ROLE_KEY (optional)
-    if [ -z "$SERVICE_ROLE_KEY" ]; then
-        print_warning "SERVICE_ROLE_KEY is not set (optional)"
-        warnings=$((warnings + 1))
-    elif [ "$SERVICE_ROLE_KEY" = "your_service_role_key_here" ]; then
-        print_warning "SERVICE_ROLE_KEY is using default placeholder value (optional)"
-        warnings=$((warnings + 1))
-    else
-        print_success "SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:0:10}... (truncated for security)"
-    fi
-    
-    # Check REALTIME_URL (optional)
-    if [ -z "$REALTIME_URL" ]; then
-        print_warning "REALTIME_URL is not set (optional)"
-        warnings=$((warnings + 1))
-    elif [ "$REALTIME_URL" = "ws://localhost:8000/realtime/v1" ]; then
-        print_success "REALTIME_URL: $REALTIME_URL (default value is correct)"
-    else
-        print_success "REALTIME_URL: $REALTIME_URL"
-    fi
+    # Commented out because these are not needed for data-warehouse service for now
+    # echo ""
+    # echo "Checking environment variables:"
+    # echo "--------------------------------"
+
+    # # Check SUPABASE_PUBLIC_URL
+    # if [ -z "$SUPABASE_PUBLIC_URL" ]; then
+    #     print_error "SUPABASE_PUBLIC_URL is not set"
+    #     issues=$((issues + 1))
+    # elif [ "$SUPABASE_PUBLIC_URL" = "http://localhost:8000" ]; then
+    #     print_warning "SUPABASE_PUBLIC_URL is using default value"
+    #     warnings=$((warnings + 1))
+    # else
+    #     print_success "SUPABASE_PUBLIC_URL: $SUPABASE_PUBLIC_URL"
+    # fi
+
+    # # Check ANON_KEY
+    # if [ -z "$ANON_KEY" ]; then
+    #     print_error "ANON_KEY is not set"
+    #     print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
+    #     issues=$((issues + 1))
+    # elif [ "$ANON_KEY" = "your_actual_anon_key_from_transactional_base" ]; then
+    #     print_error "ANON_KEY is using default placeholder value"
+    #     print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
+    #     issues=$((issues + 1))
+    # else
+    #     print_success "ANON_KEY: ${ANON_KEY:0:10}... (truncated for security)"
+    # fi
+
+    # # Check DB_SCHEMA
+    # if [ -z "$DB_SCHEMA" ]; then
+    #     print_error "DB_SCHEMA is not set"
+    #     issues=$((issues + 1))
+    # elif [ "$DB_SCHEMA" = "public" ]; then
+    #     print_success "DB_SCHEMA: $DB_SCHEMA (default value is correct)"
+    # else
+    #     print_success "DB_SCHEMA: $DB_SCHEMA"
+    # fi
+
+    # # Check SERVICE_ROLE_KEY (optional)
+    # if [ -z "$SERVICE_ROLE_KEY" ]; then
+    #     print_warning "SERVICE_ROLE_KEY is not set (optional)"
+    #     warnings=$((warnings + 1))
+    # elif [ "$SERVICE_ROLE_KEY" = "your_service_role_key_here" ]; then
+    #     print_warning "SERVICE_ROLE_KEY is using default placeholder value (optional)"
+    #     warnings=$((warnings + 1))
+    # else
+    #     print_success "SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:0:10}... (truncated for security)"
+    # fi
+
+    # # Check REALTIME_URL (optional)
+    # if [ -z "$REALTIME_URL" ]; then
+    #     print_warning "REALTIME_URL is not set (optional)"
+    #     warnings=$((warnings + 1))
+    # elif [ "$REALTIME_URL" = "ws://localhost:8000/realtime/v1" ]; then
+    #     print_success "REALTIME_URL: $REALTIME_URL (default value is correct)"
+    # else
+    #     print_success "REALTIME_URL: $REALTIME_URL"
+    # fi
     
     echo ""
     echo "=========================================="
@@ -337,8 +489,53 @@ validate_environment() {
 # Install dependencies
 install_dependencies() {
     print_status "Installing dependencies..."
-    pnpm install
-    print_success "Dependencies installed successfully"
+
+    create_venv_if_missing
+
+    ensure_venv_activated
+
+    # Install data-warehouse dependencies in virtual environment
+    print_status "Installing data-warehouse dependencies in virtual environment..."
+    pip install .
+    print_success "Data warehouse dependencies installed successfully in virtual environment"
+    echo ""
+
+    # Check Moose CLI
+    if ! command -v moose-cli &> /dev/null; then
+        print_error "Moose CLI is not installed."
+        exit 1
+    fi
+
+    print_success "Moose CLI version: $(moose-cli --version 2>/dev/null || echo 'unknown')"
+    echo ""
+
+    # Install dw-frontend dependencies
+    print_status "Installing dw-frontend dependencies..."
+    local frontend_dir="../../apps/dw-frontend"
+    local current_dir=$(pwd)
+
+    if [ -d "$frontend_dir" ]; then
+        cd "$frontend_dir" || {
+            print_error "Failed to navigate to dw-frontend directory: $frontend_dir"
+            exit 1
+        }
+
+        pip install -r requirements.txt
+
+        # Check streamlit
+        if ! command -v streamlit &> /dev/null; then
+            print_error "streamlit is not installed."
+            exit 1
+        fi
+
+        print_success "Streamlit version: $(streamlit --version 2>/dev/null || echo 'unknown')"
+        echo ""
+
+        cd "$current_dir"
+    else
+        print_error "dw-frontend directory not found at: $frontend_dir"
+        exit 1
+    fi
 }
 
 # Start Moose infrastructure
@@ -360,78 +557,141 @@ start_infrastructure() {
 
 # Start the service
 start_service() {
-    if is_service_running; then
-        print_warning "Service is already running (PID: $(get_service_pid))"
-        return 0
-    fi
-    
-    print_status "Starting the data-warehouse service..."
-    print_status "The service will be available at http://localhost:4000"
-    print_status "Management interface will be available at http://localhost:5001"
-    print_status "Temporal UI will be available at http://localhost:8080"
-    
-    # Start the service in the background and track PID
-    moose dev &
-    SERVICE_PID=$!
-    
-    # Save PID to file
-    echo "$SERVICE_PID" > /tmp/data-warehouse.pid
-    
-    # Wait a moment for the service to start
-    sleep 5
-    
-    # Check if service is running
-    if curl -s http://localhost:4000 > /dev/null 2>&1; then
-        print_success "Service started successfully!"
-        print_status "Service PID: $SERVICE_PID (saved to /tmp/data-warehouse.pid)"
-        print_status "To stop the service, run: $0 stop"
+    ensure_venv_activated
+
+    if is_moose_service_running; then
+        print_warning "data-warehouse service is already running (PID: $(get_moose_service_id))"
     else
-        print_warning "Service may still be starting up..."
-        print_status "Check http://localhost:4000 for service status"
+        print_status "Starting the data-warehouse service..."
+        print_status "The service will be available at http://localhost:4200"
+        print_status "Management interface will be available at http://localhost:5001"
+        print_status "Temporal UI will be available at http://localhost:8080"
+
+        # Start the service in the background and track PID
+        moose-cli dev &
+        MOOSE_SERVICE_PID=$!
+
+        # Save PID to file
+        echo "$MOOSE_SERVICE_PID" > /tmp/data-warehouse.pid
+
+        # Wait a moment for the service to start
+        sleep 15
+
+        # Check if service is running
+        if curl -s http://localhost:4200 > /dev/null 2>&1; then
+            print_success "data-warehouse service started successfully!"
+            print_status "data-warehouse service PID: $MOOSE_SERVICE_PID (saved to /tmp/data-warehouse.pid)"
+            print_status "To stop the service, run: $0 stop"
+        else
+            print_warning "data-warehouse service may still be starting up..."
+            print_status "Check http://localhost:4200 for service status"
+        fi
+    fi
+
+    # Start the dw-frontend service
+    if is_dw_frontend_running; then
+        print_warning "dw-frontend service is already running (PID: $(get_dw_frontend_pid))"
+    else
+        print_status "Starting the dw-frontend service..."
+        print_status "The service will be available at http://localhost:8501"
+
+        local frontend_dir="../../apps/dw-frontend"
+        local current_dir=$(pwd)
+
+        if [ -d "$frontend_dir" ]; then
+            cd "$frontend_dir" || {
+                print_error "Failed to navigate to dw-frontend directory: $frontend_dir"
+                exit 1
+            }
+
+            streamlit run main.py &
+            DW_FRONTEND_PID=$!
+
+            # Save PID to file
+            echo "$DW_FRONTEND_PID" > /tmp/dw-frontend.pid
+
+            # Wait a moment for the service to start
+            sleep 3
+
+            if curl -s http://localhost:8501 > /dev/null 2>&1; then
+                print_success "dw-frontend service started successfully!"
+                print_status "dw-frontend service PID: $DW_FRONTEND_PID (saved to /tmp/dw-frontend.pid)"
+                print_status "To stop the service, run: $0 stop"
+            else
+                print_error "dw-frontend failed to start"
+            fi
+
+            cd "$current_dir"
+        else
+            print_error "dw-frontend directory not found at: $frontend_dir"
+            exit 1
+        fi
     fi
 }
 
 # Stop the service
 stop_service() {
-    local pid=$(get_service_pid)
-    
-    if [ -z "$pid" ]; then
-        print_warning "Service is not running"
-        return 0
-    fi
-    
-    print_status "Stopping data-warehouse service (PID: $pid)..."
-    kill "$pid"
-    
-    # Wait for the process to stop
-    local attempts=0
-    while [ $attempts -lt 10 ]; do
-        if ! kill -0 "$pid" 2>/dev/null; then
-            print_success "Service stopped successfully"
-            # Remove PID file
-            rm -f /tmp/data-warehouse.pid
-            return 0
+    local moose_pid=$(get_moose_service_id)
+
+    if [ -z "$moose_pid" ]; then
+        print_warning "data-warehouse service is not running"
+    else
+        print_status "Stopping data-warehouse service (PID: $moose_pid)..."
+        kill "$moose_pid"
+
+        # Wait for the process to stop gracefully
+        if ! wait_for_process_to_stop "$moose_pid" "data-warehouse service"; then
+            print_warning "data-warehouse service didn't stop gracefully, force killing..."
+            kill -9 "$moose_pid" 2>/dev/null
+
+            # Wait a bit more after force kill
+            sleep 1
+
+            if ! kill -0 "$moose_pid" 2>/dev/null; then
+                print_success "data-warehouse service force stopped"
+            else
+                print_error "Failed to stop data-warehouse service"
+            fi
         fi
-        sleep 1
-        attempts=$((attempts + 1))
-    done
-    
-    # Force kill if still running
-    if kill -0 "$pid" 2>/dev/null; then
-        print_warning "Service didn't stop gracefully, force killing..."
-        kill -9 "$pid"
-        print_success "Service force stopped"
+
+        # Remove PID file
+        rm -f /tmp/data-warehouse.pid
     fi
-    
-    # Remove PID file
-    rm -f /tmp/data-warehouse.pid
+
+    # Stop the dw-frontend service
+    local dw_frontend_pid=$(get_dw_frontend_pid)
+
+    if [ -z "$dw_frontend_pid" ]; then
+        print_warning "dw-frontend service is not running"
+    else
+        print_status "Stopping dw-frontend service (PID: $dw_frontend_pid)..."
+        kill "$dw_frontend_pid"
+
+        # Wait for the process to stop gracefully
+        if ! wait_for_process_to_stop "$dw_frontend_pid" "dw-frontend service"; then
+            print_warning "dw-frontend service didn't stop gracefully, force killing..."
+            kill -9 "$dw_frontend_pid" 2>/dev/null
+
+            # Wait a bit more after force kill
+            sleep 1
+
+            if ! kill -0 "$dw_frontend_pid" 2>/dev/null; then
+                print_success "dw-frontend service force stopped"
+            else
+                print_error "Failed to stop dw-frontend service"
+            fi
+        fi
+
+        # Remove PID file
+        rm -f /tmp/dw-frontend.pid
+    fi
 }
 
 
 
 # Restart the service
 restart_service() {
-    print_status "Restarting data-warehouse service..."
+    print_status "Restarting data-warehouse services..."
     stop_service
     sleep 2
     start_service
@@ -445,18 +705,33 @@ show_status() {
     echo ""
     
     # Check service status
-    if is_service_running; then
-        local pid=$(get_service_pid)
-        print_success "Service is running (PID: $pid)"
+    if is_moose_service_running; then
+        local pid=$(get_moose_service_id)
+        print_success "data-warehouse service is running (PID: $pid)"
         
         # Check if service is responding
-        if curl -s http://localhost:4000 > /dev/null 2>&1; then
-            print_success "Service is responding to requests"
+        if curl -s http://localhost:4200 > /dev/null 2>&1; then
+            print_success "data-warehouse service is responding to requests"
         else
-            print_warning "Service is running but not responding to requests"
+            print_warning "data-warehouse service is running but not responding to requests"
         fi
     else
-        print_error "Service is not running"
+        print_error "data-warehouse service is not running"
+    fi
+
+    # Check dw-frontend service status
+    if is_dw_frontend_running; then
+        local pid=$(get_dw_frontend_pid)
+        print_success "dw-frontend service is running (PID: $pid)"
+
+        # Check if service is responding
+        if curl -s http://localhost:8501 > /dev/null 2>&1; then
+            print_success "dw-frontend service is responding to requests"
+        else
+            print_warning "dw-frontend service is running but not responding to requests"
+        fi
+    else
+        print_error "dw-frontend service is not running"
     fi
     
     echo ""
@@ -465,7 +740,8 @@ show_status() {
     echo "  • Infrastructure may take time to start up on first run"
     echo ""
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:4000"
+    echo "  • Data Warehouse Service: http://localhost:4200"
+    echo "  • Data Warehouse Frontend: http://localhost:8501"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo "  • Redpanda: localhost:19092"
@@ -533,7 +809,7 @@ full_reset() {
     echo ""
     echo "All services have been restarted."
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:4000"
+    echo "  • Service: http://localhost:4200"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo ""
@@ -563,7 +839,7 @@ full_setup() {
     echo "=========================================="
     echo ""
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:4000"
+    echo "  • Service: http://localhost:4200"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo ""
@@ -576,7 +852,7 @@ full_setup() {
     echo "To stop the service: $0 stop"
     echo "To check status: $0 status"
     echo "To validate environment: $0 env:check"
-    echo "Service PID is tracked in: /tmp/data-warehouse.pid"
+    echo "Service PID is tracked in: /tmp/data-warehouse.pid and /tmp/dw-frontend.pid"
     echo ""
 }
 
@@ -605,15 +881,16 @@ main() {
         "env:check")
             validate_environment
             ;;
-        "infra:start")
-            start_infrastructure_only
-            ;;
-        "infra:stop")
-            stop_infrastructure_only
-            ;;
-        "infra:reset")
-            reset_infrastructure
-            ;;
+        # Commented out because unclear what these were for
+        # "infra:start")
+        #     start_infrastructure_only
+        #     ;;
+        # "infra:stop")
+        #     stop_infrastructure_only
+        #     ;;
+        # "infra:reset")
+        #     reset_infrastructure
+        #     ;;
         "help"|"-h"|"--help")
             show_usage
             ;;
