@@ -221,6 +221,8 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
               id="score"
               type="number"
               step="0.01"
+              min="0"
+              max="9999999.99"
               value={formData.score}
               onChange={(e) =>
                 setFormData({

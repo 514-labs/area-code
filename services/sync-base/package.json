@@ -4,7 +4,8 @@
   "scripts": {
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
-    "dev": "moose-cli dev"
+    "dev": "moose-cli dev",
+    "dev:workflow": "moose-cli workflow run supabase-listener"
   },
   "dependencies": {
     "axios": "^1.7.7",
