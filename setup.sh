@@ -28,6 +28,7 @@ show_help() {
     echo "  restart             Restart all services"
     echo "  status              Show status of all services"
     echo "  setup               Setup all services (install dependencies, initialize data)"
+    echo "  seed                Seed database with sample data across all services"
     echo "  reset               Reset all services (stop, clear data, restart)"
     echo "  --help              Show this help message"
     echo ""
@@ -41,6 +42,7 @@ show_help() {
     echo "  $0 restart                  # Restart all services"
     echo "  $0 status                   # Check status of all services"
     echo "  $0 setup                    # Setup all services"
+    echo "  $0 seed                     # Seed database with sample data"
     echo "  $0 reset                    # Reset all services"
     echo "  $0 start --service=transactional-base    # Start only transactional service"
     echo "  $0 stop --service=retrieval-base         # Stop only retrieval service"
@@ -336,6 +338,169 @@ reset_service() {
     cd "$SCRIPT_DIR"
 }
 
+# Function to check if a service is running
+is_service_running() {
+    local service="$1"
+    local service_dir="$SCRIPT_DIR/services/$service"
+    
+    # Change to service directory
+    cd "$service_dir" || {
+        echo "❌ Failed to change to service directory: $service_dir"
+        return 1
+    }
+    
+    case "$service" in
+        "transactional-base")
+            # Check if containers are running
+            if docker compose ps --filter "status=running" | grep -q "supabase-db"; then
+                cd "$SCRIPT_DIR"
+                return 0
+            fi
+            ;;
+        "retrieval-base")
+            # Check if retrieval service is running
+            if [ -f "/tmp/retrieval.pid" ] && kill -0 "$(cat /tmp/retrieval.pid)" 2>/dev/null; then
+                cd "$SCRIPT_DIR"
+                return 0
+            fi
+            ;;
+        "analytical-base")
+            # Check if analytical service is running
+            if [ -f "/tmp/analytical.pid" ] && kill -0 "$(cat /tmp/analytical.pid)" 2>/dev/null; then
+                cd "$SCRIPT_DIR"
+                return 0
+            fi
+            ;;
+        "sync-base")
+            # Check if sync service is running
+            if [ -f "/tmp/sync-base.pid" ] && kill -0 "$(cat /tmp/sync-base.pid)" 2>/dev/null; then
+                cd "$SCRIPT_DIR"
+                return 0
+            fi
+            ;;
+        *)
+            cd "$SCRIPT_DIR"
+            return 1
+            ;;
+    esac
+    
+    cd "$SCRIPT_DIR"
+    return 1
+}
+
+# Function to seed data across all services
+seed_all_data() {
+    echo "🌱 Starting comprehensive data seeding across all services..."
+    echo ""
+    
+    # 1. Seed transactional-base (both foo and bar data)
+    echo "📊 Seeding transactional-base..."
+    if is_service_running "transactional-base"; then
+        echo "✅ transactional-base is running, proceeding with seeding..."
+        
+        cd "$SCRIPT_DIR/services/transactional-base" || {
+            echo "❌ Failed to change to transactional-base directory"
+            return 1
+        }
+        
+        # First seed foo data, then bar data
+        echo "🌱 Seeding foo data..."
+        ./setup.sh --seed
+        
+        echo "🌱 Seeding bar data..."
+        # Run the enhanced SQL script that seeds both foo and bar
+        if [ -f "src/scripts/run-sql-seed.sh" ]; then
+            chmod +x ./src/scripts/run-sql-seed.sh
+            
+            # Create a temporary script to seed both foo and bar
+            cat > temp_seed_all.sh << 'EOF'
+#!/bin/bash
+# Environment
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)
+fi
+
+DB_CONTAINER=$(docker ps --format "{{.Names}}" | grep "supabase-db")
+DB_USER=${DB_USER:-postgres}
+DB_NAME=${DB_NAME:-postgres}
+
+echo "🌱 Seeding both foo and bar data..."
+
+# Copy the SQL procedures
+docker cp src/scripts/seed-transactional-base-rows.sql "$DB_CONTAINER:/tmp/seed.sql"
+docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -f /tmp/seed.sql
+
+# Seed foo data (1M records)
+echo "📝 Seeding foo records..."
+docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "CALL seed_foo_data(1000000);"
+
+# Seed bar data (500K records)
+echo "📊 Seeding bar records..."
+docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "CALL seed_bar_data(500000);"
+
+# Cleanup
+docker exec "$DB_CONTAINER" rm -f /tmp/seed.sql
+echo "✅ Both foo and bar data seeded successfully"
+EOF
+            chmod +x temp_seed_all.sh
+            ./temp_seed_all.sh
+            rm temp_seed_all.sh
+        fi
+        
+        cd "$SCRIPT_DIR"
+        echo "✅ transactional-base seeding completed"
+    else
+        echo "⚠️  transactional-base is not running, skipping seeding"
+    fi
+    echo ""
+    
+    # 2. Seed retrieval-base (migrate data from transactional)
+    echo "🔍 Seeding retrieval-base..."
+    if is_service_running "retrieval-base"; then
+        echo "✅ retrieval-base is running, proceeding with data migration..."
+        
+        cd "$SCRIPT_DIR/services/retrieval-base" || {
+            echo "❌ Failed to change to retrieval-base directory"
+            cd "$SCRIPT_DIR"
+            return 1
+        }
+        
+        ./setup.sh migrate
+        cd "$SCRIPT_DIR"
+        echo "✅ retrieval-base migration completed"
+    else
+        echo "⚠️  retrieval-base is not running, skipping migration"
+    fi
+    echo ""
+    
+    # 3. Seed analytical-base (migrate data from transactional)
+    echo "📈 Seeding analytical-base..."
+    if is_service_running "analytical-base"; then
+        echo "✅ analytical-base is running, proceeding with data migration..."
+        
+        cd "$SCRIPT_DIR/services/analytical-base" || {
+            echo "❌ Failed to change to analytical-base directory"
+            cd "$SCRIPT_DIR"
+            return 1
+        }
+        
+        ./setup.sh migrate
+        cd "$SCRIPT_DIR"
+        echo "✅ analytical-base migration completed"
+    else
+        echo "⚠️  analytical-base is not running, skipping migration"
+    fi
+    echo ""
+    
+    echo "🎉 Data seeding completed across all running services!"
+    echo ""
+    echo "Summary:"
+    echo "• transactional-base: Seeded with foo and bar sample data"
+    echo "• retrieval-base: Migrated data from PostgreSQL to Elasticsearch"
+    echo "• analytical-base: Migrated data from PostgreSQL to ClickHouse"
+    echo ""
+}
+
 # Function to execute command on services
 execute_on_services() {
     local command="$1"
@@ -360,6 +525,11 @@ execute_on_services() {
                     ;;
                 "setup")
                     setup_service "$target_service" || failed_services+=("$target_service")
+                    ;;
+                "seed")
+                    echo "❌ Error: seed command does not support targeting specific services"
+                    echo "Use '$0 seed' to seed all services"
+                    return 1
                     ;;
                 "reset")
                     reset_service "$target_service" || failed_services+=("$target_service")
@@ -393,6 +563,12 @@ execute_on_services() {
                     ;;
                 "setup")
                     setup_service "$service" || failed_services+=("$service")
+                    ;;
+                "seed")
+                    # Only run seed_all_data once, not for each service
+                    if [ "$service" = "transactional-base" ]; then
+                        seed_all_data || return 1
+                    fi
                     ;;
                 "reset")
                     reset_service "$service" || failed_services+=("$service")
@@ -428,7 +604,7 @@ fi
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        start|stop|restart|status|setup|reset)
+        start|stop|restart|status|setup|seed|reset)
             COMMAND="$1"
             shift
             ;;

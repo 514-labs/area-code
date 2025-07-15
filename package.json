@@ -19,7 +19,8 @@
     "dev:setup": "./setup.sh",
     "dev:sequence": "./dev-sequence.sh",
     "dev:workflow": "cd services/sync-base && pnpm dev:workflow",
-    "dev:seed": "cd services/transactional-base && pnpm db:seed"
+    "dev:seed": "./setup.sh seed",
+    "services:health": "./scripts/health-check.sh"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",
