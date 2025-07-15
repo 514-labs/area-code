@@ -4,8 +4,8 @@
 # Development Environment Bootstrap Script
 ########################################################
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root directory (one level up from the scripts directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Color codes for output
 RED='\033[0;31m'
