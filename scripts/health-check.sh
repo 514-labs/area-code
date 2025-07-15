@@ -309,9 +309,9 @@ check_all_services() {
         echo -e "${RED}⚠️  Some services are not responding${NC}"
         echo ""
         echo "Troubleshooting:"
-        echo "  • Run './dev-sequence.sh' to start all services"
+        echo "  • Run './dev-start.sh' to start all services"
         echo "  • Check individual service logs in their dev-*.log files"
-        echo "  • Use './setup.sh status' for detailed service information"
+        echo "  • Use './scripts/dev-status.sh' for detailed service information"
         return 1
     fi
 }

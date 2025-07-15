@@ -8,6 +8,8 @@
     "build": "tsc",
     "dev": "npx tsx watch src/server.ts",
     "dev:migrate": "pnpm run db:migrate",
+    "setup": "../../scripts/dev-setup.sh --service=transactional-base",
+    "setup:force": "../../scripts/dev-setup.sh --service=transactional-base --force",
     "start": "node dist/server.js",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",

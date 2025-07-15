@@ -487,7 +487,7 @@ shutdown_single_service() {
 show_help() {
     echo "Usage: $0 [SERVICE_NAME] [OPTIONS]"
     echo ""
-    echo "Shutdown development processes started by dev-sequence.sh."
+    echo "Shutdown development processes started by dev-start.sh."
     echo ""
     echo "Arguments:"
     echo "  SERVICE_NAME        Shutdown specific service (optional)"
