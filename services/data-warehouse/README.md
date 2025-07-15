@@ -2,6 +2,8 @@
 
 A high-performance data warehouse service built with **Moose** for real-time data ingestion, processing, and analytics. This service provides APIs for data extraction from multiple sources (S3, Datadog) and supports streaming data pipelines with ClickHouse as the storage backend.
 
+![dw-logo.png](dw-logo.png)
+
 ## Overview
 
 The Data Warehouse Service is designed to handle large-scale data ingestion and processing with the following key capabilities:
