@@ -98,6 +98,53 @@ is_dw_frontend_running() {
     fi
 }
 
+# Virtual environment utility functions
+check_venv_exists() {
+    if [ -d "venv" ]; then
+        return 0  # venv exists
+    else
+        return 1  # venv does not exist
+    fi
+}
+
+create_venv_if_missing() {
+    if ! check_venv_exists; then
+        print_status "Creating Python virtual environment..."
+
+        if python3 -m venv venv; then
+            print_success "Virtual environment created successfully at ./venv"
+        else
+            print_error "Failed to create virtual environment"
+            exit 1
+        fi
+    else
+        print_success "Virtual environment already exists at ./venv"
+    fi
+}
+
+ensure_venv_activated() {
+    # First check if venv exists
+    if ! check_venv_exists; then
+        print_error "Virtual environment not found. Please run '$0 setup' first to create the virtual environment."
+        exit 1
+    fi
+
+    # Check if we're already in the virtual environment
+    if [ -z "$VIRTUAL_ENV" ]; then
+        print_status "Activating virtual environment..."
+        source venv/bin/activate
+
+        if [ -n "$VIRTUAL_ENV" ]; then
+            print_success "Virtual environment activated: $VIRTUAL_ENV"
+        else
+            print_error "Failed to activate virtual environment"
+            exit 1
+        fi
+    else
+        print_success "Virtual environment already active: $VIRTUAL_ENV"
+    fi
+}
+
 # Check prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
@@ -414,30 +461,9 @@ validate_environment() {
 install_dependencies() {
     print_status "Installing dependencies..."
 
-    # Check if virtual environment exists, create if not
-    if [ ! -d "venv" ]; then
-        print_status "Creating Python virtual environment..."
+    create_venv_if_missing
 
-        if python3 -m venv venv; then
-            print_success "Virtual environment created successfully at ./venv"
-        else
-            print_error "Failed to create virtual environment"
-            exit 1
-        fi
-    else
-        print_success "Virtual environment already exists at ./venv"
-    fi
-
-    # Activate virtual environment
-    print_status "Activating virtual environment..."
-    source venv/bin/activate
-
-    if [ -n "$VIRTUAL_ENV" ]; then
-        print_success "Virtual environment activated: $VIRTUAL_ENV"
-    else
-        print_error "Failed to activate virtual environment"
-        exit 1
-    fi
+    ensure_venv_activated
 
     # Install data-warehouse dependencies in virtual environment
     print_status "Installing data-warehouse dependencies in virtual environment..."
@@ -502,26 +528,7 @@ start_infrastructure() {
 
 # Start the service
 start_service() {
-    # Check if virtual environment exists
-    if [ ! -d "venv" ]; then
-        print_error "Virtual environment not found. Please run '$0 setup' first to create the virtual environment."
-        exit 1
-    fi
-
-    # Check if we're already in the virtual environment
-    if [ -z "$VIRTUAL_ENV" ]; then
-        print_status "Activating virtual environment..."
-        source venv/bin/activate
-
-        if [ -n "$VIRTUAL_ENV" ]; then
-            print_success "Virtual environment activated: $VIRTUAL_ENV"
-        else
-            print_error "Failed to activate virtual environment"
-            exit 1
-        fi
-    else
-        print_success "Virtual environment already active: $VIRTUAL_ENV"
-    fi
+    ensure_venv_activated
 
     if is_moose_service_running; then
         print_warning "data-warehouse service is already running (PID: $(get_moose_service_id))"
