@@ -16,7 +16,8 @@
     "clean": "turbo run clean",
     "dev:turbo": "turbo",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "dev:setup": "./setup.sh"
+    "dev:setup": "./setup.sh",
+    "dev:sequence": "./dev-sequence.sh"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",
