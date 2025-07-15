@@ -33,6 +33,10 @@ print_error() {
 DATA_WAREHOUSE_PID_FILE="/tmp/data-warehouse.pid"
 DW_FRONTEND_PID_FILE="/tmp/dw-frontend.pid"
 
+# Port configurations
+DATA_WAREHOUSE_PORT=4200
+DW_FRONTEND_PORT=8501
+
 # Function to show usage
 show_usage() {
     echo "Usage: $0 [OPTION]"
@@ -176,6 +180,40 @@ wait_for_process_to_stop() {
     done
 
     return 1  # Process didn't stop within timeout
+}
+
+# Check if a port is in use
+is_port_in_use() {
+    local port=$1
+
+    if lsof -i ":$port" >/dev/null 2>&1; then
+        return 0  # Port is in use
+    else
+        return 1  # Port is available
+    fi
+}
+
+# Print instructions for finding and terminating processes using a port
+print_port_conflict_instructions() {
+    local port=$1
+
+    print_error "Port $port is already in use!"
+    print_status ""
+    print_status "To find what's using port $port, try these commands:"
+    print_status ""
+
+    if command -v lsof >/dev/null 2>&1; then
+        print_status "Using lsof (recommended):"
+        print_status "  lsof -i :$port"
+        print_status ""
+    fi
+
+    print_status "To terminate the process using port $port:"
+    print_status "  1. Find the PID using one of the commands above"
+    print_status "  2. Kill the process: kill <PID>"
+    print_status "  3. Or force kill: kill -9 <PID>"
+    print_status ""
+    print_status "Then retry: $0 start"
 }
 
 # Check prerequisites
@@ -567,9 +605,6 @@ start_service() {
         print_warning "data-warehouse service is already running (PID: $(get_moose_service_id))"
     else
         print_status "Starting the data-warehouse service..."
-        print_status "The service will be available at http://localhost:4200"
-        print_status "Management interface will be available at http://localhost:5001"
-        print_status "Temporal UI will be available at http://localhost:8080"
 
         # Start the service in the background and track PID
         moose-cli dev &
@@ -587,22 +622,25 @@ start_service() {
         done
 
         # Check if service is running
-        if curl -s http://localhost:4200 > /dev/null 2>&1; then
+        if curl -s http://localhost:$DATA_WAREHOUSE_PORT > /dev/null 2>&1; then
             print_success "data-warehouse service started successfully!"
+            print_status "The service will be available at http://localhost:$DATA_WAREHOUSE_PORT"
+            print_status "Management interface will be available at http://localhost:5001"
+            print_status "Temporal UI will be available at http://localhost:8080"
             print_status "data-warehouse service PID: $MOOSE_SERVICE_PID (saved to $DATA_WAREHOUSE_PID_FILE)"
             print_status "To stop the service, run: $0 stop"
         else
             print_warning "data-warehouse service may still be starting up..."
-            print_status "Check http://localhost:4200 for service status"
+            print_status "Check http://localhost:$DATA_WAREHOUSE_PORT for service status"
         fi
     fi
+    echo ""
 
     # Start the dw-frontend service
     if is_dw_frontend_running; then
         print_warning "dw-frontend service is already running (PID: $(get_dw_frontend_pid))"
     else
         print_status "Starting the dw-frontend service..."
-        print_status "The service will be available at http://localhost:8501"
 
         local frontend_dir="../../apps/dw-frontend"
         local current_dir=$(pwd)
@@ -613,7 +651,13 @@ start_service() {
                 exit 1
             }
 
-            streamlit run main.py &
+            # Check if port is in use
+            if is_port_in_use $DW_FRONTEND_PORT; then
+                print_port_conflict_instructions $DW_FRONTEND_PORT
+                exit 1
+            fi
+
+            streamlit run main.py --server.port $DW_FRONTEND_PORT &
             DW_FRONTEND_PID=$!
 
             # Save PID to file
@@ -622,8 +666,9 @@ start_service() {
             # Wait a moment for the service to start
             sleep 3
 
-            if curl -s http://localhost:8501 > /dev/null 2>&1; then
+            if curl -s http://localhost:$DW_FRONTEND_PORT > /dev/null 2>&1; then
                 print_success "dw-frontend service started successfully!"
+                print_status "The service will be available at http://localhost:$DW_FRONTEND_PORT"
                 print_status "dw-frontend service PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
                 print_status "To stop the service, run: $0 stop"
             else
@@ -671,6 +716,8 @@ stop_service() {
         print_status "Removing PID file: $DATA_WAREHOUSE_PID_FILE"
         rm -f "$DATA_WAREHOUSE_PID_FILE"
     fi
+
+    echo ""
 
     # Stop the dw-frontend service
     local dw_frontend_pid=$(get_dw_frontend_pid)
@@ -729,7 +776,7 @@ show_status() {
         print_success "data-warehouse service is running (PID: $pid)"
         
         # Check if service is responding
-        if curl -s http://localhost:4200 > /dev/null 2>&1; then
+        if curl -s http://localhost:$DATA_WAREHOUSE_PORT > /dev/null 2>&1; then
             print_success "data-warehouse service is responding to requests"
         else
             print_warning "data-warehouse service is running but not responding to requests"
@@ -744,7 +791,7 @@ show_status() {
         print_success "dw-frontend service is running (PID: $pid)"
 
         # Check if service is responding
-        if curl -s http://localhost:8501 > /dev/null 2>&1; then
+        if curl -s http://localhost:$DW_FRONTEND_PORT > /dev/null 2>&1; then
             print_success "dw-frontend service is responding to requests"
         else
             print_warning "dw-frontend service is running but not responding to requests"
@@ -759,8 +806,8 @@ show_status() {
     echo "  • Infrastructure may take time to start up on first run"
     echo ""
     echo "Available endpoints:"
-    echo "  • Data Warehouse Service: http://localhost:4200"
-    echo "  • Data Warehouse Frontend: http://localhost:8501"
+    echo "  • Data Warehouse Service: http://localhost:$DATA_WAREHOUSE_PORT"
+    echo "  • Data Warehouse Frontend: http://localhost:$DW_FRONTEND_PORT"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo "  • Redpanda: localhost:19092"
@@ -828,7 +875,7 @@ full_reset() {
     echo ""
     echo "All services have been restarted."
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:4200"
+    echo "  • Service: http://localhost:$DATA_WAREHOUSE_PORT"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo ""
@@ -858,7 +905,7 @@ full_setup() {
     echo "=========================================="
     echo ""
     echo "Available endpoints:"
-    echo "  • Service: http://localhost:4200"
+    echo "  • Service: http://localhost:$DATA_WAREHOUSE_PORT"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo ""
