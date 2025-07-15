@@ -3,6 +3,7 @@ import time
 import requests
 import pandas as pd
 import random
+import streamlit_shadcn_ui as ui
 
 # API base URL
 API_BASE = "http://localhost:4200/consumption"
@@ -13,6 +14,27 @@ st.set_page_config(
     page_icon="🚀",
     layout="wide"
 )
+
+def set_sidebar_min_width():
+    st.markdown(
+        """
+        <style>
+        section[data-testid="stSidebar"] {
+            min-width: 200px !important;
+            max-width: 200px !important;
+            width: 200px !important;
+        }
+        section[data-testid="stSidebar"] .block-container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Set sidebar to minimum width
+set_sidebar_min_width()
 
 def get_page_from_query():
     # Use st.query_params (Streamlit 1.30.0+) instead of deprecated experimental API
@@ -32,19 +54,26 @@ NAV_SECTIONS = [
     ("Data Warehouse", list(PAGES)),
 ]
 
-# Sidebar navigation with section headers
 def sidebar_navigation():
-    st.sidebar.markdown("## Menu")
     selected = None
-    for section, items in NAV_SECTIONS:
-        st.sidebar.markdown(f"#### {section}")
-        for item in items:
-            if st.sidebar.button(item, key=f"nav-{item}"):
+    with st.sidebar:
+        st.markdown("## Menu")
+        # Reports section
+        st.markdown("**Reports**")
+        for item in REPORTS:
+            if ui.button(text=item, key=f"nav-report-{item}"):
                 set_page_in_query(item)
                 selected = item
-    # Fallback to query param or default
+
+        # Data Warehouse section
+        st.markdown("**Views**")
+        for item in PAGES:
+            if ui.button(text=item, key=f"nav-page-{item}"):
+                set_page_in_query(item)
+                selected = item
+
     if not selected:
-        selected = get_page_from_query() or REPORTS[0]  # Default to Connector analytics
+        selected = get_page_from_query() or REPORTS[0]
     return selected
 
 # Use new sidebar navigation
@@ -110,11 +139,12 @@ def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=
     return df
 
 if page == "All":
-    if st.button("Trigger Extracts"):
+    st.title("Overview")
+    if ui.button(text="Trigger Extracts", key="trigger_extracts_btn"):
         trigger_both_extracts()
         st.session_state["refresh_data"] = True
     tags_options = ["All", "S3", "Datadog"]
-    selected_tag = st.selectbox("Filter by Tag", tags_options, index=0)
+    selected_tag = ui.select(options=tags_options, label="Filter by Tag", key="tag_select")
     df = handle_refresh_and_fetch("refresh_data", selected_tag)
     st.subheader("API Results Table")
     st.dataframe(df)
@@ -128,22 +158,26 @@ if page == "All":
         (time.time() - st.session_state["extract_status_time"]) < 10
     ):
         if st.session_state.get("extract_status_type") == "success":
-            st.sidebar.success(st.session_state["extract_status_msg"])
+            ui.alert(title="Success", description=st.session_state["extract_status_msg"], variant="success", key="alert_success")
         else:
-            st.sidebar.error(st.session_state["extract_status_msg"])
+            ui.alert(title="Error", description=st.session_state["extract_status_msg"], variant="destructive", key="alert_error")
     else:
         st.session_state.pop("extract_status_msg", None)
         st.session_state.pop("extract_status_type", None)
         st.session_state.pop("extract_status_time", None)
 
 elif page == "S3":
+    st.title("S3 View")
     df = handle_refresh_and_fetch(
         "refresh_s3",
         "S3",
         trigger_func=lambda: trigger_extract(f"{API_BASE}/extract-s3", "S3"),
         trigger_label="S3",
-        button_label="Trigger S3 Extract"
+        button_label=None  # We'll use ShadCN button below
     )
+    if ui.button(text="Trigger S3 Extract", key="trigger_s3_btn"):
+        trigger_extract(f"{API_BASE}/extract-s3", "S3")
+        st.session_state["refresh_s3"] = True
     st.subheader("S3 Items Table")
     if not df.empty and "large_text" in df.columns:
         parsed = df["large_text"].str.split("|", n=3, expand=True)
@@ -155,13 +189,17 @@ elif page == "S3":
     else:
         st.write("No S3 log data available.")
 elif page == "Datadog":
+    st.title("Datadog View")
     df = handle_refresh_and_fetch(
         "refresh_datadog",
         "Datadog",
         trigger_func=lambda: trigger_extract(f"{API_BASE}/extract-datadog", "Datadog"),
         trigger_label="Datadog",
-        button_label="Trigger Datadog Extract"
+        button_label=None  # We'll use ShadCN button below
     )
+    if ui.button(text="Trigger Datadog Extract", key="trigger_datadog_btn"):
+        trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+        st.session_state["refresh_datadog"] = True
     st.subheader("Datadog Items Table")
     if not df.empty:
         log_col = df.columns[-1]
@@ -205,13 +243,13 @@ elif page == "Connector analytics":
     """, unsafe_allow_html=True)
     st.title("Connector Analytics Report")
     # Add Update button to trigger both extracts
-    if st.button("Update"):
+    if ui.button(text="Update", key="update_btn"):
         trigger_extract(f"{API_BASE}/extract-s3", "S3")
         trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
     # Fetch all data (no tag filter)
     df = fetch_data("All")
     if df.empty:
-        st.warning("No data available for analytics.")
+        ui.alert(title="Warning", description="No data available for analytics.", variant="warning", key="alert_warning")
     else:
         # --- S3 vs Datadog breakdown ---
         def detect_source(tags):
@@ -235,7 +273,7 @@ elif page == "Connector analytics":
             st.subheader("Total Items Per Minute by Connector")
             st.bar_chart(per_min_pivot)
         else:
-            st.info("No timestamp data available for per-minute chart.")
+            ui.alert(title="Info", description="No timestamp data available for per-minute chart.", variant="info", key="alert_info")
 
 # Footer
 st.markdown("---")
