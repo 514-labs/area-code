@@ -83,13 +83,11 @@ def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=
         st.session_state[refresh_key] = False
     if button_label and st.button(button_label):
         if trigger_func:
-            with st.spinner(f"Triggering {trigger_label} extract and waiting for backend to finish..."):
-                trigger_func()
-                time.sleep(1.5)
+            trigger_func()
+            time.sleep(2.5)
         st.session_state[refresh_key] = True
     if st.session_state.get(refresh_key, False):
-        with st.spinner(f"Refreshing {trigger_label or tag} data after extract..."):
-            df = fetch_data(tag)
+        df = fetch_data(tag)
         st.session_state[refresh_key] = False
     else:
         df = fetch_data(tag)
@@ -161,7 +159,9 @@ page = get_page_from_query() or REPORTS[0]
 if page == "All":
     st.title("Overview")
     if ui.button(text="Trigger Extracts", key="trigger_extracts_btn"):
-        trigger_both_extracts()
+        with st.spinner("Triggering S3 and Datadog extracts and waiting for backend to finish..."):
+            trigger_both_extracts()
+            time.sleep(2)
         st.session_state["refresh_data"] = True
     tags_options = ["All", "S3", "Datadog"]
     selected_tag = ui.select(options=tags_options, label="Filter by Tag", key="tag_select")
@@ -193,7 +193,9 @@ elif page == "S3":
         button_label=None  # We'll use ShadCN button below
     )
     if ui.button(text="Trigger S3 Extract", key="trigger_s3_btn"):
-        trigger_extract(f"{API_BASE}/extract-s3", "S3")
+        with st.spinner("Triggering S3 extract and waiting for backend to finish..."):
+            trigger_extract(f"{API_BASE}/extract-s3", "S3")
+            time.sleep(2)
         st.session_state["refresh_s3"] = True
     st.subheader("S3 Items Table")
     if not df.empty and "large_text" in df.columns:
@@ -215,7 +217,9 @@ elif page == "Datadog":
         button_label=None  # We'll use ShadCN button below
     )
     if ui.button(text="Trigger Datadog Extract", key="trigger_datadog_btn"):
-        trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+        with st.spinner("Triggering Datadog extract and waiting for backend to finish..."):
+            trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+            time.sleep(2)
         st.session_state["refresh_datadog"] = True
     st.subheader("Datadog Items Table")
     if not df.empty:
@@ -260,8 +264,11 @@ elif page == "Connector analytics":
     st.title("Connector Analytics Report")
     # Add Update button to trigger both extracts
     if ui.button(text="Update", key="update_btn"):
-        trigger_extract(f"{API_BASE}/extract-s3", "S3")
-        trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+        with st.spinner("Triggering S3 and Datadog extracts and waiting for backend to finish..."):
+            trigger_extract(f"{API_BASE}/extract-s3", "S3")
+            trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+            time.sleep(2)
+
     # Fetch all data (no tag filter)
     df = fetch_data("All")
     if df.empty:
