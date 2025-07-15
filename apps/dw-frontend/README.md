@@ -1,4 +1,5 @@
 # Data Warehouse Front-end
+![dw-logo.png](../../services/data-warehouse/dw-logo.png)
 
 
 ```sh

@@ -1,3 +1,6 @@
+# Data Warehouse (backend)
+![dw-logo.png](dw-logo.png)
+
 This is a [Moose](https://www.docs.fiveonefour.com/moose) project bootstrapped with the
 [`Moose CLI`](https://github.com/514-labs/moose/tree/main/apps/framework-cli).
 
