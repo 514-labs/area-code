@@ -29,6 +29,10 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# PID file paths
+DATA_WAREHOUSE_PID_FILE="/tmp/data-warehouse.pid"
+DW_FRONTEND_PID_FILE="/tmp/dw-frontend.pid"
+
 # Function to show usage
 show_usage() {
     echo "Usage: $0 [OPTION]"
@@ -56,14 +60,14 @@ show_usage() {
     echo "  $0 env:check # Validate environment configuration"
     echo ""
     echo "Note: This service uses 'moose dev' to manage infrastructure automatically."
-    echo "The service PID is tracked in /tmp/data-warehouse.pid and /tmp/dw-frontend.pid"
+    echo "The service PID is tracked in $DATA_WAREHOUSE_PID_FILE and $DW_FRONTEND_PID_FILE"
     echo ""
 }
 
 # Function to get moose service PID
 get_moose_service_id() {
-    if [ -f "/tmp/data-warehouse.pid" ]; then
-        cat /tmp/data-warehouse.pid 2>/dev/null || echo ""
+    if [ -f "$DATA_WAREHOUSE_PID_FILE" ]; then
+        cat "$DATA_WAREHOUSE_PID_FILE" 2>/dev/null || echo ""
     else
         echo ""
     fi
@@ -81,8 +85,8 @@ is_moose_service_running() {
 
 # Function to get dw-frontend PID
 get_dw_frontend_pid() {
-    if [ -f "/tmp/dw-frontend.pid" ]; then
-        cat /tmp/dw-frontend.pid 2>/dev/null || echo ""
+    if [ -f "$DW_FRONTEND_PID_FILE" ]; then
+        cat "$DW_FRONTEND_PID_FILE" 2>/dev/null || echo ""
     else
         echo ""
     fi
@@ -572,15 +576,20 @@ start_service() {
         MOOSE_SERVICE_PID=$!
 
         # Save PID to file
-        echo "$MOOSE_SERVICE_PID" > /tmp/data-warehouse.pid
+        echo "$MOOSE_SERVICE_PID" > "$DATA_WAREHOUSE_PID_FILE"
 
         # Wait a moment for the service to start
-        sleep 15
+        # We don't really have a way to check if all the moose subprocesses are running
+        print_status "Waiting for service to come up..."
+        for i in {1..15}; do
+            print_status "Waiting for service... ($i/15)"
+            sleep 1
+        done
 
         # Check if service is running
         if curl -s http://localhost:4200 > /dev/null 2>&1; then
             print_success "data-warehouse service started successfully!"
-            print_status "data-warehouse service PID: $MOOSE_SERVICE_PID (saved to /tmp/data-warehouse.pid)"
+            print_status "data-warehouse service PID: $MOOSE_SERVICE_PID (saved to $DATA_WAREHOUSE_PID_FILE)"
             print_status "To stop the service, run: $0 stop"
         else
             print_warning "data-warehouse service may still be starting up..."
@@ -608,14 +617,14 @@ start_service() {
             DW_FRONTEND_PID=$!
 
             # Save PID to file
-            echo "$DW_FRONTEND_PID" > /tmp/dw-frontend.pid
+            echo "$DW_FRONTEND_PID" > "$DW_FRONTEND_PID_FILE"
 
             # Wait a moment for the service to start
             sleep 3
 
             if curl -s http://localhost:8501 > /dev/null 2>&1; then
                 print_success "dw-frontend service started successfully!"
-                print_status "dw-frontend service PID: $DW_FRONTEND_PID (saved to /tmp/dw-frontend.pid)"
+                print_status "dw-frontend service PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
                 print_status "To stop the service, run: $0 stop"
             else
                 print_error "dw-frontend failed to start"
@@ -637,25 +646,30 @@ stop_service() {
         print_warning "data-warehouse service is not running"
     else
         print_status "Stopping data-warehouse service (PID: $moose_pid)..."
-        kill "$moose_pid"
+        {
+            kill "$moose_pid"
 
-        # Wait for the process to stop gracefully
-        if ! wait_for_process_to_stop "$moose_pid" "data-warehouse service"; then
-            print_warning "data-warehouse service didn't stop gracefully, force killing..."
-            kill -9 "$moose_pid" 2>/dev/null
+            # Wait for the process to stop gracefully
+            if ! wait_for_process_to_stop "$moose_pid" "data-warehouse service"; then
+                print_warning "data-warehouse service didn't stop gracefully, force killing..."
+                kill -9 "$moose_pid" 2>/dev/null
 
-            # Wait a bit more after force kill
-            sleep 1
+                # Wait a bit more after force kill
+                sleep 1
 
-            if ! kill -0 "$moose_pid" 2>/dev/null; then
-                print_success "data-warehouse service force stopped"
-            else
-                print_error "Failed to stop data-warehouse service"
+                if ! kill -0 "$moose_pid" 2>/dev/null; then
+                    print_success "data-warehouse service force stopped"
+                else
+                    print_error "Failed to stop data-warehouse service"
+                fi
             fi
-        fi
+        } || {
+            print_error "Error occurred while stopping data-warehouse service"
+        }
 
         # Remove PID file
-        rm -f /tmp/data-warehouse.pid
+        print_status "Removing PID file: $DATA_WAREHOUSE_PID_FILE"
+        rm -f "$DATA_WAREHOUSE_PID_FILE"
     fi
 
     # Stop the dw-frontend service
@@ -665,25 +679,30 @@ stop_service() {
         print_warning "dw-frontend service is not running"
     else
         print_status "Stopping dw-frontend service (PID: $dw_frontend_pid)..."
-        kill "$dw_frontend_pid"
+        {
+            kill "$dw_frontend_pid"
 
-        # Wait for the process to stop gracefully
-        if ! wait_for_process_to_stop "$dw_frontend_pid" "dw-frontend service"; then
-            print_warning "dw-frontend service didn't stop gracefully, force killing..."
-            kill -9 "$dw_frontend_pid" 2>/dev/null
+            # Wait for the process to stop gracefully
+            if ! wait_for_process_to_stop "$dw_frontend_pid" "dw-frontend service"; then
+                print_warning "dw-frontend service didn't stop gracefully, force killing..."
+                kill -9 "$dw_frontend_pid" 2>/dev/null
 
-            # Wait a bit more after force kill
-            sleep 1
+                # Wait a bit more after force kill
+                sleep 1
 
-            if ! kill -0 "$dw_frontend_pid" 2>/dev/null; then
-                print_success "dw-frontend service force stopped"
-            else
-                print_error "Failed to stop dw-frontend service"
+                if ! kill -0 "$dw_frontend_pid" 2>/dev/null; then
+                    print_success "dw-frontend service force stopped"
+                else
+                    print_error "Failed to stop dw-frontend service"
+                fi
             fi
-        fi
+        } || {
+            print_error "Error occurred while stopping dw-frontend service"
+        }
 
         # Remove PID file
-        rm -f /tmp/dw-frontend.pid
+        print_status "Removing PID file: $DW_FRONTEND_PID_FILE"
+        rm -f "$DW_FRONTEND_PID_FILE"
     fi
 }
 
@@ -852,7 +871,7 @@ full_setup() {
     echo "To stop the service: $0 stop"
     echo "To check status: $0 status"
     echo "To validate environment: $0 env:check"
-    echo "Service PID is tracked in: /tmp/data-warehouse.pid and /tmp/dw-frontend.pid"
+    echo "Service PID is tracked in: $DATA_WAREHOUSE_PID_FILE and $DW_FRONTEND_PID_FILE"
     echo ""
 }
 
