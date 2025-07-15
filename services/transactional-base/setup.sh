@@ -140,6 +140,12 @@ reset_environment() {
         fi
     done
 
+    # Delete .moose folder if it exists
+    if [ -d ".moose" ]; then
+        echo "Deleting .moose folder..."
+        rm -rf ".moose"
+    fi
+
     docker volume prune -f
     echo "✅ Environment reset complete"
 }

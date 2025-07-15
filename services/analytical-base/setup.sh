@@ -71,7 +71,7 @@ get_service_pid() {
 # Function to check if service is running
 is_service_running() {
     local pid=$(get_service_pid)
-    if [ -n "$pid" ]; then
+    if [ -n "$pid" ] && ps -p "$pid" > /dev/null 2>&1; then
         return 0  # Service is running
     else
         return 1  # Service is not running
@@ -136,11 +136,14 @@ start_service() {
     # Save PID to file
     echo "$SERVICE_PID" > /tmp/analytical.pid
     
-    # Wait a moment for the service to start
-    sleep 5
+    # Wait for the service to become available
+    print_status "Waiting for service to become available on localhost:4100..."
     
-    # Check if service is running
-    if curl -s http://localhost:4100 > /dev/null 2>&1; then
+    # Get the directory of this script to find wait_for_port.sh
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    WAIT_SCRIPT="$SCRIPT_DIR/../../wait_for_port.sh"
+    
+    if "$WAIT_SCRIPT" localhost 4100; then
         print_success "Service started successfully!"
         print_status "Service PID: $SERVICE_PID (saved to /tmp/analytical.pid)"
         print_status "To stop the service, run: $0 stop"
@@ -148,6 +151,8 @@ start_service() {
         print_warning "Service may still be starting up..."
         print_status "Check http://localhost:4100 for service status"
     fi
+
+    touch app/index.ts
 }
 
 # Stop the service
@@ -251,6 +256,15 @@ reset_infrastructure() {
     # Stop the service first
     stop_service
     
+    # Delete .moose folder
+    if [ -d ".moose" ]; then
+        print_status "Deleting .moose folder..."
+        rm -rf .moose
+        print_success ".moose folder deleted"
+    else
+        print_status ".moose folder not found, skipping deletion"
+    fi
+    
     print_warning "Note: Moose manages its own infrastructure data."
     print_status "To reset infrastructure data, you may need to:"
     print_status "1. Stop the moose dev process"
@@ -303,6 +317,15 @@ full_reset() {
     
     # Wait a moment for services to fully stop
     sleep 3
+    
+    # Delete .moose folder
+    if [ -d ".moose" ]; then
+        print_status "Deleting .moose folder..."
+        rm -rf .moose
+        print_success ".moose folder deleted"
+    else
+        print_status ".moose folder not found, skipping deletion"
+    fi
     
     print_warning "Note: Moose manages its own infrastructure."
     print_status "To perform a complete reset:"

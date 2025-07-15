@@ -335,6 +335,17 @@ clear_elasticsearch_data() {
     fi
 }
 
+# Delete .moose folder
+clear_moose_folder() {
+    if [ -d ".moose" ]; then
+        print_status "Deleting .moose folder..."
+        rm -rf .moose
+        print_success ".moose folder deleted"
+    else
+        print_status ".moose folder not found, skipping deletion"
+    fi
+}
+
 # Reset Elasticsearch data
 reset_elasticsearch() {
     print_status "Resetting Elasticsearch data..."
@@ -344,6 +355,9 @@ reset_elasticsearch() {
     
     # Clear Elasticsearch data directory
     clear_elasticsearch_data
+    
+    # Delete .moose folder
+    clear_moose_folder
     
     # Start Elasticsearch
     if ! start_elasticsearch; then
@@ -398,6 +412,10 @@ full_reset() {
     # Clear Elasticsearch data directory
     print_status "Clearing Elasticsearch data..."
     clear_elasticsearch_data
+    
+    # Delete .moose folder
+    print_status "Clearing .moose folder..."
+    clear_moose_folder
     
     # Start Elasticsearch
     print_status "Starting Elasticsearch..."

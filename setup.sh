@@ -11,9 +11,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICES=(
     "transactional-base" # Has to be first
     "retrieval-base"
-    "analytical-base"
     "sync-base"
-    "data-warehouse"
+    "analytical-base"
+    # "data-warehouse"
 )
 
 # Function to show help
