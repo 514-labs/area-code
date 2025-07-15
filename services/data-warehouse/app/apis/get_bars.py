@@ -5,7 +5,7 @@ from typing import List, Optional
 
 class GetBarsQuery(BaseModel):
     status: Optional[str] = None
-    limit: int = 100
+    limit: int = 1000
     offset: int = 0
     tag: Optional[str] = None
 

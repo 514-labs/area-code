@@ -7,7 +7,7 @@ from pydantic import BaseModel
 class FooQueryParams(BaseModel):
     status: Optional[str] = None  # Changed from FooStatus to str
     is_active: Optional[bool] = None
-    limit: Optional[int] = 100
+    limit: Optional[int] = 1000
     offset: Optional[int] = 0
 
 # Define the query function
