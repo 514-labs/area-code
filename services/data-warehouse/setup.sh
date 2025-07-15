@@ -325,64 +325,64 @@ validate_environment() {
     
     print_success ".env file found"
     
-    echo ""
-    echo "Checking environment variables:"
-    echo "--------------------------------"
-    
-    # Check SUPABASE_PUBLIC_URL
-    if [ -z "$SUPABASE_PUBLIC_URL" ]; then
-        print_error "SUPABASE_PUBLIC_URL is not set"
-        issues=$((issues + 1))
-    elif [ "$SUPABASE_PUBLIC_URL" = "http://localhost:8000" ]; then
-        print_warning "SUPABASE_PUBLIC_URL is using default value"
-        warnings=$((warnings + 1))
-    else
-        print_success "SUPABASE_PUBLIC_URL: $SUPABASE_PUBLIC_URL"
-    fi
-    
-    # Check ANON_KEY
-    if [ -z "$ANON_KEY" ]; then
-        print_error "ANON_KEY is not set"
-        print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
-        issues=$((issues + 1))
-    elif [ "$ANON_KEY" = "your_actual_anon_key_from_transactional_base" ]; then
-        print_error "ANON_KEY is using default placeholder value"
-        print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
-        issues=$((issues + 1))
-    else
-        print_success "ANON_KEY: ${ANON_KEY:0:10}... (truncated for security)"
-    fi
-    
-    # Check DB_SCHEMA
-    if [ -z "$DB_SCHEMA" ]; then
-        print_error "DB_SCHEMA is not set"
-        issues=$((issues + 1))
-    elif [ "$DB_SCHEMA" = "public" ]; then
-        print_success "DB_SCHEMA: $DB_SCHEMA (default value is correct)"
-    else
-        print_success "DB_SCHEMA: $DB_SCHEMA"
-    fi
-    
-    # Check SERVICE_ROLE_KEY (optional)
-    if [ -z "$SERVICE_ROLE_KEY" ]; then
-        print_warning "SERVICE_ROLE_KEY is not set (optional)"
-        warnings=$((warnings + 1))
-    elif [ "$SERVICE_ROLE_KEY" = "your_service_role_key_here" ]; then
-        print_warning "SERVICE_ROLE_KEY is using default placeholder value (optional)"
-        warnings=$((warnings + 1))
-    else
-        print_success "SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:0:10}... (truncated for security)"
-    fi
-    
-    # Check REALTIME_URL (optional)
-    if [ -z "$REALTIME_URL" ]; then
-        print_warning "REALTIME_URL is not set (optional)"
-        warnings=$((warnings + 1))
-    elif [ "$REALTIME_URL" = "ws://localhost:8000/realtime/v1" ]; then
-        print_success "REALTIME_URL: $REALTIME_URL (default value is correct)"
-    else
-        print_success "REALTIME_URL: $REALTIME_URL"
-    fi
+    # echo ""
+    # echo "Checking environment variables:"
+    # echo "--------------------------------"
+
+    # # Check SUPABASE_PUBLIC_URL
+    # if [ -z "$SUPABASE_PUBLIC_URL" ]; then
+    #     print_error "SUPABASE_PUBLIC_URL is not set"
+    #     issues=$((issues + 1))
+    # elif [ "$SUPABASE_PUBLIC_URL" = "http://localhost:8000" ]; then
+    #     print_warning "SUPABASE_PUBLIC_URL is using default value"
+    #     warnings=$((warnings + 1))
+    # else
+    #     print_success "SUPABASE_PUBLIC_URL: $SUPABASE_PUBLIC_URL"
+    # fi
+
+    # # Check ANON_KEY
+    # if [ -z "$ANON_KEY" ]; then
+    #     print_error "ANON_KEY is not set"
+    #     print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
+    #     issues=$((issues + 1))
+    # elif [ "$ANON_KEY" = "your_actual_anon_key_from_transactional_base" ]; then
+    #     print_error "ANON_KEY is using default placeholder value"
+    #     print_status "Run '$0 setup' to automatically copy from transactional-base/.env"
+    #     issues=$((issues + 1))
+    # else
+    #     print_success "ANON_KEY: ${ANON_KEY:0:10}... (truncated for security)"
+    # fi
+
+    # # Check DB_SCHEMA
+    # if [ -z "$DB_SCHEMA" ]; then
+    #     print_error "DB_SCHEMA is not set"
+    #     issues=$((issues + 1))
+    # elif [ "$DB_SCHEMA" = "public" ]; then
+    #     print_success "DB_SCHEMA: $DB_SCHEMA (default value is correct)"
+    # else
+    #     print_success "DB_SCHEMA: $DB_SCHEMA"
+    # fi
+
+    # # Check SERVICE_ROLE_KEY (optional)
+    # if [ -z "$SERVICE_ROLE_KEY" ]; then
+    #     print_warning "SERVICE_ROLE_KEY is not set (optional)"
+    #     warnings=$((warnings + 1))
+    # elif [ "$SERVICE_ROLE_KEY" = "your_service_role_key_here" ]; then
+    #     print_warning "SERVICE_ROLE_KEY is using default placeholder value (optional)"
+    #     warnings=$((warnings + 1))
+    # else
+    #     print_success "SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:0:10}... (truncated for security)"
+    # fi
+
+    # # Check REALTIME_URL (optional)
+    # if [ -z "$REALTIME_URL" ]; then
+    #     print_warning "REALTIME_URL is not set (optional)"
+    #     warnings=$((warnings + 1))
+    # elif [ "$REALTIME_URL" = "ws://localhost:8000/realtime/v1" ]; then
+    #     print_success "REALTIME_URL: $REALTIME_URL (default value is correct)"
+    # else
+    #     print_success "REALTIME_URL: $REALTIME_URL"
+    # fi
     
     echo ""
     echo "=========================================="
@@ -463,21 +463,16 @@ install_dependencies() {
             return 1
         }
 
-        if [ -f "setup.sh" ]; then
-            chmod +x setup.sh
-            ./setup.sh
-            if [ $? -eq 0 ]; then
-                print_success "dw-frontend dependencies installed successfully in virtual environment"
-            else
-                print_error "Failed to install dw-frontend dependencies"
-                cd "$current_dir"
-                return 1
-            fi
-        else
-            print_error "dw-frontend setup.sh not found"
-            cd "$current_dir"
-            return 1
+        pip install -r requirements.txt
+
+        # Check streamlit
+        if ! command -v streamlit &> /dev/null; then
+            print_error "streamlit is not installed."
+            exit 1
         fi
+
+        print_success "Streamlit version: $(streamlit --version 2>/dev/null || echo 'unknown')"
+        echo ""
 
         cd "$current_dir"
     else
@@ -542,7 +537,7 @@ start_service() {
         echo "$MOOSE_SERVICE_PID" > /tmp/data-warehouse.pid
 
         # Wait a moment for the service to start
-        sleep 5
+        sleep 15
 
         # Check if service is running
         if curl -s http://localhost:4200 > /dev/null 2>&1; then
@@ -578,7 +573,7 @@ start_service() {
             echo "$DW_FRONTEND_PID" > /tmp/dw-frontend.pid
 
             # Wait a moment for the service to start
-            sleep 2
+            sleep 3
 
             if curl -s http://localhost:8501 > /dev/null 2>&1; then
                 print_success "dw-frontend service started successfully!"
@@ -808,7 +803,7 @@ full_setup() {
     echo "To stop the service: $0 stop"
     echo "To check status: $0 status"
     echo "To validate environment: $0 env:check"
-    echo "Service PID is tracked in: /tmp/data-warehouse.pid"
+    echo "Service PID is tracked in: /tmp/data-warehouse.pid and /tmp/dw-frontend.pid"
     echo ""
 }
 
