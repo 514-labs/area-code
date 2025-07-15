@@ -111,7 +111,7 @@ export default function BarAverageValue({
         ) : (
           <div className="">
             <div className="text-6xl font-bold text-primary">
-              {data?.averageValue.toFixed(2) || "0.00"}
+              {data?.averageValue?.toFixed(2) || "0.00"}
             </div>
           </div>
         )}
