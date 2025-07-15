@@ -145,6 +145,35 @@ ensure_venv_activated() {
     fi
 }
 
+# Wait for a process to stop gracefully
+wait_for_process_to_stop() {
+    local pid=$1
+    local service_name=$2
+    local max_attempts=${3:-10}
+    local sleep_interval=${4:-1}
+
+    if [ -z "$pid" ]; then
+        return 0  # No PID, consider it stopped
+    fi
+
+    print_status "Waiting for $service_name to stop gracefully..."
+
+    local attempts=0
+    while [ $attempts -lt $max_attempts ]; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            print_success "$service_name stopped successfully"
+            return 0  # Process stopped
+        fi
+
+        sleep $sleep_interval
+        attempts=$((attempts + 1))
+
+        print_status "Waiting for $service_name to stop... (attempt $attempts/$max_attempts)"
+    done
+
+    return 1  # Process didn't stop within timeout
+}
+
 # Check prerequisites
 check_prerequisites() {
     print_status "Checking prerequisites..."
@@ -610,23 +639,19 @@ stop_service() {
         print_status "Stopping data-warehouse service (PID: $moose_pid)..."
         kill "$moose_pid"
 
-        # Wait for the process to stop
-        local attempts=0
-        while [ $attempts -lt 10 ]; do
-            if ! kill -0 "$moose_pid" 2>/dev/null; then
-                print_success "Waiting for data-warehouseservice to stop..."
-                # Remove PID file
-                rm -f /tmp/data-warehouse.pid
-            fi
-            sleep 1
-            attempts=$((attempts + 1))
-        done
-
-        # Force kill if still running
-        if kill -0 "$moose_pid" 2>/dev/null; then
+        # Wait for the process to stop gracefully
+        if ! wait_for_process_to_stop "$moose_pid" "data-warehouse service"; then
             print_warning "data-warehouse service didn't stop gracefully, force killing..."
-            kill -9 "$moose_pid"
-            print_success "data-warehouse service force stopped"
+            kill -9 "$moose_pid" 2>/dev/null
+
+            # Wait a bit more after force kill
+            sleep 1
+
+            if ! kill -0 "$moose_pid" 2>/dev/null; then
+                print_success "data-warehouse service force stopped"
+            else
+                print_error "Failed to stop data-warehouse service"
+            fi
         fi
 
         # Remove PID file
@@ -641,6 +666,21 @@ stop_service() {
     else
         print_status "Stopping dw-frontend service (PID: $dw_frontend_pid)..."
         kill "$dw_frontend_pid"
+
+        # Wait for the process to stop gracefully
+        if ! wait_for_process_to_stop "$dw_frontend_pid" "dw-frontend service"; then
+            print_warning "dw-frontend service didn't stop gracefully, force killing..."
+            kill -9 "$dw_frontend_pid" 2>/dev/null
+
+            # Wait a bit more after force kill
+            sleep 1
+
+            if ! kill -0 "$dw_frontend_pid" 2>/dev/null; then
+                print_success "dw-frontend service force stopped"
+            else
+                print_error "Failed to stop dw-frontend service"
+            fi
+        fi
 
         # Remove PID file
         rm -f /tmp/dw-frontend.pid
