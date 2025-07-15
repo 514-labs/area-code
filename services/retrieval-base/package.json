@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "./setup.sh start",
     "lint": "eslint src/",
+    "shutdown": "../../scripts/dev-shutdown.sh retrieval-base",
     "es:setup": "./setup.sh es:start",
     "es:stop": "./setup.sh es:stop",
     "es:reset": "./setup.sh es:reset",

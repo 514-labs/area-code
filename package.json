@@ -17,8 +17,9 @@
     "dev:turbo": "turbo",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "dev:setup": "./setup.sh",
-    "dev:sequence": "./dev-sequence.sh",
-    "dev:workflow": "./dev-workflow.sh",
+    "dev:sequence": "./scripts/dev-sequence.sh",
+    "dev:workflow": "./scripts/dev-workflow.sh",
+    "dev:shutdown": "./scripts/dev-shutdown.sh",
     "dev:seed": "./setup.sh seed",
     "services:health": "./scripts/health-check.sh"
   },

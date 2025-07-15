@@ -11,6 +11,7 @@
     "start": "node dist/server.js",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
+    "shutdown": "../../scripts/dev-shutdown.sh transactional-base",
     "db:start": "sh setup.sh",
     "db:stop": "sh setup.sh --stop",
     "db:restart": "sh setup.sh --restart",
