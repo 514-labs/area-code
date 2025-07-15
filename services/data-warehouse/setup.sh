@@ -41,9 +41,10 @@ show_usage() {
     echo "  status    - Show service status"
     echo "  reset     - Full reset (stop service, restart)"
     echo "  env:check - Check environment configuration"
-    echo "  infra:start  - Start Moose infrastructure (managed by moose dev)"
-    echo "  infra:stop   - Stop Moose infrastructure"
-    echo "  infra:reset  - Reset infrastructure data"
+    # Commented out because unclear what these were for
+    # echo "  infra:start  - Start Moose infrastructure (managed by moose dev)"
+    # echo "  infra:stop   - Stop Moose infrastructure"
+    # echo "  infra:reset  - Reset infrastructure data"
     echo "  help      - Show this help message"
     echo ""
     echo "Examples:"
@@ -55,7 +56,7 @@ show_usage() {
     echo "  $0 env:check # Validate environment configuration"
     echo ""
     echo "Note: This service uses 'moose dev' to manage infrastructure automatically."
-    echo "The service PID is tracked in /tmp/data-warehouse.pid"
+    echo "The service PID is tracked in /tmp/data-warehouse.pid and /tmp/dw-frontend.pid"
     echo ""
 }
 
@@ -325,6 +326,7 @@ validate_environment() {
     
     print_success ".env file found"
     
+    # Commented out because these are not needed for data-warehouse service for now
     # echo ""
     # echo "Checking environment variables:"
     # echo "--------------------------------"
@@ -420,7 +422,7 @@ install_dependencies() {
             print_success "Virtual environment created successfully at ./venv"
         else
             print_error "Failed to create virtual environment"
-            return 1
+            exit 1
         fi
     else
         print_success "Virtual environment already exists at ./venv"
@@ -434,7 +436,7 @@ install_dependencies() {
         print_success "Virtual environment activated: $VIRTUAL_ENV"
     else
         print_error "Failed to activate virtual environment"
-        return 1
+        exit 1
     fi
 
     # Install data-warehouse dependencies in virtual environment
@@ -460,7 +462,7 @@ install_dependencies() {
     if [ -d "$frontend_dir" ]; then
         cd "$frontend_dir" || {
             print_error "Failed to navigate to dw-frontend directory: $frontend_dir"
-            return 1
+            exit 1
         }
 
         pip install -r requirements.txt
@@ -477,7 +479,7 @@ install_dependencies() {
         cd "$current_dir"
     else
         print_error "dw-frontend directory not found at: $frontend_dir"
-        return 1
+        exit 1
     fi
 }
 
@@ -832,15 +834,16 @@ main() {
         "env:check")
             validate_environment
             ;;
-        "infra:start")
-            start_infrastructure_only
-            ;;
-        "infra:stop")
-            stop_infrastructure_only
-            ;;
-        "infra:reset")
-            reset_infrastructure
-            ;;
+        # Commented out because unclear what these were for
+        # "infra:start")
+        #     start_infrastructure_only
+        #     ;;
+        # "infra:stop")
+        #     stop_infrastructure_only
+        #     ;;
+        # "infra:reset")
+        #     reset_infrastructure
+        #     ;;
         "help"|"-h"|"--help")
             show_usage
             ;;
