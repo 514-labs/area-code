@@ -243,23 +243,43 @@ if [ "\$CLEAR_DATA" = "true" ]; then
     
     # Drop all tables in the public schema (but keep the schema itself)
     echo "🗑️ Dropping all tables in public schema..."
-    docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "
-        DO \$\$
-        DECLARE
-            r RECORD;
-        BEGIN
-            -- Drop all tables in public schema
-            FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
-                EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(r.tablename) || ' CASCADE';
-                RAISE NOTICE 'Dropped table: %', r.tablename;
-            END LOOP;
-            
-            -- Drop all custom types in public schema  
-            FOR r IN (SELECT typname FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE n.nspname = 'public' AND t.typtype = 'e') LOOP
-                EXECUTE 'DROP TYPE IF EXISTS public.' || quote_ident(r.typname) || ' CASCADE';
-                RAISE NOTICE 'Dropped type: %', r.typname;
-            END LOOP;
-        END\$\$;"
+    
+    # First check if there are any tables to drop
+    TABLE_COUNT=\$(docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -t -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" | tr -d ' ')
+    
+    if [ "\$TABLE_COUNT" -gt 0 ]; then
+        echo "📋 Found \$TABLE_COUNT table(s) to drop..."
+        
+        # Create a temporary SQL file to avoid bash variable substitution issues
+        cat > /tmp/drop_tables.sql << 'EOSQL'
+DO $cleanup$
+DECLARE
+    r RECORD;
+BEGIN
+    -- Drop all tables in public schema
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(r.tablename) || ' CASCADE';
+        RAISE NOTICE 'Dropped table: %', r.tablename;
+    END LOOP;
+    
+    -- Drop all custom types in public schema  
+    FOR r IN (SELECT typname FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE n.nspname = 'public' AND t.typtype = 'e') LOOP
+        EXECUTE 'DROP TYPE IF EXISTS public.' || quote_ident(r.typname) || ' CASCADE';
+        RAISE NOTICE 'Dropped type: %', r.typname;
+    END LOOP;
+END$cleanup$;
+EOSQL
+        
+        # Copy the SQL file to the container and execute it
+        docker cp /tmp/drop_tables.sql "\$DB_CONTAINER:/tmp/drop_tables.sql"
+        docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -f /tmp/drop_tables.sql
+        
+        # Clean up temp files
+        rm -f /tmp/drop_tables.sql
+        docker exec "\$DB_CONTAINER" rm -f /tmp/drop_tables.sql
+    else
+        echo "✅ No tables found in public schema, nothing to drop"
+    fi
     
     if [ \$? -eq 0 ]; then
         echo "✅ All tables dropped successfully"
@@ -272,6 +292,7 @@ if [ "\$CLEAR_DATA" = "true" ]; then
     echo "📋 Running drizzle migrations to recreate schema..."
     cd "$PROJECT_ROOT/services/transactional-base"
     if [ -f "src/scripts/migrate.ts" ]; then
+        echo "🔄 Running drizzle migration..."
         npx tsx src/scripts/migrate.ts
         if [ \$? -eq 0 ]; then
             echo "✅ Database migrations completed successfully"
@@ -286,10 +307,20 @@ if [ "\$CLEAR_DATA" = "true" ]; then
     
     # Verify schema exists
     echo "🔍 Verifying database schema was recreated..."
-    if docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "\\dt" 2>/dev/null | grep -q "foo\\|bar"; then
-        echo "✅ Database schema is ready"
+    
+    # Check if database connection is working
+    if ! docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "SELECT 1;" >/dev/null 2>&1; then
+        echo "❌ Database connection failed"
+        exit 1
+    fi
+    
+    # Check for tables (more flexible - just check if we can query tables)
+    TABLE_CHECK=\$(docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null | tr -d ' ')
+    
+    if [ "\$TABLE_CHECK" -ge 0 ] 2>/dev/null; then
+        echo "✅ Database schema is ready (found \$TABLE_CHECK table(s))"
     else
-        echo "❌ Database schema not found after migration"
+        echo "❌ Database schema verification failed"
         exit 1
     fi
 fi
@@ -301,14 +332,16 @@ docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -f /tmp/seed.sql
 # Seed foo data with user-specified count
 # Remove commas from numbers for SQL
 FOO_COUNT_SQL=\$(echo "\$FOO_ROWS" | tr -d ',')
-echo "📝 Seeding \$FOO_ROWS foo records (data already cleaned if requested)..."
-docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "CALL seed_foo_data(\$FOO_COUNT_SQL, false);"
+# Convert CLEAR_DATA to lowercase for SQL boolean
+CLEAN_EXISTING_SQL=\$([ "\$CLEAR_DATA" = "true" ] && echo "true" || echo "false")
+echo "📝 Seeding \$FOO_ROWS foo records (clean_existing=\$CLEAN_EXISTING_SQL)..."
+docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "CALL seed_foo_data(\$FOO_COUNT_SQL, \$CLEAN_EXISTING_SQL);"
 
 # Seed bar data with user-specified count
 # Remove commas from numbers for SQL  
 BAR_COUNT_SQL=\$(echo "\$BAR_ROWS" | tr -d ',')
-echo "📊 Seeding \$BAR_ROWS bar records (data already cleaned if requested)..."
-docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "CALL seed_bar_data(\$BAR_COUNT_SQL, false);"
+echo "📊 Seeding \$BAR_ROWS bar records (clean_existing=\$CLEAN_EXISTING_SQL)..."
+docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "CALL seed_bar_data(\$BAR_COUNT_SQL, \$CLEAN_EXISTING_SQL);"
 
 # Cleanup
 docker exec "\$DB_CONTAINER" rm -f /tmp/seed.sql

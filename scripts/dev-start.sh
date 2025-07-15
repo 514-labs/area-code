@@ -265,7 +265,7 @@ main() {
     print_success "Docker is running"
     
     print_step "Starting transactional-base containers"
-    cd "$PROJECT_ROOT/services/transactional-base" && ./setup.sh --restart || exit 1
+    cd "$SCRIPT_DIR/services/transactional-base" && ./setup.sh --restart || exit 1
     
     print_step "Starting transactional-base dev server"
     run_in_service_background "transactional-base" "pnpm dev" "main" || exit 1
