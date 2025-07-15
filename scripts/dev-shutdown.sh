@@ -31,6 +31,35 @@ print_warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
+# Function to check if a process is Docker-related (NEVER kill these)
+is_docker_process() {
+    local pid="$1"
+    local process_info="${2:-$(ps -p $pid -o command= 2>/dev/null || true)}"
+    
+    # Docker-related process patterns
+    local docker_patterns=(
+        "dockerd"
+        "docker-proxy"
+        "com.docker"
+        "Docker"
+        "containerd"
+        "containerd-shim"
+        "runc"
+        "docker/bin"
+        "docker-desktop"
+        "vpnkit"
+        "docker-credential"
+    )
+    
+    for pattern in "${docker_patterns[@]}"; do
+        if [[ "$process_info" =~ $pattern ]]; then
+            return 0  # Is Docker process
+        fi
+    done
+    
+    return 1  # Not Docker process
+}
+
 # Function to read port from moose.config.toml
 get_moose_port() {
     local service_dir="$1"
@@ -147,10 +176,18 @@ kill_processes_on_port() {
         return 0
     fi
     
-    # Kill each process
+    # Kill each process (but skip Docker processes)
     for pid in $pids; do
         local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
         if [ -n "$process_info" ]; then
+            # SAFETY CHECK: Never kill Docker processes
+            if is_docker_process "$pid" "$process_info"; then
+                print_warning "Skipping Docker process on port $port (PID: $pid)"
+                echo "  Process: $process_info"
+                echo "  🐳 Docker processes are protected from shutdown"
+                continue
+            fi
+            
             print_step "Killing process on port $port (PID: $pid)"
             echo "  Process: $process_info"
             
@@ -181,11 +218,20 @@ kill_processes_on_port() {
 cleanup_moose_processes() {
     print_step "Cleaning up moose-related processes..."
     
-    # Kill moose processes
+    # Kill moose processes (but skip Docker processes)
     local moose_pids=$(pgrep -f "moose.*dev" 2>/dev/null || true)
     if [ -n "$moose_pids" ]; then
         for pid in $moose_pids; do
             local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
+            
+            # SAFETY CHECK: Never kill Docker processes
+            if is_docker_process "$pid" "$process_info"; then
+                print_warning "Skipping Docker process in moose cleanup (PID: $pid)"
+                echo "  Process: $process_info"
+                echo "  🐳 Docker processes are protected from shutdown"
+                continue
+            fi
+            
             print_step "Killing moose process (PID: $pid)"
             echo "  Process: $process_info"
             kill -TERM $pid 2>/dev/null || true
@@ -193,11 +239,20 @@ cleanup_moose_processes() {
         sleep 2
     fi
     
-    # Kill moose-cli processes
+    # Kill moose-cli processes (but skip Docker processes)
     local cli_pids=$(pgrep -f "moose-cli.*dev" 2>/dev/null || true)
     if [ -n "$cli_pids" ]; then
         for pid in $cli_pids; do
             local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
+            
+            # SAFETY CHECK: Never kill Docker processes
+            if is_docker_process "$pid" "$process_info"; then
+                print_warning "Skipping Docker process in moose-cli cleanup (PID: $pid)"
+                echo "  Process: $process_info"
+                echo "  🐳 Docker processes are protected from shutdown"
+                continue
+            fi
+            
             print_step "Killing moose-cli process (PID: $pid)"
             echo "  Process: $process_info"
             kill -TERM $pid 2>/dev/null || true
@@ -205,11 +260,20 @@ cleanup_moose_processes() {
         sleep 2
     fi
     
-    # Kill moose-runner processes
+    # Kill moose-runner processes (but skip Docker processes)
     local runner_pids=$(pgrep -f "moose-runner" 2>/dev/null || true)
     if [ -n "$runner_pids" ]; then
         for pid in $runner_pids; do
             local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
+            
+            # SAFETY CHECK: Never kill Docker processes
+            if is_docker_process "$pid" "$process_info"; then
+                print_warning "Skipping Docker process in moose-runner cleanup (PID: $pid)"
+                echo "  Process: $process_info"
+                echo "  🐳 Docker processes are protected from shutdown"
+                continue
+            fi
+            
             print_step "Killing moose-runner process (PID: $pid)"
             echo "  Process: $process_info"
             kill -TERM $pid 2>/dev/null || true
@@ -242,11 +306,20 @@ terminate_workflows() {
 cleanup_background_processes() {
     print_step "Cleaning up background processes started by dev scripts..."
     
-    # Find processes that might be from our dev scripts
+    # Find processes that might be from our dev scripts (but skip Docker processes)
     local dev_processes=$(pgrep -f "tsx.*src/server.ts" 2>/dev/null || true)
     if [ -n "$dev_processes" ]; then
         for pid in $dev_processes; do
             local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
+            
+            # SAFETY CHECK: Never kill Docker processes
+            if is_docker_process "$pid" "$process_info"; then
+                print_warning "Skipping Docker process in dev server cleanup (PID: $pid)"
+                echo "  Process: $process_info"
+                echo "  🐳 Docker processes are protected from shutdown"
+                continue
+            fi
+            
             print_step "Killing dev server process (PID: $pid)"
             echo "  Process: $process_info"
             kill -TERM $pid 2>/dev/null || true
@@ -254,11 +327,20 @@ cleanup_background_processes() {
         sleep 2
     fi
     
-    # Find vite processes
+    # Find vite processes (but skip Docker processes)
     local vite_processes=$(pgrep -f "vite" 2>/dev/null || true)
     if [ -n "$vite_processes" ]; then
         for pid in $vite_processes; do
             local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
+            
+            # SAFETY CHECK: Never kill Docker processes
+            if is_docker_process "$pid" "$process_info"; then
+                print_warning "Skipping Docker process in vite cleanup (PID: $pid)"
+                echo "  Process: $process_info"
+                echo "  🐳 Docker processes are protected from shutdown"
+                continue
+            fi
+            
             # Only kill if it looks like our vite process
             if [[ "$process_info" =~ vite.*dev ]]; then
                 print_step "Killing vite dev process (PID: $pid)"
@@ -324,11 +406,20 @@ shutdown_single_service() {
             cleanup_moose_processes
             ;;
         "transactional-base"|"retrieval-base")
-            # Cleanup dev server processes
+            # Cleanup dev server processes (but skip Docker processes)
             local dev_processes=$(pgrep -f "tsx.*src/server.ts" 2>/dev/null || true)
             if [ -n "$dev_processes" ]; then
                 for pid in $dev_processes; do
                     local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
+                    
+                    # SAFETY CHECK: Never kill Docker processes
+                    if is_docker_process "$pid" "$process_info"; then
+                        print_warning "Skipping Docker process in $service_name cleanup (PID: $pid)"
+                        echo "  Process: $process_info"
+                        echo "  🐳 Docker processes are protected from shutdown"
+                        continue
+                    fi
+                    
                     # Only kill if it's from the specific service directory
                     if [[ "$process_info" =~ $service_name ]]; then
                         print_step "Killing $service_name dev server process (PID: $pid)"
@@ -340,11 +431,20 @@ shutdown_single_service() {
             fi
             ;;
         "frontend")
-            # Cleanup vite processes
+            # Cleanup vite processes (but skip Docker processes)
             local vite_processes=$(pgrep -f "vite" 2>/dev/null || true)
             if [ -n "$vite_processes" ]; then
                 for pid in $vite_processes; do
                     local process_info=$(ps -p $pid -o command= 2>/dev/null || true)
+                    
+                    # SAFETY CHECK: Never kill Docker processes
+                    if is_docker_process "$pid" "$process_info"; then
+                        print_warning "Skipping Docker process in frontend cleanup (PID: $pid)"
+                        echo "  Process: $process_info"
+                        echo "  🐳 Docker processes are protected from shutdown"
+                        continue
+                    fi
+                    
                     if [[ "$process_info" =~ vite.*dev ]]; then
                         print_step "Killing vite dev process (PID: $pid)"
                         echo "  Process: $process_info"
@@ -397,6 +497,8 @@ show_help() {
     echo "  2. Cleanup moose-related background processes"
     echo "  3. Terminate any running workflows"
     echo "  4. Cleanup other dev script background processes"
+    echo ""
+    echo "🐳 SAFETY: Docker processes are automatically detected and protected from shutdown."
     echo ""
     echo "Options:"
     echo "  --help, -h          Show this help message"
