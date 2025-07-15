@@ -1,1 +1,0 @@
-streamlit run main.py
