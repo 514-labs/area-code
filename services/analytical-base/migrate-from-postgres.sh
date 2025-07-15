@@ -526,9 +526,33 @@ echo ""
 # Clear existing data if requested
 if [ "$CLEAR_DATA" = true ]; then
     echo "Clearing existing data from ClickHouse..."
-    run_clickhouse_query "TRUNCATE TABLE FooThingEvent"
-    run_clickhouse_query "TRUNCATE TABLE BarThingEvent"
-    echo "✅ Existing data cleared"
+    
+    # Show counts before clearing
+    BEFORE_FOO=$(run_clickhouse_query "SELECT count() FROM FooThingEvent")
+    BEFORE_BAR=$(run_clickhouse_query "SELECT count() FROM BarThingEvent")
+    echo "   Before clearing: $BEFORE_FOO foo records, $BEFORE_BAR bar records"
+    
+    # Clear the tables
+    if ! run_clickhouse_query "TRUNCATE TABLE FooThingEvent"; then
+        echo "❌ Failed to truncate FooThingEvent table"
+        exit 1
+    fi
+    if ! run_clickhouse_query "TRUNCATE TABLE BarThingEvent"; then
+        echo "❌ Failed to truncate BarThingEvent table" 
+        exit 1
+    fi
+    
+    # Verify tables are actually empty
+    AFTER_FOO=$(run_clickhouse_query "SELECT count() FROM FooThingEvent")
+    AFTER_BAR=$(run_clickhouse_query "SELECT count() FROM BarThingEvent")
+    
+    if [ "$AFTER_FOO" != "0" ] || [ "$AFTER_BAR" != "0" ]; then
+        echo "❌ Failed to clear ClickHouse data completely!"
+        echo "   After truncate: $AFTER_FOO foo records, $AFTER_BAR bar records"
+        exit 1
+    fi
+    
+    echo "✅ Existing data cleared (verified: 0 foo, 0 bar records)"
 fi
 
 

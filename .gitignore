@@ -10,3 +10,20 @@ dist-ssr
 server/dist
 public/dist
 .cursor/
+
+# Temporary migration files and directories
+temp_migration/
+temp_*.sh
+temp_*.json
+elasticsearch_migration.log
+
+# Development logs
+dev-*.log
+
+# Moose temporary directories
+.moose/
+
+# Service-specific temp files
+services/*/temp_migration/
+services/*/dev-*.log
+services/*/.moose/
