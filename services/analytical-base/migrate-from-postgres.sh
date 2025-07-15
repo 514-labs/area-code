@@ -391,6 +391,23 @@ fi
 
 echo "✅ Test data verified in ClickHouse"
 
+# Clean up test data before full migration (only if not doing a full clear)
+if [ "$CLEAR_DATA" = false ]; then
+    echo "Cleaning up test data before full migration..."
+    # Get the IDs of the test records we just inserted
+    TEST_FOO_ID=$(run_clickhouse_query "SELECT id FROM FooThingEvent ORDER BY timestamp DESC LIMIT 1")
+    TEST_BAR_ID=$(run_clickhouse_query "SELECT id FROM BarThingEvent ORDER BY timestamp DESC LIMIT 1")
+    
+    # Delete only the test records
+    if [ -n "$TEST_FOO_ID" ]; then
+        run_clickhouse_query "DELETE FROM FooThingEvent WHERE id = '$TEST_FOO_ID'"
+    fi
+    if [ -n "$TEST_BAR_ID" ]; then
+        run_clickhouse_query "DELETE FROM BarThingEvent WHERE id = '$TEST_BAR_ID'"
+    fi
+    echo "✅ Test data cleaned up"
+fi
+
 echo ""
 echo "🎉 ALL TEST CHECKS PASSED! Proceeding with full migration..."
 echo ""
