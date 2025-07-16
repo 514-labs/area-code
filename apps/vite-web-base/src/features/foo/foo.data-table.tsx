@@ -340,9 +340,11 @@ const fetchFoos = async (
 export function FooDataTable({
   fetchApiEndpoint,
   disableCache = false,
+  selectableRows = false,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
+  selectableRows?: boolean;
 }) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -400,9 +402,14 @@ export function FooDataTable({
   const data = fooResponse?.data || [];
   const serverPagination = fooResponse?.pagination;
 
+  // Conditionally include select column based on selectableRows prop
+  const availableColumns = selectableRows
+    ? columns
+    : columns.filter((col) => col.id !== "select");
+
   const table = useReactTable({
     data,
-    columns,
+    columns: availableColumns,
     state: {
       sorting,
       columnVisibility,
@@ -411,7 +418,7 @@ export function FooDataTable({
       pagination,
     },
     getRowId: (row) => row.id,
-    enableRowSelection: true,
+    enableRowSelection: selectableRows,
     onRowSelectionChange: setRowSelection,
     onSortingChange: (updater) => {
       setSorting(updater);
@@ -470,10 +477,11 @@ export function FooDataTable({
           {queryTime !== null && (
             <div className="text-green-600">
               Latest query:{" "}
-              {(queryTime || 0).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              <NumericFormat
+                value={Math.round(queryTime || 0)}
+                displayType="text"
+                thousandSeparator=","
+              />
               ms
             </div>
           )}
@@ -558,11 +566,15 @@ export function FooDataTable({
           </Table>
         </div>
         <div className="flex items-center justify-between px-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
+          {selectableRows && (
+            <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+              {table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+          )}
+          <div
+            className={`flex items-center gap-8 ${selectableRows ? "w-full lg:w-fit" : "w-full justify-end"}`}
+          >
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
                 Rows per page
@@ -588,8 +600,20 @@ export function FooDataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+              <span>
+                Page{" "}
+                <NumericFormat
+                  value={table.getState().pagination.pageIndex + 1}
+                  displayType="text"
+                  thousandSeparator=","
+                />{" "}
+                of{" "}
+                <NumericFormat
+                  value={table.getPageCount()}
+                  displayType="text"
+                  thousandSeparator=","
+                />
+              </span>
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button

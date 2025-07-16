@@ -49,6 +49,7 @@ function TransactionalFooDataTable({
     <FooDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
+      selectableRows={true}
     />
   );
 }

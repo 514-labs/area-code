@@ -234,9 +234,11 @@ const columns: ColumnDef<Bar>[] = [
 export function BarDataTable({
   fetchApiEndpoint,
   disableCache = false,
+  selectableRows = false,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
+  selectableRows?: boolean;
 }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -297,9 +299,14 @@ export function BarDataTable({
   const data = barResponse?.data || [];
   const serverPagination = barResponse?.pagination;
 
+  // Conditionally include select column based on selectableRows prop
+  const availableColumns = selectableRows
+    ? columns
+    : columns.filter((col) => col.id !== "select");
+
   const table = useReactTable({
     data,
-    columns,
+    columns: availableColumns,
     state: {
       sorting,
       columnVisibility,
@@ -308,7 +315,7 @@ export function BarDataTable({
       pagination,
     },
     getRowId: (row) => row.id,
-    enableRowSelection: true,
+    enableRowSelection: selectableRows,
     onRowSelectionChange: setRowSelection,
     onSortingChange: (updater) => {
       setSorting(updater);
@@ -431,11 +438,15 @@ export function BarDataTable({
           </Table>
         </div>
         <div className="flex items-center justify-between px-2">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex items-center space-x-6 lg:space-x-8">
+          {selectableRows && (
+            <div className="flex-1 text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+          )}
+          <div
+            className={`flex items-center space-x-6 lg:space-x-8 ${!selectableRows ? "w-full justify-end" : ""}`}
+          >
             <div className="flex items-center space-x-2">
               <p className="text-sm font-medium">Rows per page</p>
               <Select

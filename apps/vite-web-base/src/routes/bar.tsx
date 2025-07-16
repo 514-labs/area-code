@@ -27,6 +27,7 @@ function TransactionalBarDataTable({
     <BarDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
+      selectableRows={true}
     />
   );
 }
