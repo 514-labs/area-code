@@ -94,23 +94,34 @@ def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=
     return df
 
 def sidebar_navigation():
-    selected = None
     with st.sidebar:
         st.markdown("## Menu")
-        # Reports section
-        st.markdown("**Reports**")
-        for item in REPORTS:
-            if ui.button(text=item, key=f"nav-report-{item}"):
-                set_page_in_query(item)
-                st.rerun()
-                return  # Ensure URL updates before further code runs
-        # Data Warehouse section
-        st.markdown("**Views**")
-        for item in PAGES:
-            if ui.button(text=item, key=f"nav-page-{item}"):
-                set_page_in_query(item)
-                st.rerun()
-                return  # Ensure URL updates before further code runs
+        
+        # Get current page from query params
+        current_page = get_page_from_query() or REPORTS[0]
+        
+        # All available options in order
+        all_options = list(REPORTS) + list(PAGES)
+        
+        # Find current index, default to 0 if not found
+        try:
+            current_index = all_options.index(current_page)
+        except ValueError:
+            current_index = 0
+        
+        # Radio navigation
+        selected_page = st.radio(
+            "Navigate to:",
+            options=all_options,
+            index=current_index,
+            key="navigation_radio"
+        )
+        
+        # Update query param if selection changed
+        if selected_page != current_page:
+            set_page_in_query(selected_page)
+            st.rerun()
+        
         # Display status messages at the bottom of the sidebar
         if (
             "extract_status_msg" in st.session_state and
@@ -128,9 +139,8 @@ def sidebar_navigation():
                 st.warning(msg)
             elif typ == "info":
                 st.info(msg)
-    if not selected:
-        selected = get_page_from_query() or REPORTS[0]
-    return selected
+    
+    return selected_page
 
 # List of valid pages
 PAGES = ("All", "S3", "Datadog")
