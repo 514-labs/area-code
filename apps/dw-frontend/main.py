@@ -92,6 +92,9 @@ def render_dlq_controls(endpoint_path, refresh_key):
     # Create columns to keep DLQ controls on the left side
     dlq_col, _ = st.columns([1, 2])
     
+    # Store the filtered messages in session state so we can display them outside the column
+    dlq_messages_key = f"dlq_messages_{endpoint_path}"
+    
     with dlq_col:
         # Input fields for batch size and failure percentage
         batch_size = st.number_input(
@@ -149,9 +152,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
                             if dlq_data:
                                 # Determine filter type based on endpoint
                                 filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
-                                
-                                st.subheader(f"Dead Letter Queue Messages{f' (Filtered for {filter_tag})' if filter_tag else ''}")
-                                
+                                                                
                                 filtered_messages = []
                                 for i, item in enumerate(dlq_data):
                                     if "message" in item and item["message"]:
@@ -175,16 +176,39 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                             st.error(f"Failed to parse message {i+1}: {e}")
                                             st.text(f"Raw message: {item['message']}")
                                 
-                                # Display filtered messages
+                                # Store filtered messages for display outside column
                                 if filtered_messages:
+                                    # Create DataFrame from filtered messages
+                                    table_data = []
+                                    raw_json_data = []
+                                    
                                     for display_idx, (original_idx, item, parsed_message) in enumerate(filtered_messages):
-                                        # Extract error message for heading
-                                        error_message = parsed_message.get("error_message", "Unknown error")
+                                        # Extract key information for table
+                                        original_record = parsed_message.get("original_record", {})
                                         
-                                        st.markdown(f"**Message {display_idx+1} (Partition: {item.get('partition', 'N/A')}, Offset: {item.get('offset', 'N/A')})**")
-                                        st.markdown(f"**Error: {error_message}**")
-                                        st.json(parsed_message)
+                                        row = {
+                                            "#": display_idx + 1,
+                                            "Partition": item.get('partition', 'N/A'),
+                                            "Offset": item.get('offset', 'N/A'),
+                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                            "Error Type": parsed_message.get("error_type", "Unknown"),
+                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                            "Record ID": original_record.get("id", "Unknown"),
+                                            "Record Name": original_record.get("name", "Unknown"),
+                                            "Status": original_record.get("status", "Unknown"),
+                                            "Tags": ", ".join(original_record.get("tags", [])) if original_record.get("tags") else "None",
+                                            "Score": original_record.get("score", "Unknown")
+                                        }
+                                        table_data.append(row)
+                                        raw_json_data.append(parsed_message)
+                                    
+                                    # Store both table data and raw JSON in session state
+                                    st.session_state[dlq_messages_key] = table_data
+                                    st.session_state[f"dlq_raw_messages_{endpoint_path}"] = raw_json_data
                                 else:
+                                    # Clear any existing data and show info message
+                                    st.session_state[dlq_messages_key] = []
+                                    st.session_state[f"dlq_raw_messages_{endpoint_path}"] = []
                                     st.info(f"No {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue.")
                             else:
                                 st.info("No messages found in the Dead Letter Queue.")
@@ -202,6 +226,41 @@ def render_dlq_controls(endpoint_path, refresh_key):
                     st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
                     st.session_state["extract_status_type"] = "error"
                     st.session_state["extract_status_time"] = time.time()
+    
+    # Display DLQ messages outside of column constraint for full width
+    if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
+        filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
+        st.subheader(f"Dead Letter Queue Messages{f' (Filtered for {filter_tag})' if filter_tag else ''}")
+        
+        # Status line showing count of retrieved items
+        item_count = len(st.session_state[dlq_messages_key])
+        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''}{f' matching {filter_tag} filter' if filter_tag else ''}")
+        
+        # Create and display DataFrame at full width
+        df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
+        
+        # Add selection capability to the dataframe
+        selected_rows = st.dataframe(
+            df_dlq, 
+            use_container_width=True, 
+            height=400,
+            on_select="rerun",
+            selection_mode="single-row"
+        )
+        
+        # Display JSON for selected row
+        if selected_rows.selection.rows:
+            selected_idx = selected_rows.selection.rows[0]
+            if selected_idx < len(st.session_state[dlq_messages_key]):
+                st.subheader(f"JSON Details for Message #{selected_idx + 1}")
+                
+                # Get the original parsed message from session state
+                raw_messages_key = f"dlq_raw_messages_{endpoint_path}"
+                if raw_messages_key in st.session_state and selected_idx < len(st.session_state[raw_messages_key]):
+                    original_json = st.session_state[raw_messages_key][selected_idx]
+                    st.json(original_json)
+                else:
+                    st.error("Original JSON data not available for this message.")
 
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
