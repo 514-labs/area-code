@@ -286,8 +286,8 @@ export function BarDataTable({
       setQueryTime(endTime - startTime);
       return result;
     },
-    // Completely disable placeholder data - only show current query results
-    placeholderData: undefined,
+    // Keep previous data visible while fetching new data
+    placeholderData: (previousData) => previousData,
     staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
     gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
     refetchOnMount: disableCache ? "always" : false,
