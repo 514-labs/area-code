@@ -1,36 +1,55 @@
-# Data Warehouse (backend)
+# Data Warehouse Service
+
+A high-performance data warehouse service built with **Moose** for real-time data ingestion, processing, and analytics. This service provides APIs for data extraction from multiple sources (S3, Datadog) and supports streaming data pipelines with ClickHouse as the storage backend.
+
 ![dw-logo.png](dw-logo.png)
 
-This is a [Moose](https://www.docs.fiveonefour.com/moose) project bootstrapped with the
-[`Moose CLI`](https://github.com/514-labs/moose/tree/main/apps/framework-cli).
+## Overview
 
-<a href="https://www.docs.fiveonefour.com/moose"><img src="https://raw.githubusercontent.com/514-labs/moose/main/logo-m-light.png" alt="moose logo" height="100px"></a>
+The Data Warehouse Service is designed to handle large-scale data ingestion and processing with the following key capabilities:
 
-[![PyPI Version](https://img.shields.io/pypi/v/moose-cli?logo=python)](https://pypi.org/project/moose-cli/)
-[![Moose Community](https://img.shields.io/badge/slack-moose_community-purple.svg?logo=slack)](https://join.slack.com/t/moose-community/shared_invite/zt-2fjh5n3wz-cnOmM9Xe9DYAgQrNu8xKxg)
-[![Docs](https://img.shields.io/badge/quick_start-docs-blue.svg)](https://docs.fiveonefour.com/moose/)
-[![MIT license](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+- **Real-time Data Ingestion**: Stream data processing with RedPanda
+- **Multi-Source Data Extraction**: Support for S3, Datadog, and custom connectors
+- **REST API**: Query interface for accessing stored data
+- **Scalable Storage**: ClickHouse backend for high-performance analytics
+- **Workflow Engine**: Temporal-based data processing workflows
 
-[Moose](https://www.docs.fiveonefour.com/moose) is an open-source data engineering framework designed to drastically accellerate AI-enabled software developers, as you prototype and scale data-intensive features and applications.
+## Project Structure
 
-# Get started with Moose
+```
+services/data-warehouse/
+├── app/
+│   ├── apis/                   # REST API endpoints
+│   ├── datadog/                # Datadog extraction workflow
+│   ├── s3/                     # S3 extracttion workflow
+│   ├── ingest/                 # Data models and transformations
+│   └── main.py                 # Main application entry point
+├── setup.sh                    # Setup and management script
+├── moose.config.toml           # Moose configuration
+├── requirements.txt            # Python dependencies
+└── setup.py                    # Package configuration
+```
 
-Get up and running with your own Moose project in minutes by using our [Quick Start Tutorial](https://docs.getmoose.dev/getting-started/quickstart). We also have our [Docs](https://docs.getmoose.dev) where you can pick your path, learn more about Moose, and learn what types of applications can be built with Moose.
+## Run
 
-# Beta release
+### Prerequisites
 
-Moose is beta software and is in active development. Multiple public companies across the globe are using Moose in production. We’d love for you to [get your hands on it and try it out](https://docs.getmoose.dev/getting-started/quickstart). If you're interested in using Moose in production, or if you just want to chat, you can reach us at [hello@moosejs.dev](mailto:hello@moosejs.dev) or in the Moose developer community below.
+- Python 3.12+
+- Node.js 20+
+- Docker 2.23.1+
 
-# Community
+### Quick Start
 
-You can join the Moose community [on Slack](https://join.slack.com/t/moose-community/shared_invite/zt-2fjh5n3wz-cnOmM9Xe9DYAgQrNu8xKxg).
+1. **Full Setup** (recommended for first-time users):
+   ```bash
+   ./setup.sh setup
+   ```
+   This will:
+   - Install all dependencies
+   - Start the data warehouse service (moose app)
+   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
 
-Here you can get together with other Moose developers, ask questions, give feedback, make feature requests, and interact directly with Moose maintainers.
-
-# Contributing
-
-We welcome contributions to Moose! Please check out the [contribution guidelines](https://github.com/514-labs/moose/blob/main/CONTRIBUTING.md).
-
-# Made by 514
-
-Our mission at [fiveonefour](https://www.fiveonefour.com/) is to bring incredible developer experiences to the data stack. If you’re interested in enterprise solutions, commercial support, or design partnerships, then we’d love to chat with you: [hello@moosejs.dev](mailto:hello@moosejs.dev)
+2. **Other Commands**:
+   ```bash
+   ./setup.sh help
+   ```

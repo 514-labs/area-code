@@ -286,8 +286,10 @@ elif page == "Connector analytics":
         df["Source"] = df["tags"].apply(detect_source)
         breakdown = df["Source"].value_counts().reset_index()
         breakdown.columns = ["Connector", "Count"]
+        # Convert Count to string for consistent left alignment
+        breakdown["Count"] = breakdown["Count"].astype(str)
         st.subheader("Connector Entity Breakdown")
-        st.table(breakdown)
+        st.dataframe(breakdown, hide_index=True)
         # --- Items per minute chart ---
         if "Processed On" in df.columns:
             df["Processed On (minute)"] = pd.to_datetime(df["Processed On"], errors="coerce").dt.floor("T")
