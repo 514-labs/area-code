@@ -11,6 +11,8 @@ import {
   IconArrowUp,
   IconArrowDown,
   IconArrowsSort,
+  IconDotsVertical,
+  IconEdit,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -43,6 +45,12 @@ import {
   DrawerTrigger,
 } from "@workspace/ui/components/drawer";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -71,7 +79,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
 
 const getStatusIcon = (status: FooStatus) => {
@@ -354,11 +362,13 @@ export function FooDataTable({
   disableCache = false,
   selectableRows = false,
   deleteApiEndpoint,
+  editApiEndpoint,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
   selectableRows?: boolean;
   deleteApiEndpoint?: string;
+  editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -419,10 +429,59 @@ export function FooDataTable({
   const data = fooResponse?.data || [];
   const serverPagination = fooResponse?.pagination;
 
-  // Conditionally include select column based on selectableRows prop
-  const availableColumns = selectableRows
+  // Create actions column if editApiEndpoint is provided
+  const actionsColumn: ColumnDef<Foo> = {
+    id: "actions",
+    cell: ({ row }) => {
+      const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+      return (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+                size="icon"
+              >
+                <IconDotsVertical />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem
+                onClick={() => setIsDrawerOpen(true)}
+                className="cursor-pointer"
+              >
+                <IconEdit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <TableCellViewer
+            item={row.original}
+            editApiEndpoint={editApiEndpoint}
+            onSave={() => refetch()}
+            isOpen={isDrawerOpen}
+            onOpenChange={setIsDrawerOpen}
+          />
+        </>
+      );
+    },
+    enableSorting: false,
+    enableHiding: false,
+  };
+
+  // Conditionally include columns based on props
+  let availableColumns = selectableRows
     ? columns
     : columns.filter((col) => col.id !== "select");
+
+  // Add actions column if editApiEndpoint is provided
+  if (editApiEndpoint) {
+    availableColumns = [...availableColumns, actionsColumn];
+  }
 
   const table = useReactTable({
     data,
@@ -760,31 +819,113 @@ export function FooDataTable({
   );
 }
 
-function TableCellViewer({ item }: { item: Foo }) {
+function TableCellViewer({
+  item,
+  editApiEndpoint,
+  onSave,
+  triggerElement,
+  isOpen,
+  onOpenChange,
+}: {
+  item: Foo;
+  editApiEndpoint?: string;
+  onSave?: () => void;
+  triggerElement?: ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const isMobile = useIsMobile();
+  const [isSaving, setIsSaving] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSave = async (formData: FormData) => {
+    if (!editApiEndpoint) return;
+
+    setIsSaving(true);
+    try {
+      const updatedItem = {
+        ...item,
+        name: formData.get("name") as string,
+        description: formData.get("description") as string,
+        status: formData.get("status") as string,
+        priority: parseInt(formData.get("priority") as string),
+        score: parseFloat(formData.get("score") as string),
+        isActive: formData.get("isActive") === "on",
+        tags: (formData.get("tags") as string)
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag),
+        largeText: formData.get("largeText") as string,
+      };
+
+      const response = await fetch(`${editApiEndpoint}/${item.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedItem),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update item");
+      }
+
+      // Close the drawer on success
+      onOpenChange?.(false);
+      // Refresh the data
+      onSave?.();
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
-      <DrawerTrigger asChild>
-        <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          {item.name}
-        </Button>
-      </DrawerTrigger>
+    <Drawer
+      direction={isMobile ? "bottom" : "right"}
+      open={isOpen}
+      onOpenChange={onOpenChange}
+    >
+      {triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>{triggerElement}</DrawerTrigger>
+      )}
+      {!triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>
+          <Button
+            variant="link"
+            className="text-foreground w-fit px-0 text-left"
+          >
+            {item.name}
+          </Button>
+        </DrawerTrigger>
+      )}
       <DrawerContent>
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.name}</DrawerTitle>
           <DrawerDescription>Foo details - ID: {item.id}</DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-          <form className="flex flex-col gap-4">
+          <form
+            ref={formRef}
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (editApiEndpoint) {
+                const formData = new FormData(e.currentTarget);
+                handleSave(formData);
+              }
+            }}
+          >
             <div className="flex flex-col gap-3">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" defaultValue={item.name} />
+              <Input id="name" name="name" defaultValue={item.name} />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
+                name="description"
                 defaultValue={item.description || ""}
                 placeholder="No description provided"
               />
@@ -792,7 +933,7 @@ function TableCellViewer({ item }: { item: Foo }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
                 <Label htmlFor="status">Status</Label>
-                <Select defaultValue={item.status}>
+                <Select name="status" defaultValue={item.status}>
                   <SelectTrigger id="status" className="w-full">
                     <SelectValue placeholder="Select a status" />
                   </SelectTrigger>
@@ -808,6 +949,7 @@ function TableCellViewer({ item }: { item: Foo }) {
                 <Label htmlFor="priority">Priority</Label>
                 <Input
                   id="priority"
+                  name="priority"
                   type="number"
                   defaultValue={item.priority}
                 />
@@ -818,13 +960,18 @@ function TableCellViewer({ item }: { item: Foo }) {
                 <Label htmlFor="score">Score</Label>
                 <Input
                   id="score"
+                  name="score"
                   type="number"
                   step="0.01"
                   defaultValue={item.score}
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox id="isActive" defaultChecked={item.isActive} />
+                <Checkbox
+                  id="isActive"
+                  name="isActive"
+                  defaultChecked={item.isActive}
+                />
                 <Label htmlFor="isActive">Is Active</Label>
               </div>
             </div>
@@ -832,13 +979,19 @@ function TableCellViewer({ item }: { item: Foo }) {
               <Label htmlFor="tags">Tags</Label>
               <Input
                 id="tags"
+                name="tags"
                 defaultValue={item.tags.join(", ")}
                 placeholder="Comma-separated tags"
               />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="largeText">Large Text</Label>
-              <Textarea id="largeText" defaultValue={item.largeText} rows={4} />
+              <Textarea
+                id="largeText"
+                name="largeText"
+                defaultValue={item.largeText}
+                rows={4}
+              />
             </div>
             <div className="flex flex-col gap-3">
               <Label>Metadata</Label>
@@ -865,7 +1018,29 @@ function TableCellViewer({ item }: { item: Foo }) {
           </form>
         </div>
         <DrawerFooter>
-          <Button>Save Changes</Button>
+          {editApiEndpoint ? (
+            <Button
+              disabled={isSaving}
+              onClick={(e) => {
+                e.preventDefault();
+                if (formRef.current) {
+                  const formData = new FormData(formRef.current);
+                  handleSave(formData);
+                }
+              }}
+            >
+              {isSaving ? (
+                <>
+                  <IconLoader className="animate-spin h-4 w-4 mr-2" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          ) : (
+            <Button disabled>View Only</Button>
+          )}
           <DrawerClose asChild>
             <Button variant="outline">Close</Button>
           </DrawerClose>
