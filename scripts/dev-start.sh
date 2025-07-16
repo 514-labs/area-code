@@ -266,12 +266,17 @@ main() {
     
     print_step "Starting transactional-base containers"
     cd "$SCRIPT_DIR/services/transactional-base" && ./setup.sh --restart || exit 1
+    print_step "Starting transactional-base docker containers"
+    run_in_service "transactional-base" "pnpm db:start" || exit 1
+    
+    # Wait for docker containers to be ready
+    print_step "Waiting for docker containers to be ready..."
+    sleep 5
     
     print_step "Starting transactional-base dev server"
     run_in_service_background "transactional-base" "pnpm dev" "main" || exit 1
     
     # Wait for transactional-base to be ready (runs on port 8082)
-    sleep 5
     wait_for_service "transactional-base" "8082" || {
         print_warning "transactional-base may not be fully ready, continuing anyway..."
     }
@@ -304,7 +309,16 @@ main() {
     
     print_step "Running elasticsearch setup..."
     run_in_service "retrieval-base" "pnpm es:setup" || exit 1
+
+    print_step "Starting retrieval-base docker containers"
+    run_in_service "retrieval-base" "pnpm es:start" || exit 1
     
+    # Wait for docker containers to be ready
+    print_step "Waiting for docker containers to be ready..."
+    sleep 5
+    
+
+
     print_step "Initializing elasticsearch indices..."
     run_in_service "retrieval-base" "pnpm es:init-indices" || exit 1
     
