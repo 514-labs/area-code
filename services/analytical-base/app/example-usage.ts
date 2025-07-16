@@ -5,7 +5,8 @@ import {
   type FooThingEvent,
   type BarThingEvent,
   type Foo,
-  type Bar 
+  type Bar,
+  FooStatus
 } from "@workspace/models";
 
 // Example usage of event creation
@@ -15,39 +16,45 @@ export function createSampleEvents() {
     id: "foo-123",
     name: "Sample Foo Item",
     description: "This is a sample foo item",
-    status: "active",
+    status: FooStatus.ACTIVE,
     priority: 1,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    is_active: true,
+    metadata: {},
+    tags: [],
+    score: 85.5,
+    large_text: "Sample large text content",
+    created_at: new Date(),
+    updated_at: new Date()
   };
 
   // Sample bar data
   const sampleBar: Bar = {
     id: "bar-456",
-    fooId: "foo-123",
+    foo_id: "foo-123",
     value: 42,
     label: "Sample Bar Item",
     notes: "This is a sample bar item",
-    isEnabled: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    is_enabled: true,
+    created_at: new Date(),
+    updated_at: new Date()
   };
 
   // Create FooThing event
   const fooEvent: FooThingEvent = createFooThingEvent({
-    fooId: "foo-123",
+    foo_id: "foo-123",
     action: "created",
-    currentData: sampleFoo,
+    current_data: sampleFoo,
+    previous_data: sampleFoo,
     changes: ["name", "status", "priority"]
   });
 
   // Create BarThing event
   const barEvent: BarThingEvent = createBarThingEvent({
-    barId: "bar-456",
-    fooId: "foo-123",
+    bar_id: "bar-456",
+    foo_id: "foo-123",
     action: "created",
-    currentData: sampleBar,
+    current_data: sampleBar,
+    previous_data: sampleBar,
     changes: ["value", "label"]
   });
 

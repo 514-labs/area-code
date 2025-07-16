@@ -26,15 +26,20 @@
 
 import { Foo } from "@workspace/models/foo";
 import { Bar } from "@workspace/models/bar";
-import { IngestPipeline } from "@514labs/moose-lib";
+import { IngestPipeline, Key } from "@514labs/moose-lib";
 
+interface CDC {
+  cdc_id: Key<string>;
+  cdc_operation: "INSERT" | "UPDATE" | "DELETE";
+  cdc_timestamp: Date;
+}
 
-export const FooPipeline = new IngestPipeline<Foo>("Foo", {
+export const FooPipeline = new IngestPipeline<Foo & CDC>("Foo", {
   table: true,
   stream: true,
   ingest: true,
 });
-export const BarPipeline = new IngestPipeline<Bar>("Bar", {
+export const BarPipeline = new IngestPipeline<Bar & CDC>("Bar", {
   table: true,
   stream: true,
   ingest: true,

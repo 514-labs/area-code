@@ -42,7 +42,7 @@ export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
     {
       limit = 10,
       offset = 0,
-      sortBy = "createdAt",
+      sortBy = "created_at",
       sortOrder = "DESC",
     }: QueryParams,
     { client, sql }
