@@ -4,6 +4,7 @@ from typing import Optional
 
 class ExtractDatadogQueryParams(BaseModel):
   batch_size: Optional[int] = 100
+  fail_percentage: Optional[int] = 0
 
 class ExtractDatadogResponse(BaseModel):
   status: int

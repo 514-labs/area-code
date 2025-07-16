@@ -2,6 +2,7 @@ from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLo
 from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.datadog_connector import DatadogConnectorConfig
 from app.ingest.models import Foo
+from app.utils.simulator import simulate_failures
 from pydantic import BaseModel
 from typing import Optional
 import requests
@@ -9,6 +10,7 @@ import json
 
 class DatadogExtractParams(BaseModel):
     batch_size: Optional[int] = 100
+    fail_percentage: Optional[int] = 0
 
 def run_task(input: DatadogExtractParams) -> None:
     cli_log(CliLogData(action="DatadogWorkflow", message="Running Datadog task...", message_type="Info"))
@@ -26,13 +28,15 @@ def run_task(input: DatadogExtractParams) -> None:
         message_type="Info"
     ))
 
-    data_dicts = [item.model_dump() for item in data]
+    failed_count = simulate_failures(data, input.fail_percentage)
+    if failed_count > 0:
+        cli_log(CliLogData(
+            action="DatadogWorkflow",
+            message=f"Marked {failed_count} items ({input.fail_percentage}%) as failed",
+            message_type="Info"
+        ))
 
-    cli_log(CliLogData(
-        action="DatadogWorkflow",
-        message=f"Data to send: {json.dumps(data_dicts, default=str)}",
-        message_type="Info"
-    ))
+    data_dicts = [item.model_dump() for item in data]
     
     try:
         response = requests.post(
