@@ -23,6 +23,7 @@ import {
   SortingState,
   useReactTable,
   VisibilityState,
+  Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { Foo, FooStatus } from "@workspace/models";
@@ -41,6 +42,17 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@workspace/ui/components/drawer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import {
@@ -100,7 +112,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  column: Column<Foo, unknown>;
   children: ReactNode;
   className?: string;
 }) => {
@@ -341,10 +353,12 @@ export function FooDataTable({
   fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,
+  deleteApiEndpoint,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
   selectableRows?: boolean;
+  deleteApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -355,6 +369,8 @@ export function FooDataTable({
     pageSize: 10,
   });
   const [queryTime, setQueryTime] = useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Reset pagination and state when endpoint changes
   useEffect(() => {
@@ -368,6 +384,7 @@ export function FooDataTable({
     data: fooResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: [
       "foos",
@@ -439,6 +456,42 @@ export function FooDataTable({
       ? Math.ceil(serverPagination.total / pagination.pageSize)
       : 0,
   });
+
+  // Delete functionality
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const selectedFoos = selectedRows.map((row) => row.original);
+
+  const handleDelete = async () => {
+    if (!deleteApiEndpoint || selectedFoos.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const selectedIds = selectedFoos.map((foo) => foo.id);
+      const response = await fetch(deleteApiEndpoint, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete rows");
+      }
+
+      // Reset selection and close dialog
+      setRowSelection({});
+      setIsDeleteDialogOpen(false);
+
+      // Refetch data to update the table
+      await refetch();
+    } catch (error) {
+      console.error("Delete error:", error);
+      // You might want to add toast notification here
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="w-full flex-col justify-start gap-6">
@@ -568,8 +621,52 @@ export function FooDataTable({
         <div className="flex items-center justify-between px-4">
           {selectableRows && (
             <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
+              {deleteApiEndpoint && selectedFoos.length > 0 ? (
+                <AlertDialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={setIsDeleteDialogOpen}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      Delete {selectedFoos.length} selected row
+                      {selectedFoos.length === 1 ? "" : "s"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the following items:
+                        <div className="mt-3 p-3 bg-muted rounded-md max-h-40 overflow-y-auto">
+                          <ul className="list-disc list-inside space-y-1">
+                            {selectedFoos.map((foo) => (
+                              <li key={foo.id} className="text-sm">
+                                {foo.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive hover:bg-destructive/90 cursor-pointer"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <>
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </>
+              )}
             </div>
           )}
           <div

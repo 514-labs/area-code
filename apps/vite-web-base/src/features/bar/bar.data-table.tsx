@@ -33,6 +33,17 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -235,10 +246,12 @@ export function BarDataTable({
   fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,
+  deleteApiEndpoint,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
   selectableRows?: boolean;
+  deleteApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -252,6 +265,8 @@ export function BarDataTable({
     pageSize: 10,
   });
   const [queryTime, setQueryTime] = React.useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   // Reset pagination and state when endpoint changes
   React.useEffect(() => {
@@ -265,6 +280,7 @@ export function BarDataTable({
     data: barResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: [
       "bars",
@@ -336,6 +352,42 @@ export function BarDataTable({
       ? Math.ceil(serverPagination.total / pagination.pageSize)
       : 0,
   });
+
+  // Delete functionality
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const selectedBars = selectedRows.map((row) => row.original);
+
+  const handleDelete = async () => {
+    if (!deleteApiEndpoint || selectedBars.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const selectedIds = selectedBars.map((bar) => bar.id);
+      const response = await fetch(deleteApiEndpoint, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete rows");
+      }
+
+      // Reset selection and close dialog
+      setRowSelection({});
+      setIsDeleteDialogOpen(false);
+
+      // Refetch data to update the table
+      await refetch();
+    } catch (error) {
+      console.error("Delete error:", error);
+      // You might want to add toast notification here
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="w-full flex-col justify-start gap-6">
@@ -440,8 +492,52 @@ export function BarDataTable({
         <div className="flex items-center justify-between px-2">
           {selectableRows && (
             <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
+              {deleteApiEndpoint && selectedBars.length > 0 ? (
+                <AlertDialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={setIsDeleteDialogOpen}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      Delete {selectedBars.length} selected row
+                      {selectedBars.length === 1 ? "" : "s"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the following items:
+                        <div className="mt-3 p-3 bg-muted rounded-md max-h-40 overflow-y-auto">
+                          <ul className="list-disc list-inside space-y-1">
+                            {selectedBars.map((bar) => (
+                              <li key={bar.id} className="text-sm">
+                                {bar.label || "Untitled Bar"}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <>
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </>
+              )}
             </div>
           )}
           <div

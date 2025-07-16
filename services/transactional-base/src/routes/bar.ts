@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eq, desc, asc, sql } from "drizzle-orm";
+import { eq, desc, asc, sql, inArray } from "drizzle-orm";
 import { db } from "../database/connection";
 import {
   bar,
@@ -8,7 +8,26 @@ import {
   type Bar,
   type CreateBar,
   type UpdateBar,
+  type NewDbBar,
 } from "../database/schema";
+
+// Type for bar with associated foo details (joined query result)
+type BarWithFoo = {
+  id: string;
+  fooId: string;
+  value: number;
+  label: string | null;
+  notes: string | null;
+  isEnabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  foo: {
+    id: string;
+    name: string;
+    description: string | null;
+    status: string;
+  } | null;
+};
 
 export async function barRoutes(fastify: FastifyInstance) {
   // Get average value of all bar items with query time
@@ -39,8 +58,8 @@ export async function barRoutes(fastify: FastifyInstance) {
         queryTime,
         count,
       });
-    } catch (error) {
-      console.error("Error calculating average value:", error);
+    } catch (err) {
+      console.error("Error calculating average value:", err);
       return reply
         .status(500)
         .send({ error: "Failed to calculate average value" });
@@ -57,7 +76,7 @@ export async function barRoutes(fastify: FastifyInstance) {
     };
     Reply:
       | {
-          data: any[];
+          data: BarWithFoo[];
           pagination: {
             limit: number;
             offset: number;
@@ -157,52 +176,52 @@ export async function barRoutes(fastify: FastifyInstance) {
           hasMore,
         },
       });
-    } catch (error) {
-      console.error("Error fetching bars:", error);
+    } catch (err) {
+      console.error("Error fetching bars:", err);
       return reply.status(500).send({ error: "Failed to fetch bar items" });
     }
   });
 
   // Get bar by ID with foo details
-  fastify.get<{ Params: { id: string }; Reply: any | { error: string } }>(
-    "/bar/:id",
-    async (request, reply) => {
-      try {
-        const { id } = request.params;
+  fastify.get<{
+    Params: { id: string };
+    Reply: BarWithFoo | { error: string };
+  }>("/bar/:id", async (request, reply) => {
+    try {
+      const { id } = request.params;
 
-        const barWithFoo = await db
-          .select({
-            id: bar.id,
-            fooId: bar.fooId,
-            value: bar.value,
-            label: bar.label,
-            notes: bar.notes,
-            isEnabled: bar.isEnabled,
-            createdAt: bar.createdAt,
-            updatedAt: bar.updatedAt,
-            foo: {
-              id: foo.id,
-              name: foo.name,
-              description: foo.description,
-              status: foo.status,
-            },
-          })
-          .from(bar)
-          .leftJoin(foo, eq(bar.fooId, foo.id))
-          .where(eq(bar.id, id))
-          .limit(1);
+      const barWithFoo = await db
+        .select({
+          id: bar.id,
+          fooId: bar.fooId,
+          value: bar.value,
+          label: bar.label,
+          notes: bar.notes,
+          isEnabled: bar.isEnabled,
+          createdAt: bar.createdAt,
+          updatedAt: bar.updatedAt,
+          foo: {
+            id: foo.id,
+            name: foo.name,
+            description: foo.description,
+            status: foo.status,
+          },
+        })
+        .from(bar)
+        .leftJoin(foo, eq(bar.fooId, foo.id))
+        .where(eq(bar.id, id))
+        .limit(1);
 
-        if (barWithFoo.length === 0) {
-          return reply.status(404).send({ error: "Bar not found" });
-        }
-
-        return reply.send(barWithFoo[0]);
-      } catch (error) {
-        console.error("Error fetching bar:", error);
-        return reply.status(500).send({ error: "Failed to fetch bar" });
+      if (barWithFoo.length === 0) {
+        return reply.status(404).send({ error: "Bar not found" });
       }
+
+      return reply.send(barWithFoo[0]);
+    } catch (err) {
+      console.error("Error fetching bar:", err);
+      return reply.status(500).send({ error: "Failed to fetch bar" });
     }
-  );
+  });
 
   // Create new bar
   fastify.post<{ Body: CreateBar; Reply: Bar | { error: string } }>(
@@ -227,7 +246,8 @@ export async function barRoutes(fastify: FastifyInstance) {
         const newBar = await db.insert(bar).values(validatedData).returning();
 
         return reply.status(201).send(newBar[0]);
-      } catch (error) {
+      } catch (err) {
+        console.error("Create bar error:", err);
         return reply.status(400).send({ error: "Invalid bar data" });
       }
     }
@@ -241,7 +261,10 @@ export async function barRoutes(fastify: FastifyInstance) {
   }>("/bar/:id", async (request, reply) => {
     try {
       const { id } = request.params;
-      const updateData = { ...request.body, updatedAt: new Date() };
+      const updateData: Partial<NewDbBar> = {
+        ...request.body,
+        updatedAt: new Date(),
+      };
 
       // If updating fooId, verify that foo exists
       if (updateData.fooId) {
@@ -269,7 +292,8 @@ export async function barRoutes(fastify: FastifyInstance) {
       }
 
       return reply.send(updatedBar[0]);
-    } catch (error) {
+    } catch (err) {
+      console.error("Update bar error:", err);
       return reply.status(400).send({ error: "Failed to update bar" });
     }
   });
@@ -288,8 +312,42 @@ export async function barRoutes(fastify: FastifyInstance) {
       }
 
       return reply.send({ success: true });
-    } catch (error) {
+    } catch (err) {
+      console.error("Delete bar error:", err);
       return reply.status(500).send({ error: "Failed to delete bar" });
+    }
+  });
+
+  // Bulk delete bar items
+  fastify.delete<{
+    Body: { ids: string[] };
+    Reply: { success: boolean; deletedCount: number } | { error: string };
+  }>("/bar", async (request, reply) => {
+    try {
+      const { ids } = request.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return reply.status(400).send({ error: "Invalid or empty ids array" });
+      }
+
+      // Validate that all IDs are strings
+      if (!ids.every((id) => typeof id === "string")) {
+        return reply.status(400).send({ error: "All IDs must be strings" });
+      }
+
+      // Delete multiple bar items using the inArray helper from drizzle-orm
+      const deletedBars = await db
+        .delete(bar)
+        .where(inArray(bar.id, ids))
+        .returning();
+
+      return reply.send({
+        success: true,
+        deletedCount: deletedBars.length,
+      });
+    } catch (err) {
+      console.error("Error in bulk delete:", err);
+      return reply.status(500).send({ error: "Failed to delete bar items" });
     }
   });
 
@@ -306,7 +364,8 @@ export async function barRoutes(fastify: FastifyInstance) {
           .orderBy(desc(bar.createdAt));
 
         return reply.send(bars);
-      } catch (error) {
+      } catch (err) {
+        console.error("Error fetching bars for foo:", err);
         return reply
           .status(500)
           .send({ error: "Failed to fetch bars for foo" });

@@ -31,6 +31,10 @@ paths:
       responses:
         "200":
           description: Default Response
+    delete:
+      responses:
+        "200":
+          description: Default Response
   /api/foo/{id}:
     get:
       parameters:
@@ -73,6 +77,10 @@ paths:
         "200":
           description: Default Response
     post:
+      responses:
+        "200":
+          description: Default Response
+    delete:
       responses:
         "200":
           description: Default Response
