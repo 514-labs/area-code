@@ -83,6 +83,9 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
+      react-number-format:
+        specifier: ^5.4.4
+        version: 5.4.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       recharts:
         specifier: ^3.0.2
         version: 3.0.2(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react-is@19.1.0)(react@19.1.0)(redux@5.0.1)
@@ -155,7 +158,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.301(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -372,7 +375,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.301(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -388,7 +391,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.4.301
+        version: 0.4.302
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.5
@@ -440,7 +443,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.301(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.50.3
@@ -462,7 +465,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.4.301
+        version: 0.4.302
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.5
@@ -539,32 +542,32 @@ importers:
 
 packages:
 
-  '@514labs/moose-cli-darwin-arm64@0.4.301':
-    resolution: {integrity: sha512-iSrQRN6dhlyXYMIa0cgFcjS6pprf5D4pps9GOlrQ4ykR9e5wr16gbefZEa+JQrfpQ+ZqE4MoSWVcuTEUsZ6OfQ==}
+  '@514labs/moose-cli-darwin-arm64@0.4.302':
+    resolution: {integrity: sha512-/CwW/ueH72ZZPJhRWiEYNuRgJ2ODQ/sfLntbMXmKjZK+e94cwJitBOdYTFRKhRIyOKE0qd43w9bV43UczvSy7g==}
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.4.301':
-    resolution: {integrity: sha512-DXZpAUND050yZoJ7QDLEZprVkFXhYnRChrjL05KZFcTUPubCmMIm/mTbuBtVnn2nHlu5kZX5v3wQF+3rr5hxEw==}
+  '@514labs/moose-cli-darwin-x64@0.4.302':
+    resolution: {integrity: sha512-Tko+0pYTAN3/iwqHXH/hfKBRDrdU4Kz9fCr+k5VbRwfHjAu+Kn3fH2IGo/QBQh3s70NFZTFR2nQazG9yOKAYIw==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.4.301':
-    resolution: {integrity: sha512-sSaRk+kKa4cQpfqv8XUeUOOa1ErA5Aemu7HfWiajd9cDaGN5HtiCQKAJoTQP28s57AbAXl8zx+2kqcSeYWAbfg==}
+  '@514labs/moose-cli-linux-arm64@0.4.302':
+    resolution: {integrity: sha512-okYpxlICln7Mgq+AggQz3Ufxp0cpgqBe6JgAODQcRvwg3IvlI4jBOQnZOFkm8hCeRpxj/830IfhA61yk0aK/RA==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.4.301':
-    resolution: {integrity: sha512-27N14epRefBgmvb0VIH7ePzTOwxCVelnfqGvNiOXaf3WunplRxdf0SYzXRo2l6VmiqJkWebgA7OdvAWJ7KwRdg==}
+  '@514labs/moose-cli-linux-x64@0.4.302':
+    resolution: {integrity: sha512-9mY9pBOn8xJI5U7722pa8rCWbTxouw177z6Fhj6M+Jq/tzSc9mRa3KPfj0YzKYAKmRwNkxFUi0qfVdbApm1Rxg==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.4.301':
-    resolution: {integrity: sha512-0hPXCc+dvo/ktU5KpL7egoc0jVeoNVJ1izMiHqcqXbEfLJnsW268AnmQN/Muj6rjqZ6bIicbTvUGmUP2juy0aw==}
+  '@514labs/moose-cli@0.4.302':
+    resolution: {integrity: sha512-BbLLXGrWIagK1xySEhdwYXCwKbOKhD9m7lIAto0QU1F4svnO9jGuigJCkHvffJjiZaynx2vHxfGtwOw61x4sFQ==}
     hasBin: true
 
-  '@514labs/moose-lib@0.4.301':
-    resolution: {integrity: sha512-ysXmWpPnGuS+fb8nkLzovFFxMf+xj9ZIqgYs4W+a9bNlGXY9V3HDXaX2T1bbSDHTWa+GaE5oH0VNhVXGjcqbsw==}
+  '@514labs/moose-lib@0.4.302':
+    resolution: {integrity: sha512-3W4KrYEMKETmpKqm0hvM0t/Kb4/8OtBn/i0DvElCagerXuHbmetV7Qj80E11UurJEtGEQrUYAkj5nS6mu4ZyQA==}
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
@@ -4936,6 +4939,12 @@ packages:
   react-is@19.1.0:
     resolution: {integrity: sha512-Oe56aUPnkHyyDxxkvqtd7KkdQP5uIUfHxd5XTb3wE9d/kRnZLmKbDB0GWk919tdQ+mxxPtG6EAs6RMT6i1qtHg==}
 
+  react-number-format@5.4.4:
+    resolution: {integrity: sha512-wOmoNZoOpvMminhifQYiYSTCLUDOiUbBunrMrMjA+dV52sY+vck1S4UhR6PkgnoCquvvMSeJjErXZ4qSaWCliA==}
+    peerDependencies:
+      react: ^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   react-redux@9.2.0:
     resolution: {integrity: sha512-ROY9fvHhwOD9ySfrF0wmvu//bKCQ6AeZZq1nJNtbDC+kk5DuSuNX/n6YWYF/SYy7bSba4D4FSz8DJeKY/S/r+g==}
     peerDependencies:
@@ -5772,26 +5781,26 @@ packages:
 
 snapshots:
 
-  '@514labs/moose-cli-darwin-arm64@0.4.301':
+  '@514labs/moose-cli-darwin-arm64@0.4.302':
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.4.301':
+  '@514labs/moose-cli-darwin-x64@0.4.302':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.4.301':
+  '@514labs/moose-cli-linux-arm64@0.4.302':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.4.301':
+  '@514labs/moose-cli-linux-x64@0.4.302':
     optional: true
 
-  '@514labs/moose-cli@0.4.301':
+  '@514labs/moose-cli@0.4.302':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.4.301
-      '@514labs/moose-cli-darwin-x64': 0.4.301
-      '@514labs/moose-cli-linux-arm64': 0.4.301
-      '@514labs/moose-cli-linux-x64': 0.4.301
+      '@514labs/moose-cli-darwin-arm64': 0.4.302
+      '@514labs/moose-cli-darwin-x64': 0.4.302
+      '@514labs/moose-cli-linux-arm64': 0.4.302
+      '@514labs/moose-cli-linux-x64': 0.4.302
 
-  '@514labs/moose-lib@0.4.301(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -5820,7 +5829,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.4.301(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -10234,6 +10243,11 @@ snapshots:
       react: 19.1.0
 
   react-is@19.1.0: {}
+
+  react-number-format@5.4.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   react-redux@9.2.0(@types/react@19.1.8)(react@19.1.0)(redux@5.0.1):
     dependencies:

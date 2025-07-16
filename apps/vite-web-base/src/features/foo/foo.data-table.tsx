@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -60,6 +59,8 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { ReactNode, useEffect, useState } from "react";
+import { NumericFormat } from "react-number-format";
 
 const getStatusIcon = (status: FooStatus) => {
   switch (status) {
@@ -100,7 +101,7 @@ const SortableHeader = ({
   className,
 }: {
   column: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) => {
   if (!column.getCanSort()) {
@@ -343,21 +344,18 @@ export function FooDataTable({
   fetchApiEndpoint: string;
   disableCache?: boolean;
 }) {
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState({
+  const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
   });
-  const [queryTime, setQueryTime] = React.useState<number | null>(null);
+  const [queryTime, setQueryTime] = useState<number | null>(null);
 
   // Reset pagination and state when endpoint changes
-  React.useEffect(() => {
+  useEffect(() => {
     setPagination({ pageIndex: 0, pageSize: 10 });
     setSorting([]);
     setRowSelection({});
@@ -441,13 +439,28 @@ export function FooDataTable({
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
           <div>
-            Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
-            {Math.min(
-              serverPagination.offset + serverPagination.limit,
-              serverPagination.total
-            ).toLocaleString()}{" "}
-            of {serverPagination.total.toLocaleString()} items
-            {serverPagination.hasMore && " (more available)"}
+            Showing{" "}
+            <NumericFormat
+              value={serverPagination.offset + 1}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            to{" "}
+            <NumericFormat
+              value={Math.min(
+                serverPagination.offset + serverPagination.limit,
+                serverPagination.total
+              )}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            of{" "}
+            <NumericFormat
+              value={serverPagination.total}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            items
             {sorting.length > 0 && (
               <span className="ml-2 text-blue-600">
                 • Sorted by {sorting[0].id} ({sorting[0].desc ? "desc" : "asc"})
