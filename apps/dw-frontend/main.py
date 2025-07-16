@@ -234,41 +234,6 @@ def render_dlq_controls(endpoint_path, refresh_key):
         with btn_col2:
             st.link_button("Explorer", "http://localhost:9999")
 
-    # Display DLQ messages outside of column constraint for full width
-    if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
-        filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
-        st.subheader(f"Dead Letter Queue Messages{f' (Filtered for {filter_tag})' if filter_tag else ''}")
-        
-        # Status line showing count of retrieved items
-        item_count = len(st.session_state[dlq_messages_key])
-        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''}{f' matching {filter_tag} filter' if filter_tag else ''}")
-        
-        # Create and display DataFrame at full width
-        df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
-        
-        # Add selection capability to the dataframe
-        selected_rows = st.dataframe(
-            df_dlq, 
-            use_container_width=True, 
-            height=400,
-            on_select="rerun",
-            selection_mode="single-row"
-        )
-        
-        # Display JSON for selected row
-        if selected_rows.selection.rows:
-            selected_idx = selected_rows.selection.rows[0]
-            if selected_idx < len(st.session_state[dlq_messages_key]):
-                st.subheader(f"JSON Details for Message #{selected_idx + 1}")
-                
-                # Get the original parsed message from session state
-                raw_messages_key = f"dlq_raw_messages_{endpoint_path}"
-                if raw_messages_key in st.session_state and selected_idx < len(st.session_state[raw_messages_key]):
-                    original_json = st.session_state[raw_messages_key][selected_idx]
-                    st.json(original_json)
-                else:
-                    st.error("Original JSON data not available for this message.")
-
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
         st.session_state[refresh_key] = False
@@ -413,6 +378,42 @@ elif page == "S3":
     
     # Use the reusable DLQ controls function
     render_dlq_controls("extract-s3", "refresh_s3")
+    
+    # Always check for and display existing DLQ data
+    dlq_messages_key = "dlq_messages_extract-s3"
+    if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
+        filter_tag = "S3"
+        st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
+        
+        # Status line showing count of retrieved items
+        item_count = len(st.session_state[dlq_messages_key])
+        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter")
+        
+        # Create and display DataFrame at full width
+        df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
+        
+        # Add selection capability to the dataframe
+        selected_rows = st.dataframe(
+            df_dlq, 
+            use_container_width=True, 
+            height=400,
+            on_select="rerun",
+            selection_mode="single-row"
+        )
+        
+        # Display JSON for selected row
+        if selected_rows.selection.rows:
+            selected_idx = selected_rows.selection.rows[0]
+            if selected_idx < len(st.session_state[dlq_messages_key]):
+                st.subheader(f"JSON Details for Message #{selected_idx + 1}")
+                
+                # Get the original parsed message from session state
+                raw_messages_key = "dlq_raw_messages_extract-s3"
+                if raw_messages_key in st.session_state and selected_idx < len(st.session_state[raw_messages_key]):
+                    original_json = st.session_state[raw_messages_key][selected_idx]
+                    st.json(original_json)
+                else:
+                    st.error("Original JSON data not available for this message.")
 elif page == "Datadog":
     st.title("Datadog View")
     df = handle_refresh_and_fetch(
@@ -440,6 +441,42 @@ elif page == "Datadog":
     
     # Use the reusable DLQ controls function
     render_dlq_controls("extract-datadog", "refresh_datadog")
+    
+    # Always check for and display existing DLQ data
+    dlq_messages_key = "dlq_messages_extract-datadog"
+    if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
+        filter_tag = "Datadog"
+        st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
+        
+        # Status line showing count of retrieved items
+        item_count = len(st.session_state[dlq_messages_key])
+        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter")
+        
+        # Create and display DataFrame at full width
+        df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
+        
+        # Add selection capability to the dataframe
+        selected_rows = st.dataframe(
+            df_dlq, 
+            use_container_width=True, 
+            height=400,
+            on_select="rerun",
+            selection_mode="single-row"
+        )
+        
+        # Display JSON for selected row
+        if selected_rows.selection.rows:
+            selected_idx = selected_rows.selection.rows[0]
+            if selected_idx < len(st.session_state[dlq_messages_key]):
+                st.subheader(f"JSON Details for Message #{selected_idx + 1}")
+                
+                # Get the original parsed message from session state
+                raw_messages_key = "dlq_raw_messages_extract-datadog"
+                if raw_messages_key in st.session_state and selected_idx < len(st.session_state[raw_messages_key]):
+                    original_json = st.session_state[raw_messages_key][selected_idx]
+                    st.json(original_json)
+                else:
+                    st.error("Original JSON data not available for this message.")
 elif page == "Connector analytics":
     # Modern animated banner
     st.markdown("""
