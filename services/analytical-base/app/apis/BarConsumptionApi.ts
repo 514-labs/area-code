@@ -1,5 +1,5 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { BarTable } from "../index";
+import { BarPipeline } from "../index";
 
 // Interface for average value response
 interface AverageValueResponse {
@@ -28,7 +28,7 @@ export const barAverageValueApi = new ConsumptionApi<
       SELECT 
         AVG(value) as averageValue,
         COUNT(*) as count
-      FROM ${BarTable}
+      FROM ${BarPipeline.table!}
       WHERE value IS NOT NULL
     `;
 

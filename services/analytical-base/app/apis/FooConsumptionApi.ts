@@ -1,11 +1,12 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
 import { Foo } from "@workspace/models";
+import { FooPipeline } from "../index";
 
 // Define query parameters interface
 interface QueryParams {
   limit?: number;
   offset?: number;
-  sortBy?: string;
+  sortBy?: keyof Foo;
   sortOrder?: "ASC" | "DESC" | "asc" | "desc";
 }
 
@@ -47,11 +48,11 @@ export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
     { client, sql }
   ) => {
     // Convert sortOrder to uppercase for consistency
-    const upperSortOrder = sortOrder.toUpperCase() as "ASC" | "DESC";
+    const upperSortOrder = sql([`${sortOrder.toUpperCase()}`]);
 
     const countQuery = sql`
       SELECT count() as total
-      FROM Foo
+      FROM ${FooPipeline.table!}
     `;
 
     const countResultSet = await client.query.execute<{
@@ -63,14 +64,14 @@ export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
     const totalCount = countResults[0]?.total || 0;
 
     // Build dynamic query with hardcoded table name to avoid object interpolation
-    const queryTemplate = `
+    const query = sql`
       SELECT *
-      FROM Foo
-      ORDER BY ${sortBy} ${upperSortOrder}
+      FROM ${FooPipeline.table!}
+      ORDER BY ${FooPipeline.columns[sortBy]!} ${upperSortOrder}
       LIMIT ${limit}
       OFFSET ${offset}
     `;
-    const query = sql([queryTemplate]);
+
 
     const resultSet = await client.query.execute<Foo>(query);
     const results = (await resultSet.json()) as Foo[];
@@ -106,7 +107,7 @@ export const fooAverageScoreApi = new ConsumptionApi<
       SELECT 
         AVG(score) as averageScore,
         COUNT(*) as count
-      FROM Foo
+      FROM ${FooPipeline.table!}
       WHERE score IS NOT NULL
     `;
 

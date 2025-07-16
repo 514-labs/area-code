@@ -994,7 +994,7 @@ shutdown_single_service() {
     echo "  ./scripts/health-check.sh $service_name"
     echo ""
     echo "To start $service_name again, run:"
-    echo "  pnpm dev:sequence"
+    echo "  pnpm dev:start"
     echo "=========================================="
     
     return 0
@@ -1150,7 +1150,7 @@ main() {
         echo "  ./scripts/health-check.sh"
         echo ""
         echo "To start services again, run:"
-        echo "  pnpm dev:sequence"
+        echo "  pnpm dev:start"
     fi
     
     echo "=========================================="
