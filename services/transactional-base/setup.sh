@@ -150,110 +150,29 @@ reset_environment() {
     echo "✅ Environment reset complete"
 }
 
-stop_services() {
-    echo "🛑 Stopping all running containers..."
-    $DOCKER_COMPOSE_CMD stop
-    echo "✅ Services stopped"
-}
-
-show_status() {
-    echo "📊 Showing status of all containers..."
-    $DOCKER_COMPOSE_CMD ps
-}
-
-show_logs() {
-    echo "📋 Showing logs for supavisor service..."
-    $DOCKER_COMPOSE_CMD logs supavisor
-}
-
-start_services() {
-    echo "🚀 Starting services..."
-    $DOCKER_COMPOSE_CMD pull
-    $DOCKER_COMPOSE_CMD up -d
-    echo "✅ Services started"
-}
-
-seed_database() {
-    echo "🌱 Seeding database..."
-    
-    # Wait for database to be ready
-    echo "⏳ Waiting for database to be ready..."
-    if [ -f "src/scripts/wait-for-services.ts" ]; then
-        npx tsx src/scripts/wait-for-services.ts
-        if [ $? -ne 0 ]; then
-            echo "❌ Error: Database is not ready for seeding"
-            return 1
-        fi
-    fi
-    
-    # Run migrations first
-    echo "📋 Running database migrations..."
-    if [ -f "src/scripts/migrate.ts" ]; then
-        npx tsx src/scripts/migrate.ts
-        if [ $? -ne 0 ]; then
-            echo "❌ Error: Database migration failed"
-            return 1
-        fi
-    fi
-    
-    # Run SQL seeding
-    echo "🌱 Running SQL database seeding..."
-    if [ -f "src/scripts/run-sql-seed.sh" ]; then
-        # Make the script executable and run it
-        chmod +x ./src/scripts/run-sql-seed.sh
-        ./src/scripts/run-sql-seed.sh
-        if [ $? -eq 0 ]; then
-            echo "✅ SQL database seeding completed successfully"
-            return 0
-        else
-            echo "❌ Error: SQL database seeding failed"
-            return 1
-        fi
-    else
-        echo "❌ Error: SQL seed script not found at src/scripts/run-sql-seed.sh"
-        return 1
-    fi
-}
-
-display_dashboard_url() {
-    if [ -f ".env" ]; then
-        # Extract username and password from .env
-        DASHBOARD_USERNAME=$(grep -E '^DASHBOARD_USERNAME=' .env | cut -d '=' -f2-)
-        DASHBOARD_PASSWORD=$(grep -E '^DASHBOARD_PASSWORD=' .env | cut -d '=' -f2-)
-        if [ -n "$DASHBOARD_USERNAME" ] && [ -n "$DASHBOARD_PASSWORD" ]; then
-            echo ""
-            echo "🔗 Supabase Studio URL:"
-            echo "    http://$DASHBOARD_USERNAME:$DASHBOARD_PASSWORD@localhost:8000"
-            echo ""
-        else
-            echo "⚠️  Could not find DASHBOARD_USERNAME or DASHBOARD_PASSWORD in .env"
-        fi
-    else
-        echo "⚠️  .env file not found, cannot print Supabase Studio URL"
-    fi
-}
-
 show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
+    echo "This script sets up the transactional-base environment by:"
+    echo "  - Checking required dependencies"
+    echo "  - Creating .env file from env.example if needed"
+    echo "  - Generating secrets for the .env file"
+    echo ""
     echo "Options:"
     echo "  --help              Show this help message"
-    echo "  --stop              Stop all running containers"
-    echo "  --restart           Stop and restart all containers"
-    echo "  --reset             Reset environment (stop, remove volumes, delete data)"
+    echo "  --reset             Reset environment (stop containers, remove volumes, delete data)"
     echo "  --reset-secrets     Regenerate secrets in .env file"
-    echo "  --status            Show status of all containers"
-    echo "  --logs              Show logs for supavisor service"
-    echo "  --seed              Seed the database with initial data"
     echo ""
     echo "Examples:"
-    echo "  $0                  # Normal setup and start"
-    echo "  $0 --stop           # Stop services"
-    echo "  $0 --restart        # Restart services"
-    echo "  $0 --reset          # Complete reset"
-    echo "  $0 --status         # Check service status"
-    echo "  $0 --seed           # Seed database with initial data"
-    echo "  $0 --reset --seed   # Reset and seed database"
+    echo "  $0                  # Normal setup"
+    echo "  $0 --reset          # Reset and setup"
+    echo "  $0 --reset-secrets  # Regenerate secrets and setup"
+    echo ""
+    echo "After setup, use Docker Compose directly to manage services:"
+    echo "  docker compose up -d     # Start services"
+    echo "  docker compose down      # Stop services"
+    echo "  docker compose ps        # Check status"
+    echo "  docker compose logs      # View logs"
 }
 
 ########################################################
@@ -267,68 +186,42 @@ main() {
         exit 0
     fi
 
-    # Check dependencies first (unless just showing help/status/logs)
-    if ! has_flag "--status" "$@" && ! has_flag "--logs" "$@" && ! has_flag "--help" "$@"; then
-        if ! check_dependencies; then
-            echo "❌ Dependency check failed. Exiting."
-            exit 1
-        fi
+    # Check dependencies first
+    if ! check_dependencies; then
+        echo "❌ Dependency check failed. Exiting."
+        exit 1
     fi
 
-    # Handle stop flag
-    if has_flag "--stop" "$@"; then
-        stop_services
-        exit 0
-    fi
-
-    # Handle status flag
-    if has_flag "--status" "$@"; then
-        show_status
-        exit 0
-    fi
-
-    # Handle logs flag
-    if has_flag "--logs" "$@"; then
-        show_logs
-        exit 0
-    fi
-
-    # Setup environment (unless just showing status/logs)
-    if ! has_flag "--status" "$@" && ! has_flag "--logs" "$@"; then
-        if ! setup_environment "$@"; then
-            echo "❌ Environment setup failed. Exiting."
-            exit 1
-        fi
-    fi
-
-    # Handle reset flags
+    # Handle reset flag
     if has_flag "--reset" "$@"; then
         reset_environment
     fi
 
-    # Handle restart flag
-    if has_flag "--restart" "$@"; then
-        stop_services
+    # Setup environment
+    if ! setup_environment "$@"; then
+        echo "❌ Environment setup failed. Exiting."
+        exit 1
     fi
 
-    # Start services (unless just showing status/logs)
-    if ! has_flag "--status" "$@" && ! has_flag "--logs" "$@"; then
-        start_services
-        
-        # Handle seed flag after services are started
-        if has_flag "--seed" "$@"; then
-            echo "⏳ Waiting for services to be ready before seeding..."
-            sleep 5  # Give services a moment to start
-            if ! seed_database; then
-                echo "❌ Seeding failed. Exiting."
-                exit 1
-            fi
-        fi
-        
-        display_dashboard_url
-    fi
-
+    echo ""
     echo "✅ Setup complete!"
+    echo ""
+    echo "To start services, run:"
+    echo "  docker compose up -d"
+    echo ""
+    echo "To view service status:"
+    echo "  docker compose ps"
+    echo ""
+    if [ -f ".env" ]; then
+        # Extract username and password from .env
+        DASHBOARD_USERNAME=$(grep -E '^DASHBOARD_USERNAME=' .env | cut -d '=' -f2-)
+        DASHBOARD_PASSWORD=$(grep -E '^DASHBOARD_PASSWORD=' .env | cut -d '=' -f2-)
+        if [ -n "$DASHBOARD_USERNAME" ] && [ -n "$DASHBOARD_PASSWORD" ]; then
+            echo "Once services are running, Supabase Studio will be available at:"
+            echo "  http://$DASHBOARD_USERNAME:$DASHBOARD_PASSWORD@localhost:8000"
+            echo ""
+        fi
+    fi
 }
 
 ########################################################
