@@ -14,7 +14,7 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "shutdown": "../../scripts/dev-shutdown.sh transactional-base",
-    "db:start": "sh setup.sh",
+    "db:start": "docker compose up -d",
     "db:stop": "sh setup.sh --stop",
     "db:restart": "sh setup.sh --restart",
     "db:reset": "sh setup.sh --reset",

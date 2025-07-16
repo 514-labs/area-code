@@ -283,7 +283,7 @@ BUILD_SELECT_QUERY() {
                 echo "    COALESCE($col_name, false) as $col_name"
                 ;;
             "timestamp"*|"date"|"time"*)
-                echo "    COALESCE(date_trunc('second', $col_name)::text, '') as $col_name"
+                echo "    COALESCE(DATE_TRUNC('second', $col_name)::text, '1970-01-01 00:00:00') as $col_name"
                 ;;
             "json"|"jsonb")
                 echo "    COALESCE($col_name::text, '{}') as $col_name"
@@ -314,6 +314,19 @@ BUILD_SELECT_QUERY() {
     fi
 }
 
+# Function to convert snake_case to camelCase for ClickHouse compatibility
+convert_to_camel_case() {
+    local snake_case="$1"
+    case "$snake_case" in
+        "created_at") echo "createdAt" ;;
+        "updated_at") echo "updatedAt" ;;
+        "foo_id") echo "fooId" ;;
+        "is_enabled") echo "isEnabled" ;;
+        "is_active") echo "isActive" ;;
+        *) echo "$snake_case" ;;
+    esac
+}
+
 # Build dynamic AWK conversion script
 BUILD_AWK_SCRIPT() {
     local awk_script=""
@@ -339,6 +352,10 @@ BUILD_AWK_SCRIPT() {
             "json"|"jsonb")
                 awk_script+="
     ${col_name}_val = (\$${field_num} == \"\" || \$${field_num} == \"\\\\N\" || \$${field_num} == \"NULL\") ? \"{}\" : \$${field_num};"
+                ;;
+            "timestamp"*|"date"|"time"*)
+                awk_script+="
+    ${col_name}_val = (\$${field_num} == \"\" || \$${field_num} == \"\\\\N\" || \$${field_num} == \"NULL\") ? \"1970-01-01 00:00:00\" : \$${field_num};"
                 ;;
             "ARRAY"*|"_"*)
                 awk_script+="
@@ -375,6 +392,7 @@ BUILD_AWK_SCRIPT() {
     for i in "${!COLUMN_NAMES[@]}"; do
         local col_name="${COLUMN_NAMES[$i]}"
         local data_type="${COLUMN_TYPES[$i]}"
+        local camel_case_name=$(convert_to_camel_case "$col_name")
         
         awk_script+="
     if (!first) printf \",\";
@@ -383,19 +401,23 @@ BUILD_AWK_SCRIPT() {
         case "$data_type" in
             "integer"|"bigint"|"smallint"|"numeric"|"decimal"|"real"|"double precision")
                 awk_script+="
-    printf \"\\\"${col_name}\\\":\" ${col_name}_val;"
+    printf \"\\\"${camel_case_name}\\\":\" ${col_name}_val;"
                 ;;
             "boolean")
                 awk_script+="
-    printf \"\\\"${col_name}\\\":\" ${col_name}_val;"
+    printf \"\\\"${camel_case_name}\\\":\" ${col_name}_val;"
+                ;;
+            "timestamp"*|"date"|"time"*)
+                awk_script+="
+    printf \"\\\"${camel_case_name}\\\":\\\"\" ${col_name}_val \"\\\"\";"
                 ;;
             "json"|"jsonb"|"ARRAY"*|"_"*)
                 awk_script+="
-    printf \"\\\"${col_name}\\\":\" ${col_name}_val;"
+    printf \"\\\"${camel_case_name}\\\":\" ${col_name}_val;"
                 ;;
             *)
                 awk_script+="
-    printf \"\\\"${col_name}\\\":\\\"\" ${col_name}_val \"\\\"\";"
+    printf \"\\\"${camel_case_name}\\\":\\\"\" ${col_name}_val \"\\\"\";"
                 ;;
         esac
     done
