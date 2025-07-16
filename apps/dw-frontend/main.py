@@ -302,7 +302,7 @@ elif page == "Connector analytics":
         st.dataframe(breakdown, hide_index=True)
         # --- Items per minute chart ---
         if "Processed On" in df.columns:
-            df["Processed On (minute)"] = pd.to_datetime(df["Processed On"], errors="coerce").dt.floor("T")
+            df["Processed On (minute)"] = pd.to_datetime(df["Processed On"], errors="coerce").dt.floor("min")
             per_min = df.groupby(["Processed On (minute)", "Source"]).size().reset_index(name="Count")
             per_min_pivot = per_min.pivot(index="Processed On (minute)", columns="Source", values="Count").fillna(0)
             per_min_pivot = per_min_pivot.sort_index()
