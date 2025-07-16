@@ -84,12 +84,6 @@ export default function FooAverageScore({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle>Average Score</CardTitle>
-            {isFetching && (
-              <Badge variant="outline">
-                <IconClock className="h-3 w-3 mr-1" />
-                Loading...
-              </Badge>
-            )}
           </div>
           <Button
             variant="outline"
