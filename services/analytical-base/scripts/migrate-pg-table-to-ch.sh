@@ -303,7 +303,7 @@ BUILD_SELECT_QUERY() {
     done
     
     echo "FROM $SOURCE_TABLE"
-    echo "ORDER BY (SELECT NULL)" # Use a neutral ordering
+    echo "ORDER BY id" # Use stable ordering by primary key to ensure consistent pagination
     
     if [ -n "$limit_clause" ]; then
         echo "LIMIT $limit_clause"
