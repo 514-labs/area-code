@@ -1,12 +1,9 @@
 #!/bin/bash
 
 # Retrieval Base Service Setup Script
-# Based on README.md instructions
+# Handles one-time setup tasks only
 
 #set -e  # Exit on any error
-
-# Configuration
-SERVICE_PORT=${PORT:-8082}
 
 # Colors for output
 RED='\033[0;31m'
@@ -37,51 +34,68 @@ show_usage() {
     echo "Usage: $0 [OPTION]"
     echo ""
     echo "Options:"
-    echo "  setup     - Full setup (install, start ES, init indices, seed data, start service)"
-    echo "  start     - Start the retrieval service only"
-    echo "  stop      - Stop the retrieval service"
-    echo "  restart   - Restart the retrieval service"
-    echo "  status    - Show service status"
-    echo "  reset     - Full reset (stop services, clear data, restart everything)"
-    echo "  migrate   - Run migration only (init indices and seed data)"
-    echo "  es:start  - Start Elasticsearch and Kibana only"
-    echo "  es:stop   - Stop Elasticsearch and Kibana"
-    echo "  es:reset  - Reset Elasticsearch data (stop, remove volumes, restart)"
+    echo "  setup     - Run full setup (default)"
+    echo "  indices   - Initialize Elasticsearch indices only"
+    echo "  config    - Setup configuration files"
     echo "  help      - Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 setup     # Full setup"
-    echo "  $0 start     # Start service only"
-    echo "  $0 stop      # Stop service"
-    echo "  $0 reset     # Full reset with fresh data"
-    echo "  $0 migrate   # Run migration only"
-    echo "  $0 status    # Check status"
+    echo "  $0 indices   # Initialize indices only"
+    echo "  $0 config    # Setup config only"
+    echo ""
+    echo "Note: This script only handles setup tasks."
+    echo "Use docker-compose and pnpm commands directly for service management."
     echo ""
 }
 
-# PID file path
-PID_FILE="/tmp/retrieval.pid"
-
-# Function to get service PID
-get_service_pid() {
-    if [ -f "$PID_FILE" ]; then
-        cat "$PID_FILE" 2>/dev/null
+# Check prerequisites (but don't install them)
+check_prerequisites() {
+    print_status "Checking prerequisites..."
+    
+    local has_errors=0
+    
+    # Check Node.js version
+    if ! command -v node &> /dev/null; then
+        print_error "Node.js is not installed. Please install Node.js 20+"
+        has_errors=1
     else
-        echo ""
-    fi
-}
-
-# Function to check if service is running
-is_service_running() {
-    local pid=$(get_service_pid)
-    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-        return 0  # Service is running
-    else
-        # Clean up stale PID file if it exists
-        if [ -f "$PID_FILE" ]; then
-            rm -f "$PID_FILE"
+        NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ "$NODE_VERSION" -lt 20 ]; then
+            print_error "Node.js version 20+ is required. Current version: $(node --version)"
+            has_errors=1
+        else
+            print_success "Node.js version: $(node --version)"
         fi
-        return 1  # Service is not running
+    fi
+    
+    # Check pnpm
+    if ! command -v pnpm &> /dev/null; then
+        print_error "pnpm is not installed. Please install pnpm"
+        has_errors=1
+    else
+        print_success "pnpm version: $(pnpm --version)"
+    fi
+    
+    # Check Docker
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker is not installed. Please install Docker"
+        has_errors=1
+    else
+        print_success "Docker version: $(docker --version)"
+    fi
+    
+    # Check Docker Compose
+    if ! command -v docker-compose &> /dev/null; then
+        print_error "Docker Compose is not installed. Please install Docker Compose"
+        has_errors=1
+    else
+        print_success "Docker Compose version: $(docker-compose --version)"
+    fi
+    
+    if [ $has_errors -eq 1 ]; then
+        print_error "Please install missing prerequisites before continuing"
+        exit 1
     fi
 }
 
@@ -92,56 +106,6 @@ is_elasticsearch_running() {
     else
         return 1  # Elasticsearch is not running
     fi
-}
-
-# Check prerequisites
-check_prerequisites() {
-    print_status "Checking prerequisites..."
-    
-    # Check Node.js version
-    if ! command -v node &> /dev/null; then
-        print_error "Node.js is not installed. Please install Node.js 20+"
-        exit 1
-    fi
-    
-    NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
-    if [ "$NODE_VERSION" -lt 20 ]; then
-        print_error "Node.js version 20+ is required. Current version: $(node --version)"
-        exit 1
-    fi
-    
-    print_success "Node.js version: $(node --version)"
-    
-    # Check pnpm
-    if ! command -v pnpm &> /dev/null; then
-        print_error "pnpm is not installed. Please install pnpm"
-        exit 1
-    fi
-    
-    print_success "pnpm version: $(pnpm --version)"
-    
-    # Check Docker
-    if ! command -v docker &> /dev/null; then
-        print_error "Docker is not installed. Please install Docker"
-        exit 1
-    fi
-    
-    print_success "Docker version: $(docker --version)"
-    
-    # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose is not installed. Please install Docker Compose"
-        exit 1
-    fi
-    
-    print_success "Docker Compose version: $(docker-compose --version)"
-}
-
-# Install dependencies
-install_dependencies() {
-    print_status "Installing dependencies..."
-    pnpm install
-    print_success "Dependencies installed successfully"
 }
 
 # Wait for Elasticsearch to be ready
@@ -165,275 +129,73 @@ wait_for_elasticsearch() {
     return 1
 }
 
-# Start Elasticsearch
-start_elasticsearch() {
-    print_status "Starting Elasticsearch and Kibana..."
-    docker-compose up -d
-    
-    if ! wait_for_elasticsearch; then
-        exit 1
-    fi
-}
-
 # Initialize indices
 init_indices() {
     print_status "Initializing Elasticsearch indices..."
+    
+    # Check if Elasticsearch is running
+    if ! is_elasticsearch_running; then
+        print_error "Elasticsearch is not running. Please start it first:"
+        print_error "  docker-compose up -d"
+        exit 1
+    fi
+    
     npx tsx src/scripts/init-indices.ts
     print_success "Indices initialized successfully"
 }
 
-# Removed seed_data function - no longer needed, data comes from PostgreSQL migration
-
-# Start the service
-start_service() {
-    if is_service_running; then
-        print_warning "Service is already running (PID: $(get_service_pid))"
-        return 0
-    fi
+# Setup configuration files
+setup_config() {
+    print_status "Setting up configuration files..."
     
-    print_status "Starting the retrieval service..."
-    print_status "The service will be available at http://localhost:${SERVICE_PORT}"
-    print_status "API documentation will be available at http://localhost:${SERVICE_PORT}/docs"
-    
-    # Start the service in the background with PORT environment variable
-    PORT=${SERVICE_PORT} npx tsx watch src/server.ts &
-    SERVICE_PID=$!
-    
-    # Store PID in file
-    echo "$SERVICE_PID" > "$PID_FILE"
-    
-    # Wait a moment for the service to start
-    sleep 3
-    
-    # Check if service is running
-    if curl -s http://localhost:${SERVICE_PORT}/health > /dev/null 2>&1; then
-        print_success "Service started successfully!"
-        print_status "Service PID: $SERVICE_PID (stored in $PID_FILE)"
-        print_status "To stop the service, run: $0 stop"
+    # Check if tsconfig.json exists
+    if [ ! -f "tsconfig.json" ]; then
+        print_warning "tsconfig.json not found - this may be intentional"
     else
-        print_warning "Service may still be starting up..."
-        print_status "Check http://localhost:${SERVICE_PORT}/health for service status"
-    fi
-}
-
-# Stop the service
-stop_service() {
-    local pid=$(get_service_pid)
-    
-    if [ -z "$pid" ]; then
-        print_warning "Service is not running"
-        return 0
+        print_success "tsconfig.json found"
     fi
     
-    print_status "Stopping retrieval service (PID: $pid)..."
-    kill "$pid"
-    
-    # Wait for the process to stop
-    local attempts=0
-    while [ $attempts -lt 10 ]; do
-        if ! kill -0 "$pid" 2>/dev/null; then
-            print_success "Service stopped successfully"
-            # Remove PID file
-            rm -f "$PID_FILE"
-            return 0
-        fi
-        sleep 1
-        attempts=$((attempts + 1))
-    done
-    
-    # Force kill if still running
-    if kill -0 "$pid" 2>/dev/null; then
-        print_warning "Service didn't stop gracefully, force killing..."
-        kill -9 "$pid"
-        print_success "Service force stopped"
-    fi
-    
-    # Remove PID file
-    rm -f "$PID_FILE"
-}
-
-# Restart the service
-restart_service() {
-    print_status "Restarting retrieval service..."
-    stop_service
-    sleep 2
-    start_service
-}
-
-# Show service status
-show_status() {
-    echo "=========================================="
-    echo "  Retrieval Base Service Status"
-    echo "=========================================="
-    echo ""
-    
-    # Check service status
-    if is_service_running; then
-        local pid=$(get_service_pid)
-        print_success "Service is running (PID: $pid)"
-        
-        # Check if service is responding
-        if curl -s http://localhost:${SERVICE_PORT}/health > /dev/null 2>&1; then
-            print_success "Service is responding to health checks"
-        else
-            print_warning "Service is running but not responding to health checks"
-        fi
-    else
-        print_error "Service is not running"
-    fi
-    
-    echo ""
-    
-    # Check Elasticsearch status
-    if is_elasticsearch_running; then
-        print_success "Elasticsearch is running"
-        local es_health=$(curl -s http://localhost:9200/_cluster/health | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
-        print_status "Elasticsearch status: $es_health"
-    else
-        print_error "Elasticsearch is not running"
-    fi
-    
-    echo ""
-    echo "Available endpoints:"
-    echo "  • Service: http://localhost:${SERVICE_PORT}"
-    echo "  • Health check: http://localhost:${SERVICE_PORT}/health"
-    echo "  • API docs: http://localhost:${SERVICE_PORT}/docs"
-    echo "  • Kibana: http://localhost:5601"
-    echo "  • Elasticsearch: http://localhost:9200"
-    echo ""
-}
-
-# Start Elasticsearch only
-start_elasticsearch_only() {
-    if is_elasticsearch_running; then
-        print_warning "Elasticsearch is already running"
-        return 0
-    fi
-    
-    start_elasticsearch
-}
-
-# Stop Elasticsearch only
-stop_elasticsearch_only() {
-    print_status "Stopping Elasticsearch and Kibana..."
-    docker-compose down
-    print_success "Elasticsearch and Kibana stopped"
-}
-
-# Clear Elasticsearch data directory
-clear_elasticsearch_data() {
-    if [ -d "volumes/elasticsearch/data" ]; then
-        rm -rf volumes/elasticsearch/data/* 2>/dev/null || rm -rf volumes/elasticsearch/data/*
-        print_success "Elasticsearch data cleared"
-    else
-        print_warning "Elasticsearch data directory not found"
-    fi
-}
-
-# Delete .moose folder
-clear_moose_folder() {
-    if [ -d ".moose" ]; then
-        print_status "Deleting .moose folder..."
-        rm -rf .moose
-        print_success ".moose folder deleted"
-    else
-        print_status ".moose folder not found, skipping deletion"
-    fi
-}
-
-# Reset Elasticsearch data
-reset_elasticsearch() {
-    print_status "Resetting Elasticsearch data..."
-    
-    # Stop Elasticsearch
-    docker-compose down
-    
-    # Clear Elasticsearch data directory
-    clear_elasticsearch_data
-    
-    # Delete .moose folder
-    clear_moose_folder
-    
-    # Start Elasticsearch
-    if ! start_elasticsearch; then
+    # Check if package.json exists
+    if [ ! -f "package.json" ]; then
+        print_error "package.json not found - this is required"
         exit 1
+    else
+        print_success "package.json found"
     fi
     
-    # Initialize indices
-    npx tsx src/scripts/init-indices.ts
-    
-    print_success "Elasticsearch data reset successfully (indices recreated)"
-}
-
-# Run migration only (init indices and seed data)
-run_migration() {
-    print_status "Running migration..."
-    
-    # Check if Elasticsearch is running
-    if ! is_elasticsearch_running; then
-        print_error "Elasticsearch is not running. Please start it first with: $0 es:start"
+    # Check if docker-compose.yml exists
+    if [ ! -f "docker-compose.yml" ]; then
+        print_error "docker-compose.yml not found - this is required for Elasticsearch"
         exit 1
+    else
+        print_success "docker-compose.yml found"
     fi
     
-    # Initialize indices
-    init_indices
-    
-    # Migrate real data from PostgreSQL
-    ./migrate-from-postgres-to-elasticsearch.sh
-    print_success "Migration completed successfully!"
+    print_success "Configuration files are properly set up"
 }
 
-# Full reset - stop services, clear data, restart
-full_reset() {
-    print_status "Performing full reset..."
-    echo ""
+# Create necessary directories
+create_directories() {
+    print_status "Creating necessary directories..."
     
-    # Stop the retrieval service
-    print_status "Stopping retrieval service..."
-    stop_service
-    
-    # Stop Elasticsearch
-    print_status "Stopping Elasticsearch and Kibana..."
-    stop_elasticsearch_only
-    
-    # Wait a moment for services to fully stop
-    sleep 3
-    
-    # Clear Elasticsearch data directory
-    print_status "Clearing Elasticsearch data..."
-    clear_elasticsearch_data
-    
-    # Delete .moose folder
-    print_status "Clearing .moose folder..."
-    clear_moose_folder
-    
-    # Start Elasticsearch
-    print_status "Starting Elasticsearch..."
-    if ! start_elasticsearch_only; then
-        exit 1
+    # Create volumes directory if it doesn't exist
+    if [ ! -d "volumes" ]; then
+        mkdir -p volumes
+        print_success "Created volumes directory"
+    else
+        print_status "volumes directory already exists"
     fi
     
-    # Initialize indices
-    print_status "Initializing indices..."
-    init_indices
-    
-    # Start the service
-    print_status "Starting retrieval service..."
-    start_service
-    
-    echo ""
-    print_success "Full reset completed successfully!"
-    echo ""
-    echo "All services have been restarted with fresh data."
-    echo "Available endpoints:"
-    echo "  • Service: http://localhost:${SERVICE_PORT}"
-    echo "  • Health check: http://localhost:${SERVICE_PORT}/health"
-    echo "  • API docs: http://localhost:${SERVICE_PORT}/docs"
-    echo "  • Kibana: http://localhost:5601"
-    echo ""
+    # Create temp_migration directory if it doesn't exist
+    if [ ! -d "temp_migration" ]; then
+        mkdir -p temp_migration
+        print_success "Created temp_migration directory"
+    else
+        print_status "temp_migration directory already exists"
+    fi
 }
 
-# Main setup function (full setup)
+# Main setup function
 full_setup() {
     echo "=========================================="
     echo "  Retrieval Base Service Setup"
@@ -443,35 +205,47 @@ full_setup() {
     check_prerequisites
     echo ""
     
-    install_dependencies
+    setup_config
     echo ""
     
-    start_elasticsearch_only
+    create_directories
     echo ""
     
-    init_indices
+    print_status "Checking if dependencies are installed..."
+    if [ ! -d "node_modules" ]; then
+        print_warning "Dependencies not installed. Please run: pnpm install"
+    else
+        print_success "Dependencies appear to be installed"
+    fi
     echo ""
     
-    start_service
+    print_status "Checking if Elasticsearch is running..."
+    if is_elasticsearch_running; then
+        print_success "Elasticsearch is running"
+        echo ""
+        init_indices
+    else
+        print_warning "Elasticsearch is not running"
+        print_status "To start Elasticsearch: docker-compose up -d"
+        print_status "Then run: $0 indices"
+    fi
     echo ""
     
     echo "=========================================="
     print_success "Setup completed successfully!"
     echo "=========================================="
     echo ""
-    echo "Available endpoints:"
-    echo "  • Service: http://localhost:${SERVICE_PORT}"
-    echo "  • Health check: http://localhost:${SERVICE_PORT}/health"
-    echo "  • API docs: http://localhost:${SERVICE_PORT}/docs"
+    echo "Next steps:"
+    echo "  1. Install dependencies: pnpm install"
+    echo "  2. Start Elasticsearch: docker-compose up -d"
+    echo "  3. Initialize indices: $0 indices"
+    echo "  4. Start the service: pnpm dev"
+    echo ""
+    echo "Available endpoints (once running):"
+    echo "  • Service: http://localhost:8082"
+    echo "  • Health check: http://localhost:8082/health"
+    echo "  • API docs: http://localhost:8082/docs"
     echo "  • Kibana: http://localhost:5601"
-    echo ""
-    echo "Example API calls:"
-    echo "  • Search all: curl 'http://localhost:${SERVICE_PORT}/api/search?q=test'"
-    echo "  • Search foos: curl 'http://localhost:${SERVICE_PORT}/api/search/foos?q=urgent'"
-    echo "  • Search bars: curl 'http://localhost:${SERVICE_PORT}/api/search/bars?fooId=foo-1'"
-    echo ""
-    echo "To reset data: $0 es:reset"
-    echo "To view logs: docker logs retrieval-base-elasticsearch"
     echo ""
 }
 
@@ -481,32 +255,11 @@ main() {
         "setup")
             full_setup
             ;;
-        "start")
-            start_service
+        "indices")
+            init_indices
             ;;
-        "stop")
-            stop_service
-            ;;
-        "restart")
-            restart_service
-            ;;
-        "status")
-            show_status
-            ;;
-        "reset")
-            full_reset
-            ;;
-        "migrate")
-            run_migration
-            ;;
-        "es:start")
-            start_elasticsearch_only
-            ;;
-        "es:stop")
-            stop_elasticsearch_only
-            ;;
-        "es:reset")
-            reset_elasticsearch
+        "config")
+            setup_config
             ;;
         "help"|"-h"|"--help")
             show_usage

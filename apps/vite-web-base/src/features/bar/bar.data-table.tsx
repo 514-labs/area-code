@@ -251,12 +251,18 @@ export function BarDataTable({
   });
   const [queryTime, setQueryTime] = React.useState<number | null>(null);
 
+  // Reset pagination and state when endpoint changes
+  React.useEffect(() => {
+    setPagination({ pageIndex: 0, pageSize: 10 });
+    setSorting([]);
+    setRowSelection({});
+  }, [fetchApiEndpoint]);
+
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
     data: barResponse,
     isLoading,
     error,
-    isPlaceholderData,
   } = useQuery({
     queryKey: [
       "bars",
@@ -280,10 +286,12 @@ export function BarDataTable({
       setQueryTime(endTime - startTime);
       return result;
     },
-    placeholderData: (previousData) => previousData,
+    // Completely disable placeholder data - only show current query results
+    placeholderData: undefined,
     staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
     gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
     refetchOnMount: disableCache ? "always" : false,
+    refetchOnWindowFocus: false,
   });
 
   const data = barResponse?.data || [];
@@ -350,7 +358,7 @@ export function BarDataTable({
 
       <div className="relative flex flex-col gap-4 overflow-auto">
         <div className="overflow-hidden rounded-lg border">
-          <Table>
+          <Table key={fetchApiEndpoint}>
             <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -370,7 +378,7 @@ export function BarDataTable({
               ))}
             </TableHeader>
             <TableBody>
-              {isLoading && !isPlaceholderData ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
@@ -394,11 +402,10 @@ export function BarDataTable({
                   </TableCell>
                 </TableRow>
               ) : table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row, index) => (
                   <TableRow
-                    key={row.id}
+                    key={`${row.id}-${index}`}
                     data-state={row.getIsSelected() && "selected"}
-                    className={isPlaceholderData ? "opacity-50" : ""}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

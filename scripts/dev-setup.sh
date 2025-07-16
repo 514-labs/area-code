@@ -80,7 +80,14 @@ check_and_make_executable() {
 # Function to get service script path
 get_service_script() {
     local service="$1"
-    echo "$PROJECT_ROOT/services/$service/setup.sh"
+    case "$service" in
+        "analytical-base")
+            echo "$PROJECT_ROOT/services/$service/scripts/setup.sh"
+            ;;
+        *)
+            echo "$PROJECT_ROOT/services/$service/setup.sh"
+            ;;
+    esac
 }
 
 # Function to check if a service is already set up

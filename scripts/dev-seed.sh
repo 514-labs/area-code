@@ -370,12 +370,24 @@ EOF
             return 1
         }
         
+        # Migrate foo table to Foo
+        echo "🔄 Migrating foo data to Foo..."
         if [ "$CLEAR_DATA" = "true" ]; then
-            echo "🧹 Running migration with data clearing..."
-            ./migrate-from-postgres.sh --clear-data
+            echo "🧹 Running foo migration with data clearing..."
+            ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo --clear-data
         else
-            echo "📊 Running migration keeping existing data..."
-            ./migrate-from-postgres.sh
+            echo "📊 Running foo migration keeping existing data..."
+            ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo
+        fi
+        
+        # Migrate bar table to Bar
+        echo "🔄 Migrating bar data to Bar..."
+        if [ "$CLEAR_DATA" = "true" ]; then
+            echo "🧹 Running bar migration with data clearing..."
+            ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar --clear-data
+        else
+            echo "📊 Running bar migration keeping existing data..."
+            ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar
         fi
         
         # Clean up temp migration files

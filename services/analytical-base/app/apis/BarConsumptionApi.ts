@@ -1,5 +1,5 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { BarThingEventPipeline } from "../pipelines/eventsPipeline";
+import { BarTable } from "../index";
 
 // Interface for average value response
 interface AverageValueResponse {
@@ -22,15 +22,14 @@ export const barAverageValueApi = new ConsumptionApi<
     _params: EmptyParams,
     { client, sql }
   ): Promise<AverageValueResponse> => {
-    const barTableName = BarThingEventPipeline.table!;
     const startTime = Date.now();
 
     const query = sql`
       SELECT 
-        AVG(toFloat64(params.currentData[1][1].value)) as averageValue,
+        AVG(value) as averageValue,
         COUNT(*) as count
-      FROM ${barTableName}
-      WHERE params.currentData[1][1].value IS NOT NULL
+      FROM ${BarTable}
+      WHERE value IS NOT NULL
     `;
 
     const resultSet = await client.query.execute<{
