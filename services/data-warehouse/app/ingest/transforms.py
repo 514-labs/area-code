@@ -3,6 +3,9 @@ from moose_lib import TransformConfig
 from datetime import datetime
 
 def foo_to_bar(foo: Foo):
+    if "fail" in foo.tags:
+        raise ValueError(f"Transform failed for item {foo.id}: Item marked as failed")
+
     return Bar(
         id=foo.id,
         name=foo.name,
