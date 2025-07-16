@@ -78,6 +78,197 @@ def trigger_both_extracts():
     trigger_extract(f"{API_BASE}/extract-s3", "S3")
     trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
 
+def render_dlq_controls(endpoint_path, refresh_key):
+    """
+    Renders DLQ testing controls with batch size and failure percentage inputs.
+    
+    Args:
+        endpoint_path (str): The API endpoint path (e.g., "extract-s3", "extract-datadog")
+        refresh_key (str): The session state key for refreshing data after DLQ trigger
+    """
+    # DLQ section positioned below the table and to the left
+    st.markdown("**Dead Letter Queue Testing**")
+    
+    # Create columns to keep DLQ controls on the left side
+    dlq_col, _ = st.columns([1, 2])
+    
+    # Store the filtered messages in session state so we can display them outside the column
+    dlq_messages_key = f"dlq_messages_{endpoint_path}"
+    
+    with dlq_col:
+        # Input fields for batch size and failure percentage
+        batch_size = st.number_input(
+            "Batch size", 
+            min_value=1, 
+            max_value=1000, 
+            value=10, 
+            step=1,
+            key=f"dlq_batch_size_{endpoint_path}"
+        )
+        
+        failure_percentage = st.number_input(
+            "Failure percentage", 
+            min_value=0, 
+            max_value=100, 
+            value=20, 
+            step=1,
+            key=f"dlq_failure_percentage_{endpoint_path}"
+        )
+        
+        # Create columns for buttons
+        btn_col1, btn_col2 = st.columns(2)
+        
+        with btn_col1:
+            if ui.button(text="Trigger DLQ", key=f"trigger_dlq_btn_{endpoint_path}"):
+                # Validate inputs
+                if batch_size < 1 or batch_size > 1000:
+                    st.error("Batch size must be between 1 and 1000")
+                elif failure_percentage < 0 or failure_percentage > 100:
+                    st.error("Failure percentage must be between 0 and 100")
+                else:
+                    # Make the DLQ request
+                    dlq_url = f"{API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
+                try:
+                    with st.spinner(f"Triggering DLQ with batch size {batch_size} and {failure_percentage}% failure rate..."):
+                        response = requests.get(dlq_url)
+                        response.raise_for_status()
+                        st.session_state["extract_status_msg"] = f"DLQ triggered successfully with batch size {batch_size} and {failure_percentage}% failure rate."
+                        st.session_state["extract_status_type"] = "success"
+                        st.session_state["extract_status_time"] = time.time()
+                        time.sleep(2)
+                    
+                    # Wait 3 seconds and then fetch DLQ messages
+                    with st.spinner("Waiting 3 seconds and fetching DLQ messages..."):
+                        time.sleep(3)
+                        dlq_messages_url = "http://localhost:9999/topic/FooDeadLetterQueue/messages?partition=0&offset=0&count=100&isAnyProto=false"
+                        
+                        try:
+                            # Add JSON headers to request JSON response
+                            headers = {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                            dlq_response = requests.get(dlq_messages_url, headers=headers)
+                            dlq_response.raise_for_status()                            
+                            dlq_data = dlq_response.json()
+                            
+                            # Display DLQ messages
+                            if dlq_data:
+                                # Determine filter type based on endpoint
+                                filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
+                                                                
+                                filtered_messages = []
+                                for i, item in enumerate(dlq_data):
+                                    if "message" in item and item["message"]:
+                                        try:
+                                            # Parse the stringified JSON message
+                                            import json
+                                            parsed_message = json.loads(item["message"])
+                                            
+                                            # Check if we should filter by tags
+                                            if filter_tag:
+                                                original_record = parsed_message.get("original_record", {})
+                                                tags = original_record.get("tags", [])
+                                                
+                                                # Only include messages that have the matching tag
+                                                if not any(filter_tag.lower() in str(tag).lower() for tag in tags):
+                                                    continue
+                                            
+                                            filtered_messages.append((i, item, parsed_message))
+                                            
+                                        except json.JSONDecodeError as e:
+                                            st.error(f"Failed to parse message {i+1}: {e}")
+                                            st.text(f"Raw message: {item['message']}")
+                                
+                                # Store filtered messages for display outside column
+                                if filtered_messages:
+                                    # Create DataFrame from filtered messages
+                                    table_data = []
+                                    raw_json_data = []
+                                    
+                                    for display_idx, (original_idx, item, parsed_message) in enumerate(filtered_messages):
+                                        # Extract key information for table
+                                        original_record = parsed_message.get("original_record", {})
+                                        
+                                        row = {
+                                            "#": display_idx + 1,
+                                            "Partition": item.get('partition', 'N/A'),
+                                            "Offset": item.get('offset', 'N/A'),
+                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                            "Error Type": parsed_message.get("error_type", "Unknown"),
+                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                            "Record ID": original_record.get("id", "Unknown"),
+                                            "Record Name": original_record.get("name", "Unknown"),
+                                            "Status": original_record.get("status", "Unknown"),
+                                            "Tags": ", ".join(original_record.get("tags", [])) if original_record.get("tags") else "None",
+                                            "Score": original_record.get("score", "Unknown")
+                                        }
+                                        table_data.append(row)
+                                        raw_json_data.append(parsed_message)
+                                    
+                                    # Store both table data and raw JSON in session state
+                                    st.session_state[dlq_messages_key] = table_data
+                                    st.session_state[f"dlq_raw_messages_{endpoint_path}"] = raw_json_data
+                                else:
+                                    # Clear any existing data and show info message
+                                    st.session_state[dlq_messages_key] = []
+                                    st.session_state[f"dlq_raw_messages_{endpoint_path}"] = []
+                                    st.info(f"No {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue.")
+                            else:
+                                st.info("No messages found in the Dead Letter Queue.")
+                                
+                        except requests.exceptions.RequestException as e:
+                            st.error(f"Failed to fetch DLQ messages: {e}")
+                        except json.JSONDecodeError as e:
+                            st.error(f"Failed to parse DLQ response as JSON: {e}")
+                            st.text(f"Response status: {dlq_response.status_code}")
+                            st.text(f"Response headers: {dict(dlq_response.headers)}")
+                            st.text(f"Response content: {dlq_response.text}")
+                    
+                    st.session_state[refresh_key] = True
+                except Exception as e:
+                    st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
+                    st.session_state["extract_status_type"] = "error"
+                    st.session_state["extract_status_time"] = time.time()
+        
+        with btn_col2:
+            st.link_button("Explorer", "http://localhost:9999")
+
+    # Display DLQ messages outside of column constraint for full width
+    if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
+        filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
+        st.subheader(f"Dead Letter Queue Messages{f' (Filtered for {filter_tag})' if filter_tag else ''}")
+        
+        # Status line showing count of retrieved items
+        item_count = len(st.session_state[dlq_messages_key])
+        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''}{f' matching {filter_tag} filter' if filter_tag else ''}")
+        
+        # Create and display DataFrame at full width
+        df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
+        
+        # Add selection capability to the dataframe
+        selected_rows = st.dataframe(
+            df_dlq, 
+            use_container_width=True, 
+            height=400,
+            on_select="rerun",
+            selection_mode="single-row"
+        )
+        
+        # Display JSON for selected row
+        if selected_rows.selection.rows:
+            selected_idx = selected_rows.selection.rows[0]
+            if selected_idx < len(st.session_state[dlq_messages_key]):
+                st.subheader(f"JSON Details for Message #{selected_idx + 1}")
+                
+                # Get the original parsed message from session state
+                raw_messages_key = f"dlq_raw_messages_{endpoint_path}"
+                if raw_messages_key in st.session_state and selected_idx < len(st.session_state[raw_messages_key]):
+                    original_json = st.session_state[raw_messages_key][selected_idx]
+                    st.json(original_json)
+                else:
+                    st.error("Original JSON data not available for this message.")
+
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
         st.session_state[refresh_key] = False
@@ -202,11 +393,13 @@ elif page == "S3":
         trigger_label="S3",
         button_label=None  # We'll use ShadCN button below
     )
+    
     if ui.button(text="Trigger S3 Extract", key="trigger_s3_btn"):
         with st.spinner("Triggering S3 extract and waiting for backend to finish..."):
             trigger_extract(f"{API_BASE}/extract-s3", "S3")
             time.sleep(2)
         st.session_state["refresh_s3"] = True
+    
     st.subheader("S3 Items Table")
     if not df.empty and "large_text" in df.columns:
         parsed = df["large_text"].str.split("|", n=3, expand=True)
@@ -217,6 +410,9 @@ elif page == "S3":
         st.dataframe(parsed, use_container_width=True)
     else:
         st.write("No S3 log data available.")
+    
+    # Use the reusable DLQ controls function
+    render_dlq_controls("extract-s3", "refresh_s3")
 elif page == "Datadog":
     st.title("Datadog View")
     df = handle_refresh_and_fetch(
@@ -241,6 +437,9 @@ elif page == "Datadog":
         st.dataframe(parsed_logs, use_container_width=True)
     else:
         st.write("No Datadog log data available.")
+    
+    # Use the reusable DLQ controls function
+    render_dlq_controls("extract-datadog", "refresh_datadog")
 elif page == "Connector analytics":
     # Modern animated banner
     st.markdown("""
