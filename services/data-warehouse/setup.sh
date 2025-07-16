@@ -37,6 +37,10 @@ DW_FRONTEND_PID_FILE="/tmp/dw-frontend.pid"
 DATA_WAREHOUSE_PORT=4200
 DW_FRONTEND_PORT=8501
 
+# Kafdrop container configuration
+KAFDROP_CONTAINER_NAME="data-warehouse-kafdrop"
+KAFDROP_PORT=9999
+
 # Function to show usage
 show_usage() {
     echo "Usage: $0 [OPTION]"
@@ -214,6 +218,113 @@ print_port_conflict_instructions() {
     print_status "  3. Or force kill: kill -9 <PID>"
     print_status ""
     print_status "Then retry: $0 start"
+}
+
+# Check if Docker is available
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker is not installed or not in PATH"
+        return 1
+    fi
+
+    if ! docker info &> /dev/null; then
+        print_error "Docker daemon is not running"
+        return 1
+    fi
+
+    return 0
+}
+
+# Function to get the network name
+get_docker_network() {
+    local network_name="$(basename "$(pwd)")_default"
+
+    # Check if network exists
+    if docker network ls --format "{{.Name}}" | grep -q "^${network_name}$"; then
+        echo "$network_name"
+    else
+        print_warning "Network $network_name not found, using default"
+        echo "bridge"  # fallback to bridge network
+    fi
+}
+
+# Check if Kafdrop container is running
+is_kafdrop_running() {
+    if ! check_docker; then
+        return 1
+    fi
+    docker ps --filter "name=$KAFDROP_CONTAINER_NAME" --format "{{.Names}}" | grep -q "$KAFDROP_CONTAINER_NAME"
+}
+
+# Start Kafdrop
+start_kafdrop() {
+    if ! check_docker; then
+        print_warning "Docker not available, skipping Kafdrop startup"
+        return 0
+    fi
+
+    if is_kafdrop_running; then
+        print_warning "Kafdrop is already running"
+        return 0
+    fi
+
+    # Check if port is in use
+    if is_port_in_use $KAFDROP_PORT; then
+        print_port_conflict_instructions $KAFDROP_PORT
+        return 1
+    fi
+
+    print_status "Starting Kafdrop UI..."
+
+    local network_name=$(get_docker_network)
+
+    # Start Kafdrop container
+    docker run -d \
+        --name "$KAFDROP_CONTAINER_NAME" \
+        --network "$network_name" \
+        --rm \
+        -p $KAFDROP_PORT:9000 \
+        -e KAFKA_BROKERCONNECT=redpanda:9092 \
+        -e SERVER_SERVLET_CONTEXTPATH="/" \
+        obsidiandynamics/kafdrop > /dev/null 2>&1
+
+    # Wait and verify
+    sleep 3
+    if is_kafdrop_running; then
+        print_success "Kafdrop UI started successfully at http://localhost:$KAFDROP_PORT"
+    else
+        print_error "Failed to start Kafdrop UI"
+        return 1
+    fi
+}
+
+# Stop Kafdrop
+stop_kafdrop() {
+    if ! check_docker; then
+        return 0
+    fi
+
+    if ! is_kafdrop_running; then
+        print_warning "Kafdrop is not running (container: $KAFDROP_CONTAINER_NAME)"
+        return 0
+    fi
+
+    print_status "Stopping Kafdrop UI..."
+
+    # Stop the container (--rm flag will auto-remove it)
+    docker stop "$KAFDROP_CONTAINER_NAME" &> /dev/null
+
+    # Wait for it to stop
+    for i in {1..10}; do
+        if ! is_kafdrop_running; then
+            print_success "Kafdrop UI stopped successfully"
+            return 0
+        fi
+        sleep 1
+    done
+
+    print_error "Failed to stop Kafdrop UI gracefully"
+    return 1
 }
 
 # Check prerequisites
@@ -627,6 +738,7 @@ start_service() {
             print_status "The service will be available at http://localhost:$DATA_WAREHOUSE_PORT"
             print_status "Management interface will be available at http://localhost:5001"
             print_status "Temporal UI will be available at http://localhost:8080"
+            print_status "Kafdrop UI will be available at http://localhost:$KAFDROP_PORT"
             print_status "data-warehouse service PID: $MOOSE_SERVICE_PID (saved to $DATA_WAREHOUSE_PID_FILE)"
             print_status "To stop the service, run: $0 stop"
         else
@@ -681,6 +793,10 @@ start_service() {
             exit 1
         fi
     fi
+
+    # Start Kafdrop UI
+    echo ""
+    start_kafdrop
 }
 
 # Stop the service
@@ -751,6 +867,10 @@ stop_service() {
         print_status "Removing PID file: $DW_FRONTEND_PID_FILE"
         rm -f "$DW_FRONTEND_PID_FILE"
     fi
+
+    # Stop Kafdrop UI
+    echo ""
+    stop_kafdrop
 }
 
 
@@ -800,6 +920,20 @@ show_status() {
         print_error "dw-frontend service is not running"
     fi
     
+    # Check Kafdrop status
+    if is_kafdrop_running; then
+        print_success "Kafdrop UI is running (container: $KAFDROP_CONTAINER_NAME)"
+
+        # Check if service is responding
+        if curl -s http://localhost:$KAFDROP_PORT > /dev/null 2>&1; then
+            print_success "Kafdrop UI is responding to requests"
+        else
+            print_warning "Kafdrop UI is running but not responding to requests"
+        fi
+    else
+        print_error "Kafdrop UI is not running"
+    fi
+
     echo ""
     echo "Infrastructure: Managed by Moose.js"
     echo "  • All infrastructure services (Redpanda, ClickHouse, Redis, Temporal) are managed automatically"
@@ -808,6 +942,7 @@ show_status() {
     echo "Available endpoints:"
     echo "  • Data Warehouse Service: http://localhost:$DATA_WAREHOUSE_PORT"
     echo "  • Data Warehouse Frontend: http://localhost:$DW_FRONTEND_PORT"
+    echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo "  • Redpanda: localhost:19092"
@@ -878,6 +1013,7 @@ full_reset() {
     echo "  • Service: http://localhost:$DATA_WAREHOUSE_PORT"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
+    echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
     echo ""
 }
 
@@ -908,6 +1044,7 @@ full_setup() {
     echo "  • Service: http://localhost:$DATA_WAREHOUSE_PORT"
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
+    echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
     echo ""
     echo "Next steps:"
     echo "  1. Run '$0 env:check' to validate your configuration"
