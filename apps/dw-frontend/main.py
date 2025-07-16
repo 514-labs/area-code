@@ -115,15 +115,19 @@ def render_dlq_controls(endpoint_path, refresh_key):
             key=f"dlq_failure_percentage_{endpoint_path}"
         )
         
-        if ui.button(text="Trigger DLQ", key=f"trigger_dlq_btn_{endpoint_path}"):
-            # Validate inputs
-            if batch_size < 1 or batch_size > 1000:
-                st.error("Batch size must be between 1 and 1000")
-            elif failure_percentage < 0 or failure_percentage > 100:
-                st.error("Failure percentage must be between 0 and 100")
-            else:
-                # Make the DLQ request
-                dlq_url = f"{API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
+        # Create columns for buttons
+        btn_col1, btn_col2 = st.columns(2)
+        
+        with btn_col1:
+            if ui.button(text="Trigger DLQ", key=f"trigger_dlq_btn_{endpoint_path}"):
+                # Validate inputs
+                if batch_size < 1 or batch_size > 1000:
+                    st.error("Batch size must be between 1 and 1000")
+                elif failure_percentage < 0 or failure_percentage > 100:
+                    st.error("Failure percentage must be between 0 and 100")
+                else:
+                    # Make the DLQ request
+                    dlq_url = f"{API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
                 try:
                     with st.spinner(f"Triggering DLQ with batch size {batch_size} and {failure_percentage}% failure rate..."):
                         response = requests.get(dlq_url)
@@ -226,7 +230,10 @@ def render_dlq_controls(endpoint_path, refresh_key):
                     st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
                     st.session_state["extract_status_type"] = "error"
                     st.session_state["extract_status_time"] = time.time()
-    
+        
+        with btn_col2:
+            st.link_button("Explorer", "http://localhost:9999")
+
     # Display DLQ messages outside of column constraint for full width
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
         filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
