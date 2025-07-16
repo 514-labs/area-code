@@ -274,7 +274,7 @@ start_kafdrop() {
         return 1
     fi
 
-    print_status "Starting Kafdrop UI..."
+    print_status "Starting Kafdrop..."
 
     local network_name=$(get_docker_network)
 
@@ -291,9 +291,9 @@ start_kafdrop() {
     # Wait and verify
     sleep 3
     if is_kafdrop_running; then
-        print_success "Kafdrop UI started successfully at http://localhost:$KAFDROP_PORT"
+        print_success "Kafdrop started successfully at http://localhost:$KAFDROP_PORT"
     else
-        print_error "Failed to start Kafdrop UI"
+        print_error "Failed to start Kafdrop"
         return 1
     fi
 }
@@ -309,7 +309,7 @@ stop_kafdrop() {
         return 0
     fi
 
-    print_status "Stopping Kafdrop UI..."
+    print_status "Stopping Kafdrop..."
 
     # Stop the container (--rm flag will auto-remove it)
     docker stop "$KAFDROP_CONTAINER_NAME" &> /dev/null
@@ -317,13 +317,13 @@ stop_kafdrop() {
     # Wait for it to stop
     for i in {1..10}; do
         if ! is_kafdrop_running; then
-            print_success "Kafdrop UI stopped successfully"
+            print_success "Kafdrop stopped successfully"
             return 0
         fi
         sleep 1
     done
 
-    print_error "Failed to stop Kafdrop UI gracefully"
+    print_error "Failed to stop Kafdrop gracefully"
     return 1
 }
 
@@ -708,10 +708,7 @@ start_infrastructure() {
     print_status "This may take a few minutes on first run..."
 }
 
-# Start the service
-start_service() {
-    ensure_venv_activated
-
+start_data_warehouse_service() {
     if is_moose_service_running; then
         print_warning "data-warehouse service is already running (PID: $(get_moose_service_id))"
     else
@@ -746,13 +743,13 @@ start_service() {
             print_status "Check http://localhost:$DATA_WAREHOUSE_PORT for service status"
         fi
     fi
-    echo ""
+}
 
-    # Start the dw-frontend service
+start_dw_frontend_service() {
     if is_dw_frontend_running; then
-        print_warning "dw-frontend service is already running (PID: $(get_dw_frontend_pid))"
+        print_warning "data warehouse dashbaord is already running (PID: $(get_dw_frontend_pid))"
     else
-        print_status "Starting the dw-frontend service..."
+        print_status "Starting the data warehouse dashboard..."
 
         local frontend_dir="../../apps/dw-frontend"
         local current_dir=$(pwd)
@@ -779,12 +776,12 @@ start_service() {
             sleep 3
 
             if curl -s http://localhost:$DW_FRONTEND_PORT > /dev/null 2>&1; then
-                print_success "dw-frontend service started successfully!"
-                print_status "The service will be available at http://localhost:$DW_FRONTEND_PORT"
-                print_status "dw-frontend service PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
-                print_status "To stop the service, run: $0 stop"
+                print_success "data warehouse dashboard started successfully!"
+                print_status "The dashboard will be available at http://localhost:$DW_FRONTEND_PORT"
+                print_status "dashboard PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
+                print_status "To stop the dashboard, run: $0 stop"
             else
-                print_error "dw-frontend failed to start"
+                print_error "data warehouse dashboard failed to start"
             fi
 
             cd "$current_dir"
@@ -793,14 +790,22 @@ start_service() {
             exit 1
         fi
     fi
-
-    # Start Kafdrop UI
-    echo ""
-    start_kafdrop
 }
 
-# Stop the service
-stop_service() {
+# Start the service
+start_service() {
+    ensure_venv_activated
+
+    start_data_warehouse_service
+    echo ""
+
+    start_kafdrop
+    echo ""
+
+    start_dw_frontend_service
+}
+
+stop_data_warehouse_service() {
     local moose_pid=$(get_moose_service_id)
 
     if [ -z "$moose_pid" ]; then
@@ -832,10 +837,9 @@ stop_service() {
         print_status "Removing PID file: $DATA_WAREHOUSE_PID_FILE"
         rm -f "$DATA_WAREHOUSE_PID_FILE"
     fi
+}
 
-    echo ""
-
-    # Stop the dw-frontend service
+stop_dw_frontend_service() {
     local dw_frontend_pid=$(get_dw_frontend_pid)
 
     if [ -z "$dw_frontend_pid" ]; then
@@ -867,10 +871,18 @@ stop_service() {
         print_status "Removing PID file: $DW_FRONTEND_PID_FILE"
         rm -f "$DW_FRONTEND_PID_FILE"
     fi
+}
 
-    # Stop Kafdrop UI
+# Stop the service
+stop_service() {
+    stop_data_warehouse_service
     echo ""
+
+    stop_dw_frontend_service
+    echo ""
+
     stop_kafdrop
+    echo ""
 }
 
 
@@ -922,16 +934,16 @@ show_status() {
     
     # Check Kafdrop status
     if is_kafdrop_running; then
-        print_success "Kafdrop UI is running (container: $KAFDROP_CONTAINER_NAME)"
+        print_success "Kafdrop is running (container: $KAFDROP_CONTAINER_NAME)"
 
         # Check if service is responding
         if curl -s http://localhost:$KAFDROP_PORT > /dev/null 2>&1; then
-            print_success "Kafdrop UI is responding to requests"
+            print_success "Kafdrop is responding to requests"
         else
-            print_warning "Kafdrop UI is running but not responding to requests"
+            print_warning "Kafdrop is running but not responding to requests"
         fi
     else
-        print_error "Kafdrop UI is not running"
+        print_error "Kafdrop is not running"
     fi
 
     echo ""
