@@ -125,14 +125,17 @@ export function SearchCommand({
     prefetchSearch({ q: searchTerm, size: 8 });
   };
 
-  const handleInputChange = (value: string) => {
-    setInputValue(value);
+  const handleInputChange = React.useCallback(
+    (value: string) => {
+      setInputValue(value);
 
-    // Prefetch on longer queries for instant results
-    if (value.length >= 3) {
-      prefetchSearch({ q: value, size: 8 });
-    }
-  };
+      // Prefetch on longer queries for instant results
+      if (value.length >= 3) {
+        prefetchSearch({ q: value, size: 8 });
+      }
+    },
+    [prefetchSearch]
+  );
 
   const handleClear = () => {
     setInputValue("");
@@ -201,8 +204,8 @@ export function SearchCommand({
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       {/* Search Input */}
-      <div className="relative flex items-center border border-input rounded-md shadow-xs bg-transparent transition-[color,box-shadow] focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] has-[:invalid]:border-destructive has-[:invalid]:ring-destructive/20">
-        <SearchIcon className="ml-3 h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <div className="relative">
+        <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
         <Input
           ref={inputRef}
           type="text"
@@ -210,20 +213,20 @@ export function SearchCommand({
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
           placeholder={placeholder}
-          className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 pl-2 pr-2"
+          className="pl-10 pr-10"
         />
         {inputValue && (
           <Button
             variant="ghost"
             size="sm"
-            className="mr-3 h-6 w-6 p-0 hover:bg-muted/50 flex-shrink-0"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted/50 z-10"
             onClick={handleClear}
           >
             <X className="h-3 w-3" />
           </Button>
         )}
         {!inputValue && (
-          <kbd className="mr-3 inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground flex-shrink-0">
+          <kbd className="absolute right-3 top-1/2 transform -translate-y-1/2 inline-flex h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground z-10">
             <span className="text-xs">⌘</span>K
           </kbd>
         )}
