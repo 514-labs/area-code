@@ -12,28 +12,47 @@ The project includes an automated setup script that configures all services auto
 
 ### Quick Start
 
+Follow these commands in order to set up and run the application:
+
 ```bash
-# Setup all services (installs dependencies, initializes data)
-./setup.sh setup
+# 1. Install dependencies
+pnpm i
 
-# Start all services
-./setup.sh start
+# 2. Setup all services (initializes configuration and data)
+pnpm dev:setup
 
+# 3. Start all services
+pnpm dev:start
+
+# 4. Seed databases with sample data
+pnpm dev:seed
+
+# 5. Run development workflow
+pnpm dev:workflow
+```
+
+Additional useful commands:
+
+```bash
 # Check status of all services
-./setup.sh status
+pnpm dev:status
 
 # Stop all services
-./setup.sh stop
+pnpm dev:shutdown
+
+# Reset all services (stop, clear data, restart)
+pnpm dev:reset
 ```
 
 ### Available Commands
 
-- `setup` - Install dependencies and initialize all services
-- `start` - Start all services
-- `stop` - Stop all services  
-- `restart` - Restart all services
-- `status` - Show status of all services
-- `reset` - Reset all services (stop, clear data, restart)
+- `pnpm dev:setup` - Install dependencies and initialize all services
+- `pnpm dev:start` - Start all services
+- `pnpm dev:shutdown` - Stop all services
+- `pnpm dev:status` - Show status of all services
+- `pnpm dev:reset` - Reset all services (stop, clear data, restart)
+- `pnpm dev:seed` - Seed databases with sample data
+- `pnpm dev:workflow` - Run development workflow
 
 ### Targeting Specific Services
 
@@ -41,13 +60,13 @@ You can target individual services using the `--service` flag:
 
 ```bash
 # Start only the transactional service
-./setup.sh start --service=transactional-base
+pnpm dev:start --service=transactional-base
 
 # Setup only the retrieval service
-./setup.sh setup --service=retrieval-base
+pnpm dev:setup --service=retrieval-base
 
 # Check status of analytical service
-./setup.sh status --service=analytical-base
+pnpm dev:status --service=analytical-base
 ```
 
 ### Available Services
@@ -61,10 +80,13 @@ You can target individual services using the `--service` flag:
 The setup script automatically handles all configuration, dependency installation, and service initialization. No user actions are required beyond running the commands.
 
 ## Apps
+
 - `web`: a Vite app that serves the frontend
 
 ## Services
+
 API centric services that power functionality for your applications
+
 - `analytical-service`: Analytical service that powers the analytical functionality for your applications (e.g. analytics, reporting, dashboards, newsfeeds, etc.)
 - `retrieval-service`: Retrieval service that powers the retrieval functionality for your applications (e.g. search, recommendations, etc.)
 - `transaction-service`: Transaction service that powers the transactional functionality for your applications (e.g. payments, orders, etc.)
@@ -72,10 +94,12 @@ API centric services that power functionality for your applications
 - `ai-service`: AI service that powers the AI functionality for your applications (e.g. chat, voice, etc.)
 
 ## Packages
+
 - `<library-name>-config`: configuration implementations for specific libraries
 - `ui`: a library of shared web UI components
 
 ## Future plans
+
 We plan on enabling a user to compose their own application with a subset of the services and packages. We plan on leveraging the `generate` tool provided by turborepo to generate the application code. We also plan on enabling python and other languages based services to be added to the repository.
 
 - Add a `mobile` app that serves the mobile frontend

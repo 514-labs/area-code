@@ -5,6 +5,8 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
+    "setup": "../../scripts/dev-setup.sh --service=analytical-base",
+    "setup:force": "../../scripts/dev-setup.sh --service=analytical-base --force",
     "db:migrate-from-postgres": "./migrate-from-postgres.sh",
     "shutdown": "../../scripts/dev-shutdown.sh analytical-base"
   },

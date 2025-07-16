@@ -7,6 +7,8 @@
     "dev": "./setup.sh setup",
     "dev:server-only": "PORT=8083 tsx watch src/server.ts",
     "build": "tsc",
+    "setup": "../../scripts/dev-setup.sh --service=retrieval-base",
+    "setup:force": "../../scripts/dev-setup.sh --service=retrieval-base --force",
     "start": "./setup.sh start",
     "lint": "eslint src/",
     "shutdown": "../../scripts/dev-shutdown.sh retrieval-base",

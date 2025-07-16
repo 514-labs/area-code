@@ -264,8 +264,8 @@ main() {
     fi
     print_success "Docker is running"
     
-    print_step "Starting transactional-base containers (using setup.sh)"
-    "$SCRIPT_DIR/setup.sh" start --service=transactional-base || exit 1
+    print_step "Starting transactional-base containers"
+    cd "$SCRIPT_DIR/services/transactional-base" && ./setup.sh --restart || exit 1
     
     print_step "Starting transactional-base dev server"
     run_in_service_background "transactional-base" "pnpm dev" "main" || exit 1
@@ -361,7 +361,7 @@ main() {
     echo "  • frontend: apps/vite-web-base/dev-main.log"
     echo ""
     echo "To start workflows separately, run: pnpm dev:workflow"
-    echo "To stop all services, you can use the main setup.sh script: ./setup.sh stop"
+    echo "To stop all services, you can use: ./scripts/dev-shutdown.sh"
 }
 
 # Function to show help
