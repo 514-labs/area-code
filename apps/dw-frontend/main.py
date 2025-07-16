@@ -78,6 +78,131 @@ def trigger_both_extracts():
     trigger_extract(f"{API_BASE}/extract-s3", "S3")
     trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
 
+def render_dlq_controls(endpoint_path, refresh_key):
+    """
+    Renders DLQ testing controls with batch size and failure percentage inputs.
+    
+    Args:
+        endpoint_path (str): The API endpoint path (e.g., "extract-s3", "extract-datadog")
+        refresh_key (str): The session state key for refreshing data after DLQ trigger
+    """
+    # DLQ section positioned below the table and to the left
+    st.markdown("**Dead Letter Queue Testing**")
+    
+    # Create columns to keep DLQ controls on the left side
+    dlq_col, _ = st.columns([1, 2])
+    
+    with dlq_col:
+        # Input fields for batch size and failure percentage
+        batch_size = st.number_input(
+            "Batch size", 
+            min_value=1, 
+            max_value=1000, 
+            value=10, 
+            step=1,
+            key=f"dlq_batch_size_{endpoint_path}"
+        )
+        
+        failure_percentage = st.number_input(
+            "Failure percentage", 
+            min_value=0, 
+            max_value=100, 
+            value=20, 
+            step=1,
+            key=f"dlq_failure_percentage_{endpoint_path}"
+        )
+        
+        if ui.button(text="Trigger DLQ", key=f"trigger_dlq_btn_{endpoint_path}"):
+            # Validate inputs
+            if batch_size < 1 or batch_size > 1000:
+                st.error("Batch size must be between 1 and 1000")
+            elif failure_percentage < 0 or failure_percentage > 100:
+                st.error("Failure percentage must be between 0 and 100")
+            else:
+                # Make the DLQ request
+                dlq_url = f"{API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
+                try:
+                    with st.spinner(f"Triggering DLQ with batch size {batch_size} and {failure_percentage}% failure rate..."):
+                        response = requests.get(dlq_url)
+                        response.raise_for_status()
+                        st.session_state["extract_status_msg"] = f"DLQ triggered successfully with batch size {batch_size} and {failure_percentage}% failure rate."
+                        st.session_state["extract_status_type"] = "success"
+                        st.session_state["extract_status_time"] = time.time()
+                        time.sleep(2)
+                    
+                    # Wait 3 seconds and then fetch DLQ messages
+                    with st.spinner("Waiting 3 seconds and fetching DLQ messages..."):
+                        time.sleep(3)
+                        dlq_messages_url = "http://localhost:9999/topic/FooDeadLetterQueue/messages?partition=0&offset=0&count=100&isAnyProto=false"
+                        
+                        try:
+                            # Add JSON headers to request JSON response
+                            headers = {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                            dlq_response = requests.get(dlq_messages_url, headers=headers)
+                            dlq_response.raise_for_status()                            
+                            dlq_data = dlq_response.json()
+                            
+                            # Display DLQ messages
+                            if dlq_data:
+                                # Determine filter type based on endpoint
+                                filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
+                                
+                                st.subheader(f"Dead Letter Queue Messages{f' (Filtered for {filter_tag})' if filter_tag else ''}")
+                                
+                                filtered_messages = []
+                                for i, item in enumerate(dlq_data):
+                                    if "message" in item and item["message"]:
+                                        try:
+                                            # Parse the stringified JSON message
+                                            import json
+                                            parsed_message = json.loads(item["message"])
+                                            
+                                            # Check if we should filter by tags
+                                            if filter_tag:
+                                                original_record = parsed_message.get("original_record", {})
+                                                tags = original_record.get("tags", [])
+                                                
+                                                # Only include messages that have the matching tag
+                                                if not any(filter_tag.lower() in str(tag).lower() for tag in tags):
+                                                    continue
+                                            
+                                            filtered_messages.append((i, item, parsed_message))
+                                            
+                                        except json.JSONDecodeError as e:
+                                            st.error(f"Failed to parse message {i+1}: {e}")
+                                            st.text(f"Raw message: {item['message']}")
+                                
+                                # Display filtered messages
+                                if filtered_messages:
+                                    for display_idx, (original_idx, item, parsed_message) in enumerate(filtered_messages):
+                                        # Extract error message for heading
+                                        error_message = parsed_message.get("error_message", "Unknown error")
+                                        
+                                        st.markdown(f"**Message {display_idx+1} (Partition: {item.get('partition', 'N/A')}, Offset: {item.get('offset', 'N/A')})**")
+                                        st.markdown(f"**Error: {error_message}**")
+                                        st.json(parsed_message)
+                                else:
+                                    st.info(f"No {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue.")
+                            else:
+                                st.info("No messages found in the Dead Letter Queue.")
+                                
+                        except requests.exceptions.RequestException as e:
+                            st.error(f"Failed to fetch DLQ messages: {e}")
+                        except json.JSONDecodeError as e:
+                            st.error(f"Failed to parse DLQ response as JSON: {e}")
+                            st.text(f"Response status: {dlq_response.status_code}")
+                            st.text(f"Response headers: {dict(dlq_response.headers)}")
+                            st.text(f"Response content: {dlq_response.text}")
+                    
+                    st.session_state[refresh_key] = True
+                except Exception as e:
+                    st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
+                    st.session_state["extract_status_type"] = "error"
+                    st.session_state["extract_status_time"] = time.time()
+
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
         st.session_state[refresh_key] = False
@@ -202,11 +327,13 @@ elif page == "S3":
         trigger_label="S3",
         button_label=None  # We'll use ShadCN button below
     )
+    
     if ui.button(text="Trigger S3 Extract", key="trigger_s3_btn"):
         with st.spinner("Triggering S3 extract and waiting for backend to finish..."):
             trigger_extract(f"{API_BASE}/extract-s3", "S3")
             time.sleep(2)
         st.session_state["refresh_s3"] = True
+    
     st.subheader("S3 Items Table")
     if not df.empty and "large_text" in df.columns:
         parsed = df["large_text"].str.split("|", n=3, expand=True)
@@ -217,6 +344,9 @@ elif page == "S3":
         st.dataframe(parsed, use_container_width=True)
     else:
         st.write("No S3 log data available.")
+    
+    # Use the reusable DLQ controls function
+    render_dlq_controls("extract-s3", "refresh_s3")
 elif page == "Datadog":
     st.title("Datadog View")
     df = handle_refresh_and_fetch(
@@ -241,6 +371,9 @@ elif page == "Datadog":
         st.dataframe(parsed_logs, use_container_width=True)
     else:
         st.write("No Datadog log data available.")
+    
+    # Use the reusable DLQ controls function
+    render_dlq_controls("extract-datadog", "refresh_datadog")
 elif page == "Connector analytics":
     # Modern animated banner
     st.markdown("""
