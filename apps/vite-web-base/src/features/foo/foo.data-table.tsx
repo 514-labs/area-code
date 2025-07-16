@@ -11,6 +11,8 @@ import {
   IconArrowUp,
   IconArrowDown,
   IconArrowsSort,
+  IconDotsVertical,
+  IconEdit,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -23,6 +25,7 @@ import {
   SortingState,
   useReactTable,
   VisibilityState,
+  Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { Foo, FooStatus } from "@workspace/models";
@@ -41,6 +44,23 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@workspace/ui/components/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import {
@@ -59,7 +79,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
 
 const getStatusIcon = (status: FooStatus) => {
@@ -100,7 +120,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  column: Column<Foo, unknown>;
   children: ReactNode;
   className?: string;
 }) => {
@@ -340,9 +360,15 @@ const fetchFoos = async (
 export function FooDataTable({
   fetchApiEndpoint,
   disableCache = false,
+  selectableRows = false,
+  deleteApiEndpoint,
+  editApiEndpoint,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
+  selectableRows?: boolean;
+  deleteApiEndpoint?: string;
+  editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -353,6 +379,8 @@ export function FooDataTable({
     pageSize: 10,
   });
   const [queryTime, setQueryTime] = useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Reset pagination and state when endpoint changes
   useEffect(() => {
@@ -366,6 +394,7 @@ export function FooDataTable({
     data: fooResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: [
       "foos",
@@ -400,9 +429,63 @@ export function FooDataTable({
   const data = fooResponse?.data || [];
   const serverPagination = fooResponse?.pagination;
 
+  // Create actions column if editApiEndpoint is provided
+  const actionsColumn: ColumnDef<Foo> = {
+    id: "actions",
+    cell: ({ row }) => {
+      const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+      return (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+                size="icon"
+              >
+                <IconDotsVertical />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem
+                onClick={() => setIsDrawerOpen(true)}
+                className="cursor-pointer"
+              >
+                <IconEdit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <TableCellViewer
+            item={row.original}
+            editApiEndpoint={editApiEndpoint}
+            onSave={() => refetch()}
+            isOpen={isDrawerOpen}
+            onOpenChange={setIsDrawerOpen}
+          />
+        </>
+      );
+    },
+    enableSorting: false,
+    enableHiding: false,
+  };
+
+  // Conditionally include columns based on props
+  let availableColumns = selectableRows
+    ? columns
+    : columns.filter((col) => col.id !== "select");
+
+  // Add actions column if editApiEndpoint is provided
+  if (editApiEndpoint) {
+    availableColumns = [...availableColumns, actionsColumn];
+  }
+
   const table = useReactTable({
     data,
-    columns,
+    columns: availableColumns,
     state: {
       sorting,
       columnVisibility,
@@ -411,7 +494,7 @@ export function FooDataTable({
       pagination,
     },
     getRowId: (row) => row.id,
-    enableRowSelection: true,
+    enableRowSelection: selectableRows,
     onRowSelectionChange: setRowSelection,
     onSortingChange: (updater) => {
       setSorting(updater);
@@ -432,6 +515,42 @@ export function FooDataTable({
       ? Math.ceil(serverPagination.total / pagination.pageSize)
       : 0,
   });
+
+  // Delete functionality
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const selectedFoos = selectedRows.map((row) => row.original);
+
+  const handleDelete = async () => {
+    if (!deleteApiEndpoint || selectedFoos.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const selectedIds = selectedFoos.map((foo) => foo.id);
+      const response = await fetch(deleteApiEndpoint, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete rows");
+      }
+
+      // Reset selection and close dialog
+      setRowSelection({});
+      setIsDeleteDialogOpen(false);
+
+      // Refetch data to update the table
+      await refetch();
+    } catch (error) {
+      console.error("Delete error:", error);
+      // You might want to add toast notification here
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="w-full flex-col justify-start gap-6">
@@ -470,10 +589,11 @@ export function FooDataTable({
           {queryTime !== null && (
             <div className="text-green-600">
               Latest query:{" "}
-              {(queryTime || 0).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              <NumericFormat
+                value={Math.round(queryTime || 0)}
+                displayType="text"
+                thousandSeparator=","
+              />
               ms
             </div>
           )}
@@ -558,11 +678,59 @@ export function FooDataTable({
           </Table>
         </div>
         <div className="flex items-center justify-between px-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
+          {selectableRows && (
+            <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+              {deleteApiEndpoint && selectedFoos.length > 0 ? (
+                <AlertDialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={setIsDeleteDialogOpen}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      Delete {selectedFoos.length} selected row
+                      {selectedFoos.length === 1 ? "" : "s"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the following items:
+                        <div className="mt-3 p-3 bg-muted rounded-md max-h-40 overflow-y-auto">
+                          <ul className="list-disc list-inside space-y-1">
+                            {selectedFoos.map((foo) => (
+                              <li key={foo.id} className="text-sm">
+                                {foo.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive hover:bg-destructive/90 cursor-pointer"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <>
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </>
+              )}
+            </div>
+          )}
+          <div
+            className={`flex items-center gap-8 ${selectableRows ? "w-full lg:w-fit" : "w-full justify-end"}`}
+          >
             <div className="hidden items-center gap-2 lg:flex">
               <Label htmlFor="rows-per-page" className="text-sm font-medium">
                 Rows per page
@@ -588,8 +756,20 @@ export function FooDataTable({
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+              <span>
+                Page{" "}
+                <NumericFormat
+                  value={table.getState().pagination.pageIndex + 1}
+                  displayType="text"
+                  thousandSeparator=","
+                />{" "}
+                of{" "}
+                <NumericFormat
+                  value={table.getPageCount()}
+                  displayType="text"
+                  thousandSeparator=","
+                />
+              </span>
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
@@ -639,31 +819,113 @@ export function FooDataTable({
   );
 }
 
-function TableCellViewer({ item }: { item: Foo }) {
+function TableCellViewer({
+  item,
+  editApiEndpoint,
+  onSave,
+  triggerElement,
+  isOpen,
+  onOpenChange,
+}: {
+  item: Foo;
+  editApiEndpoint?: string;
+  onSave?: () => void;
+  triggerElement?: ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const isMobile = useIsMobile();
+  const [isSaving, setIsSaving] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSave = async (formData: FormData) => {
+    if (!editApiEndpoint) return;
+
+    setIsSaving(true);
+    try {
+      const updatedItem = {
+        ...item,
+        name: formData.get("name") as string,
+        description: formData.get("description") as string,
+        status: formData.get("status") as string,
+        priority: parseInt(formData.get("priority") as string),
+        score: parseFloat(formData.get("score") as string),
+        isActive: formData.get("isActive") === "on",
+        tags: (formData.get("tags") as string)
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag),
+        largeText: formData.get("largeText") as string,
+      };
+
+      const response = await fetch(`${editApiEndpoint}/${item.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedItem),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update item");
+      }
+
+      // Close the drawer on success
+      onOpenChange?.(false);
+      // Refresh the data
+      onSave?.();
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
-      <DrawerTrigger asChild>
-        <Button variant="link" className="text-foreground w-fit px-0 text-left">
-          {item.name}
-        </Button>
-      </DrawerTrigger>
+    <Drawer
+      direction={isMobile ? "bottom" : "right"}
+      open={isOpen}
+      onOpenChange={onOpenChange}
+    >
+      {triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>{triggerElement}</DrawerTrigger>
+      )}
+      {!triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>
+          <Button
+            variant="link"
+            className="text-foreground w-fit px-0 text-left"
+          >
+            {item.name}
+          </Button>
+        </DrawerTrigger>
+      )}
       <DrawerContent>
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.name}</DrawerTitle>
           <DrawerDescription>Foo details - ID: {item.id}</DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-          <form className="flex flex-col gap-4">
+          <form
+            ref={formRef}
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (editApiEndpoint) {
+                const formData = new FormData(e.currentTarget);
+                handleSave(formData);
+              }
+            }}
+          >
             <div className="flex flex-col gap-3">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" defaultValue={item.name} />
+              <Input id="name" name="name" defaultValue={item.name} />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
+                name="description"
                 defaultValue={item.description || ""}
                 placeholder="No description provided"
               />
@@ -671,7 +933,7 @@ function TableCellViewer({ item }: { item: Foo }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
                 <Label htmlFor="status">Status</Label>
-                <Select defaultValue={item.status}>
+                <Select name="status" defaultValue={item.status}>
                   <SelectTrigger id="status" className="w-full">
                     <SelectValue placeholder="Select a status" />
                   </SelectTrigger>
@@ -687,6 +949,7 @@ function TableCellViewer({ item }: { item: Foo }) {
                 <Label htmlFor="priority">Priority</Label>
                 <Input
                   id="priority"
+                  name="priority"
                   type="number"
                   defaultValue={item.priority}
                 />
@@ -697,13 +960,18 @@ function TableCellViewer({ item }: { item: Foo }) {
                 <Label htmlFor="score">Score</Label>
                 <Input
                   id="score"
+                  name="score"
                   type="number"
                   step="0.01"
                   defaultValue={item.score}
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox id="isActive" defaultChecked={item.isActive} />
+                <Checkbox
+                  id="isActive"
+                  name="isActive"
+                  defaultChecked={item.isActive}
+                />
                 <Label htmlFor="isActive">Is Active</Label>
               </div>
             </div>
@@ -711,13 +979,19 @@ function TableCellViewer({ item }: { item: Foo }) {
               <Label htmlFor="tags">Tags</Label>
               <Input
                 id="tags"
+                name="tags"
                 defaultValue={item.tags.join(", ")}
                 placeholder="Comma-separated tags"
               />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="largeText">Large Text</Label>
-              <Textarea id="largeText" defaultValue={item.largeText} rows={4} />
+              <Textarea
+                id="largeText"
+                name="largeText"
+                defaultValue={item.largeText}
+                rows={4}
+              />
             </div>
             <div className="flex flex-col gap-3">
               <Label>Metadata</Label>
@@ -744,7 +1018,29 @@ function TableCellViewer({ item }: { item: Foo }) {
           </form>
         </div>
         <DrawerFooter>
-          <Button>Save Changes</Button>
+          {editApiEndpoint ? (
+            <Button
+              disabled={isSaving}
+              onClick={(e) => {
+                e.preventDefault();
+                if (formRef.current) {
+                  const formData = new FormData(formRef.current);
+                  handleSave(formData);
+                }
+              }}
+            >
+              {isSaving ? (
+                <>
+                  <IconLoader className="animate-spin h-4 w-4 mr-2" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          ) : (
+            <Button disabled>View Only</Button>
+          )}
           <DrawerClose asChild>
             <Button variant="outline">Close</Button>
           </DrawerClose>

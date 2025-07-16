@@ -44,11 +44,14 @@ function TransactionalFooDataTable({
 }) {
   const API_BASE = getTransactionApiBase();
   const fetchApiEndpoint = `${API_BASE}/foo`;
+  const editApiEndpoint = `${API_BASE}/foo`;
 
   return (
     <FooDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
+      selectableRows={true}
+      editApiEndpoint={editApiEndpoint}
     />
   );
 }

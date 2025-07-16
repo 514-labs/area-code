@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { eq, sql, asc, desc } from "drizzle-orm";
+import { eq, sql, asc, desc, inArray } from "drizzle-orm";
 import { db } from "../database/connection";
 import {
   foo,
@@ -7,6 +7,7 @@ import {
   type CreateFoo,
   type UpdateFoo,
   type DbFoo,
+  type NewDbFoo,
 } from "../database/schema";
 import { FooStatus } from "@workspace/models";
 
@@ -29,23 +30,42 @@ function getModelFromDBRow(dbFoo: DbFoo): Foo {
 }
 
 // Convert API data to database format
-function apiToDbFoo(apiData: any): any {
-  const dbData: any = { ...apiData };
+function apiToDbFoo(apiData: CreateFoo | UpdateFoo): Partial<NewDbFoo> {
+  const dbData: Partial<NewDbFoo> = {};
+
+  // Copy over basic properties
+  if ("name" in apiData && apiData.name !== undefined) {
+    dbData.name = apiData.name;
+  }
+  if (apiData.description !== undefined) {
+    dbData.description = apiData.description;
+  }
+  if (apiData.status !== undefined) {
+    dbData.status = apiData.status;
+  }
+  if (apiData.priority !== undefined) {
+    dbData.priority = apiData.priority;
+  }
+  if (apiData.isActive !== undefined) {
+    dbData.isActive = apiData.isActive;
+  }
+  if (apiData.metadata !== undefined) {
+    dbData.metadata = apiData.metadata;
+  }
+  if (apiData.largeText !== undefined) {
+    dbData.largeText = apiData.largeText;
+  }
 
   // Convert score from number to string for database
-  if (typeof dbData.score === "number") {
-    dbData.score = dbData.score.toString();
+  if (apiData.score !== undefined && typeof apiData.score === "number") {
+    dbData.score = apiData.score.toString();
   }
 
   // Ensure tags is properly handled as array
-  if (dbData.tags !== undefined && dbData.tags !== null) {
-    if (typeof dbData.tags === "string") {
-      // If it's a string, convert to array
-      dbData.tags = dbData.tags
-        .split(",")
-        .map((tag: string) => tag.trim())
-        .filter(Boolean);
-    } else if (!Array.isArray(dbData.tags)) {
+  if (apiData.tags !== undefined && apiData.tags !== null) {
+    if (Array.isArray(apiData.tags)) {
+      dbData.tags = apiData.tags;
+    } else {
       // If it's not an array, make it an empty array
       dbData.tags = [];
     }
@@ -228,7 +248,8 @@ export async function fooRoutes(fastify: FastifyInstance) {
 
         const convertedFoo = getModelFromDBRow(fooItem[0]);
         return reply.send(convertedFoo);
-      } catch (error) {
+      } catch (err) {
+        console.error("Fetch error:", err);
         return reply.status(500).send({ error: "Failed to fetch foo" });
       }
     }
@@ -237,7 +258,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
   // Create new foo
   fastify.post<{
     Body: CreateFoo;
-    Reply: Foo | { error: string; details?: string; received?: any };
+    Reply: Foo | { error: string; details?: string; received?: CreateFoo };
   }>("/foo", async (request, reply) => {
     try {
       console.log(
@@ -249,10 +270,12 @@ export async function fooRoutes(fastify: FastifyInstance) {
       const dbData = apiToDbFoo(request.body);
 
       // Manually ensure all types are correct for database insert
-      const insertData = {
-        name: dbData.name,
-        description: dbData.description || null,
-        status: dbData.status || "active",
+      const insertData: NewDbFoo = {
+        name: dbData.name || request.body.name,
+        description: dbData.description ?? null,
+        status:
+          (dbData.status as "active" | "inactive" | "pending" | "archived") ||
+          "active",
         priority: dbData.priority || 1,
         isActive: dbData.isActive !== undefined ? dbData.isActive : true,
         metadata: dbData.metadata || {},
@@ -266,11 +289,11 @@ export async function fooRoutes(fastify: FastifyInstance) {
 
       const convertedFoo = getModelFromDBRow(newFoo[0]);
       return reply.status(201).send(convertedFoo);
-    } catch (error) {
-      console.error("Validation error:", error);
+    } catch (err) {
+      console.error("Validation error:", err);
       return reply.status(400).send({
         error: "Invalid foo data",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: err instanceof Error ? err.message : "Unknown error",
         received: request.body,
       });
     }
@@ -287,7 +310,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
       const dbData = apiToDbFoo(request.body);
 
       // Manually ensure all types are correct for database update
-      const updateData: any = {
+      const updateData: Partial<NewDbFoo> = {
         updatedAt: new Date(),
       };
 
@@ -318,7 +341,8 @@ export async function fooRoutes(fastify: FastifyInstance) {
 
       const convertedFoo = getModelFromDBRow(updatedFoo[0]);
       return reply.send(convertedFoo);
-    } catch (error) {
+    } catch (err) {
+      console.error("Update error:", err);
       return reply.status(400).send({ error: "Failed to update foo" });
     }
   });
@@ -337,8 +361,42 @@ export async function fooRoutes(fastify: FastifyInstance) {
       }
 
       return reply.send({ success: true });
-    } catch (error) {
+    } catch (err) {
+      console.error("Delete error:", err);
       return reply.status(500).send({ error: "Failed to delete foo" });
+    }
+  });
+
+  // Bulk delete foo items
+  fastify.delete<{
+    Body: { ids: string[] };
+    Reply: { success: boolean; deletedCount: number } | { error: string };
+  }>("/foo", async (request, reply) => {
+    try {
+      const { ids } = request.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return reply.status(400).send({ error: "Invalid or empty ids array" });
+      }
+
+      // Validate that all IDs are strings
+      if (!ids.every((id) => typeof id === "string")) {
+        return reply.status(400).send({ error: "All IDs must be strings" });
+      }
+
+      // Delete multiple foo items using the inArray helper from drizzle-orm
+      const deletedFoos = await db
+        .delete(foo)
+        .where(inArray(foo.id, ids))
+        .returning();
+
+      return reply.send({
+        success: true,
+        deletedCount: deletedFoos.length,
+      });
+    } catch (err) {
+      console.error("Error in bulk delete:", err);
+      return reply.status(500).send({ error: "Failed to delete foo items" });
     }
   });
 }

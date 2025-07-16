@@ -22,11 +22,16 @@ function TransactionalBarDataTable({
 }) {
   const API_BASE = getTransactionApiBase();
   const fetchApiEndpoint = `${API_BASE}/bar`;
+  const deleteApiEndpoint = `${API_BASE}/bar`;
+  const editApiEndpoint = `${API_BASE}/bar`;
 
   return (
     <BarDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
+      selectableRows={true}
+      deleteApiEndpoint={deleteApiEndpoint}
+      editApiEndpoint={editApiEndpoint}
     />
   );
 }

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -8,6 +9,8 @@ import {
   IconArrowDown,
   IconArrowsSort,
   IconLoader,
+  IconDotsVertical,
+  IconEdit,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -32,6 +35,36 @@ interface Bar extends BaseBar {
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@workspace/ui/components/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
 import {
   Select,
   SelectContent,
@@ -234,9 +267,15 @@ const columns: ColumnDef<Bar>[] = [
 export function BarDataTable({
   fetchApiEndpoint,
   disableCache = false,
+  selectableRows = false,
+  deleteApiEndpoint,
+  editApiEndpoint,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
+  selectableRows?: boolean;
+  deleteApiEndpoint?: string;
+  editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -250,6 +289,8 @@ export function BarDataTable({
     pageSize: 10,
   });
   const [queryTime, setQueryTime] = React.useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   // Reset pagination and state when endpoint changes
   React.useEffect(() => {
@@ -263,6 +304,7 @@ export function BarDataTable({
     data: barResponse,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: [
       "bars",
@@ -297,9 +339,63 @@ export function BarDataTable({
   const data = barResponse?.data || [];
   const serverPagination = barResponse?.pagination;
 
+  // Create actions column if editApiEndpoint is provided
+  const actionsColumn: ColumnDef<Bar> = {
+    id: "actions",
+    cell: ({ row }) => {
+      const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
+
+      return (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+                size="icon"
+              >
+                <IconDotsVertical />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem
+                onClick={() => setIsDrawerOpen(true)}
+                className="cursor-pointer"
+              >
+                <IconEdit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <BarCellViewer
+            item={row.original}
+            editApiEndpoint={editApiEndpoint}
+            onSave={() => refetch()}
+            isOpen={isDrawerOpen}
+            onOpenChange={setIsDrawerOpen}
+          />
+        </>
+      );
+    },
+    enableSorting: false,
+    enableHiding: false,
+  };
+
+  // Conditionally include columns based on props
+  let availableColumns = selectableRows
+    ? columns
+    : columns.filter((col) => col.id !== "select");
+
+  // Add actions column if editApiEndpoint is provided
+  if (editApiEndpoint) {
+    availableColumns = [...availableColumns, actionsColumn];
+  }
+
   const table = useReactTable({
     data,
-    columns,
+    columns: availableColumns,
     state: {
       sorting,
       columnVisibility,
@@ -308,7 +404,7 @@ export function BarDataTable({
       pagination,
     },
     getRowId: (row) => row.id,
-    enableRowSelection: true,
+    enableRowSelection: selectableRows,
     onRowSelectionChange: setRowSelection,
     onSortingChange: (updater) => {
       setSorting(updater);
@@ -329,6 +425,42 @@ export function BarDataTable({
       ? Math.ceil(serverPagination.total / pagination.pageSize)
       : 0,
   });
+
+  // Delete functionality
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const selectedBars = selectedRows.map((row) => row.original);
+
+  const handleDelete = async () => {
+    if (!deleteApiEndpoint || selectedBars.length === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const selectedIds = selectedBars.map((bar) => bar.id);
+      const response = await fetch(deleteApiEndpoint, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete rows");
+      }
+
+      // Reset selection and close dialog
+      setRowSelection({});
+      setIsDeleteDialogOpen(false);
+
+      // Refetch data to update the table
+      await refetch();
+    } catch (error) {
+      console.error("Delete error:", error);
+      // You might want to add toast notification here
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="w-full flex-col justify-start gap-6">
@@ -431,11 +563,59 @@ export function BarDataTable({
           </Table>
         </div>
         <div className="flex items-center justify-between px-2">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex items-center space-x-6 lg:space-x-8">
+          {selectableRows && (
+            <div className="flex-1 text-sm text-muted-foreground">
+              {deleteApiEndpoint && selectedBars.length > 0 ? (
+                <AlertDialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={setIsDeleteDialogOpen}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      Delete {selectedBars.length} selected row
+                      {selectedBars.length === 1 ? "" : "s"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the following items:
+                        <div className="mt-3 p-3 bg-muted rounded-md max-h-40 overflow-y-auto">
+                          <ul className="list-disc list-inside space-y-1">
+                            {selectedBars.map((bar) => (
+                              <li key={bar.id} className="text-sm">
+                                {bar.label || "Untitled Bar"}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <>
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </>
+              )}
+            </div>
+          )}
+          <div
+            className={`flex items-center space-x-6 lg:space-x-8 ${!selectableRows ? "w-full justify-end" : ""}`}
+          >
             <div className="flex items-center space-x-2">
               <p className="text-sm font-medium">Rows per page</p>
               <Select
@@ -504,5 +684,200 @@ export function BarDataTable({
         </div>
       </div>
     </div>
+  );
+}
+
+function BarCellViewer({
+  item,
+  editApiEndpoint,
+  onSave,
+  triggerElement,
+  isOpen,
+  onOpenChange,
+}: {
+  item: Bar;
+  editApiEndpoint?: string;
+  onSave?: () => void;
+  triggerElement?: React.ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const isMobile = useIsMobile();
+  const [isSaving, setIsSaving] = React.useState(false);
+  const formRef = React.useRef<HTMLFormElement>(null);
+
+  const handleSave = async (formData: FormData) => {
+    if (!editApiEndpoint) return;
+
+    setIsSaving(true);
+    try {
+      const updatedItem = {
+        id: item.id,
+        fooId: formData.get("fooId") as string,
+        value: parseInt(formData.get("value") as string),
+        label: (formData.get("label") as string) || null,
+        notes: (formData.get("notes") as string) || null,
+        isEnabled: formData.get("isEnabled") === "on",
+      };
+
+      console.log("Sending update request:", updatedItem);
+
+      const response = await fetch(`${editApiEndpoint}/${item.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedItem),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `Failed to update item: ${response.status} ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("Update successful:", result);
+
+      // Close the drawer on success
+      onOpenChange?.(false);
+      // Refresh the data
+      onSave?.();
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Drawer
+      direction={isMobile ? "bottom" : "right"}
+      open={isOpen}
+      onOpenChange={onOpenChange}
+    >
+      {triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>{triggerElement}</DrawerTrigger>
+      )}
+      {!triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>
+          <Button
+            variant="link"
+            className="text-foreground w-fit px-0 text-left"
+          >
+            {item.label || "Untitled Bar"}
+          </Button>
+        </DrawerTrigger>
+      )}
+      <DrawerContent>
+        <DrawerHeader className="gap-1">
+          <DrawerTitle>{item.label || "Untitled Bar"}</DrawerTitle>
+          <DrawerDescription>Bar details - ID: {item.id}</DrawerDescription>
+        </DrawerHeader>
+        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
+          <form
+            ref={formRef}
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (editApiEndpoint) {
+                const formData = new FormData(e.currentTarget);
+                handleSave(formData);
+              }
+            }}
+          >
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="label">Label</Label>
+              <Input
+                id="label"
+                name="label"
+                defaultValue={item.label || ""}
+                placeholder="Enter label"
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="value">Value</Label>
+              <Input
+                id="value"
+                name="value"
+                type="number"
+                defaultValue={item.value}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="fooId">Associated Foo ID</Label>
+              <Input
+                id="fooId"
+                name="fooId"
+                defaultValue={item.fooId}
+                placeholder="Foo ID"
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                defaultValue={item.notes || ""}
+                placeholder="Add notes..."
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="isEnabled"
+                name="isEnabled"
+                defaultChecked={item.isEnabled}
+              />
+              <Label htmlFor="isEnabled">Is Enabled</Label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                <Label>Created At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.createdAt).toLocaleString()}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Label>Updated At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.updatedAt).toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <DrawerFooter>
+          {editApiEndpoint ? (
+            <Button
+              disabled={isSaving}
+              onClick={(e) => {
+                e.preventDefault();
+                if (formRef.current) {
+                  const formData = new FormData(formRef.current);
+                  handleSave(formData);
+                }
+              }}
+            >
+              {isSaving ? (
+                <>
+                  <IconLoader className="animate-spin h-4 w-4 mr-2" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          ) : (
+            <Button disabled>View Only</Button>
+          )}
+          <DrawerClose asChild>
+            <Button variant="outline">Close</Button>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
