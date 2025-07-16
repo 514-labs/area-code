@@ -24,6 +24,13 @@
 // Need help? Check out the quickstart guide:
 // → docs.fiveonefour.com/moose/getting-started/quickstart
 
+import { Foo } from "@workspace/models/foo";
+import { Bar } from "@workspace/models/bar";
+import { OlapTable } from "@514labs/moose-lib";
+
+export const FooTable = new OlapTable<Foo>("Foo");
+export const BarTable = new OlapTable<Bar>("Bar");
+
 export * from "./pipelines/eventsPipeline";
 export * from "./apis/FooConsumptionApi";
 export * from "./apis/BarConsumptionApi";
