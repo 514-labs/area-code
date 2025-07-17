@@ -97,7 +97,7 @@ function BarManagement() {
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-8">
         <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
     </div>
