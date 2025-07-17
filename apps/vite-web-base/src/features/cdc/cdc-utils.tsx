@@ -102,9 +102,15 @@ export function createCDCColumns<
     {
       accessorKey: "cdc_operation",
       header: ({ column }) => (
-        <SortableHeader column={column}>Batch Op</SortableHeader>
+        <SortableHeader column={column} className="ml-1">
+          Batch Op
+        </SortableHeader>
       ),
-      cell: ({ row }) => getCDCOperationBadge(row.original.cdc_operation),
+      cell: ({ row }) => (
+        <div className="pl-2">
+          {getCDCOperationBadge(row.original.cdc_operation)}
+        </div>
+      ),
       enableSorting: true,
     },
     {

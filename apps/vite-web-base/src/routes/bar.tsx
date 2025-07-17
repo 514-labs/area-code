@@ -14,6 +14,7 @@ import {
   TransactionalHighlightWrapper,
   AnalyticalHighlightWrapper,
 } from "@/features/origin-highlights/origin-highlights-wrappers";
+import { BarCDCDataTable } from "@/features/bar/bar.cdc-data-table";
 
 function TransactionalBarDataTable({
   cacheEnabled,
@@ -68,6 +69,22 @@ function AnalyticalConsumptionBarAverageValue({
   );
 }
 
+function AnalyticalBarCDCDataTable({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
+  const API_BASE = getAnalyticalConsumptionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/bar`;
+
+  return (
+    <BarCDCDataTable
+      fetchApiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
+}
+
 function BarManagement() {
   const { cacheEnabled } = useFrontendCaching();
 
@@ -97,7 +114,11 @@ function BarManagement() {
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-8">
+      <AnalyticalHighlightWrapper className="col-span-12">
+        <AnalyticalBarCDCDataTable cacheEnabled={cacheEnabled} />
+      </AnalyticalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
     </div>

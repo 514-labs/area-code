@@ -80,6 +80,8 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table";
+import { format } from "date-fns";
+import { NumericFormat } from "react-number-format";
 
 interface Foo {
   id: string;
@@ -257,7 +259,7 @@ const columns: ColumnDef<Bar>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {new Date(row.original.created_at).toLocaleDateString()}
+        {format(new Date(row.original.created_at), "MMM d, yyyy h:mm a")}
       </div>
     ),
     enableSorting: true,
@@ -467,12 +469,28 @@ export function BarDataTable({
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
           <div>
-            Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
-            {Math.min(
-              serverPagination.offset + serverPagination.limit,
-              serverPagination.total
-            ).toLocaleString()}{" "}
-            of {serverPagination.total.toLocaleString()} items
+            Showing{" "}
+            <NumericFormat
+              value={serverPagination.offset + 1}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            to{" "}
+            <NumericFormat
+              value={Math.min(
+                serverPagination.offset + serverPagination.limit,
+                serverPagination.total
+              )}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            of{" "}
+            <NumericFormat
+              value={serverPagination.total}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            items
             {serverPagination.hasMore && " (more available)"}
             {sorting.length > 0 && (
               <span className="ml-2 text-blue-600">
@@ -482,7 +500,13 @@ export function BarDataTable({
           </div>
           {queryTime !== null && (
             <div className="text-green-600">
-              Latest query: {queryTime.toFixed(2)}ms
+              Latest query:{" "}
+              <NumericFormat
+                value={Math.round(queryTime || 0)}
+                displayType="text"
+                thousandSeparator=","
+              />
+              ms
             </div>
           )}
         </div>
@@ -572,8 +596,13 @@ export function BarDataTable({
                 >
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
-                      Delete {selectedBars.length} selected row
-                      {selectedBars.length === 1 ? "" : "s"}
+                      Delete{" "}
+                      <NumericFormat
+                        value={selectedBars.length}
+                        displayType="text"
+                        thousandSeparator=","
+                      />{" "}
+                      selected row{selectedBars.length === 1 ? "" : "s"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -607,8 +636,18 @@ export function BarDataTable({
                 </AlertDialog>
               ) : (
                 <>
-                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                  <NumericFormat
+                    value={table.getFilteredSelectedRowModel().rows.length}
+                    displayType="text"
+                    thousandSeparator=","
+                  />{" "}
+                  of{" "}
+                  <NumericFormat
+                    value={table.getFilteredRowModel().rows.length}
+                    displayType="text"
+                    thousandSeparator=","
+                  />{" "}
+                  row(s) selected.
                 </>
               )}
             </div>
@@ -638,9 +677,21 @@ export function BarDataTable({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              <span>
+                Page{" "}
+                <NumericFormat
+                  value={table.getState().pagination.pageIndex + 1}
+                  displayType="text"
+                  thousandSeparator=","
+                />{" "}
+                of{" "}
+                <NumericFormat
+                  value={table.getPageCount()}
+                  displayType="text"
+                  thousandSeparator=","
+                />
+              </span>
             </div>
             <div className="flex items-center space-x-2">
               <Button

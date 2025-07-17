@@ -27,7 +27,8 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { BarWithCDC } from "@workspace/models";
-import { formatTableDate } from "../../lib/date-utils";
+import { format } from "date-fns";
+import { NumericFormat } from "react-number-format";
 
 // Import shared CDC utilities
 import { createCDCColumns } from "../cdc/cdc-utils";
@@ -267,7 +268,7 @@ const createColumns = (): ColumnDef<BarWithCDC>[] => {
       ),
       cell: ({ row }) => (
         <div className="text-sm text-muted-foreground">
-          {formatTableDate(row.original.created_at)}
+          {format(new Date(row.original.created_at), "MMM d, yyyy h:mm a")}
         </div>
       ),
       enableSorting: true,
@@ -471,12 +472,28 @@ export function BarCDCDataTable({
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
           <div>
-            Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
-            {Math.min(
-              serverPagination.offset + serverPagination.limit,
-              serverPagination.total
-            ).toLocaleString()}{" "}
-            of {serverPagination.total.toLocaleString()} items
+            Showing{" "}
+            <NumericFormat
+              value={serverPagination.offset + 1}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            to{" "}
+            <NumericFormat
+              value={Math.min(
+                serverPagination.offset + serverPagination.limit,
+                serverPagination.total
+              )}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            of{" "}
+            <NumericFormat
+              value={serverPagination.total}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            items
             {serverPagination.hasMore && " (more available)"}
             {sorting.length > 0 && (
               <span className="ml-2 text-blue-600">
@@ -486,7 +503,13 @@ export function BarCDCDataTable({
           </div>
           {queryTime > 0 && (
             <div className="text-green-600">
-              Latest query: {queryTime.toFixed(2)}ms
+              Latest query:{" "}
+              <NumericFormat
+                value={Math.round(queryTime || 0)}
+                displayType="text"
+                thousandSeparator=","
+              />
+              ms
             </div>
           )}
         </div>
@@ -500,16 +523,21 @@ export function BarCDCDataTable({
               onConfirm={handleDeleteSelected}
               trigger={
                 <Button variant="destructive" size="sm">
-                  Delete {selectedBars.length} selected row
-                  {selectedBars.length === 1 ? "" : "s"}
+                  Delete{" "}
+                  <NumericFormat
+                    value={selectedBars.length}
+                    displayType="text"
+                    thousandSeparator=","
+                  />{" "}
+                  selected row{selectedBars.length === 1 ? "" : "s"}
                 </Button>
               }
             />
           </div>
         )}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
+        <div className="overflow-hidden rounded-lg border">
+          <Table key={fetchApiEndpoint}>
+            <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -574,11 +602,20 @@ export function BarCDCDataTable({
         <div className="flex-1 text-sm text-muted-foreground">
           {selectableRows && (
             <>
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
+              <NumericFormat
+                value={table.getFilteredSelectedRowModel().rows.length}
+                displayType="text"
+                thousandSeparator=","
+              />{" "}
+              of{" "}
+              <NumericFormat
+                value={table.getFilteredRowModel().rows.length}
+                displayType="text"
+                thousandSeparator=","
+              />{" "}
+              row(s) selected.
             </>
           )}
-          <span className="ml-4">Query time: {queryTime.toFixed(0)}ms</span>
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
@@ -603,9 +640,21 @@ export function BarCDCDataTable({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
+          <div className="flex w-fit items-center justify-center text-sm font-medium">
+            <span>
+              Page{" "}
+              <NumericFormat
+                value={table.getState().pagination.pageIndex + 1}
+                displayType="text"
+                thousandSeparator=","
+              />{" "}
+              of{" "}
+              <NumericFormat
+                value={table.getPageCount()}
+                displayType="text"
+                thousandSeparator=","
+              />
+            </span>
           </div>
           <div className="flex items-center space-x-2">
             <Button
@@ -726,8 +775,8 @@ function EditBarDialog({
         <Label htmlFor="is_enabled">Is Enabled</Label>
       </div>
       <div className="text-sm text-muted-foreground space-y-1">
-        <p>Created: {formatTableDate(bar.created_at)}</p>
-        <p>Updated: {formatTableDate(bar.updated_at)}</p>
+        <p>Created: {format(new Date(bar.created_at), "MMM d, yyyy h:mm a")}</p>
+        <p>Updated: {format(new Date(bar.updated_at), "MMM d, yyyy h:mm a")}</p>
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -849,13 +898,24 @@ function DeleteSelectedBarsDialog({
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete{" "}
-            {selectedCount} bar(s).
+            <NumericFormat
+              value={selectedCount}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            bar(s).
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm}>
-            Delete {selectedCount} Bar(s)
+            Delete{" "}
+            <NumericFormat
+              value={selectedCount}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            Bar(s)
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
