@@ -7,6 +7,7 @@ import {
 import { CSSProperties, ReactNode } from "react";
 import { navigationConfig } from "./navigation-config";
 import { AppHeader } from "./app-header";
+import AreaCodeLogo from "@/components/logos/area-code-logo";
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,6 +31,12 @@ export function Layout({ children }: LayoutProps) {
         navMain={navigationConfig.navMain}
         navSecondary={navigationConfig.navSecondary}
         user={navigationConfig.user}
+        topHero={
+          <a href="/" className="flex items-center gap-2">
+            <AreaCodeLogo className="w-[32.5px] h-[16px] text-black dark:text-white" />
+            <span className="text-base font-semibold">Area Code</span>
+          </a>
+        }
       />
       <SidebarInset>
         <AppHeader />
