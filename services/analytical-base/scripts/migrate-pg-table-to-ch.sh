@@ -244,6 +244,9 @@ declare -a COLUMN_NAMES=()
 declare -a COLUMN_TYPES=()
 declare -a COLUMN_POSITIONS=()
 
+# Track which column contains created_at for CDC timestamp
+CREATED_AT_COLUMN_POS=""
+
 # Read schema information
 while IFS=$'\t' read -r col_name data_type is_nullable col_default ordinal_pos; do
     # Skip empty lines
@@ -252,6 +255,11 @@ while IFS=$'\t' read -r col_name data_type is_nullable col_default ordinal_pos; 
     COLUMN_NAMES+=("$col_name")
     COLUMN_TYPES+=("$data_type")
     COLUMN_POSITIONS+=("$ordinal_pos")
+    
+    # Track created_at column position for CDC timestamp
+    if [ "$col_name" = "created_at" ]; then
+        CREATED_AT_COLUMN_POS="$ordinal_pos"
+    fi
     
     echo "  Column $ordinal_pos: $col_name ($data_type)"
 done < "$TEMP_DIR/schema_info.txt"
@@ -262,6 +270,12 @@ if [ ${#COLUMN_NAMES[@]} -eq 0 ]; then
 fi
 
 echo "✅ Found ${#COLUMN_NAMES[@]} columns"
+
+if [ -n "$CREATED_AT_COLUMN_POS" ]; then
+    echo "✅ Found created_at column at position $CREATED_AT_COLUMN_POS"
+else
+    echo "⚠️  No created_at column found - will use current timestamp for CDC"
+fi
 
 # Build dynamic SELECT query with type casting
 BUILD_SELECT_QUERY() {
@@ -422,9 +436,31 @@ BUILD_AWK_SCRIPT() {
         esac
     done
     
-    awk_script+="
+    # Add CDC fields required for ClickHouse tables
+    if [ -n "$CREATED_AT_COLUMN_POS" ]; then
+        # Use created_at value if available
+        awk_script+="
+    # Add CDC metadata fields (required for Moose CDC tables)
+    # Use the record ID as the CDC ID for consistency
+    printf \",\\\"cdc_id\\\":\\\"\" \$1 \"\\\"\";
+    printf \",\\\"cdc_operation\\\":\\\"INSERT\\\"\";
+    # Use created_at value (dynamically detected column) for cdc_timestamp
+    printf \",\\\"cdc_timestamp\\\":\\\"\" \$$CREATED_AT_COLUMN_POS \"\\\"\";
     printf \"}\\n\";
 }"
+    else
+        # Generate current timestamp if no created_at column
+        local current_timestamp=$(date -u +"%Y-%m-%d %H:%M:%S")
+        awk_script+="
+    # Add CDC metadata fields (required for Moose CDC tables)
+    # Use the record ID as the CDC ID for consistency
+    printf \",\\\"cdc_id\\\":\\\"\" \$1 \"\\\"\";
+    printf \",\\\"cdc_operation\\\":\\\"INSERT\\\"\";
+    # Use current timestamp since no created_at column exists
+    printf \",\\\"cdc_timestamp\\\":\\\"$current_timestamp\\\"\";
+    printf \"}\\n\";
+}"
+    fi
     
     echo "$awk_script"
 }

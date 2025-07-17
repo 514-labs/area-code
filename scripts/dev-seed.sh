@@ -291,19 +291,19 @@ EOSQL
     # Run drizzle migrations to recreate schema
     echo "📋 Running drizzle migrations to recreate schema..."
     cd "$PROJECT_ROOT/services/transactional-base"
-    if [ -f "src/scripts/migrate.ts" ]; then
-        echo "🔄 Running drizzle migration..."
-        npx tsx src/scripts/migrate.ts
-        if [ \$? -eq 0 ]; then
-            echo "✅ Database migrations completed successfully"
-        else
-            echo "❌ Database migration failed"
-            exit 1
+    
+    # Run migration SQL directly via docker exec (same approach as seeding)
+    echo "🔄 Running migration SQL directly..."
+    for migration_file in migrations/*.sql; do
+        if [ -f "\$migration_file" ]; then
+            filename=\$(basename "\$migration_file")
+            echo "  Applying: \$filename"
+            docker cp "\$migration_file" "\$DB_CONTAINER:/tmp/\$filename"
+            docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -f "/tmp/\$filename"
+            docker exec "\$DB_CONTAINER" rm -f "/tmp/\$filename"
         fi
-    else
-        echo "❌ Migration script not found at src/scripts/migrate.ts"
-        exit 1
-    fi
+    done
+    echo "✅ Database migrations completed successfully"
     
     # Verify schema exists
     echo "🔍 Verifying database schema was recreated..."
