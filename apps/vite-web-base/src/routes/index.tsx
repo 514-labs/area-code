@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import FooAverageScore from "@/features/foo/foo.average-score";
-import { FooDataTable } from "@/features/foo/foo.data-table";
 import {
   getAnalyticalConsumptionApiBase,
   getTransactionApiBase,
@@ -38,20 +37,18 @@ function AnalyticalFooAverageScore({
   );
 }
 
-function AnalyticalFooScoreOverTimeGraph({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
+function AnalyticalFooScoreOverTimeGraph() {
   const API_BASE = getAnalyticalConsumptionApiBase();
   const apiEndpoint = `${API_BASE}/foo-score-over-time`;
 
-  return (
-    <FooScoreOverTimeGraph
-      fetchApiEndpoint={apiEndpoint}
-      //disableCache={!cacheEnabled}
-    />
-  );
+  return <FooScoreOverTimeGraph fetchApiEndpoint={apiEndpoint} />;
+}
+
+function TransactionalFooScoreOverTimeGraph() {
+  const API_BASE = getTransactionApiBase();
+  const apiEndpoint = `${API_BASE}/foo/score-over-time`;
+
+  return <FooScoreOverTimeGraph fetchApiEndpoint={apiEndpoint} />;
 }
 
 function IndexPage() {
@@ -67,8 +64,12 @@ function IndexPage() {
         <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
+      <TransactionalHighlightWrapper className="col-span-12">
+        <TransactionalFooScoreOverTimeGraph />
+      </TransactionalHighlightWrapper>
+
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalFooScoreOverTimeGraph cacheEnabled={cacheEnabled} />
+        <AnalyticalFooScoreOverTimeGraph />
       </AnalyticalHighlightWrapper>
     </div>
   );
