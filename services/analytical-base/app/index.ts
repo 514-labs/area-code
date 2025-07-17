@@ -26,22 +26,27 @@
 
 import { Foo } from "@workspace/models/foo";
 import { Bar } from "@workspace/models/bar";
-import { IngestPipeline } from "@514labs/moose-lib";
+import { IngestPipeline, Key } from "@514labs/moose-lib";
 
-
-export const FooPipeline = new IngestPipeline<Foo>("Foo", {
+type FooOlapTable = Omit<Foo, "id"> & {
+  id: Key<string>;
+};
+export const FooPipeline = new IngestPipeline<FooOlapTable>("Foo", {
   table: true,
   stream: true,
   ingest: true,
 });
-export const BarPipeline = new IngestPipeline<Bar>("Bar", {
+
+type BarOlapTable = Omit<Bar, "id"> & {
+  id: Key<string>;
+};
+export const BarPipeline = new IngestPipeline<BarOlapTable>("Bar", {
   table: true,
   stream: true,
   ingest: true,
 });
 
- 
-
-export * from "./pipelines/eventsPipeline";
+//export * from "./pipelines/eventsPipeline";
 export * from "./apis/FooConsumptionApi";
 export * from "./apis/BarConsumptionApi";
+export * from "./apis/foo/score-over-time";

@@ -22,6 +22,11 @@ paths:
       responses:
         "200":
           description: Default Response
+  /api/foo/score-over-time:
+    get:
+      responses:
+        "200":
+          description: Default Response
   /api/foo:
     get:
       responses:

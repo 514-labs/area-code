@@ -114,6 +114,97 @@ export async function fooRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Get foo score over time with daily aggregations
+  fastify.get<{
+    Querystring: {
+      days?: string;
+    };
+    Reply:
+      | {
+          data: {
+            date: string;
+            averageScore: number;
+            totalCount: number;
+          }[];
+          dbQueryTime?: number;
+        }
+      | { error: string };
+  }>("/foo/score-over-time", async (request, reply) => {
+    try {
+      const days = parseInt(request.query.days || "90");
+
+      // Validate days parameter
+      if (days < 1 || days > 365) {
+        return reply
+          .status(400)
+          .send({ error: "Days must be between 1 and 365" });
+      }
+
+      const startTime = Date.now();
+
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      // Format dates for SQL (YYYY-MM-DD)
+      const startDateStr = startDate.toISOString().split("T")[0];
+      const endDateStr = endDate.toISOString().split("T")[0];
+
+      // Query to get daily score aggregations using PostgreSQL date functions
+      const result = await db
+        .select({
+          date: sql<string>`DATE(created_at)`,
+          averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
+          totalCount: sql<number>`COUNT(*)`,
+        })
+        .from(foo)
+        .where(
+          sql`DATE(created_at) >= ${startDateStr} 
+              AND DATE(created_at) <= ${endDateStr}
+              AND score IS NOT NULL`
+        )
+        .groupBy(sql`DATE(created_at)`)
+        .orderBy(sql`DATE(created_at) ASC`);
+
+      const endTime = Date.now();
+      const dbQueryTime = endTime - startTime;
+
+      // Fill in missing dates with zero values
+      const filledData: {
+        date: string;
+        averageScore: number;
+        totalCount: number;
+      }[] = [];
+
+      const currentDate = new Date(startDate);
+
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split("T")[0];
+        const existingData = result.find((r) => r.date === dateStr);
+
+        filledData.push({
+          date: dateStr,
+          averageScore:
+            Math.round((Number(existingData?.averageScore) || 0) * 100) / 100, // Round to 2 decimal places
+          totalCount: Number(existingData?.totalCount) || 0,
+        });
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      return reply.send({
+        data: filledData,
+        dbQueryTime,
+      });
+    } catch (error) {
+      console.error("Error calculating score over time:", error);
+      return reply
+        .status(500)
+        .send({ error: "Failed to calculate score over time" });
+    }
+  });
+
   // Get all foo items with pagination and sorting
   fastify.get<{
     Querystring: {
