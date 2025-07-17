@@ -3,9 +3,10 @@ from app.ingest.models import Foo, FooStatus
 from typing import Optional
 from pydantic import BaseModel
 
-# Query parameters model for the API
+# An API to get a Foo from the data warehouse.
+
 class FooQueryParams(BaseModel):
-    status: Optional[str] = None  # Changed from FooStatus to str
+    status: Optional[str] = None
     is_active: Optional[bool] = None
     limit: Optional[int] = 1000
     offset: Optional[int] = 0
@@ -62,7 +63,6 @@ def get_foo(client, params: FooQueryParams):
     
     return items
 
-# Create the consumption API for Foo data
 get_foo = ConsumptionApi[FooQueryParams, Foo](
     "getFoos",
     query_function=get_foo

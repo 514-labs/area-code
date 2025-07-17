@@ -2,6 +2,8 @@ from moose_lib import ConsumptionApi
 from pydantic import BaseModel
 from typing import Optional
 
+# An API to trigger a the s3 extract workflow.
+
 class ExtractS3QueryParams(BaseModel):
   batch_size: Optional[int] = 100
   fail_percentage: Optional[int] = 0
