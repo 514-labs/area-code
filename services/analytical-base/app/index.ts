@@ -48,5 +48,7 @@ export const BarPipeline = new IngestPipeline<BarWithCDC>("Bar", {
 
 
 export * from "./pipelines/eventsPipeline";
+ export * from "./views/foo";
 export * from "./apis/FooConsumptionApi";
 export * from "./apis/BarConsumptionApi";
+export * from "./apis/FooCurrentStateApi";

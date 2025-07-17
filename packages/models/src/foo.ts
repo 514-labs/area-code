@@ -35,7 +35,7 @@ export interface CreateFoo extends Pick<Foo, "name"> {
   status?: FooStatus;
   priority?: number;
   is_active?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   tags?: string[];
   score?: number;
   large_text?: string;
