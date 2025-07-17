@@ -15,7 +15,7 @@ export function TransactionalHighlightWrapper({
 
   return (
     <div
-      className={`${className} ${transactionalEnabled ? `ring-2 ${ORIGIN_HIGHLIGHT_COLORS.transactional.ring} rounded-lg` : ""}`}
+      className={`${className} ${transactionalEnabled ? `ring-2 ${ORIGIN_HIGHLIGHT_COLORS.transactional.ring} rounded-xl` : ""}`}
     >
       {children}
     </div>
@@ -30,7 +30,7 @@ export function AnalyticalHighlightWrapper({
 
   return (
     <div
-      className={`${className} ${analyticalEnabled ? `ring-2 ${ORIGIN_HIGHLIGHT_COLORS.analytical.ring} rounded-lg` : ""}`}
+      className={`${className} ${analyticalEnabled ? `ring-2 ${ORIGIN_HIGHLIGHT_COLORS.analytical.ring} rounded-xl` : ""}`}
     >
       {children}
     </div>
