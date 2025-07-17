@@ -4,6 +4,8 @@ from enum import Enum
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
+# Data models for our ingest pipelines.
+
 class FooStatus(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"

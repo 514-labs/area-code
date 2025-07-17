@@ -1,8 +1,11 @@
 from app.ingest.models import fooModel, barModel, Foo, Bar
 from moose_lib import DeadLetterModel, TransformConfig
 from datetime import datetime
+from typing import Optional
 
-def foo_to_bar(foo: Foo):
+# Transforms Foo to Bar with a way to force errors.
+
+def foo_to_bar(foo: Foo) -> Bar:
     if "fail" in foo.tags:
         raise ValueError(f"Transform failed for item {foo.id}: Item marked as failed")
 
@@ -27,8 +30,9 @@ fooModel.get_stream().add_transform(
     )
 )
 
+# Fixes the dead letter queue items from Foo to Bar
 
-def invalid_foo_to_bar(dead_letter: DeadLetterModel[Foo]):
+def invalid_foo_to_bar(dead_letter: DeadLetterModel[Foo]) -> Optional[Bar]:
     try:
         original_foo = dead_letter.as_typed()
 

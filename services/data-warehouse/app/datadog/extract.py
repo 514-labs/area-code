@@ -8,6 +8,8 @@ from typing import Optional
 import requests
 import json
 
+# A workflow that extracts Datadog data and sends it to the ingest API.
+
 class DatadogExtractParams(BaseModel):
     batch_size: Optional[int] = 100
     fail_percentage: Optional[int] = 0
