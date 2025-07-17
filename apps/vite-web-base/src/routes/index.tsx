@@ -10,6 +10,7 @@ import {
   AnalyticalHighlightWrapper,
 } from "../features/origin-highlights/origin-highlights-wrappers";
 import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph";
+import { FooDataTable } from "@/features/foo/foo.data-table";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -51,6 +52,43 @@ function TransactionalFooScoreOverTimeGraph() {
   return <FooScoreOverTimeGraph fetchApiEndpoint={apiEndpoint} />;
 }
 
+function TransactionalFooDataTable({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/foo`;
+  const deleteApiEndpoint = `${API_BASE}/foo`;
+  const editApiEndpoint = `${API_BASE}/foo`;
+
+  return (
+    <FooDataTable
+      fetchApiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+      selectableRows={true}
+      deleteApiEndpoint={deleteApiEndpoint}
+      editApiEndpoint={editApiEndpoint}
+    />
+  );
+}
+
+function AnalyticalConsumptionFooDataTable({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
+  const API_BASE = getAnalyticalConsumptionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/foo`;
+
+  return (
+    <FooDataTable
+      fetchApiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
+}
+
 function IndexPage() {
   const { cacheEnabled } = useFrontendCaching();
 
@@ -70,6 +108,14 @@ function IndexPage() {
 
       <AnalyticalHighlightWrapper className="col-span-12">
         <AnalyticalFooScoreOverTimeGraph />
+      </AnalyticalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12">
+        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
+      </TransactionalHighlightWrapper>
+
+      <AnalyticalHighlightWrapper className="col-span-12">
+        <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
     </div>
   );
