@@ -10,6 +10,7 @@ import {
   TransactionalHighlightWrapper,
   AnalyticalHighlightWrapper,
 } from "../features/origin-highlights/origin-highlights-wrappers";
+import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -24,7 +25,7 @@ function TransactionalFooAverageScore({
   );
 }
 
-function AnalyticalConsumptionFooAverageScore({
+function AnalyticalFooAverageScore({
   cacheEnabled,
 }: {
   cacheEnabled: boolean;
@@ -37,37 +38,18 @@ function AnalyticalConsumptionFooAverageScore({
   );
 }
 
-function TransactionalFooDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getTransactionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
-  const editApiEndpoint = `${API_BASE}/foo`;
-
-  return (
-    <FooDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-      selectableRows={true}
-      editApiEndpoint={editApiEndpoint}
-    />
-  );
-}
-
-function AnalyticalConsumptionFooDataTable({
+function AnalyticalFooScoreOverTimeGraph({
   cacheEnabled,
 }: {
   cacheEnabled: boolean;
 }) {
   const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
+  const apiEndpoint = `${API_BASE}/foo-score-over-time`;
 
   return (
-    <FooDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
+    <FooScoreOverTimeGraph
+      fetchApiEndpoint={apiEndpoint}
+      //disableCache={!cacheEnabled}
     />
   );
 }
@@ -82,16 +64,12 @@ function IndexPage() {
       </TransactionalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
-        <AnalyticalConsumptionFooAverageScore cacheEnabled={cacheEnabled} />
+        <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
+        <AnalyticalFooScoreOverTimeGraph cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
-
-      <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
-      </TransactionalHighlightWrapper>
     </div>
   );
 }
