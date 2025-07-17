@@ -11,6 +11,8 @@ import {
 } from "../features/origin-highlights/origin-highlights-wrappers";
 import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph";
 import { FooDataTable } from "@/features/foo/foo.data-table";
+import BarAverageValue from "@/features/bar/bar.average-value";
+import { BarDataTable } from "@/features/bar/bar.data-table";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -89,6 +91,59 @@ function AnalyticalConsumptionFooDataTable({
   );
 }
 
+function TransactionalBarAverageValue({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/bar/average-value`;
+
+  return (
+    <BarAverageValue
+      apiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
+}
+
+function AnalyticalConsumptionBarAverageValue({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
+  const API_BASE = getAnalyticalConsumptionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/bar-average-value`;
+
+  return (
+    <BarAverageValue
+      apiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
+}
+
+function TransactionalBarDataTable({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/bar`;
+  const deleteApiEndpoint = `${API_BASE}/bar`;
+  const editApiEndpoint = `${API_BASE}/bar`;
+
+  return (
+    <BarDataTable
+      fetchApiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+      selectableRows={true}
+      deleteApiEndpoint={deleteApiEndpoint}
+      editApiEndpoint={editApiEndpoint}
+    />
+  );
+}
+
 function IndexPage() {
   const { cacheEnabled } = useFrontendCaching();
 
@@ -100,6 +155,10 @@ function IndexPage() {
 
       <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
         <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
+      </AnalyticalHighlightWrapper>
+
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+        <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
@@ -117,6 +176,14 @@ function IndexPage() {
       <AnalyticalHighlightWrapper className="col-span-12">
         <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+        <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
+      </TransactionalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-8">
+        <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
+      </TransactionalHighlightWrapper>
     </div>
   );
 }
