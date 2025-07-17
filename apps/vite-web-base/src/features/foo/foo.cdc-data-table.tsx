@@ -28,7 +28,7 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { FooStatus, Foo } from "@workspace/models";
+import { FooStatus, FooWithCDC } from "@workspace/models";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import { Badge } from "@workspace/ui/components/badge";
@@ -83,13 +83,16 @@ import React, { useEffect, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
 import { formatTableDate } from "../../lib/date-utils";
 
+// Import shared CDC utilities
+import { getCDCOperationBadge, createCDCColumns } from "../shared/cdc-utils";
+
 // Add a sortable header component
 const SortableHeader = ({
   column,
   children,
   className,
 }: {
-  column: Column<Foo, unknown>;
+  column: Column<FooWithCDC, unknown>;
   children: React.ReactNode;
   className?: string;
 }) => {
@@ -121,7 +124,7 @@ const SortableHeader = ({
 };
 
 interface FooResponse {
-  data: Foo[];
+  data: FooWithCDC[];
   pagination: {
     limit: number;
     offset: number;
@@ -150,11 +153,9 @@ const fetchFoos = async (
   return response.json();
 };
 
-
-
-// Helper function to create columns
-const createColumns = (): ColumnDef<Foo>[] => {
-  const baseColumns: ColumnDef<Foo>[] = [
+// Create columns with CDC support
+const createColumns = (): ColumnDef<FooWithCDC>[] => {
+  const baseColumns: ColumnDef<FooWithCDC>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -183,7 +184,11 @@ const createColumns = (): ColumnDef<Foo>[] => {
     },
   ];
 
-  // Main data columns
+  // Add CDC columns using shared utility
+  const cdcColumns = createCDCColumns<FooWithCDC>();
+  baseColumns.push(...cdcColumns);
+
+  // Add main data columns
   baseColumns.push(
     {
       accessorKey: "name",
@@ -336,7 +341,7 @@ const createColumns = (): ColumnDef<Foo>[] => {
   return baseColumns;
 };
 
-export function FooDataTable({
+export function FooCDCDataTable({
   fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,
@@ -379,7 +384,7 @@ export function FooDataTable({
     refetch,
   } = useQuery({
     queryKey: [
-      "foos",
+      "foos-cdc",
       fetchApiEndpoint,
       pagination.pageIndex,
       pagination.pageSize,
@@ -396,9 +401,9 @@ export function FooDataTable({
         sortBy,
         sortOrder
       );
-              const endTime = performance.now();
-        setQueryTime(endTime - startTime);
-        return result;
+      const endTime = performance.now();
+      setQueryTime(endTime - startTime);
+      return result;
     },
     // Keep previous data visible while fetching new data
     placeholderData: (previousData) => previousData,
@@ -411,11 +416,11 @@ export function FooDataTable({
   const data = fooResponse?.data || [];
   const serverPagination = fooResponse?.pagination;
 
-  // Get columns 
+  // Get columns with CDC support
   const columns = createColumns();
 
   // Create actions column if editApiEndpoint is provided
-  const actionsColumn: ColumnDef<Foo> = {
+  const actionsColumn: ColumnDef<FooWithCDC> = {
     id: "actions",
     cell: ({ row }) => {
       const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -770,7 +775,7 @@ function FooCellViewer({
   isOpen,
   onOpenChange,
 }: {
-  item: Foo;
+  item: FooWithCDC;
   editApiEndpoint?: string;
   onSave?: () => void;
   triggerElement?: React.ReactNode;
@@ -847,6 +852,17 @@ function FooCellViewer({
         <DrawerHeader className="gap-1">
           <DrawerTitle>{item.name}</DrawerTitle>
           <DrawerDescription>Foo details - ID: {item.id}</DrawerDescription>
+          {item.cdc_operation && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Batch Info:</span>
+              {getCDCOperationBadge(item.cdc_operation)}
+              {item.cdc_timestamp && (
+                <span className="text-xs text-muted-foreground">
+                  {formatTableDate(item.cdc_timestamp)}
+                </span>
+              )}
+            </div>
+          )}
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
           <form
@@ -985,4 +1001,4 @@ function FooCellViewer({
       </DrawerContent>
     </Drawer>
   );
-}
+} 

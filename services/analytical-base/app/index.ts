@@ -35,6 +35,8 @@ export const FooPipeline = new IngestPipeline<FooWithCDC>("Foo", {
   stream: true,
   ingest: true,
 });
+
+
 export const BarPipeline = new IngestPipeline<BarWithCDC>("Bar", {
   table: {
     orderByFields: ["cdc_id", "cdc_timestamp"],
@@ -44,7 +46,6 @@ export const BarPipeline = new IngestPipeline<BarWithCDC>("Bar", {
   ingest: true,
 });
 
- 
 
 export * from "./pipelines/eventsPipeline";
 export * from "./apis/FooConsumptionApi";

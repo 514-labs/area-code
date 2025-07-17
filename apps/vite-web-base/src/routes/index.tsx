@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import FooAverageScore from "@/features/foo/foo.average-score";
 import { FooDataTable } from "@/features/foo/foo.data-table";
+import { FooCDCDataTable } from "@/features/foo/foo.cdc-data-table";
 import {
   getAnalyticalConsumptionApiBase,
   getTransactionApiBase,
@@ -65,10 +66,9 @@ function AnalyticalConsumptionFooDataTable({
   const fetchApiEndpoint = `${API_BASE}/foo`;
 
   return (
-    <FooDataTable
+    <FooCDCDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
-      showCDC={true}
     />
   );
 }
