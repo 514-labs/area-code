@@ -1,4 +1,4 @@
-<img width="1076" alt="Hero 25" src="https://github.com/user-attachments/assets/98b7fe13-df60-4a56-bf01-f84d0f5beca2" />
+<img width="1074" height="120" alt="Area Code starter repo powered by Moose — Automated setup with Turborepo" src="https://github.com/user-attachments/assets/a860328a-cb75-41a2-ade4-b9a0624918e0" />
 
 # Starter Application
 
