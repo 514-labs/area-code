@@ -68,6 +68,7 @@ function AnalyticalConsumptionFooDataTable({
     <FooDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
+      showCDC={true}
     />
   );
 }

@@ -14,13 +14,13 @@ import {
 // Type for bar with associated foo details (joined query result)
 type BarWithFoo = {
   id: string;
-  fooId: string;
+  foo_id: string;
   value: number;
   label: string | null;
   notes: string | null;
-  isEnabled: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  is_enabled: boolean;
+  created_at: Date;
+  updated_at: Date;
   foo: {
     id: string;
     name: string;
@@ -114,15 +114,15 @@ export async function barRoutes(fastify: FastifyInstance) {
             orderByClause =
               sortOrder === "desc" ? desc(bar.value) : asc(bar.value);
             break;
-          case "isEnabled":
+          case "is_enabled":
             orderByClause =
               sortOrder === "desc" ? desc(bar.isEnabled) : asc(bar.isEnabled);
             break;
-          case "createdAt":
+          case "created_at":
             orderByClause =
               sortOrder === "desc" ? desc(bar.createdAt) : asc(bar.createdAt);
             break;
-          case "updatedAt":
+          case "updated_at":
             orderByClause =
               sortOrder === "desc" ? desc(bar.updatedAt) : asc(bar.updatedAt);
             break;
@@ -139,13 +139,13 @@ export async function barRoutes(fastify: FastifyInstance) {
       const barItems = await db
         .select({
           id: bar.id,
-          fooId: bar.fooId,
+          foo_id: bar.fooId,
           value: bar.value,
           label: bar.label,
           notes: bar.notes,
-          isEnabled: bar.isEnabled,
-          createdAt: bar.createdAt,
-          updatedAt: bar.updatedAt,
+          is_enabled: bar.isEnabled,
+          created_at: bar.createdAt,
+          updated_at: bar.updatedAt,
           foo: {
             id: foo.id,
             name: foo.name,
@@ -193,13 +193,13 @@ export async function barRoutes(fastify: FastifyInstance) {
       const barWithFoo = await db
         .select({
           id: bar.id,
-          fooId: bar.fooId,
+          foo_id: bar.fooId,
           value: bar.value,
           label: bar.label,
           notes: bar.notes,
-          isEnabled: bar.isEnabled,
-          createdAt: bar.createdAt,
-          updatedAt: bar.updatedAt,
+          is_enabled: bar.isEnabled,
+          created_at: bar.createdAt,
+          updated_at: bar.updatedAt,
           foo: {
             id: foo.id,
             name: foo.name,

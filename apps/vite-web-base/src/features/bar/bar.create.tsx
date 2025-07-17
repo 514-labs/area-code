@@ -60,11 +60,11 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<CreateBar>({
-    fooId: "",
+    foo_id: "",
     value: 0,
     label: "",
     notes: "",
-    isEnabled: true,
+    is_enabled: true,
   });
 
   // Fetch foos for the dropdown
@@ -89,11 +89,11 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
 
   const resetForm = () => {
     setFormData({
-      fooId: "",
+      foo_id: "",
       value: 0,
       label: "",
       notes: "",
-      isEnabled: true,
+      is_enabled: true,
     });
   };
 
@@ -124,11 +124,11 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Associated Foo */}
           <div className="space-y-2">
-            <Label htmlFor="fooId">Associated Foo *</Label>
+            <Label htmlFor="foo_id">Associated Foo *</Label>
             <Select
-              value={formData.fooId}
+              value={formData.foo_id}
               onValueChange={(value) =>
-                setFormData({ ...formData, fooId: value })
+                setFormData({ ...formData, foo_id: value })
               }
             >
               <SelectTrigger>
@@ -168,13 +168,10 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
             <Input
               id="value"
               type="number"
-              step="1"
+              step="0.01"
               value={formData.value}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  value: parseInt(e.target.value) || 0,
-                })
+                setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })
               }
               required
             />
@@ -190,7 +187,6 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
                 setFormData({ ...formData, notes: e.target.value })
               }
               rows={3}
-              placeholder="Enter additional notes..."
             />
           </div>
 
@@ -198,13 +194,13 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="isEnabled"
-              checked={formData.isEnabled}
+              id="is_enabled"
+              checked={formData.is_enabled}
               onChange={(e) =>
-                setFormData({ ...formData, isEnabled: e.target.checked })
+                setFormData({ ...formData, is_enabled: e.target.checked })
               }
             />
-            <Label htmlFor="isEnabled">Is Enabled</Label>
+            <Label htmlFor="is_enabled">Is Enabled</Label>
           </div>
 
           {/* Error Display */}
@@ -215,16 +211,12 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
           )}
 
           {/* Submit Buttons */}
-          <div className="flex space-x-2">
-            <Button type="submit" disabled={isSubmitting || !formData.fooId}>
-              {isSubmitting ? "Creating..." : "Create"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-            >
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !formData.foo_id}>
+              {isSubmitting ? "Creating..." : "Create Bar"}
             </Button>
           </div>
         </form>

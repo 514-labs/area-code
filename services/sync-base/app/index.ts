@@ -31,9 +31,11 @@ import {
   createFooThingEvent, 
   createBarThingEvent,
   type FooThingEvent,
-  type BarThingEvent
+  type BarThingEvent,
+  FooWithCDC,
+  BarWithCDC,
+  FooStatus
 } from "@workspace/models";
-import { FooStatus, FooCDC, BarCDC } from "@workspace/models";
 
 // Load environment variables
 dotenv.config();
@@ -123,18 +125,31 @@ const sendDataToElasticsearch = async (type: "foo" | "bar", action: "index" | "d
 };
 
 // HTTP client for sending data to analytical pipelines
-const sendDataToPipeline = async (type: "Foo" | "Bar", data: FooCDC | BarCDC) => {
+const sendDataToPipeline = async (type: "Foo" | "Bar", data: FooWithCDC | BarWithCDC) => {
   const analyticsUrl = ANALYTICS_BASE_URL;
   const url = `${analyticsUrl}/ingest/${type}`;
 
   try {
     console.log(`📊 Sending ${type} data to analytical pipeline: ${url}`);
     
+    // Helper function to safely format dates
+    const formatDate = (dateValue: unknown): string => {
+      if (dateValue instanceof Date) {
+        return dateValue.toISOString();
+      }
+      if (typeof dateValue === 'string' && dateValue) {
+        const date = new Date(dateValue);
+        return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+      }
+      // For missing dates (like in DELETE events), use current timestamp
+      return new Date().toISOString();
+    };
+    
     // Format dates properly for JSON serialization
     const formattedData = {
       ...data,
-      created_at: data.created_at instanceof Date ? data.created_at.toISOString() : new Date(data.created_at as string).toISOString(),
-      updated_at: data.updated_at instanceof Date ? data.updated_at.toISOString() : new Date(data.updated_at as string).toISOString(),
+      created_at: formatDate(data.created_at),
+      updated_at: formatDate(data.updated_at),
       cdc_timestamp: data.cdc_timestamp.toISOString(),
     };
     
@@ -258,14 +273,41 @@ async function handleFooChange(payload: RealtimePayload) {
 
     // Send to analytical pipeline for CDC processing
     const cdc_operation = eventType === "INSERT" ? "INSERT" : eventType === "UPDATE" ? "UPDATE" : "DELETE";
-    const fooData = newRecord || oldRecord;
-    if (fooData) {
-      const fooPipelineData = {
-        ...fooData,
-        cdc_id: `foo-${recordId}-${Date.now()}`,
-        cdc_operation,
-        cdc_timestamp: new Date()
-      } as FooCDC;
+    
+    // For DELETE events, use oldRecord; for INSERT/UPDATE, use newRecord
+    const sourceData = eventType === "DELETE" ? oldRecord : newRecord;
+    
+    if (sourceData) {
+      let fooPipelineData: FooWithCDC;
+      
+      if (eventType === "DELETE") {
+        // For DELETE events, we only get the ID, so create a complete record with defaults
+        fooPipelineData = {
+          id: sourceData.id as string,
+          name: "", // Unknown - record was deleted
+          description: null,
+          status: FooStatus.ARCHIVED, // Mark as archived since it's deleted
+          priority: 0,
+          is_active: false,
+          metadata: {},
+          tags: [],
+          score: 0,
+          large_text: "",
+          created_at: new Date(), // Use current time as fallback
+          updated_at: new Date(), // Use current time as fallback
+          cdc_id: `foo-${sourceData.id}-${Date.now()}`,
+          cdc_operation: "DELETE",
+          cdc_timestamp: new Date()
+        };
+      } else {
+        // For INSERT/UPDATE events, we have the full record
+        fooPipelineData = {
+          ...sourceData,
+          cdc_id: `foo-${sourceData.id}-${Date.now()}`,
+          cdc_operation,
+          cdc_timestamp: new Date()
+        } as FooWithCDC;
+      }
       
       await sendDataToPipeline("Foo", fooPipelineData);
     }
@@ -377,14 +419,37 @@ async function handleBarChange(payload: RealtimePayload) {
 
     // Send to analytical pipeline for CDC processing
     const cdc_operation = eventType === "INSERT" ? "INSERT" : eventType === "UPDATE" ? "UPDATE" : "DELETE";
-    const barData = newRecord || oldRecord;
-    if (barData) {
-      const barPipelineData = {
-        ...barData,
-        cdc_id: `bar-${recordId}-${Date.now()}`,
-        cdc_operation,
-        cdc_timestamp: new Date()
-      } as BarCDC;
+    
+    // For DELETE events, use oldRecord; for INSERT/UPDATE, use newRecord
+    const sourceData = eventType === "DELETE" ? oldRecord : newRecord;
+    
+    if (sourceData) {
+      let barPipelineData: BarWithCDC;
+      
+      if (eventType === "DELETE") {
+        // For DELETE events, we only get the ID, so create a complete record with defaults
+        barPipelineData = {
+          id: sourceData.id as string,
+          foo_id: "", // Unknown - record was deleted
+          value: 0,
+          label: null,
+          notes: null,
+          is_enabled: false,
+          created_at: new Date(), // Use current time as fallback
+          updated_at: new Date(), // Use current time as fallback
+          cdc_id: `bar-${sourceData.id}-${Date.now()}`,
+          cdc_operation: "DELETE",
+          cdc_timestamp: new Date()
+        };
+      } else {
+        // For INSERT/UPDATE events, we have the full record
+        barPipelineData = {
+          ...sourceData,
+          cdc_id: `bar-${sourceData.id}-${Date.now()}`,
+          cdc_operation,
+          cdc_timestamp: new Date()
+        } as BarWithCDC;
+      }
       
       await sendDataToPipeline("Bar", barPipelineData);
     }

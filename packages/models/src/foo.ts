@@ -25,7 +25,7 @@ export interface Foo {
 }
 
 // Foo with CDC metadata for analytical pipelines
-export interface FooCDC extends Foo, CDC {}
+export interface FooWithCDC extends Foo, CDC {}
 
 // Interface for creating new foo (omit generated/auto fields)
 export interface CreateFoo extends Pick<Foo, "name"> {
@@ -33,7 +33,7 @@ export interface CreateFoo extends Pick<Foo, "name"> {
   status?: FooStatus;
   priority?: number;
   is_active?: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   tags?: string[];
   score?: number;
   large_text?: string;

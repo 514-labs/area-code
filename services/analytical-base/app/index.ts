@@ -24,23 +24,22 @@
 // Need help? Check out the quickstart guide:
 // → docs.fiveonefour.com/moose/getting-started/quickstart
 
-import { Foo } from "@workspace/models/foo";
-import { Bar } from "@workspace/models/bar";
-import { IngestPipeline, Key } from "@514labs/moose-lib";
+import { FooWithCDC, BarWithCDC } from "@workspace/models";
+import { IngestPipeline } from "@514labs/moose-lib";
 
-interface CDC {
-  cdc_id: Key<string>;
-  cdc_operation: "INSERT" | "UPDATE" | "DELETE";
-  cdc_timestamp: Date;
-}
-
-export const FooPipeline = new IngestPipeline<Foo & CDC>("Foo", {
-  table: true,
+export const FooPipeline = new IngestPipeline<FooWithCDC>("Foo", {
+  table: {
+    orderByFields: ["cdc_id", "cdc_timestamp"],
+    deduplicate: true,
+  },
   stream: true,
   ingest: true,
 });
-export const BarPipeline = new IngestPipeline<Bar & CDC>("Bar", {
-  table: true,
+export const BarPipeline = new IngestPipeline<BarWithCDC>("Bar", {
+  table: {
+    orderByFields: ["cdc_id", "cdc_timestamp"],
+    deduplicate: true,
+  },
   stream: true,
   ingest: true,
 });

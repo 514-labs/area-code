@@ -13,7 +13,7 @@ export interface Bar {
 }
 
 // Bar with CDC metadata for analytical pipelines
-export interface BarCDC extends Bar, CDC {}
+export interface BarWithCDC extends Bar, CDC {}
 
 
 // Interface for creating new bar (without generated fields)
