@@ -135,10 +135,27 @@ def render_dlq_controls(endpoint_path, refresh_key):
                         st.session_state["extract_status_msg"] = f"DLQ triggered successfully with batch size {batch_size} and {failure_percentage}% failure rate."
                         st.session_state["extract_status_type"] = "success"
                         st.session_state["extract_status_time"] = time.time()
-                        time.sleep(2)
+                        
+                        # Also trigger a regular extract to ensure successful items are in the main table
+                        if "extract-s3" in endpoint_path:
+                            regular_extract_url = f"{API_BASE}/extract-s3?batch_size={batch_size}"
+                        elif "extract-datadog" in endpoint_path:
+                            regular_extract_url = f"{API_BASE}/extract-datadog?batch_size={batch_size}"
+                        else:
+                            regular_extract_url = None
+                        
+                        if regular_extract_url:
+                            try:
+                                regular_response = requests.get(regular_extract_url)
+                                regular_response.raise_for_status()
+                                st.session_state["extract_status_msg"] += f" Also triggered regular extract for successful items."
+                            except Exception as regular_e:
+                                st.session_state["extract_status_msg"] += f" (Note: Regular extract failed: {regular_e})"
+                        
+                        time.sleep(2)  # Wait for initial processing
                     
-                    # Wait 3 seconds and then fetch DLQ messages
-                    with st.spinner("Waiting 3 seconds and fetching DLQ messages..."):
+                    # Fetch DLQ messages immediately after successful trigger
+                    with st.spinner("Fetching DLQ messages..."):
                         time.sleep(3)
                         dlq_messages_url = "http://localhost:9999/topic/FooDeadLetterQueue/messages?partition=0&offset=0&count=100&isAnyProto=false"
                         
@@ -225,7 +242,9 @@ def render_dlq_controls(endpoint_path, refresh_key):
                             st.text(f"Response headers: {dict(dlq_response.headers)}")
                             st.text(f"Response content: {dlq_response.text}")
                     
+                    # Refresh the main items table after all DLQ processing is complete
                     st.session_state[refresh_key] = True
+                    st.rerun()  # Force immediate page refresh to show updated data
                 except Exception as e:
                     st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
                     st.session_state["extract_status_type"] = "error"
@@ -364,6 +383,7 @@ elif page == "S3":
             trigger_extract(f"{API_BASE}/extract-s3", "S3")
             time.sleep(2)
         st.session_state["refresh_s3"] = True
+        st.rerun()
     
     st.subheader("S3 Items Table")
     if not df.empty and "large_text" in df.columns:
@@ -383,8 +403,9 @@ elif page == "S3":
     dlq_messages_key = "dlq_messages_extract-s3"
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
         filter_tag = "S3"
-        st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
-        
+        st.subheader(f"Historical Dead Letter Queue Messages (Filtered for {filter_tag})")
+        st.markdown("**These entries have been auto resolved.**")
+
         # Status line showing count of retrieved items
         item_count = len(st.session_state[dlq_messages_key])
         st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter")
@@ -428,6 +449,7 @@ elif page == "Datadog":
             trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
             time.sleep(2)
         st.session_state["refresh_datadog"] = True
+        st.rerun()
     st.subheader("Datadog Items Table")
     if not df.empty:
         log_col = df.columns[-1]
@@ -446,7 +468,8 @@ elif page == "Datadog":
     dlq_messages_key = "dlq_messages_extract-datadog"
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
         filter_tag = "Datadog"
-        st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
+        st.subheader(f"Historical Dead Letter Queue Messages (Filtered for {filter_tag})")
+        st.markdown("**These entries have been auto resolved.**")
         
         # Status line showing count of retrieved items
         item_count = len(st.session_state[dlq_messages_key])
