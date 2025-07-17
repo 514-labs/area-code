@@ -28,7 +28,7 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { FooStatus, Foo } from "@workspace/models";
+import { Foo, FooStatus } from "@workspace/models";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import { Badge } from "@workspace/ui/components/badge";
@@ -79,9 +79,40 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
-import React, { useEffect, useState, useRef } from "react";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
-import { formatTableDate } from "../../lib/date-utils";
+
+const getStatusIcon = (status: FooStatus) => {
+  switch (status) {
+    case FooStatus.ACTIVE:
+      return (
+        <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+      );
+    case FooStatus.INACTIVE:
+      return <IconCircleX className="text-red-500 dark:text-red-400" />;
+    case FooStatus.PENDING:
+      return <IconClock className="text-yellow-500 dark:text-yellow-400" />;
+    case FooStatus.ARCHIVED:
+      return <IconArchive className="text-gray-500 dark:text-gray-400" />;
+    default:
+      return <IconLoader />;
+  }
+};
+
+const getStatusColor = (status: FooStatus) => {
+  switch (status) {
+    case FooStatus.ACTIVE:
+      return "bg-green-100 border-green-700 text-green-800 dark:bg-green-900 dark:text-green-300";
+    case FooStatus.INACTIVE:
+      return "bg-red-100 border-red-700  text-red-800 dark:bg-red-900 dark:text-red-300";
+    case FooStatus.PENDING:
+      return "bg-yellow-100 border-yellow-700 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+    case FooStatus.ARCHIVED:
+      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+    default:
+      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+  }
+};
 
 // Add a sortable header component
 const SortableHeader = ({
@@ -90,7 +121,7 @@ const SortableHeader = ({
   className,
 }: {
   column: Column<Foo, unknown>;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) => {
   if (!column.getCanSort()) {
@@ -120,6 +151,179 @@ const SortableHeader = ({
   );
 };
 
+const columns: ColumnDef<Foo>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center justify-center px-1">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "name",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Name</SortableHeader>
+    ),
+    cell: ({ row }) => {
+      return <TableCellViewer item={row.original} />;
+    },
+    enableHiding: false,
+    enableSorting: true,
+  },
+  {
+    accessorKey: "description",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Description</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div
+        className="max-w-xs truncate"
+        title={row.original.description || "No description"}
+      >
+        {row.original.description || "No description"}
+      </div>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Status</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <Badge
+        variant="outline"
+        className={`py-[3px] ${getStatusColor(row.original.status)}`}
+      >
+        {getStatusIcon(row.original.status)}
+        <span className="ml-1 capitalize">{row.original.status}</span>
+      </Badge>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "priority",
+    header: ({ column }) => (
+      <SortableHeader column={column} className="text-center">
+        Priority
+      </SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="text-center font-medium">
+        {row.original.priority.toLocaleString()}
+      </div>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "is_active",
+    header: ({ column }) => (
+      <SortableHeader column={column} className="text-center">
+        Active
+      </SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="text-center">
+        {row.original.is_active ? (
+          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+        ) : (
+          <IconCircleX className="text-red-500 dark:text-red-400" />
+        )}
+      </div>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "score",
+    header: ({ column }) => (
+      <SortableHeader column={column} className="text-right">
+        Score
+      </SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="text-right font-medium">
+        {(row.original?.score || 0).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </div>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "tags",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Tags</SortableHeader>
+    ),
+    cell: ({ row }) => {
+      if (!row.original.tags) return null;
+      const validTags = row.original.tags.filter((tag) => tag !== null);
+      if (validTags.length === 0) return null;
+
+      return (
+        <div className="flex gap-1">
+          {validTags.slice(0, 2).map((tag: string, index: number) => (
+            <Badge key={index} variant="secondary" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+          {validTags.length > 2 && (
+            <Badge variant="secondary" className="text-xs">
+              +{validTags.length - 2} more
+            </Badge>
+          )}
+        </div>
+      );
+    },
+    // Remove custom sortingFn for server-side sorting
+    enableSorting: true,
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Created</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="text-sm text-muted-foreground">
+        {new Date(row.original.created_at).toLocaleDateString()}
+      </div>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "updated_at",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Updated</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="text-sm text-muted-foreground">
+        {new Date(row.original.updated_at).toLocaleDateString()}
+      </div>
+    ),
+    enableSorting: true,
+  },
+];
+
+// API Response Types
 interface FooResponse {
   data: Foo[];
   pagination: {
@@ -130,210 +334,27 @@ interface FooResponse {
   };
 }
 
+// API Functions
 const fetchFoos = async (
-  endpoint: string,
-  limit: number,
-  offset: number,
+  fetchApiEndpoint: string,
+  limit: number = 10,
+  offset: number = 0,
   sortBy?: string,
-  sortOrder?: string
+  sortOrder?: "asc" | "desc"
 ): Promise<FooResponse> => {
   const params = new URLSearchParams({
     limit: limit.toString(),
     offset: offset.toString(),
   });
 
-  if (sortBy) params.append("sortBy", sortBy);
-  if (sortOrder) params.append("sortOrder", sortOrder);
+  if (sortBy && sortOrder) {
+    params.append("sortBy", sortBy);
+    params.append("sortOrder", sortOrder);
+  }
 
-  const response = await fetch(`${endpoint}?${params}`);
+  const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch foos");
   return response.json();
-};
-
-
-
-// Helper function to create columns
-const createColumns = (): ColumnDef<Foo>[] => {
-  const baseColumns: ColumnDef<Foo>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <div className="flex items-center justify-center px-1">
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center">
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-  ];
-
-  // Main data columns
-  baseColumns.push(
-    {
-      accessorKey: "name",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Name</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.name}</div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => (
-        <div className="max-w-xs truncate" title={row.original.description || ""}>
-          {row.original.description || (
-            <span className="text-muted-foreground italic">No description</span>
-          )}
-        </div>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: "status",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Status</SortableHeader>
-      ),
-      cell: ({ row }) => {
-        const status = row.original.status;
-        const getStatusIcon = () => {
-          switch (status) {
-            case FooStatus.ACTIVE:
-              return <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />;
-            case FooStatus.INACTIVE:
-              return <IconCircleX className="text-red-500 dark:text-red-400" />;
-            case FooStatus.PENDING:
-              return <IconClock className="text-yellow-500 dark:text-yellow-400" />;
-            case FooStatus.ARCHIVED:
-              return <IconArchive className="text-gray-500 dark:text-gray-400" />;
-            default:
-              return <IconCircleX className="text-gray-400" />;
-          }
-        };
-
-        return (
-          <div className="flex items-center gap-2">
-            {getStatusIcon()}
-            <span className="capitalize">{status}</span>
-          </div>
-        );
-      },
-      enableSorting: true,
-    },
-    {
-      accessorKey: "priority",
-      header: ({ column }) => (
-        <SortableHeader column={column} className="text-right">
-          Priority
-        </SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right font-mono">{row.original.priority}</div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "is_active",
-      header: ({ column }) => (
-        <SortableHeader column={column} className="text-center">
-          Active
-        </SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-center">
-          {row.original.is_active ? (
-            <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-          ) : (
-            <IconCircleX className="text-red-500 dark:text-red-400" />
-          )}
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "score",
-      header: ({ column }) => (
-        <SortableHeader column={column} className="text-right">
-          Score
-        </SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">
-          <NumericFormat
-            value={row.original.score}
-            displayType="text"
-            thousandSeparator
-            decimalScale={2}
-            className="font-mono"
-          />
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "tags",
-      header: "Tags",
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1 max-w-xs">
-          {row.original.tags?.slice(0, 2).map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-          {row.original.tags && row.original.tags.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{row.original.tags.length - 2}
-            </Badge>
-          )}
-        </div>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: "created_at",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Created</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          {formatTableDate(row.original.created_at)}
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "updated_at",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Updated</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          {formatTableDate(row.original.updated_at)}
-        </div>
-      ),
-      enableSorting: true,
-    }
-  );
-
-  return baseColumns;
 };
 
 export function FooDataTable({
@@ -350,11 +371,8 @@ export function FooDataTable({
   editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = useState({});
-  const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>({});
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -396,9 +414,9 @@ export function FooDataTable({
         sortBy,
         sortOrder
       );
-              const endTime = performance.now();
-        setQueryTime(endTime - startTime);
-        return result;
+      const endTime = performance.now();
+      setQueryTime(endTime - startTime);
+      return result;
     },
     // Keep previous data visible while fetching new data
     placeholderData: (previousData) => previousData,
@@ -410,9 +428,6 @@ export function FooDataTable({
 
   const data = fooResponse?.data || [];
   const serverPagination = fooResponse?.pagination;
-
-  // Get columns 
-  const columns = createColumns();
 
   // Create actions column if editApiEndpoint is provided
   const actionsColumn: ColumnDef<Foo> = {
@@ -444,7 +459,7 @@ export function FooDataTable({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <FooCellViewer
+          <TableCellViewer
             item={row.original}
             editApiEndpoint={editApiEndpoint}
             onSave={() => refetch()}
@@ -539,16 +554,32 @@ export function FooDataTable({
 
   return (
     <div className="w-full flex-col justify-start gap-6">
+      {/* Server pagination and sorting info */}
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
           <div>
-            Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
-            {Math.min(
-              serverPagination.offset + serverPagination.limit,
-              serverPagination.total
-            ).toLocaleString()}{" "}
-            of {serverPagination.total.toLocaleString()} items
-            {serverPagination.hasMore && " (more available)"}
+            Showing{" "}
+            <NumericFormat
+              value={serverPagination.offset + 1}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            to{" "}
+            <NumericFormat
+              value={Math.min(
+                serverPagination.offset + serverPagination.limit,
+                serverPagination.total
+              )}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            of{" "}
+            <NumericFormat
+              value={serverPagination.total}
+              displayType="text"
+              thousandSeparator=","
+            />{" "}
+            items
             {sorting.length > 0 && (
               <span className="ml-2 text-blue-600">
                 • Sorted by {sorting[0].id} ({sorting[0].desc ? "desc" : "asc"})
@@ -557,15 +588,24 @@ export function FooDataTable({
           </div>
           {queryTime !== null && (
             <div className="text-green-600">
-              Latest query: {queryTime.toFixed(2)}ms
+              Latest query:{" "}
+              <NumericFormat
+                value={Math.round(queryTime || 0)}
+                displayType="text"
+                thousandSeparator=","
+              />
+              ms
             </div>
           )}
         </div>
       )}
 
-      <div className="relative flex flex-col gap-4 overflow-auto">
+      <div
+        className="relative flex flex-col gap-4 overflow-auto"
+        key={fetchApiEndpoint} // Changed key to fetchApiEndpoint
+      >
         <div className="overflow-hidden rounded-lg border">
-          <Table key={fetchApiEndpoint}>
+          <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -637,9 +677,9 @@ export function FooDataTable({
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between px-2">
+        <div className="flex items-center justify-between px-4">
           {selectableRows && (
-            <div className="flex-1 text-sm text-muted-foreground">
+            <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
               {deleteApiEndpoint && selectedFoos.length > 0 ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
@@ -673,7 +713,7 @@ export function FooDataTable({
                       <AlertDialogAction
                         onClick={handleDelete}
                         disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        className="bg-destructive hover:bg-destructive/90 cursor-pointer"
                       >
                         {isDeleting ? "Deleting..." : "Delete"}
                       </AlertDialogAction>
@@ -689,17 +729,19 @@ export function FooDataTable({
             </div>
           )}
           <div
-            className={`flex items-center space-x-6 lg:space-x-8 ${!selectableRows ? "w-full justify-end" : ""}`}
+            className={`flex items-center gap-8 ${selectableRows ? "w-full lg:w-fit" : "w-full justify-end"}`}
           >
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium">Rows per page</p>
+            <div className="hidden items-center gap-2 lg:flex">
+              <Label htmlFor="rows-per-page" className="text-sm font-medium">
+                Rows per page
+              </Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
                 onValueChange={(value) => {
                   table.setPageSize(Number(value));
                 }}
               >
-                <SelectTrigger className="h-8 w-[70px]">
+                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
                   <SelectValue
                     placeholder={table.getState().pagination.pageSize}
                   />
@@ -713,11 +755,23 @@ export function FooDataTable({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              <span>
+                Page{" "}
+                <NumericFormat
+                  value={table.getState().pagination.pageIndex + 1}
+                  displayType="text"
+                  thousandSeparator=","
+                />{" "}
+                of{" "}
+                <NumericFormat
+                  value={table.getPageCount()}
+                  displayType="text"
+                  thousandSeparator=","
+                />
+              </span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
                 variant="outline"
                 className="hidden h-8 w-8 p-0 lg:flex"
@@ -725,34 +779,37 @@ export function FooDataTable({
                 disabled={!table.getCanPreviousPage() || isLoading}
               >
                 <span className="sr-only">Go to first page</span>
-                <IconChevronsLeft className="h-4 w-4" />
+                <IconChevronsLeft />
               </Button>
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0"
+                className="size-8"
+                size="icon"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage() || isLoading}
               >
                 <span className="sr-only">Go to previous page</span>
-                <IconChevronLeft className="h-4 w-4" />
+                <IconChevronLeft />
               </Button>
               <Button
                 variant="outline"
-                className="h-8 w-8 p-0"
+                className="size-8"
+                size="icon"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage() || isLoading}
               >
                 <span className="sr-only">Go to next page</span>
-                <IconChevronRight className="h-4 w-4" />
+                <IconChevronRight />
               </Button>
               <Button
                 variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
+                className="hidden size-8 lg:flex"
+                size="icon"
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage() || isLoading}
               >
                 <span className="sr-only">Go to last page</span>
-                <IconChevronsRight className="h-4 w-4" />
+                <IconChevronsRight />
               </Button>
             </div>
           </div>
@@ -762,7 +819,7 @@ export function FooDataTable({
   );
 }
 
-function FooCellViewer({
+function TableCellViewer({
   item,
   editApiEndpoint,
   onSave,
@@ -773,7 +830,7 @@ function FooCellViewer({
   item: Foo;
   editApiEndpoint?: string;
   onSave?: () => void;
-  triggerElement?: React.ReactNode;
+  triggerElement?: ReactNode;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -862,12 +919,7 @@ function FooCellViewer({
           >
             <div className="flex flex-col gap-3">
               <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                defaultValue={item.name}
-                placeholder="Enter name"
-              />
+              <Input id="name" name="name" defaultValue={item.name} />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="description">Description</Label>
@@ -875,16 +927,15 @@ function FooCellViewer({
                 id="description"
                 name="description"
                 defaultValue={item.description || ""}
-                placeholder="Enter description"
-                rows={3}
+                placeholder="No description provided"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
                 <Label htmlFor="status">Status</Label>
                 <Select name="status" defaultValue={item.status}>
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="status" className="w-full">
+                    <SelectValue placeholder="Select a status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={FooStatus.ACTIVE}>Active</SelectItem>
@@ -900,8 +951,6 @@ function FooCellViewer({
                   id="priority"
                   name="priority"
                   type="number"
-                  min="1"
-                  max="10"
                   defaultValue={item.priority}
                 />
               </div>
@@ -950,6 +999,20 @@ function FooCellViewer({
                 <pre className="text-xs overflow-auto">
                   {JSON.stringify(item.metadata, null, 2)}
                 </pre>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                <Label>Created At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.created_at).toLocaleString()}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Label>Updated At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.updated_at).toLocaleString()}
+                </div>
               </div>
             </div>
           </form>

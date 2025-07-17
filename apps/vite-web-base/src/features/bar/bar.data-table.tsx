@@ -11,9 +11,6 @@ import {
   IconLoader,
   IconDotsVertical,
   IconEdit,
-  IconPlus,
-  IconMinus,
-  IconRefresh,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -29,8 +26,7 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { Bar as BaseBar, BarWithCDC } from "@workspace/models";
-import { formatTableDate, formatCDCTimestamp } from "../../lib/date-utils";
+import { Bar as BaseBar } from "@workspace/models";
 
 interface Bar extends BaseBar {
   foo?: Foo;
@@ -41,8 +37,10 @@ import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -100,249 +98,171 @@ interface BarResponse {
   };
 }
 
-// Function to get CDC operation badge
-function getCDCOperationBadge(operation?: "INSERT" | "UPDATE" | "DELETE") {
-  if (!operation) return <Badge variant="outline">N/A</Badge>;
-  
-  switch (operation) {
-    case "INSERT":
-      return (
-        <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
-          <IconPlus className="h-3 w-3 mr-1" />
-          INSERT
-        </Badge>
-      );
-    case "UPDATE":
-      return (
-        <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-300">
-          <IconRefresh className="h-3 w-3 mr-1" />
-          UPDATE
-        </Badge>
-      );
-    case "DELETE":
-      return (
-        <Badge variant="default" className="bg-red-100 text-red-800 border-red-300">
-          <IconMinus className="h-3 w-3 mr-1" />
-          DELETE
-        </Badge>
-      );
-    default:
-      return <Badge variant="outline">Unknown</Badge>;
-  }
-}
-
+// API Functions
 const fetchBars = async (
-  endpoint: string,
-  limit: number,
-  offset: number,
+  fetchApiEndpoint: string,
+  limit: number = 10,
+  offset: number = 0,
   sortBy?: string,
-  sortOrder?: string
+  sortOrder?: "asc" | "desc"
 ): Promise<BarResponse> => {
   const params = new URLSearchParams({
     limit: limit.toString(),
     offset: offset.toString(),
   });
 
-  if (sortBy) params.append("sortBy", sortBy);
-  if (sortOrder) params.append("sortOrder", sortOrder);
+  if (sortBy && sortOrder) {
+    params.append("sortBy", sortBy);
+    params.append("sortOrder", sortOrder);
+  }
 
-  const response = await fetch(`${endpoint}?${params}`);
+  const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch bars");
   return response.json();
 };
 
-const deleteBar = async (endpoint: string, id: string): Promise<void> => {
-  const response = await fetch(`${endpoint}/${id}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) throw new Error("Failed to delete bar");
-};
-
-const editBar = async (
-  endpoint: string,
-  id: string,
-  data: Partial<Bar>
-): Promise<Bar> => {
-  const response = await fetch(`${endpoint}/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error("Failed to edit bar");
-  return response.json();
-};
-
-interface SortableHeaderProps {
-  column: Column<Bar>;
+// Add a sortable header component
+const SortableHeader = ({
+  column,
+  children,
+  className,
+}: {
+  column: Column<Bar, unknown>;
   children: React.ReactNode;
-}
+  className?: string;
+}) => {
+  if (!column.getCanSort()) {
+    return <div className={className}>{children}</div>;
+  }
 
-function SortableHeader({ column, children }: SortableHeaderProps) {
-  const sorted = column.getIsSorted();
+  const handleSort = () => {
+    const currentSort = column.getIsSorted();
+    column.toggleSorting(currentSort === "asc");
+  };
+
   return (
     <Button
       variant="ghost"
-      onClick={() => column.toggleSorting(sorted === "asc")}
-      className="h-8 px-2 lg:px-3"
+      onClick={handleSort}
+      className={`-ml-3 h-8 data-[state=open]:bg-accent ${className}`}
     >
-      {children}
-      {sorted === "desc" ? (
+      <span>{children}</span>
+      {column.getIsSorted() === "desc" ? (
         <IconArrowDown className="ml-2 h-4 w-4" />
-      ) : sorted === "asc" ? (
+      ) : column.getIsSorted() === "asc" ? (
         <IconArrowUp className="ml-2 h-4 w-4" />
       ) : (
         <IconArrowsSort className="ml-2 h-4 w-4" />
       )}
     </Button>
   );
-}
-
-// Helper function to create columns based on whether CDC data is present
-const createColumns = (showCDC: boolean): ColumnDef<Bar>[] => {
-  const baseColumns: ColumnDef<Bar>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <div className="flex items-center justify-center px-1">
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center">
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-  ];
-
-  // CDC columns (only if showCDC is true)
-  if (showCDC) {
-    baseColumns.push(
-      {
-        accessorKey: "cdc_operation",
-        header: ({ column }) => (
-          <SortableHeader column={column}>Batch Op</SortableHeader>
-        ),
-        cell: ({ row }) => {
-          const barWithCDC = row.original as BarWithCDC;
-          return getCDCOperationBadge(barWithCDC.cdc_operation);
-        },
-        enableSorting: true,
-      },
-      {
-        accessorKey: "cdc_timestamp",
-        header: ({ column }) => (
-          <SortableHeader column={column}>Batch Time</SortableHeader>
-        ),
-        cell: ({ row }) => {
-          const barWithCDC = row.original as BarWithCDC;
-          return (
-            <div className="text-sm text-muted-foreground">
-              {formatCDCTimestamp(barWithCDC.cdc_timestamp)}
-            </div>
-          );
-        },
-        enableSorting: true,
-      }
-    );
-  }
-
-  // Main data columns
-  baseColumns.push(
-    {
-      accessorKey: "label",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Label</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="font-medium">
-          {row.original.label || (
-            <span className="text-muted-foreground italic">No label</span>
-          )}
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "value",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Value</SortableHeader>
-      ),
-      cell: ({ row }) => <div className="font-mono">{row.original.value}</div>,
-      enableSorting: true,
-    },
-    {
-      accessorKey: "foo_id",
-      header: "Associated Foo",
-      cell: ({ row }) => (
-        <div>
-          {row.original.foo ? (
-            <div className="flex items-center space-x-2">
-              <span className="font-medium">{row.original.foo.name}</span>
-              <Badge variant="outline" className="text-xs">
-                {row.original.foo.status}
-              </Badge>
-            </div>
-          ) : (
-            <span className="text-muted-foreground">Unknown</span>
-          )}
-        </div>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: "notes",
-      header: "Notes",
-      cell: ({ row }) => (
-        <div className="max-w-[200px] truncate">
-          {row.original.notes || (
-            <span className="text-muted-foreground italic">No notes</span>
-          )}
-        </div>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: "is_enabled",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Status</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <Badge variant={row.original.is_enabled ? "default" : "secondary"}>
-          {row.original.is_enabled ? "Enabled" : "Disabled"}
-        </Badge>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "created_at",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Created</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          {formatTableDate(row.original.created_at)}
-        </div>
-      ),
-      enableSorting: true,
-    }
-  );
-
-  return baseColumns;
 };
+
+const columns: ColumnDef<Bar>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center justify-center px-1">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "label",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Label</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="font-medium">
+        {row.original.label || (
+          <span className="text-muted-foreground italic">No label</span>
+        )}
+      </div>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "value",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Value</SortableHeader>
+    ),
+    cell: ({ row }) => <div className="font-mono">{row.original.value}</div>,
+    enableSorting: true,
+  },
+  {
+    accessorKey: "foo_id",
+    header: "Associated Foo",
+    cell: ({ row }) => (
+      <div>
+        {row.original.foo ? (
+          <div className="flex items-center space-x-2">
+            <span className="font-medium">{row.original.foo.name}</span>
+            <Badge variant="outline" className="text-xs">
+              {row.original.foo.status}
+            </Badge>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">Unknown</span>
+        )}
+      </div>
+    ),
+    enableSorting: false,
+  },
+  {
+    accessorKey: "notes",
+    header: "Notes",
+    cell: ({ row }) => (
+      <div className="max-w-xs truncate" title={row.original.notes || ""}>
+        {row.original.notes || (
+          <span className="text-muted-foreground italic">No notes</span>
+        )}
+      </div>
+    ),
+    enableSorting: false,
+  },
+  {
+    accessorKey: "is_enabled",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Status</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <Badge variant={row.original.is_enabled ? "default" : "secondary"}>
+        {row.original.is_enabled ? "Enabled" : "Disabled"}
+      </Badge>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Created</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="text-sm text-muted-foreground">
+        {new Date(row.original.created_at).toLocaleDateString()}
+      </div>
+    ),
+    enableSorting: true,
+  },
+];
 
 export function BarDataTable({
   fetchApiEndpoint,
@@ -350,24 +270,34 @@ export function BarDataTable({
   selectableRows = false,
   deleteApiEndpoint,
   editApiEndpoint,
-  showCDC = false,
 }: {
   fetchApiEndpoint: string;
   disableCache?: boolean;
   selectableRows?: boolean;
   deleteApiEndpoint?: string;
   editApiEndpoint?: string;
-  showCDC?: boolean;
 }) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const [queryTime, setQueryTime] = React.useState<number>(0);
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   });
+  const [queryTime, setQueryTime] = React.useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  // Reset pagination and state when endpoint changes
+  React.useEffect(() => {
+    setPagination({ pageIndex: 0, pageSize: 10 });
+    setSorting([]);
+    setRowSelection({});
+  }, [fetchApiEndpoint]);
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
@@ -409,64 +339,59 @@ export function BarDataTable({
   const data = barResponse?.data || [];
   const serverPagination = barResponse?.pagination;
 
-  // Get columns based on whether CDC data should be shown
-  const columns = createColumns(showCDC);
+  // Create actions column if editApiEndpoint is provided
+  const actionsColumn: ColumnDef<Bar> = {
+    id: "actions",
+    cell: ({ row }) => {
+      const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
 
-  // Build columns based on available actions
-  const availableColumns = React.useMemo(() => {
-    const baseColumns = selectableRows ? columns : columns.filter((col) => col.id !== "select");
-
-    if (!editApiEndpoint && !deleteApiEndpoint) {
-      return baseColumns; // No action column needed
-    }
-
-    const actionColumn: ColumnDef<Bar> = {
-      id: "actions",
-      cell: ({ row }) => {
-        const bar = row.original;
-
-        return (
+      return (
+        <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button
+                variant="ghost"
+                className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+                size="icon"
+              >
+                <IconDotsVertical />
                 <span className="sr-only">Open menu</span>
-                <IconDotsVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {editApiEndpoint && (
-                <EditBarDialog
-                  bar={bar}
-                  editApiEndpoint={editApiEndpoint}
-                  onSuccess={() => refetch()}
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <IconEdit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                  }
-                />
-              )}
-              {deleteApiEndpoint && (
-                <DeleteBarDialog
-                  barId={bar.id}
-                  deleteApiEndpoint={deleteApiEndpoint}
-                  onSuccess={() => refetch()}
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      Delete
-                    </DropdownMenuItem>
-                  }
-                />
-              )}
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem
+                onClick={() => setIsDrawerOpen(true)}
+                className="cursor-pointer"
+              >
+                <IconEdit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        );
-      },
-    };
 
-    return [...baseColumns, actionColumn];
-  }, [selectableRows, editApiEndpoint, deleteApiEndpoint, refetch]);
+          <BarCellViewer
+            item={row.original}
+            editApiEndpoint={editApiEndpoint}
+            onSave={() => refetch()}
+            isOpen={isDrawerOpen}
+            onOpenChange={setIsDrawerOpen}
+          />
+        </>
+      );
+    },
+    enableSorting: false,
+    enableHiding: false,
+  };
+
+  // Conditionally include columns based on props
+  let availableColumns = selectableRows
+    ? columns
+    : columns.filter((col) => col.id !== "select");
+
+  // Add actions column if editApiEndpoint is provided
+  if (editApiEndpoint) {
+    availableColumns = [...availableColumns, actionsColumn];
+  }
 
   const table = useReactTable({
     data,
@@ -505,30 +430,37 @@ export function BarDataTable({
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const selectedBars = selectedRows.map((row) => row.original);
 
-  const handleDeleteSelected = async () => {
+  const handleDelete = async () => {
     if (!deleteApiEndpoint || selectedBars.length === 0) return;
 
+    setIsDeleting(true);
     try {
-      await Promise.all(
-        selectedBars.map((bar) => deleteBar(deleteApiEndpoint, bar.id))
-      );
+      const selectedIds = selectedBars.map((bar) => bar.id);
+      const response = await fetch(deleteApiEndpoint, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete rows");
+      }
+
+      // Reset selection and close dialog
       setRowSelection({});
-      refetch();
+      setIsDeleteDialogOpen(false);
+
+      // Refetch data to update the table
+      await refetch();
     } catch (error) {
-      console.error("Failed to delete bars:", error);
+      console.error("Delete error:", error);
+      // You might want to add toast notification here
+    } finally {
+      setIsDeleting(false);
     }
   };
-
-  if (error) {
-    return (
-      <div className="text-center py-4">
-        <p className="text-red-500">Error loading bars: {String(error)}</p>
-        <Button onClick={() => refetch()} className="mt-2">
-          Try Again
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full flex-col justify-start gap-6">
@@ -548,7 +480,7 @@ export function BarDataTable({
               </span>
             )}
           </div>
-          {queryTime > 0 && (
+          {queryTime !== null && (
             <div className="text-green-600">
               Latest query: {queryTime.toFixed(2)}ms
             </div>
@@ -557,28 +489,14 @@ export function BarDataTable({
       )}
 
       <div className="relative flex flex-col gap-4 overflow-auto">
-        {selectableRows && selectedBars.length > 0 && deleteApiEndpoint && (
-          <div className="flex items-center py-4">
-            <DeleteSelectedBarsDialog
-              selectedCount={selectedBars.length}
-              onConfirm={handleDeleteSelected}
-              trigger={
-                <Button variant="destructive" size="sm">
-                  Delete {selectedBars.length} selected row
-                  {selectedBars.length === 1 ? "" : "s"}
-                </Button>
-              }
-            />
-          </div>
-        )}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
+        <div className="overflow-hidden rounded-lg border">
+          <Table key={fetchApiEndpoint}>
+            <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id}>
+                      <TableHead key={header.id} colSpan={header.colSpan}>
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -595,24 +513,38 @@ export function BarDataTable({
               {isLoading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={availableColumns.length}
+                    colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    <div className="flex items-center justify-center">
-                      <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                    <div className="flex items-center justify-center gap-2">
+                      <IconLoader className="animate-spin" />
                       Loading...
                     </div>
                   </TableCell>
                 </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    <div className="text-red-500">
+                      Error loading data: {error.message}
+                    </div>
+                  </TableCell>
+                </TableRow>
               ) : table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row, index) => (
                   <TableRow
-                    key={row.id}
+                    key={`${row.id}-${index}`}
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -620,7 +552,7 @@ export function BarDataTable({
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={availableColumns.length}
+                    colSpan={columns.length}
                     className="h-24 text-center"
                   >
                     No results.
@@ -630,81 +562,124 @@ export function BarDataTable({
             </TableBody>
           </Table>
         </div>
-      </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+        <div className="flex items-center justify-between px-2">
           {selectableRows && (
-            <>
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
-            </>
+            <div className="flex-1 text-sm text-muted-foreground">
+              {deleteApiEndpoint && selectedBars.length > 0 ? (
+                <AlertDialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={setIsDeleteDialogOpen}
+                >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      Delete {selectedBars.length} selected row
+                      {selectedBars.length === 1 ? "" : "s"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the following items:
+                        <div className="mt-3 p-3 bg-muted rounded-md max-h-40 overflow-y-auto">
+                          <ul className="list-disc list-inside space-y-1">
+                            {selectedBars.map((bar) => (
+                              <li key={bar.id} className="text-sm">
+                                {bar.label || "Untitled Bar"}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <>
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </>
+              )}
+            </div>
           )}
-          <span className="ml-4">
-            Query time: {queryTime.toFixed(0)}ms
-          </span>
-        </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">Rows per page</p>
-            <Select
-              value={`${table.getState().pagination.pageSize}`}
-              onValueChange={(value) => {
-                table.setPageSize(Number(value));
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={table.getState().pagination.pageSize} />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to first page</span>
-              <IconChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="h-8 w-8 p-0"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to previous page</span>
-              <IconChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="h-8 w-8 p-0"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to next page</span>
-              <IconChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to last page</span>
-              <IconChevronsRight className="h-4 w-4" />
-            </Button>
+          <div
+            className={`flex items-center space-x-6 lg:space-x-8 ${!selectableRows ? "w-full justify-end" : ""}`}
+          >
+            <div className="flex items-center space-x-2">
+              <p className="text-sm font-medium">Rows per page</p>
+              <Select
+                value={`${table.getState().pagination.pageSize}`}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue
+                    placeholder={table.getState().pagination.pageSize}
+                  />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 40, 50].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage() || isLoading}
+              >
+                <span className="sr-only">Go to first page</span>
+                <IconChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage() || isLoading}
+              >
+                <span className="sr-only">Go to previous page</span>
+                <IconChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage() || isLoading}
+              >
+                <span className="sr-only">Go to next page</span>
+                <IconChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage() || isLoading}
+              >
+                <span className="sr-only">Go to last page</span>
+                <IconChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -712,204 +687,197 @@ export function BarDataTable({
   );
 }
 
-interface EditBarDialogProps {
-  bar: Bar;
-  editApiEndpoint: string;
-  onSuccess: () => void;
-  trigger: React.ReactNode;
-}
+function BarCellViewer({
+  item,
+  editApiEndpoint,
+  onSave,
+  triggerElement,
+  isOpen,
+  onOpenChange,
+}: {
+  item: Bar;
+  editApiEndpoint?: string;
+  onSave?: () => void;
+  triggerElement?: React.ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const isMobile = useIsMobile();
+  const [isSaving, setIsSaving] = React.useState(false);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
-function EditBarDialog({ bar, editApiEndpoint, onSuccess, trigger }: EditBarDialogProps) {
-  const [open, setOpen] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const handleSave = async (formData: FormData) => {
+    if (!editApiEndpoint) return;
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSubmitting(true);
-
+    setIsSaving(true);
     try {
-      const formData = new FormData(event.currentTarget);
-      const data = {
+      const updatedItem = {
+        id: item.id,
         foo_id: formData.get("foo_id") as string,
-        value: parseFloat(formData.get("value") as string),
-        label: formData.get("label") as string,
-        notes: formData.get("notes") as string,
+        value: parseInt(formData.get("value") as string),
+        label: (formData.get("label") as string) || null,
+        notes: (formData.get("notes") as string) || null,
         is_enabled: formData.get("is_enabled") === "on",
       };
 
-      await editBar(editApiEndpoint, bar.id, data);
-      setOpen(false);
-      onSuccess();
+      console.log("Sending update request:", updatedItem);
+
+      const response = await fetch(`${editApiEndpoint}/${item.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedItem),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `Failed to update item: ${response.status} ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("Update successful:", result);
+
+      // Close the drawer on success
+      onOpenChange?.(false);
+      // Refresh the data
+      onSave?.();
     } catch (error) {
-      console.error("Failed to edit bar:", error);
+      console.error("Save error:", error);
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const content = (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="foo_id">Associated Foo ID</Label>
-        <Input
-          id="foo_id"
-          name="foo_id"
-          defaultValue={bar.foo_id}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="value">Value</Label>
-        <Input
-          id="value"
-          name="value"
-          type="number"
-          step="0.01"
-          defaultValue={bar.value}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="label">Label</Label>
-        <Input id="label" name="label" defaultValue={bar.label || ""} />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea id="notes" name="notes" defaultValue={bar.notes || ""} />
-      </div>
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="is_enabled"
-          name="is_enabled"
-          defaultChecked={bar.is_enabled}
-        />
-        <Label htmlFor="is_enabled">Is Enabled</Label>
-      </div>
-      <div className="text-sm text-muted-foreground space-y-1">
-                        <p>Created: {formatTableDate(bar.created_at)}</p>
-                <p>Updated: {formatTableDate(bar.updated_at)}</p>
-      </div>
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save Changes"}
-        </Button>
-      </div>
-    </form>
-  );
-
-  if (useIsMobile()) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Edit Bar</DrawerTitle>
-            <DrawerDescription>
-              Make changes to the bar. Click save when you're done.
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="px-4">{content}</div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Edit Bar</AlertDialogTitle>
-          <AlertDialogDescription>
-            Make changes to the bar. Click save when you're done.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {content}
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-interface DeleteBarDialogProps {
-  barId: string;
-  deleteApiEndpoint: string;
-  onSuccess: () => void;
-  trigger: React.ReactNode;
-}
-
-function DeleteBarDialog({ barId, deleteApiEndpoint, onSuccess, trigger }: DeleteBarDialogProps) {
-  const [open, setOpen] = React.useState(false);
-  const [isDeleting, setIsDeleting] = React.useState(false);
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await deleteBar(deleteApiEndpoint, barId);
-      setOpen(false);
-      onSuccess();
-    } catch (error) {
-      console.error("Failed to delete bar:", error);
-    } finally {
-      setIsDeleting(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the bar.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Deleting..." : "Delete"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-interface DeleteSelectedBarsDialogProps {
-  selectedCount: number;
-  onConfirm: () => void;
-  trigger: React.ReactNode;
-}
-
-function DeleteSelectedBarsDialog({ selectedCount, onConfirm, trigger }: DeleteSelectedBarsDialogProps) {
-  const [open, setOpen] = React.useState(false);
-
-  const handleConfirm = () => {
-    onConfirm();
-    setOpen(false);
-  };
-
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete {selectedCount} bar(s).
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm}>
-            Delete {selectedCount} Bar(s)
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Drawer
+      direction={isMobile ? "bottom" : "right"}
+      open={isOpen}
+      onOpenChange={onOpenChange}
+    >
+      {triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>{triggerElement}</DrawerTrigger>
+      )}
+      {!triggerElement && isOpen === undefined && (
+        <DrawerTrigger asChild>
+          <Button
+            variant="link"
+            className="text-foreground w-fit px-0 text-left"
+          >
+            {item.label || "Untitled Bar"}
+          </Button>
+        </DrawerTrigger>
+      )}
+      <DrawerContent>
+        <DrawerHeader className="gap-1">
+          <DrawerTitle>{item.label || "Untitled Bar"}</DrawerTitle>
+          <DrawerDescription>Bar details - ID: {item.id}</DrawerDescription>
+        </DrawerHeader>
+        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
+          <form
+            ref={formRef}
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (editApiEndpoint) {
+                const formData = new FormData(e.currentTarget);
+                handleSave(formData);
+              }
+            }}
+          >
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="label">Label</Label>
+              <Input
+                id="label"
+                name="label"
+                defaultValue={item.label || ""}
+                placeholder="Enter label"
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="value">Value</Label>
+              <Input
+                id="value"
+                name="value"
+                type="number"
+                defaultValue={item.value}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="foo_id">Associated Foo ID</Label>
+              <Input
+                id="foo_id"
+                name="foo_id"
+                defaultValue={item.foo_id}
+                placeholder="Foo ID"
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                defaultValue={item.notes || ""}
+                placeholder="Add notes..."
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="is_enabled"
+                name="is_enabled"
+                defaultChecked={item.is_enabled}
+              />
+              <Label htmlFor="is_enabled">Is Enabled</Label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                <Label>Created At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.created_at).toLocaleString()}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Label>Updated At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.updated_at).toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <DrawerFooter>
+          {editApiEndpoint ? (
+            <Button
+              disabled={isSaving}
+              onClick={(e) => {
+                e.preventDefault();
+                if (formRef.current) {
+                  const formData = new FormData(formRef.current);
+                  handleSave(formData);
+                }
+              }}
+            >
+              {isSaving ? (
+                <>
+                  <IconLoader className="animate-spin h-4 w-4 mr-2" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          ) : (
+            <Button disabled>View Only</Button>
+          )}
+          <DrawerClose asChild>
+            <Button variant="outline">Close</Button>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
