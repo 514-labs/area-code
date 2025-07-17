@@ -29,7 +29,6 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { FooStatus, FooWithCDC } from "@workspace/models";
-
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -81,10 +80,8 @@ import {
 import { Textarea } from "@workspace/ui/components/textarea";
 import React, { useEffect, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
-import { formatTableDate } from "../../lib/date-utils";
-
-// Import shared CDC utilities
-import { getCDCOperationBadge, createCDCColumns } from "../shared/cdc-utils";
+import { format } from "date-fns";
+import { getCDCOperationBadge, createCDCColumns } from "../cdc/cdc-utils";
 
 // Add a sortable header component
 const SortableHeader = ({
@@ -165,7 +162,9 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
             aria-label="Select all"
           />
         </div>
@@ -195,16 +194,17 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
       header: ({ column }) => (
         <SortableHeader column={column}>Name</SortableHeader>
       ),
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.name}</div>
-      ),
+      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
       enableSorting: true,
     },
     {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (
-        <div className="max-w-xs truncate" title={row.original.description || ""}>
+        <div
+          className="max-w-xs truncate"
+          title={row.original.description || ""}
+        >
           {row.original.description || (
             <span className="text-muted-foreground italic">No description</span>
           )}
@@ -222,13 +222,19 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
         const getStatusIcon = () => {
           switch (status) {
             case FooStatus.ACTIVE:
-              return <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />;
+              return (
+                <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+              );
             case FooStatus.INACTIVE:
               return <IconCircleX className="text-red-500 dark:text-red-400" />;
             case FooStatus.PENDING:
-              return <IconClock className="text-yellow-500 dark:text-yellow-400" />;
+              return (
+                <IconClock className="text-yellow-500 dark:text-yellow-400" />
+              );
             case FooStatus.ARCHIVED:
-              return <IconArchive className="text-gray-500 dark:text-gray-400" />;
+              return (
+                <IconArchive className="text-gray-500 dark:text-gray-400" />
+              );
             default:
               return <IconCircleX className="text-gray-400" />;
           }
@@ -319,7 +325,7 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
       ),
       cell: ({ row }) => (
         <div className="text-sm text-muted-foreground">
-          {formatTableDate(row.original.created_at)}
+          {format(new Date(row.original.created_at), "MMM d, yyyy h:mm a")}
         </div>
       ),
       enableSorting: true,
@@ -331,7 +337,7 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
       ),
       cell: ({ row }) => (
         <div className="text-sm text-muted-foreground">
-          {formatTableDate(row.original.updated_at)}
+          {format(row.original.updated_at, "MMM d, yyyy h:mm a")}
         </div>
       ),
       enableSorting: true,
@@ -355,11 +361,8 @@ export function FooCDCDataTable({
   editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = useState({});
-  const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>({});
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
-  );
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -547,13 +550,28 @@ export function FooCDCDataTable({
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
           <div>
-            Showing {(serverPagination.offset + 1).toLocaleString()} to{" "}
-            {Math.min(
-              serverPagination.offset + serverPagination.limit,
-              serverPagination.total
-            ).toLocaleString()}{" "}
-            of {serverPagination.total.toLocaleString()} items
-            {serverPagination.hasMore && " (more available)"}
+            Showing{" "}
+            <NumericFormat
+              value={serverPagination.offset + 1}
+              displayType="text"
+              thousandSeparator
+            />{" "}
+            to{" "}
+            <NumericFormat
+              value={Math.min(
+                serverPagination.offset + serverPagination.limit,
+                serverPagination.total
+              )}
+              displayType="text"
+              thousandSeparator
+            />{" "}
+            of{" "}
+            <NumericFormat
+              value={serverPagination.total}
+              displayType="text"
+              thousandSeparator
+            />{" "}
+            items
             {sorting.length > 0 && (
               <span className="ml-2 text-blue-600">
                 • Sorted by {sorting[0].id} ({sorting[0].desc ? "desc" : "asc"})
@@ -652,8 +670,13 @@ export function FooCDCDataTable({
                 >
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
-                      Delete {selectedFoos.length} selected row
-                      {selectedFoos.length === 1 ? "" : "s"}
+                      Delete{" "}
+                      <NumericFormat
+                        value={selectedFoos.length}
+                        displayType="text"
+                        thousandSeparator
+                      />{" "}
+                      selected row{selectedFoos.length === 1 ? "" : "s"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -687,8 +710,18 @@ export function FooCDCDataTable({
                 </AlertDialog>
               ) : (
                 <>
-                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                  <NumericFormat
+                    value={table.getFilteredSelectedRowModel().rows.length}
+                    displayType="text"
+                    thousandSeparator
+                  />{" "}
+                  of{" "}
+                  <NumericFormat
+                    value={table.getFilteredRowModel().rows.length}
+                    displayType="text"
+                    thousandSeparator
+                  />{" "}
+                  row(s) selected.
                 </>
               )}
             </div>
@@ -719,8 +752,18 @@ export function FooCDCDataTable({
               </Select>
             </div>
             <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+              Page{" "}
+              <NumericFormat
+                value={table.getState().pagination.pageIndex + 1}
+                displayType="text"
+                thousandSeparator
+              />{" "}
+              of{" "}
+              <NumericFormat
+                value={table.getPageCount()}
+                displayType="text"
+                thousandSeparator
+              />
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -858,7 +901,7 @@ function FooCellViewer({
               {getCDCOperationBadge(item.cdc_operation)}
               {item.cdc_timestamp && (
                 <span className="text-xs text-muted-foreground">
-                  {formatTableDate(item.cdc_timestamp)}
+                  {format(new Date(item.cdc_timestamp), "MMM d, yyyy h:mm a")}
                 </span>
               )}
             </div>
@@ -1001,4 +1044,4 @@ function FooCellViewer({
       </DrawerContent>
     </Drawer>
   );
-} 
+}

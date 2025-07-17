@@ -10,30 +10,41 @@ import {
 import { ColumnDef, Column } from "@tanstack/react-table";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { formatCDCTimestamp } from "../../lib/date-utils";
+import { format } from "date-fns";
 
 // Shared CDC operation badge function
-export function getCDCOperationBadge(operation?: "INSERT" | "UPDATE" | "DELETE") {
+export function getCDCOperationBadge(
+  operation?: "INSERT" | "UPDATE" | "DELETE"
+) {
   if (!operation) return <Badge variant="outline">N/A</Badge>;
-  
+
   switch (operation) {
     case "INSERT":
       return (
-        <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+        <Badge
+          variant="default"
+          className="bg-green-100 text-green-800 border-green-300"
+        >
           <IconPlus className="h-3 w-3 mr-1" />
           INSERT
         </Badge>
       );
     case "UPDATE":
       return (
-        <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-300">
+        <Badge
+          variant="default"
+          className="bg-blue-100 text-blue-800 border-blue-300"
+        >
           <IconRefresh className="h-3 w-3 mr-1" />
           UPDATE
         </Badge>
       );
     case "DELETE":
       return (
-        <Badge variant="default" className="bg-red-100 text-red-800 border-red-300">
+        <Badge
+          variant="default"
+          className="bg-red-100 text-red-800 border-red-300"
+        >
           <IconMinus className="h-3 w-3 mr-1" />
           DELETE
         </Badge>
@@ -81,7 +92,12 @@ export const SortableHeader = <T extends Record<string, unknown>>({
 };
 
 // Generic CDC column definitions that can be used by any table
-export function createCDCColumns<T extends { cdc_operation?: "INSERT" | "UPDATE" | "DELETE"; cdc_timestamp?: string | Date }>(): ColumnDef<T>[] {
+export function createCDCColumns<
+  T extends {
+    cdc_operation?: "INSERT" | "UPDATE" | "DELETE";
+    cdc_timestamp?: string | Date;
+  },
+>(): ColumnDef<T>[] {
   return [
     {
       accessorKey: "cdc_operation",
@@ -98,12 +114,10 @@ export function createCDCColumns<T extends { cdc_operation?: "INSERT" | "UPDATE"
       ),
       cell: ({ row }) => (
         <div className="text-sm text-muted-foreground">
-          {formatCDCTimestamp(row.original.cdc_timestamp)}
+          {format(new Date(row.original.cdc_timestamp), "MMM d, yyyy h:mm a")}
         </div>
       ),
       enableSorting: true,
     },
   ];
 }
-
- 

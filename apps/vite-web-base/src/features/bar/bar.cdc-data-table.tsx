@@ -30,9 +30,9 @@ import { BarWithCDC } from "@workspace/models";
 import { formatTableDate } from "../../lib/date-utils";
 
 // Import shared CDC utilities
-import { createCDCColumns } from "../shared/cdc-utils";
+import { createCDCColumns } from "../cdc/cdc-utils";
 
-// Add a sortable header component  
+// Add a sortable header component
 const SortableHeader = ({
   column,
   children,
@@ -179,7 +179,9 @@ const createColumns = (): ColumnDef<BarWithCDC>[] => {
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
             aria-label="Select all"
           />
         </div>
@@ -230,9 +232,7 @@ const createColumns = (): ColumnDef<BarWithCDC>[] => {
       accessorKey: "foo_id",
       header: "Associated Foo ID",
       cell: ({ row }) => (
-        <div className="font-mono text-sm">
-          {row.original.foo_id}
-        </div>
+        <div className="font-mono text-sm">{row.original.foo_id}</div>
       ),
       enableSorting: true,
     },
@@ -291,8 +291,11 @@ export function BarCDCDataTable({
   editApiEndpoint?: string;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [queryTime, setQueryTime] = React.useState<number>(0);
   const [pagination, setPagination] = React.useState({
@@ -345,7 +348,9 @@ export function BarCDCDataTable({
 
   // Build columns based on available actions
   const availableColumns = React.useMemo(() => {
-    const baseColumns = selectableRows ? columns : columns.filter((col) => col.id !== "select");
+    const baseColumns = selectableRows
+      ? columns
+      : columns.filter((col) => col.id !== "select");
 
     if (!editApiEndpoint && !deleteApiEndpoint) {
       return baseColumns; // No action column needed
@@ -543,7 +548,10 @@ export function BarCDCDataTable({
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -570,9 +578,7 @@ export function BarCDCDataTable({
               {table.getFilteredRowModel().rows.length} row(s) selected.
             </>
           )}
-          <span className="ml-4">
-            Query time: {queryTime.toFixed(0)}ms
-          </span>
+          <span className="ml-4">Query time: {queryTime.toFixed(0)}ms</span>
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
@@ -584,7 +590,9 @@ export function BarCDCDataTable({
               }}
             >
               <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={table.getState().pagination.pageSize} />
+                <SelectValue
+                  placeholder={table.getState().pagination.pageSize}
+                />
               </SelectTrigger>
               <SelectContent side="top">
                 {[10, 20, 30, 40, 50].map((pageSize) => (
@@ -650,7 +658,12 @@ interface EditBarDialogProps {
   trigger: React.ReactNode;
 }
 
-function EditBarDialog({ bar, editApiEndpoint, onSuccess, trigger }: EditBarDialogProps) {
+function EditBarDialog({
+  bar,
+  editApiEndpoint,
+  onSuccess,
+  trigger,
+}: EditBarDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -682,12 +695,7 @@ function EditBarDialog({ bar, editApiEndpoint, onSuccess, trigger }: EditBarDial
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="foo_id">Associated Foo ID</Label>
-        <Input
-          id="foo_id"
-          name="foo_id"
-          defaultValue={bar.foo_id}
-          required
-        />
+        <Input id="foo_id" name="foo_id" defaultValue={bar.foo_id} required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="value">Value</Label>
@@ -772,7 +780,12 @@ interface DeleteBarDialogProps {
   trigger: React.ReactNode;
 }
 
-function DeleteBarDialog({ barId, deleteApiEndpoint, onSuccess, trigger }: DeleteBarDialogProps) {
+function DeleteBarDialog({
+  barId,
+  deleteApiEndpoint,
+  onSuccess,
+  trigger,
+}: DeleteBarDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -816,7 +829,11 @@ interface DeleteSelectedBarsDialogProps {
   trigger: React.ReactNode;
 }
 
-function DeleteSelectedBarsDialog({ selectedCount, onConfirm, trigger }: DeleteSelectedBarsDialogProps) {
+function DeleteSelectedBarsDialog({
+  selectedCount,
+  onConfirm,
+  trigger,
+}: DeleteSelectedBarsDialogProps) {
   const [open, setOpen] = React.useState(false);
 
   const handleConfirm = () => {
@@ -831,7 +848,8 @@ function DeleteSelectedBarsDialog({ selectedCount, onConfirm, trigger }: DeleteS
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete {selectedCount} bar(s).
+            This action cannot be undone. This will permanently delete{" "}
+            {selectedCount} bar(s).
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -843,4 +861,4 @@ function DeleteSelectedBarsDialog({ selectedCount, onConfirm, trigger }: DeleteS
       </AlertDialogContent>
     </AlertDialog>
   );
-} 
+}
