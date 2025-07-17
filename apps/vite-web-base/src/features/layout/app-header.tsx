@@ -32,7 +32,7 @@ export function AppHeader() {
         <h1 className="text-base font-medium"></h1>
 
         {/* Search Integration wrapped with RetrievalWrapper */}
-        <RetrievalHighlightWrapper className="flex-1 flex justify-center mx-4">
+        <RetrievalHighlightWrapper className="flex-1 flex justify-center mx-4 rounded-md">
           <SearchCommand
             className="w-full "
             onSelect={handleSearchSelect}

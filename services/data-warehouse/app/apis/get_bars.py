@@ -3,6 +3,8 @@ from app.ingest.models import Bar, Foo, FooStatus
 from pydantic import BaseModel
 from typing import List, Optional
 
+# An API to get Bars from the data warehouse.
+
 class GetBarsQuery(BaseModel):
     status: Optional[str] = None
     limit: int = 1000

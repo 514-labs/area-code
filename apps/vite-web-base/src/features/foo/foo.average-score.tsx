@@ -83,7 +83,7 @@ export default function FooAverageScore({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle>Average Score</CardTitle>
+            <CardTitle>Foo Average Score</CardTitle>
           </div>
           <Button
             variant="outline"

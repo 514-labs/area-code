@@ -83,7 +83,7 @@ export default function BarAverageValue({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle>Average Value</CardTitle>
+            <CardTitle>Bar Average Value</CardTitle>
           </div>
           <Button
             variant="outline"

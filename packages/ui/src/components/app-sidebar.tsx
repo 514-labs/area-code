@@ -1,6 +1,3 @@
-import * as React from "react";
-import { Zap } from "lucide-react";
-
 import { NavMain, type NavMainItem } from "@workspace/ui/components/nav-main";
 import {
   NavSecondary,
@@ -16,38 +13,37 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
+import { ComponentProps, ReactNode } from "react";
 
-export interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+export type AppSidebarProps = ComponentProps<typeof Sidebar> & {
   currentPath?: string;
-  navMain: (NavMainItem | React.ReactNode)[];
-  navSecondary: (NavItem | React.ReactNode)[];
+  navMain: (NavMainItem | ReactNode)[];
+  navSecondary: (NavItem | ReactNode)[];
   user: {
     name: string;
     email: string;
     avatar: string;
   };
-}
+  topHero: ReactNode;
+};
 
 export function AppSidebar({
   currentPath,
   navMain,
   navSecondary,
   user,
-  ...props
+  topHero,
 }: AppSidebarProps) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:!p-1.5 items-center"
             >
-              <a href="#">
-                <Zap className="!size-5" />
-                <span className="text-base font-semibold">Area Code</span>
-              </a>
+              {topHero}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
