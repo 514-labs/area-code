@@ -301,22 +301,30 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
     },
     {
       accessorKey: "tags",
-      header: "Tags",
-      cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1 max-w-xs">
-          {row.original.tags?.slice(0, 2).map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-          {row.original.tags && row.original.tags.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{row.original.tags.length - 2}
-            </Badge>
-          )}
-        </div>
+      header: ({ column }) => (
+        <SortableHeader column={column}>Tags</SortableHeader>
       ),
-      enableSorting: false,
+      cell: ({ row }) => {
+        if (!row.original.tags) return null;
+        const validTags = row.original.tags.filter((tag) => tag !== null);
+        if (validTags.length === 0) return null;
+
+        return (
+          <div className="flex gap-1">
+            {validTags.slice(0, 2).map((tag: string, index: number) => (
+              <Badge key={index} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {validTags.length > 2 && (
+              <Badge variant="secondary" className="text-xs">
+                +{validTags.length - 2} more
+              </Badge>
+            )}
+          </div>
+        );
+      },
+      enableSorting: true,
     },
     {
       accessorKey: "created_at",
@@ -580,7 +588,13 @@ export function FooCDCDataTable({
           </div>
           {queryTime !== null && (
             <div className="text-green-600">
-              Latest query: {queryTime.toFixed(2)}ms
+              Latest query:{" "}
+              <NumericFormat
+                value={Math.round(queryTime || 0)}
+                displayType="text"
+                thousandSeparator=","
+              />
+              ms
             </div>
           )}
         </div>
@@ -751,19 +765,21 @@ export function FooCDCDataTable({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-              Page{" "}
-              <NumericFormat
-                value={table.getState().pagination.pageIndex + 1}
-                displayType="text"
-                thousandSeparator
-              />{" "}
-              of{" "}
-              <NumericFormat
-                value={table.getPageCount()}
-                displayType="text"
-                thousandSeparator
-              />
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              <span>
+                Page{" "}
+                <NumericFormat
+                  value={table.getState().pagination.pageIndex + 1}
+                  displayType="text"
+                  thousandSeparator
+                />{" "}
+                of{" "}
+                <NumericFormat
+                  value={table.getPageCount()}
+                  displayType="text"
+                  thousandSeparator
+                />
+              </span>
             </div>
             <div className="flex items-center space-x-2">
               <Button

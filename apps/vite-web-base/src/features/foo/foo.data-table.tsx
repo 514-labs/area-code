@@ -81,38 +81,7 @@ import {
 import { Textarea } from "@workspace/ui/components/textarea";
 import { ReactNode, useEffect, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
-
-const getStatusIcon = (status: FooStatus) => {
-  switch (status) {
-    case FooStatus.ACTIVE:
-      return (
-        <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-      );
-    case FooStatus.INACTIVE:
-      return <IconCircleX className="text-red-500 dark:text-red-400" />;
-    case FooStatus.PENDING:
-      return <IconClock className="text-yellow-500 dark:text-yellow-400" />;
-    case FooStatus.ARCHIVED:
-      return <IconArchive className="text-gray-500 dark:text-gray-400" />;
-    default:
-      return <IconLoader />;
-  }
-};
-
-const getStatusColor = (status: FooStatus) => {
-  switch (status) {
-    case FooStatus.ACTIVE:
-      return "bg-green-100 border-green-700 text-green-800 dark:bg-green-900 dark:text-green-300";
-    case FooStatus.INACTIVE:
-      return "bg-red-100 border-red-700  text-red-800 dark:bg-red-900 dark:text-red-300";
-    case FooStatus.PENDING:
-      return "bg-yellow-100 border-yellow-700 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-    case FooStatus.ARCHIVED:
-      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    default:
-      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-  }
-};
+import { format } from "date-fns";
 
 // Add a sortable header component
 const SortableHeader = ({
@@ -209,15 +178,34 @@ const columns: ColumnDef<Foo>[] = [
     header: ({ column }) => (
       <SortableHeader column={column}>Status</SortableHeader>
     ),
-    cell: ({ row }) => (
-      <Badge
-        variant="outline"
-        className={`py-[3px] ${getStatusColor(row.original.status)}`}
-      >
-        {getStatusIcon(row.original.status)}
-        <span className="ml-1 capitalize">{row.original.status}</span>
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const status = row.original.status;
+      const getStatusIcon = () => {
+        switch (status) {
+          case FooStatus.ACTIVE:
+            return (
+              <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+            );
+          case FooStatus.INACTIVE:
+            return <IconCircleX className="text-red-500 dark:text-red-400" />;
+          case FooStatus.PENDING:
+            return (
+              <IconClock className="text-yellow-500 dark:text-yellow-400" />
+            );
+          case FooStatus.ARCHIVED:
+            return <IconArchive className="text-gray-500 dark:text-gray-400" />;
+          default:
+            return <IconCircleX className="text-gray-400" />;
+        }
+      };
+
+      return (
+        <div className="flex items-center gap-2">
+          {getStatusIcon()}
+          <span className="capitalize">{status}</span>
+        </div>
+      );
+    },
     enableSorting: true,
   },
   {
@@ -304,7 +292,7 @@ const columns: ColumnDef<Foo>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {new Date(row.original.created_at).toLocaleDateString()}
+        {format(new Date(row.original.created_at), "MMM d, yyyy h:mm a")}
       </div>
     ),
     enableSorting: true,
@@ -316,7 +304,7 @@ const columns: ColumnDef<Foo>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {new Date(row.original.updated_at).toLocaleDateString()}
+        {format(new Date(row.original.updated_at), "MMM d, yyyy h:mm a")}
       </div>
     ),
     enableSorting: true,

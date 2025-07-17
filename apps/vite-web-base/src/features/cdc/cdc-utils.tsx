@@ -23,7 +23,7 @@ export function getCDCOperationBadge(
       return (
         <Badge
           variant="default"
-          className="bg-green-100 text-green-800 border-green-300"
+          className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700"
         >
           <IconPlus className="h-3 w-3 mr-1" />
           INSERT
@@ -33,7 +33,7 @@ export function getCDCOperationBadge(
       return (
         <Badge
           variant="default"
-          className="bg-blue-100 text-blue-800 border-blue-300"
+          className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700"
         >
           <IconRefresh className="h-3 w-3 mr-1" />
           UPDATE
@@ -43,7 +43,7 @@ export function getCDCOperationBadge(
       return (
         <Badge
           variant="default"
-          className="bg-red-100 text-red-800 border-red-300"
+          className="bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700"
         >
           <IconMinus className="h-3 w-3 mr-1" />
           DELETE
@@ -114,7 +114,9 @@ export function createCDCColumns<
       ),
       cell: ({ row }) => (
         <div className="text-sm text-muted-foreground">
-          {format(new Date(row.original.cdc_timestamp), "MMM d, yyyy h:mm a")}
+          {row.original.cdc_timestamp
+            ? format(new Date(row.original.cdc_timestamp), "MMM d, yyyy h:mm a")
+            : "N/A"}
         </div>
       ),
       enableSorting: true,
