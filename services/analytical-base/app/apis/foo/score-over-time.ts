@@ -16,7 +16,7 @@ interface ChartDataPoint {
 // Interface for API response
 interface ChartDataResponse {
   data: ChartDataPoint[];
-  dbQueryTime?: number;
+  queryTime?: number;
 }
 
 // Score over time consumption API
@@ -41,14 +41,14 @@ export const scoreOverTimeApi = new ConsumptionApi<
     // Query to get daily score aggregations
     const query = sql`
       SELECT 
-        toDate(createdAt) as date,
+        toDate(created_at) as date,
         AVG(score) as averageScore,
         COUNT(*) as totalCount
       FROM ${FooPipeline.table!}
-      WHERE toDate(createdAt) >= toDate(${startDateStr})
-        AND toDate(createdAt) <= toDate(${endDateStr})
+      WHERE toDate(created_at) >= toDate(${startDateStr})
+        AND toDate(created_at) <= toDate(${endDateStr})
         AND score IS NOT NULL
-      GROUP BY toDate(createdAt)
+      GROUP BY toDate(created_at)
       ORDER BY date ASC
     `;
 
@@ -66,8 +66,7 @@ export const scoreOverTimeApi = new ConsumptionApi<
       totalCount: number;
     }[];
 
-    const endTime = Date.now();
-    const dbQueryTime = endTime - startTime;
+    const queryTime = Date.now() - startTime;
 
     // Fill in missing dates with zero values
     const filledData: ChartDataPoint[] = [];
@@ -88,7 +87,7 @@ export const scoreOverTimeApi = new ConsumptionApi<
 
     return {
       data: filledData,
-      dbQueryTime,
+      queryTime,
     };
   }
 );

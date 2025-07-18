@@ -29,3 +29,4 @@ export * from "./views/foo";
 export * from "./apis/FooConsumptionApi";
 export * from "./apis/BarConsumptionApi";
 export * from "./apis/FooCurrentStateApi";
+export * from "./apis/foo/score-over-time";

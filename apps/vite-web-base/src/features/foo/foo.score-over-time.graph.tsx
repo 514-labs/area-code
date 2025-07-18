@@ -44,7 +44,7 @@ interface ChartDataPoint {
 
 interface ChartDataResponse {
   data: ChartDataPoint[];
-  dbQueryTime?: number;
+  queryTime?: number;
 }
 
 // API Functions
@@ -99,7 +99,7 @@ export function FooScoreOverTimeGraph({
   });
 
   const chartData = chartResponse?.data || [];
-  const queryTime = chartResponse?.dbQueryTime;
+  const queryTime = chartResponse?.queryTime;
 
   // Memoized Y-axis domain calculation
   const yAxisDomain = React.useMemo(() => {
