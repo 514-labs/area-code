@@ -48,11 +48,11 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
     description: "",
     status: FooStatus.ACTIVE,
     priority: 1,
-    isActive: true,
+    is_active: true,
     metadata: {},
     tags: [],
     score: 0,
-    largeText: "",
+    large_text: "",
   });
   const [newTag, setNewTag] = useState("");
   const [metadataKey, setMetadataKey] = useState("");
@@ -74,11 +74,11 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
       description: "",
       status: FooStatus.ACTIVE,
       priority: 1,
-      isActive: true,
+      is_active: true,
       metadata: {},
       tags: [],
       score: 0,
-      largeText: "",
+      large_text: "",
     });
     setNewTag("");
     setMetadataKey("");
@@ -146,7 +146,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
         <DialogHeader>
           <DialogTitle>Create New Foo</DialogTitle>
           <DialogDescription>
-            Add a new foo to your collection with all the details.
+            Add a new foo to your collection.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -172,6 +172,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
+              rows={3}
             />
           </div>
 
@@ -180,12 +181,12 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
             <Label htmlFor="status">Status</Label>
             <Select
               value={formData.status}
-              onValueChange={(value) =>
-                setFormData({ ...formData, status: value as FooStatus })
+              onValueChange={(value: FooStatus) =>
+                setFormData({ ...formData, status: value })
               }
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={FooStatus.ACTIVE}>Active</SelectItem>
@@ -206,10 +207,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
               max="10"
               value={formData.priority}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  priority: parseInt(e.target.value) || 1,
-                })
+                setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })
               }
             />
           </div>
@@ -220,15 +218,10 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
             <Input
               id="score"
               type="number"
-              step="0.01"
-              min="0"
-              max="9999999.99"
+              step="0.1"
               value={formData.score}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  score: parseFloat(e.target.value) || 0,
-                })
+                setFormData({ ...formData, score: parseFloat(e.target.value) || 0 })
               }
             />
           </div>
@@ -237,39 +230,38 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="isActive"
-              checked={formData.isActive}
+              id="is_active"
+              checked={formData.is_active}
               onChange={(e) =>
-                setFormData({ ...formData, isActive: e.target.checked })
+                setFormData({ ...formData, is_active: e.target.checked })
               }
             />
-            <Label htmlFor="isActive">Is Active</Label>
+            <Label htmlFor="is_active">Is Active</Label>
           </div>
 
           {/* Tags */}
           <div className="space-y-2">
             <Label>Tags</Label>
-            <div className="flex space-x-2 mb-2">
+            <div className="flex space-x-2">
               <Input
                 placeholder="Add a tag"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addTag())
-                }
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
               />
-              <Button type="button" onClick={addTag} size="sm">
-                <Plus className="h-4 w-4" />
+              <Button type="button" onClick={addTag}>
+                Add
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {formData.tags?.map((tag, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="flex items-center gap-1"
-                >
-                  {tag}
+                <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                  <span>{tag}</span>
                   <X
                     className="h-3 w-3 cursor-pointer"
                     onClick={() => removeTag(tag)}
@@ -282,7 +274,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
           {/* Metadata */}
           <div className="space-y-2">
             <Label>Metadata</Label>
-            <div className="flex space-x-2 mb-2">
+            <div className="flex space-x-2">
               <Input
                 placeholder="Key"
                 value={metadataKey}
@@ -293,16 +285,13 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                 value={metadataValue}
                 onChange={(e) => setMetadataValue(e.target.value)}
               />
-              <Button type="button" onClick={addMetadata} size="sm">
-                <Plus className="h-4 w-4" />
+              <Button type="button" onClick={addMetadata}>
+                Add
               </Button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {Object.entries(formData.metadata || {}).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="flex items-center justify-between bg-gray-50 p-2 rounded"
-                >
+                <div key={key} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                   <span className="text-sm">
                     <strong>{key}:</strong> {String(value)}
                   </span>
@@ -317,36 +306,23 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
 
           {/* Large Text */}
           <div className="space-y-2">
-            <Label htmlFor="largeText">Large Text</Label>
+            <Label htmlFor="large_text">Large Text</Label>
             <Textarea
-              id="largeText"
-              value={formData.largeText || ""}
+              id="large_text"
+              value={formData.large_text || ""}
               onChange={(e) =>
-                setFormData({ ...formData, largeText: e.target.value })
+                setFormData({ ...formData, large_text: e.target.value })
               }
               rows={4}
-              placeholder="Enter large text content here..."
             />
           </div>
 
-          {/* Error Display */}
-          {createMutation.error && (
-            <div className="text-red-500 text-sm">
-              Error: {createMutation.error.message}
-            </div>
-          )}
-
-          {/* Submit Buttons */}
-          <div className="flex space-x-2">
-            <Button type="submit" disabled={isSubmitting || !formData.name}>
-              {isSubmitting ? "Creating..." : "Create"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-            >
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !formData.name}>
+              {isSubmitting ? "Creating..." : "Create Foo"}
             </Button>
           </div>
         </form>

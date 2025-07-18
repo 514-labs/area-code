@@ -24,29 +24,9 @@
 // Need help? Check out the quickstart guide:
 // → docs.fiveonefour.com/moose/getting-started/quickstart
 
-import { Foo } from "@workspace/models/foo";
-import { Bar } from "@workspace/models/bar";
-import { IngestPipeline, Key } from "@514labs/moose-lib";
-
-type FooOlapTable = Omit<Foo, "id"> & {
-  id: Key<string>;
-};
-export const FooPipeline = new IngestPipeline<FooOlapTable>("Foo", {
-  table: true,
-  stream: true,
-  ingest: true,
-});
-
-type BarOlapTable = Omit<Bar, "id"> & {
-  id: Key<string>;
-};
-export const BarPipeline = new IngestPipeline<BarOlapTable>("Bar", {
-  table: true,
-  stream: true,
-  ingest: true,
-});
-
-//export * from "./pipelines/eventsPipeline";
+export * from "./pipelines/eventsPipeline";
+export * from "./views/foo";
 export * from "./apis/FooConsumptionApi";
 export * from "./apis/BarConsumptionApi";
+export * from "./apis/FooCurrentStateApi";
 export * from "./apis/foo/score-over-time";

@@ -13,6 +13,8 @@ import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph"
 import { FooDataTable } from "@/features/foo/foo.data-table";
 import BarAverageValue from "@/features/bar/bar.average-value";
 import { BarDataTable } from "@/features/bar/bar.data-table";
+import { FooCDCDataTable } from "@/features/foo/foo.cdc-data-table";
+import { BarCDCDataTable } from "@/features/bar/bar.cdc-data-table";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -84,7 +86,7 @@ function AnalyticalConsumptionFooDataTable({
   const fetchApiEndpoint = `${API_BASE}/foo`;
 
   return (
-    <FooDataTable
+    <FooCDCDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />
@@ -144,6 +146,22 @@ function TransactionalBarDataTable({
   );
 }
 
+function AnalyticalBarCDCDataTable({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
+  const API_BASE = getAnalyticalConsumptionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/bar`;
+
+  return (
+    <BarCDCDataTable
+      fetchApiEndpoint={fetchApiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
+}
+
 function IndexPage() {
   const { cacheEnabled } = useFrontendCaching();
 
@@ -157,10 +175,6 @@ function IndexPage() {
         <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
-        <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
-      </AnalyticalHighlightWrapper>
-
       <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalFooScoreOverTimeGraph />
       </TransactionalHighlightWrapper>
@@ -169,19 +183,27 @@ function IndexPage() {
         <AnalyticalFooScoreOverTimeGraph />
       </AnalyticalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
-      </TransactionalHighlightWrapper>
-
       <AnalyticalHighlightWrapper className="col-span-12">
         <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12">
+        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
+      </TransactionalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-8">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+        <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
+      </AnalyticalHighlightWrapper>
+
+      <AnalyticalHighlightWrapper className="col-span-12">
+        <AnalyticalBarCDCDataTable cacheEnabled={cacheEnabled} />
+      </AnalyticalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
     </div>

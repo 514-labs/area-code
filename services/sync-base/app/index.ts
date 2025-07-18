@@ -31,7 +31,10 @@ import {
   createFooThingEvent, 
   createBarThingEvent,
   type FooThingEvent,
-  type BarThingEvent
+  type BarThingEvent,
+  FooWithCDC,
+  BarWithCDC,
+  FooStatus
 } from "@workspace/models";
 
 // Load environment variables
@@ -56,7 +59,7 @@ const ANALYTICS_BASE_URL = process.env.ANALYTICS_BASE_URL || "http://localhost:4
 const RETRIEVAL_BASE_URL = process.env.RETRIEVAL_BASE_URL || "http://localhost:8083";
 
 // Enhanced logging function
-const logEvent = (event: string, table: string, payload: any) => {
+const logEvent = (event: string, table: string, payload: Record<string, unknown>) => {
   const timestamp = new Date().toISOString();
   console.error(`\n[${timestamp}] ${event} event on ${table} table:`);
   console.log("Payload:", JSON.stringify(payload, null, 2));
@@ -93,7 +96,7 @@ const sendEventToAnalytics = async (event: FooThingEvent | BarThingEvent) => {
 };
 
 // HTTP client for sending data to Elasticsearch via retrieval service
-const sendDataToElasticsearch = async (type: "foo" | "bar", action: "index" | "delete", data: any) => {
+const sendDataToElasticsearch = async (type: "foo" | "bar", action: "index" | "delete", data: Record<string, unknown>) => {
   console.log("Sending data to Elasticsearch:", type, action, data);
   const retrievalUrl = RETRIEVAL_BASE_URL;
   const url = `${retrievalUrl}/api/ingest/${type}`;
@@ -121,8 +124,65 @@ const sendDataToElasticsearch = async (type: "foo" | "bar", action: "index" | "d
   }
 };
 
+// HTTP client for sending data to analytical pipelines
+const sendDataToPipeline = async (type: "Foo" | "Bar", data: FooWithCDC | BarWithCDC) => {
+  const analyticsUrl = ANALYTICS_BASE_URL;
+  const url = `${analyticsUrl}/ingest/${type}`;
+
+  try {
+    console.log(`📊 Sending ${type} data to analytical pipeline: ${url}`);
+    
+    // Helper function to safely format dates
+    const formatDate = (dateValue: unknown): string => {
+      if (dateValue instanceof Date) {
+        return dateValue.toISOString();
+      }
+      if (typeof dateValue === 'string' && dateValue) {
+        const date = new Date(dateValue);
+        return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+      }
+      // For missing dates (like in DELETE events), use current timestamp
+      return new Date().toISOString();
+    };
+    
+    // Format dates properly for JSON serialization
+    const formattedData = {
+      ...data,
+      created_at: formatDate(data.created_at),
+      updated_at: formatDate(data.updated_at),
+      cdc_timestamp: data.cdc_timestamp.toISOString(),
+    };
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formattedData),
+    });
+
+    if (response.ok) {
+      console.log(`✅ Successfully sent ${type} data to analytical pipeline`);
+    } else {
+      console.error(`❌ Failed to send ${type} data to analytical pipeline:`, response.status, response.statusText);
+      const errorText = await response.text();
+      console.error("Response:", errorText);
+    }
+  } catch (error) {
+    console.error(`❌ Error sending ${type} data to analytical pipeline:`, error);
+  }
+};
+
+// Define interface for Supabase realtime payload
+interface RealtimePayload {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  new?: Record<string, unknown>;
+  old?: Record<string, unknown>;
+  commit_timestamp?: string;
+}
+
 // Business logic handlers for each table
-async function handleFooChange(payload: any) {
+async function handleFooChange(payload: RealtimePayload) {
   const { eventType, new: newRecord, old: oldRecord } = payload;
 
   // Determine the action based on event type and changes
@@ -131,13 +191,21 @@ async function handleFooChange(payload: any) {
 
   switch (eventType) {
     case "INSERT":
+      if (!newRecord) {
+        console.error("INSERT event missing new record");
+        return;
+      }
       action = "created";
       console.log(`🔔 Business Logic: New foo "${newRecord.name}" created`);
       break;
     case "UPDATE":
+      if (!newRecord || !oldRecord) {
+        console.error("UPDATE event missing records");
+        return;
+      }
       // Determine specific update type
-      if (oldRecord.isActive !== newRecord.isActive) {
-        action = newRecord.isActive ? "activated" : "deactivated";
+      if (oldRecord.is_active !== newRecord.is_active) {
+        action = newRecord.is_active ? "activated" : "deactivated";
         console.log(
           `🔔 Business Logic: Foo "${newRecord.name}" ${action}`
         );
@@ -154,6 +222,10 @@ async function handleFooChange(payload: any) {
       );
       break;
     case "DELETE":
+      if (!oldRecord) {
+        console.error("DELETE event missing old record");
+        return;
+      }
       action = "deleted";
       console.log(`🔔 Business Logic: Foo "${oldRecord.name}" was deleted`);
       break;
@@ -165,31 +237,32 @@ async function handleFooChange(payload: any) {
   // Create and send FooThingEvent to analytics
   try {
     // For INSERT events, create a default previous record with proper default values
-    const createDefaultFooRecord = (record: any) => ({
+    const createDefaultFooRecord = (record: Record<string, unknown> = {}) => ({
       id: "",
       name: "",
       description: null,
-      status: "active",
+      status: FooStatus.ACTIVE,
       priority: 0,
-      isActive: false,
+      is_active: false,
       metadata: {},
       tags: [],
       score: 0,
-      largeText: "",
-      createdAt: new Date(0), // Unix epoch
-      updatedAt: new Date(0), // Unix epoch
+      large_text: "",
+      created_at: new Date(0), // Unix epoch
+      updated_at: new Date(0), // Unix epoch
       ...record
     });
 
+    const recordId = (newRecord?.id || oldRecord?.id) as string;
     const fooEvent = createFooThingEvent({
-      fooId: (newRecord?.id || oldRecord?.id) as string,
+      foo_id: recordId,
       action,
-      previousData: oldRecord ? createDefaultFooRecord(oldRecord) : createDefaultFooRecord({}),
-      currentData: newRecord ? createDefaultFooRecord(newRecord) : createDefaultFooRecord({}),
+      previous_data: oldRecord ? createDefaultFooRecord(oldRecord) : createDefaultFooRecord(),
+      current_data: newRecord ? createDefaultFooRecord(newRecord) : createDefaultFooRecord(),
       changes,
     }, {
       source: "sync-base-realtime",
-      correlationId: `foo-${payload.commit_timestamp || Date.now()}`,
+      correlation_id: `foo-${payload.commit_timestamp || Date.now()}`,
       metadata: {
         session: "realtime-sync",
         user: "system"
@@ -198,10 +271,51 @@ async function handleFooChange(payload: any) {
 
     await sendEventToAnalytics(fooEvent);
 
+    // Send to analytical pipeline for CDC processing
+    const cdc_operation = eventType === "INSERT" ? "INSERT" : eventType === "UPDATE" ? "UPDATE" : "DELETE";
+    
+    // For DELETE events, use oldRecord; for INSERT/UPDATE, use newRecord
+    const sourceData = eventType === "DELETE" ? oldRecord : newRecord;
+    
+    if (sourceData) {
+      let fooPipelineData: FooWithCDC;
+      
+      if (eventType === "DELETE") {
+        // For DELETE events, we only get the ID, so create a complete record with defaults
+        fooPipelineData = {
+          id: sourceData.id as string,
+          name: "", // Unknown - record was deleted
+          description: null,
+          status: FooStatus.ARCHIVED, // Mark as archived since it's deleted
+          priority: 0,
+          is_active: false,
+          metadata: {},
+          tags: [],
+          score: 0,
+          large_text: "",
+          created_at: new Date(), // Use current time as fallback
+          updated_at: new Date(), // Use current time as fallback
+          cdc_id: `foo-${sourceData.id}-${Date.now()}`,
+          cdc_operation: "DELETE",
+          cdc_timestamp: new Date()
+        };
+      } else {
+        // For INSERT/UPDATE events, we have the full record
+        fooPipelineData = {
+          ...sourceData,
+          cdc_id: `foo-${sourceData.id}-${Date.now()}`,
+          cdc_operation,
+          cdc_timestamp: new Date()
+        } as FooWithCDC;
+      }
+      
+      await sendDataToPipeline("Foo", fooPipelineData);
+    }
+
     // Also send to Elasticsearch for search indexing
-    if (eventType === "DELETE") {
+    if (eventType === "DELETE" && oldRecord) {
       await sendDataToElasticsearch("foo", "delete", { id: oldRecord.id });
-    } else {
+    } else if (newRecord) {
       await sendDataToElasticsearch("foo", "index", newRecord);
     }
   } catch (error) {
@@ -209,7 +323,7 @@ async function handleFooChange(payload: any) {
   }
 }
 
-async function handleBarChange(payload: any) {
+async function handleBarChange(payload: RealtimePayload) {
   const { eventType, new: newRecord, old: oldRecord } = payload;
 
   // Determine the action based on event type and changes
@@ -218,15 +332,23 @@ async function handleBarChange(payload: any) {
 
   switch (eventType) {
     case "INSERT":
+      if (!newRecord) {
+        console.error("INSERT event missing new record");
+        return;
+      }
       action = "created";
       console.log(
         `🔔 Business Logic: New bar with value ${newRecord.value} created`
       );
       break;
     case "UPDATE":
+      if (!newRecord || !oldRecord) {
+        console.error("UPDATE event missing records");
+        return;
+      }
       // Determine specific update type
-      if (oldRecord.isEnabled !== newRecord.isEnabled) {
-        action = newRecord.isEnabled ? "enabled" : "disabled";
+      if (oldRecord.is_enabled !== newRecord.is_enabled) {
+        action = newRecord.is_enabled ? "enabled" : "disabled";
         console.log(
           `🔔 Business Logic: Bar ${action}`
         );
@@ -243,6 +365,10 @@ async function handleBarChange(payload: any) {
       );
       break;
     case "DELETE":
+      if (!oldRecord) {
+        console.error("DELETE event missing old record");
+        return;
+      }
       action = "deleted";
       console.log(
         `🔔 Business Logic: Bar with value ${oldRecord.value} was deleted`
@@ -256,29 +382,33 @@ async function handleBarChange(payload: any) {
   // Create and send BarThingEvent to analytics
   try {
     // For INSERT events, create a default previous record with proper default values
-    const createDefaultBarRecord = (record: any) => ({
+    const createDefaultBarRecord = (record: Record<string, unknown> = {}) => ({
       id: "",
-      fooId: "",
+      foo_id: "",
       value: 0,
       label: null,
       notes: null,
-      isEnabled: false,
-      createdAt: new Date(0), // Unix epoch
-      updatedAt: new Date(0), // Unix epoch
+      is_enabled: false,
+      created_at: new Date(0), // Unix epoch
+      updated_at: new Date(0), // Unix epoch
       ...record
     });
 
+    const recordId = (newRecord?.id || oldRecord?.id) as string;
+    const recordFooId = (newRecord?.foo_id || oldRecord?.foo_id) as string;
+    const recordValue = (newRecord?.value || oldRecord?.value) as number;
+    
     const barEvent = createBarThingEvent({
-      barId: (newRecord?.id || oldRecord?.id) as string,
-      fooId: (newRecord?.fooId || oldRecord?.fooId) as string,
+      bar_id: recordId,
+      foo_id: recordFooId,
       action,
-      previousData: oldRecord ? createDefaultBarRecord(oldRecord) : createDefaultBarRecord({}),
-      currentData: newRecord ? createDefaultBarRecord(newRecord) : createDefaultBarRecord({}),
+      previous_data: oldRecord ? createDefaultBarRecord(oldRecord) : createDefaultBarRecord(),
+      current_data: newRecord ? createDefaultBarRecord(newRecord) : createDefaultBarRecord(),
       changes,
-      value: newRecord?.value || oldRecord?.value,
+      value: recordValue,
     }, {
       source: "sync-base-realtime",
-      correlationId: `bar-${payload.commit_timestamp || Date.now()}`,
+      correlation_id: `bar-${payload.commit_timestamp || Date.now()}`,
       metadata: {
         session: "realtime-sync",
         user: "system"
@@ -287,10 +417,47 @@ async function handleBarChange(payload: any) {
 
     await sendEventToAnalytics(barEvent);
 
+    // Send to analytical pipeline for CDC processing
+    const cdc_operation = eventType === "INSERT" ? "INSERT" : eventType === "UPDATE" ? "UPDATE" : "DELETE";
+    
+    // For DELETE events, use oldRecord; for INSERT/UPDATE, use newRecord
+    const sourceData = eventType === "DELETE" ? oldRecord : newRecord;
+    
+    if (sourceData) {
+      let barPipelineData: BarWithCDC;
+      
+      if (eventType === "DELETE") {
+        // For DELETE events, we only get the ID, so create a complete record with defaults
+        barPipelineData = {
+          id: sourceData.id as string,
+          foo_id: "", // Unknown - record was deleted
+          value: 0,
+          label: null,
+          notes: null,
+          is_enabled: false,
+          created_at: new Date(), // Use current time as fallback
+          updated_at: new Date(), // Use current time as fallback
+          cdc_id: `bar-${sourceData.id}-${Date.now()}`,
+          cdc_operation: "DELETE",
+          cdc_timestamp: new Date()
+        };
+      } else {
+        // For INSERT/UPDATE events, we have the full record
+        barPipelineData = {
+          ...sourceData,
+          cdc_id: `bar-${sourceData.id}-${Date.now()}`,
+          cdc_operation,
+          cdc_timestamp: new Date()
+        } as BarWithCDC;
+      }
+      
+      await sendDataToPipeline("Bar", barPipelineData);
+    }
+
     // Also send to Elasticsearch for search indexing
-    if (eventType === "DELETE") {
+    if (eventType === "DELETE" && oldRecord) {
       await sendDataToElasticsearch("bar", "delete", { id: oldRecord.id });
-    } else {
+    } else if (newRecord) {
       await sendDataToElasticsearch("bar", "index", newRecord);
     }
   } catch (error) {
@@ -298,11 +465,15 @@ async function handleBarChange(payload: any) {
   }
 }
 
-function handleFooBarChange(payload: any) {
-  const { eventType, new: newRecord, old: oldRecord } = payload;
+function handleFooBarChange(payload: RealtimePayload) {
+  const { eventType, new: newRecord } = payload;
 
   switch (eventType) {
     case "INSERT":
+      if (!newRecord) {
+        console.error("INSERT event missing new record");
+        return;
+      }
       console.log(
         `🔔 Business Logic: New foo-bar relationship created (${newRecord.relationship_type})`
       );

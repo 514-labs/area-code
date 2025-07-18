@@ -31,6 +31,7 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group";
 import { IconLoader } from "@tabler/icons-react";
+import { NumericFormat } from "react-number-format";
 
 export const description = "An interactive score over time chart";
 
@@ -43,7 +44,7 @@ interface ChartDataPoint {
 
 interface ChartDataResponse {
   data: ChartDataPoint[];
-  dbQueryTime?: number;
+  queryTime?: number;
 }
 
 // API Functions
@@ -98,7 +99,7 @@ export function FooScoreOverTimeGraph({
   });
 
   const chartData = chartResponse?.data || [];
-  const queryTime = chartResponse?.dbQueryTime;
+  const queryTime = chartResponse?.queryTime;
 
   // Memoized Y-axis domain calculation
   const yAxisDomain = React.useMemo(() => {
@@ -133,7 +134,17 @@ export function FooScoreOverTimeGraph({
           <span className="inline-flex items-baseline gap-2">
             <span>Score Over Time </span>
             <span className="text-xs font-normal text-green-500">
-              {queryTime && `Latest query time: ${queryTime}ms`}
+              {queryTime && (
+                <>
+                  Latest query time:{" "}
+                  <NumericFormat
+                    value={Math.round(queryTime || 0)}
+                    displayType="text"
+                    thousandSeparator=","
+                  />
+                  ms
+                </>
+              )}
             </span>
           </span>
         </CardTitle>

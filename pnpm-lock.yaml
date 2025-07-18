@@ -74,6 +74,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
       lucide-react:
         specifier: ^0.522.0
         version: 0.522.0(react@19.1.0)
@@ -158,7 +161,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.305(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -375,7 +378,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.305(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -391,7 +394,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.4.302
+        version: 0.4.305
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.5
@@ -443,7 +446,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.305(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.50.3
@@ -465,7 +468,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.4.302
+        version: 0.4.305
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.5
@@ -542,32 +545,32 @@ importers:
 
 packages:
 
-  '@514labs/moose-cli-darwin-arm64@0.4.302':
-    resolution: {integrity: sha512-/CwW/ueH72ZZPJhRWiEYNuRgJ2ODQ/sfLntbMXmKjZK+e94cwJitBOdYTFRKhRIyOKE0qd43w9bV43UczvSy7g==}
+  '@514labs/moose-cli-darwin-arm64@0.4.305':
+    resolution: {integrity: sha512-4UeyM3TQp8piGMVAzAHUgmRsZ/Ral4cZ0iW19zQ1JQKrlCDmIYOLjq16bTAUT4AUJkk0k0DVkCsYpz9Gg/O0pg==}
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.4.302':
-    resolution: {integrity: sha512-Tko+0pYTAN3/iwqHXH/hfKBRDrdU4Kz9fCr+k5VbRwfHjAu+Kn3fH2IGo/QBQh3s70NFZTFR2nQazG9yOKAYIw==}
+  '@514labs/moose-cli-darwin-x64@0.4.305':
+    resolution: {integrity: sha512-SqyLAd13toylm1dOP/fSVaT+rVgfuGE1iZYHLu2vudML7ObhUKDuPMmcjpXaU6phIPLQQH00EA3UngfLDtR29A==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.4.302':
-    resolution: {integrity: sha512-okYpxlICln7Mgq+AggQz3Ufxp0cpgqBe6JgAODQcRvwg3IvlI4jBOQnZOFkm8hCeRpxj/830IfhA61yk0aK/RA==}
+  '@514labs/moose-cli-linux-arm64@0.4.305':
+    resolution: {integrity: sha512-8qVnHTxS62DjuYkWsy1hYoI6+uDY7ZobmzBVj01qItUik4SKAgqyTsXu5ob9VNtTe/vNpHK9vFpUZMqsn7gjwA==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.4.302':
-    resolution: {integrity: sha512-9mY9pBOn8xJI5U7722pa8rCWbTxouw177z6Fhj6M+Jq/tzSc9mRa3KPfj0YzKYAKmRwNkxFUi0qfVdbApm1Rxg==}
+  '@514labs/moose-cli-linux-x64@0.4.305':
+    resolution: {integrity: sha512-7wrNvYp0bUqxhn505NhVs49lHzzgmJNy4z6X5pD6W4VjHEllXGaVjI6Et92cz08fWwWpfNS6EKTBOTj8yznusQ==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.4.302':
-    resolution: {integrity: sha512-BbLLXGrWIagK1xySEhdwYXCwKbOKhD9m7lIAto0QU1F4svnO9jGuigJCkHvffJjiZaynx2vHxfGtwOw61x4sFQ==}
+  '@514labs/moose-cli@0.4.305':
+    resolution: {integrity: sha512-Ke0W1zgZteUzyh9+1AKWp+pXG1T+Ik77ujDNWC8vo3MbP5lG9PmclQSrScJGVoYKebokhvSpgicWarXkJan/eQ==}
     hasBin: true
 
-  '@514labs/moose-lib@0.4.302':
-    resolution: {integrity: sha512-3W4KrYEMKETmpKqm0hvM0t/Kb4/8OtBn/i0DvElCagerXuHbmetV7Qj80E11UurJEtGEQrUYAkj5nS6mu4ZyQA==}
+  '@514labs/moose-lib@0.4.305':
+    resolution: {integrity: sha512-ajZSKSPjCMx4XWqIREF0EjqHp32Cz7CCEjNttNcWPETDj1K92UfQDKljbvairn06oP5nxxuD2nFKk9iKGyW4+Q==}
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
@@ -5781,26 +5784,26 @@ packages:
 
 snapshots:
 
-  '@514labs/moose-cli-darwin-arm64@0.4.302':
+  '@514labs/moose-cli-darwin-arm64@0.4.305':
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.4.302':
+  '@514labs/moose-cli-darwin-x64@0.4.305':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.4.302':
+  '@514labs/moose-cli-linux-arm64@0.4.305':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.4.302':
+  '@514labs/moose-cli-linux-x64@0.4.305':
     optional: true
 
-  '@514labs/moose-cli@0.4.302':
+  '@514labs/moose-cli@0.4.305':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.4.302
-      '@514labs/moose-cli-darwin-x64': 0.4.302
-      '@514labs/moose-cli-linux-arm64': 0.4.302
-      '@514labs/moose-cli-linux-x64': 0.4.302
+      '@514labs/moose-cli-darwin-arm64': 0.4.305
+      '@514labs/moose-cli-darwin-x64': 0.4.305
+      '@514labs/moose-cli-linux-arm64': 0.4.305
+      '@514labs/moose-cli-linux-x64': 0.4.305
 
-  '@514labs/moose-lib@0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.4.305(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -5829,7 +5832,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.4.302(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.4.305(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0

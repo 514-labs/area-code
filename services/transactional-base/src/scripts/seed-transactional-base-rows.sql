@@ -142,7 +142,7 @@ DECLARE
     start_time TIMESTAMP;
     end_time TIMESTAMP;
     foo_records BIGINT;
-    batch_size INT := 1000;  -- Smaller batch size to prevent WAL issues
+    batch_size INT := 500;  -- Even smaller batch size to prevent WAL issues
     current_batch INT := 0;
     batch_start INT;
     batch_end INT;

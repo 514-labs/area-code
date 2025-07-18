@@ -7,9 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { Badge } from "@workspace/ui/components/badge";
+
 import { Button } from "@workspace/ui/components/button";
 import { IconCalculator, IconClock, IconRefresh } from "@tabler/icons-react";
+import { NumericFormat } from "react-number-format";
 
 interface AverageScoreResponse {
   averageScore: number;
@@ -114,7 +115,13 @@ export default function FooAverageScore({
         <CardFooter className="">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <IconClock className="h-3 w-3" />
-            Query time: {data.queryTime}ms
+            Query time:{" "}
+            <NumericFormat
+              value={Math.round(data.queryTime || 0)}
+              displayType="text"
+              thousandSeparator=","
+            />
+            ms
           </div>
         </CardFooter>
       )}

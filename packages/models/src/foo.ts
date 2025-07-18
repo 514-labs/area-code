@@ -1,3 +1,5 @@
+import { CDC } from "./cdc";
+
 // Status enum for PostgreSQL enum type
 export enum FooStatus {
   ACTIVE = "active",
@@ -13,29 +15,34 @@ export interface Foo {
   description: string | null; // TEXT (nullable)
   status: FooStatus; // ENUM
   priority: number; // INTEGER
-  isActive: boolean; // BOOLEAN
+  is_active: boolean; // BOOLEAN
   metadata: Record<string, any>; // JSONB
   tags: string[]; // TEXT[] (array type)
   score: number; // DECIMAL/NUMERIC
-  largeText: string; // TEXT (for large content)
-  createdAt: Date; // TIMESTAMP
-  updatedAt: Date; // TIMESTAMP
+  large_text: string; // TEXT (for large content)
+  created_at: Date; // TIMESTAMP
+  updated_at: Date; // TIMESTAMP
 }
+
+// Foo with CDC metadata for analytical pipelines
+export interface FooWithCDC extends Foo, CDC {}
+
+
 
 // Interface for creating new foo (omit generated/auto fields)
 export interface CreateFoo extends Pick<Foo, "name"> {
   description?: string | null;
   status?: FooStatus;
   priority?: number;
-  isActive?: boolean;
+  is_active?: boolean;
   metadata?: Record<string, any>;
   tags?: string[];
   score?: number;
-  largeText?: string;
+  large_text?: string;
 }
 
 // Interface for updating foo (all fields optional except id)
-export interface UpdateFoo extends Partial<Omit<Foo, "id" | "createdAt">> {
+export interface UpdateFoo extends Partial<Omit<Foo, "id" | "created_at">> {
   id: string;
-  updatedAt?: Date;
+  updated_at?: Date;
 }

@@ -3,6 +3,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { FooDataTable } from "../features/foo/foo.data-table";
+import { FooCDCDataTable } from "../features/foo/foo.cdc-data-table";
 import { FooCreateForm } from "../features/foo/foo.create";
 import {
   getAnalyticalConsumptionApiBase,
@@ -71,7 +72,7 @@ function AnalyticalConsumptionFooDataTable({
   const fetchApiEndpoint = `${API_BASE}/foo`;
 
   return (
-    <FooDataTable
+    <FooCDCDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />

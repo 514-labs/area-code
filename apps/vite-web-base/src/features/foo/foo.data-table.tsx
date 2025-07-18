@@ -81,38 +81,7 @@ import {
 import { Textarea } from "@workspace/ui/components/textarea";
 import { ReactNode, useEffect, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
-
-const getStatusIcon = (status: FooStatus) => {
-  switch (status) {
-    case FooStatus.ACTIVE:
-      return (
-        <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-      );
-    case FooStatus.INACTIVE:
-      return <IconCircleX className="text-red-500 dark:text-red-400" />;
-    case FooStatus.PENDING:
-      return <IconClock className="text-yellow-500 dark:text-yellow-400" />;
-    case FooStatus.ARCHIVED:
-      return <IconArchive className="text-gray-500 dark:text-gray-400" />;
-    default:
-      return <IconLoader />;
-  }
-};
-
-const getStatusColor = (status: FooStatus) => {
-  switch (status) {
-    case FooStatus.ACTIVE:
-      return "bg-green-100 border-green-700 text-green-800 dark:bg-green-900 dark:text-green-300";
-    case FooStatus.INACTIVE:
-      return "bg-red-100 border-red-700  text-red-800 dark:bg-red-900 dark:text-red-300";
-    case FooStatus.PENDING:
-      return "bg-yellow-100 border-yellow-700 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-    case FooStatus.ARCHIVED:
-      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    default:
-      return "bg-gray-100 border-gray-700 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-  }
-};
+import { format } from "date-fns";
 
 // Add a sortable header component
 const SortableHeader = ({
@@ -209,15 +178,34 @@ const columns: ColumnDef<Foo>[] = [
     header: ({ column }) => (
       <SortableHeader column={column}>Status</SortableHeader>
     ),
-    cell: ({ row }) => (
-      <Badge
-        variant="outline"
-        className={`py-[3px] ${getStatusColor(row.original.status)}`}
-      >
-        {getStatusIcon(row.original.status)}
-        <span className="ml-1 capitalize">{row.original.status}</span>
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const status = row.original.status;
+      const getStatusIcon = () => {
+        switch (status) {
+          case FooStatus.ACTIVE:
+            return (
+              <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+            );
+          case FooStatus.INACTIVE:
+            return <IconCircleX className="text-red-500 dark:text-red-400" />;
+          case FooStatus.PENDING:
+            return (
+              <IconClock className="text-yellow-500 dark:text-yellow-400" />
+            );
+          case FooStatus.ARCHIVED:
+            return <IconArchive className="text-gray-500 dark:text-gray-400" />;
+          default:
+            return <IconCircleX className="text-gray-400" />;
+        }
+      };
+
+      return (
+        <div className="flex items-center gap-2">
+          {getStatusIcon()}
+          <span className="capitalize">{status}</span>
+        </div>
+      );
+    },
     enableSorting: true,
   },
   {
@@ -235,7 +223,7 @@ const columns: ColumnDef<Foo>[] = [
     enableSorting: true,
   },
   {
-    accessorKey: "isActive",
+    accessorKey: "is_active",
     header: ({ column }) => (
       <SortableHeader column={column} className="text-center">
         Active
@@ -243,7 +231,7 @@ const columns: ColumnDef<Foo>[] = [
     ),
     cell: ({ row }) => (
       <div className="text-center">
-        {row.original.isActive ? (
+        {row.original.is_active ? (
           <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
         ) : (
           <IconCircleX className="text-red-500 dark:text-red-400" />
@@ -298,25 +286,25 @@ const columns: ColumnDef<Foo>[] = [
     enableSorting: true,
   },
   {
-    accessorKey: "createdAt",
+    accessorKey: "created_at",
     header: ({ column }) => (
       <SortableHeader column={column}>Created</SortableHeader>
     ),
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {new Date(row.original.createdAt).toLocaleDateString()}
+        {format(new Date(row.original.created_at), "MMM d, yyyy h:mm a")}
       </div>
     ),
     enableSorting: true,
   },
   {
-    accessorKey: "updatedAt",
+    accessorKey: "updated_at",
     header: ({ column }) => (
       <SortableHeader column={column}>Updated</SortableHeader>
     ),
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {new Date(row.original.updatedAt).toLocaleDateString()}
+        {format(new Date(row.original.updated_at), "MMM d, yyyy h:mm a")}
       </div>
     ),
     enableSorting: true,
@@ -332,6 +320,7 @@ interface FooResponse {
     total: number;
     hasMore: boolean;
   };
+  queryTime: number;
 }
 
 // API Functions
@@ -404,7 +393,6 @@ export function FooDataTable({
       sorting,
     ],
     queryFn: async () => {
-      const startTime = performance.now();
       const sortBy = sorting[0]?.id;
       const sortOrder = sorting[0]?.desc ? "desc" : "asc";
       const result = await fetchFoos(
@@ -414,8 +402,7 @@ export function FooDataTable({
         sortBy,
         sortOrder
       );
-      const endTime = performance.now();
-      setQueryTime(endTime - startTime);
+      setQueryTime(result.queryTime);
       return result;
     },
     // Keep previous data visible while fetching new data
@@ -850,12 +837,12 @@ function TableCellViewer({
         status: formData.get("status") as string,
         priority: parseInt(formData.get("priority") as string),
         score: parseFloat(formData.get("score") as string),
-        isActive: formData.get("isActive") === "on",
+        is_active: formData.get("is_active") === "on",
         tags: (formData.get("tags") as string)
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag),
-        largeText: formData.get("largeText") as string,
+        large_text: formData.get("large_text") as string,
       };
 
       const response = await fetch(`${editApiEndpoint}/${item.id}`, {
@@ -968,11 +955,11 @@ function TableCellViewer({
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="isActive"
-                  name="isActive"
-                  defaultChecked={item.isActive}
+                  id="is_active"
+                  name="is_active"
+                  defaultChecked={item.is_active}
                 />
-                <Label htmlFor="isActive">Is Active</Label>
+                <Label htmlFor="is_active">Is Active</Label>
               </div>
             </div>
             <div className="flex flex-col gap-3">
@@ -985,11 +972,11 @@ function TableCellViewer({
               />
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="largeText">Large Text</Label>
+              <Label htmlFor="large_text">Large Text</Label>
               <Textarea
-                id="largeText"
-                name="largeText"
-                defaultValue={item.largeText}
+                id="large_text"
+                name="large_text"
+                defaultValue={item.large_text}
                 rows={4}
               />
             </div>
@@ -1005,13 +992,13 @@ function TableCellViewer({
               <div className="flex flex-col gap-3">
                 <Label>Created At</Label>
                 <div className="p-2 bg-muted rounded-md text-sm">
-                  {new Date(item.createdAt).toLocaleString()}
+                  {new Date(item.created_at).toLocaleString()}
                 </div>
               </div>
               <div className="flex flex-col gap-3">
                 <Label>Updated At</Label>
                 <div className="p-2 bg-muted rounded-md text-sm">
-                  {new Date(item.updatedAt).toLocaleString()}
+                  {new Date(item.updated_at).toLocaleString()}
                 </div>
               </div>
             </div>

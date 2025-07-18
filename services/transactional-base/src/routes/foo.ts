@@ -19,13 +19,13 @@ function getModelFromDBRow(dbFoo: DbFoo): Foo {
     description: dbFoo.description,
     status: dbFoo.status as FooStatus,
     priority: dbFoo.priority,
-    isActive: dbFoo.isActive,
+    is_active: dbFoo.isActive,
     metadata: dbFoo.metadata || {},
     tags: dbFoo.tags || [],
     score: dbFoo.score ? parseFloat(dbFoo.score) : 0,
-    largeText: dbFoo.largeText || "",
-    createdAt: dbFoo.createdAt,
-    updatedAt: dbFoo.updatedAt,
+    large_text: dbFoo.largeText || "",
+    created_at: dbFoo.createdAt,
+    updated_at: dbFoo.updatedAt,
   };
 }
 
@@ -46,14 +46,14 @@ function apiToDbFoo(apiData: CreateFoo | UpdateFoo): Partial<NewDbFoo> {
   if (apiData.priority !== undefined) {
     dbData.priority = apiData.priority;
   }
-  if (apiData.isActive !== undefined) {
-    dbData.isActive = apiData.isActive;
+  if (apiData.is_active !== undefined) {
+    dbData.isActive = apiData.is_active;
   }
   if (apiData.metadata !== undefined) {
     dbData.metadata = apiData.metadata;
   }
-  if (apiData.largeText !== undefined) {
-    dbData.largeText = apiData.largeText;
+  if (apiData.large_text !== undefined) {
+    dbData.largeText = apiData.large_text;
   }
 
   // Convert score from number to string for database
@@ -222,6 +222,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
             total: number;
             hasMore: boolean;
           };
+          queryTime: number;
         }
       | { error: string };
   }>("/foo", async (request, reply) => {
@@ -263,7 +264,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
             orderByClause =
               sortOrder === "desc" ? desc(foo.priority) : asc(foo.priority);
             break;
-          case "isActive":
+          case "is_active":
             orderByClause =
               sortOrder === "desc" ? desc(foo.isActive) : asc(foo.isActive);
             break;
@@ -271,11 +272,11 @@ export async function fooRoutes(fastify: FastifyInstance) {
             orderByClause =
               sortOrder === "desc" ? desc(foo.score) : asc(foo.score);
             break;
-          case "createdAt":
+          case "created_at":
             orderByClause =
               sortOrder === "desc" ? desc(foo.createdAt) : asc(foo.createdAt);
             break;
-          case "updatedAt":
+          case "updated_at":
             orderByClause =
               sortOrder === "desc" ? desc(foo.updatedAt) : asc(foo.updatedAt);
             break;
@@ -287,6 +288,8 @@ export async function fooRoutes(fastify: FastifyInstance) {
         // Default sorting by createdAt desc
         orderByClause = desc(foo.createdAt);
       }
+
+      const startTime = Date.now();
 
       // Execute query with sorting and pagination
       const fooItems = await db
@@ -301,6 +304,8 @@ export async function fooRoutes(fastify: FastifyInstance) {
         .select({ count: sql<number>`cast(count(*) as int)` })
         .from(foo);
 
+      const queryTime = Date.now() - startTime;
+
       const total = totalResult[0].count;
       const hasMore = offset + limit < total;
 
@@ -314,6 +319,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
           total,
           hasMore,
         },
+        queryTime,
       });
     } catch (error) {
       console.error("Error fetching foo items:", error);

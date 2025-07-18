@@ -8,7 +8,7 @@ export interface BaseEvent {
   type: string;
   timestamp: Date;
   source: string;
-  correlationId?: string;
+  correlation_id?: string;
   metadata?: {
     user?: string;
     session?: string;
@@ -17,20 +17,20 @@ export interface BaseEvent {
 
 // FooThing event parameters - Moose compliant
 export interface FooThingParams {
-  fooId: string;
+  foo_id: string;
   action: "created" | "updated" | "deleted" | "activated" | "deactivated";
-  previousData: Foo; // Use existing Foo model
-  currentData: Foo;  // Use existing Foo model
+  previous_data: Foo; // Use existing Foo model
+  current_data: Foo;  // Use existing Foo model
   changes: string[]; // List of changed fields
 }
 
 // BarThing event parameters - Moose compliant
 export interface BarThingParams {
-  barId: string;
-  fooId: string; // Related foo ID
+  bar_id: string;
+  foo_id: string; // Related foo ID
   action: "created" | "updated" | "deleted" | "enabled" | "disabled";
-  previousData: Bar; // Use existing Bar model
-  currentData: Bar;  // Use existing Bar model
+  previous_data: Bar; // Use existing Bar model
+  current_data: Bar;  // Use existing Bar model
   changes: string[]; // List of changed fields
   value?: number; // Specific to bar operations
 }
