@@ -8,7 +8,23 @@ from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_
 from utils.constants import API_BASE
 
 def show():
-    st.title("S3 View")
+    file_type_counts = {"json": 0, "csv": 0, "txt": 0}
+
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.markdown("<h2 style='margin: 0; line-height: 1;'>S3 View</h2>", unsafe_allow_html=True)
+    with col2:
+        # Use empty space to push button to the right
+        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
+        # Create three sub-columns to push the button to the right
+        _, _, button_col = st.columns([1, 1, 1])
+        with button_col:
+            if ui.button(text="Extract", key="trigger_s3_btn", size="sm"):
+                with st.spinner(""):
+                    trigger_extract(f"{API_BASE}/extract-s3", "S3")
+                    time.sleep(2)
+                st.session_state["refresh_s3"] = True
+                st.rerun()
     
     df = handle_refresh_and_fetch(
         "refresh_s3",
@@ -17,21 +33,38 @@ def show():
         trigger_label="S3",
         button_label=None  # We'll use ShadCN button below
     )
-    
-    if ui.button(text="Trigger S3 Extract", key="trigger_s3_btn"):
-        with st.spinner("Triggering S3 extract and waiting for backend to finish..."):
-            trigger_extract(f"{API_BASE}/extract-s3", "S3")
-            time.sleep(2)
-        st.session_state["refresh_s3"] = True
-        st.rerun()
-    
-    st.subheader("S3 Items Table")
+
+    # Parse S3 data and extract file types
+    parsed = None
     if not df.empty and "large_text" in df.columns:
         parsed = df["large_text"].str.split("|", n=3, expand=True)
         parsed.columns = ["Ingested On", "S3 Location", "Permissions", "Resource size"]
         parsed = parsed.apply(lambda col: col.str.strip())
         if "Processed On" in df.columns:
             parsed.insert(1, "Processed On", df["Processed On"])
+
+        # Extract file extensions from S3 locations
+        s3_locations = parsed["S3 Location"].fillna("")
+        extensions = s3_locations.str.extract(r'\.([a-zA-Z0-9]+)$')[0].fillna("no_ext")
+        actual_counts = extensions.value_counts().to_dict()
+
+        # Update counts with actual data
+        for file_type, count in actual_counts.items():
+            if file_type in file_type_counts:
+                file_type_counts[file_type] = count
+
+    # Metric cards
+    cols = st.columns(len(file_type_counts))
+    for idx, (file_type, count) in enumerate(file_type_counts.items()):
+        with cols[idx]:
+            ui.metric_card(
+                title=file_type.upper(),
+                content=str(count),
+                key=f"s3_metric_{file_type}"
+            )
+
+    st.subheader("S3 Items Table")
+    if parsed is not None:
         st.dataframe(parsed, use_container_width=True)
     else:
         st.write("No S3 log data available.")
