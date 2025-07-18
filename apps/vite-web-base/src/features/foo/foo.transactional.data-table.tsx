@@ -29,6 +29,7 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { Foo, FooStatus } from "@workspace/models";
+import { getTransactionApiBase } from "@/env-vars";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import { Badge } from "@workspace/ui/components/badge";
@@ -79,7 +80,7 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
-import { ReactNode, useEffect, useState, useRef } from "react";
+import { ReactNode, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
 import { format } from "date-fns";
 
@@ -346,18 +347,12 @@ const fetchFoos = async (
   return response.json();
 };
 
-export function FooDataTable({
-  fetchApiEndpoint,
+export default function FooTransactionalDataTable({
   disableCache = false,
   selectableRows = false,
-  deleteApiEndpoint,
-  editApiEndpoint,
 }: {
-  fetchApiEndpoint: string;
   disableCache?: boolean;
   selectableRows?: boolean;
-  deleteApiEndpoint?: string;
-  editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -371,12 +366,11 @@ export function FooDataTable({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Reset pagination and state when endpoint changes
-  useEffect(() => {
-    setPagination({ pageIndex: 0, pageSize: 10 });
-    setSorting([]);
-    setRowSelection({});
-  }, [fetchApiEndpoint]);
+  // Internal API endpoints for transactional data
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/foo`;
+  const deleteApiEndpoint = `${API_BASE}/foo`;
+  const editApiEndpoint = `${API_BASE}/foo`;
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
@@ -465,10 +459,8 @@ export function FooDataTable({
     ? columns
     : columns.filter((col) => col.id !== "select");
 
-  // Add actions column if editApiEndpoint is provided
-  if (editApiEndpoint) {
-    availableColumns = [...availableColumns, actionsColumn];
-  }
+  // Add actions column for transactional tables
+  availableColumns = [...availableColumns, actionsColumn];
 
   const table = useReactTable({
     data,
@@ -508,7 +500,7 @@ export function FooDataTable({
   const selectedFoos = selectedRows.map((row) => row.original);
 
   const handleDelete = async () => {
-    if (!deleteApiEndpoint || selectedFoos.length === 0) return;
+    if (selectedFoos.length === 0) return;
 
     setIsDeleting(true);
     try {
@@ -544,6 +536,22 @@ export function FooDataTable({
       {/* Server pagination and sorting info */}
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
+          {queryTime !== null && (
+            <div className="inline-flex items-baseline gap-2">
+              <span className="leading-none font-semibold text-card-foreground text-[16px]">
+                Foo Transactional
+              </span>
+              <span className="text-xs font-normal text-green-500">
+                Latest query:{" "}
+                <NumericFormat
+                  value={Math.round(queryTime || 0)}
+                  displayType="text"
+                  thousandSeparator=","
+                />
+                ms
+              </span>
+            </div>
+          )}
           <div>
             Showing{" "}
             <NumericFormat
@@ -573,23 +581,12 @@ export function FooDataTable({
               </span>
             )}
           </div>
-          {queryTime !== null && (
-            <div className="text-green-600">
-              Latest query:{" "}
-              <NumericFormat
-                value={Math.round(queryTime || 0)}
-                displayType="text"
-                thousandSeparator=","
-              />
-              ms
-            </div>
-          )}
         </div>
       )}
 
       <div
         className="relative flex flex-col gap-4 overflow-auto"
-        key={fetchApiEndpoint} // Changed key to fetchApiEndpoint
+        key="foo-transactional-table"
       >
         <div className="overflow-hidden rounded-lg border">
           <Table>
@@ -667,7 +664,7 @@ export function FooDataTable({
         <div className="flex items-center justify-between px-4">
           {selectableRows && (
             <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-              {deleteApiEndpoint && selectedFoos.length > 0 ? (
+              {selectedFoos.length > 0 ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
                   onOpenChange={setIsDeleteDialogOpen}

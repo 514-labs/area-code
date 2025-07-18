@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@workspace/ui/components/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { FooDataTable } from "../features/foo/foo.data-table";
-import { FooCDCDataTable } from "../features/foo/foo.cdc-data-table";
+import FooTransactionalDataTable from "../features/foo/foo.transactional.data-table";
+import FooAnalyticalDataTable from "../features/foo/foo.analytical.data-table";
 import { FooCreateForm } from "../features/foo/foo.create";
 import {
   getAnalyticalConsumptionApiBase,
@@ -42,44 +42,7 @@ function AnalyticalConsumptionFooAverageScore({
   );
 }
 
-function TransactionalFooDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getTransactionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
-  const deleteApiEndpoint = `${API_BASE}/foo`;
-  const editApiEndpoint = `${API_BASE}/foo`;
-
-  return (
-    <FooDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-      selectableRows={true}
-      deleteApiEndpoint={deleteApiEndpoint}
-      editApiEndpoint={editApiEndpoint}
-    />
-  );
-}
-
-function AnalyticalConsumptionFooDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
-
-  return (
-    <FooCDCDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-    />
-  );
-}
-
-function FooManagement() {
+function FooPage() {
   const { cacheEnabled } = useFrontendCaching();
 
   return (
@@ -100,25 +63,28 @@ function FooManagement() {
         <FooCreateForm />
       </div>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionFooAverageScore cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
+        <FooAnalyticalDataTable disableCache={!cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
+        <FooTransactionalDataTable
+          disableCache={!cacheEnabled}
+          selectableRows={true}
+        />
       </TransactionalHighlightWrapper>
     </div>
   );
 }
 
 export const Route = createFileRoute("/foo")({
-  component: FooManagement,
+  component: FooPage,
 });

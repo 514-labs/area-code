@@ -10,11 +10,11 @@ import {
   AnalyticalHighlightWrapper,
 } from "../features/origin-highlights/origin-highlights-wrappers";
 import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph";
-import { FooDataTable } from "@/features/foo/foo.data-table";
+import FooTransactionalDataTable from "@/features/foo/foo.transactional.data-table";
 import BarAverageValue from "@/features/bar/bar.average-value";
-import { BarDataTable } from "@/features/bar/bar.data-table";
-import { FooCDCDataTable } from "@/features/foo/foo.cdc-data-table";
-import { BarCDCDataTable } from "@/features/bar/bar.cdc-data-table";
+import BarTransactionalDataTable from "@/features/bar/bar.transactional.data-table";
+import FooAnalyticalDataTable from "@/features/foo/foo.analytical.data-table";
+import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -74,43 +74,6 @@ function TransactionalFooScoreOverTimeGraph({
   );
 }
 
-function TransactionalFooDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getTransactionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
-  const deleteApiEndpoint = `${API_BASE}/foo`;
-  const editApiEndpoint = `${API_BASE}/foo`;
-
-  return (
-    <FooDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-      selectableRows={true}
-      deleteApiEndpoint={deleteApiEndpoint}
-      editApiEndpoint={editApiEndpoint}
-    />
-  );
-}
-
-function AnalyticalConsumptionFooDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
-
-  return (
-    <FooCDCDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-    />
-  );
-}
-
 function TransactionalBarAverageValue({
   cacheEnabled,
 }: {
@@ -143,53 +106,16 @@ function AnalyticalConsumptionBarAverageValue({
   );
 }
 
-function TransactionalBarDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getTransactionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar`;
-  const deleteApiEndpoint = `${API_BASE}/bar`;
-  const editApiEndpoint = `${API_BASE}/bar`;
-
-  return (
-    <BarDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-      selectableRows={true}
-      deleteApiEndpoint={deleteApiEndpoint}
-      editApiEndpoint={editApiEndpoint}
-    />
-  );
-}
-
-function AnalyticalBarCDCDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar`;
-
-  return (
-    <BarCDCDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-    />
-  );
-}
-
 function IndexPage() {
   const { cacheEnabled } = useFrontendCaching();
 
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5">
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
@@ -202,27 +128,33 @@ function IndexPage() {
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
+        <FooAnalyticalDataTable disableCache={!cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
+        <FooTransactionalDataTable
+          disableCache={!cacheEnabled}
+          selectableRows={true}
+        />
       </TransactionalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalBarCDCDataTable cacheEnabled={cacheEnabled} />
+        <BarAnalyticalDataTable disableCache={!cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
+        <BarTransactionalDataTable
+          disableCache={!cacheEnabled}
+          selectableRows={true}
+        />
       </TransactionalHighlightWrapper>
     </div>
   );

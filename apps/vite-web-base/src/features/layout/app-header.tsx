@@ -1,4 +1,3 @@
-import { Button } from "@workspace/ui/components/button";
 import { Separator } from "@workspace/ui/components/separator";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { SearchCommand } from "@workspace/ui/components/search-command";
@@ -39,19 +38,6 @@ export function AppHeader() {
             placeholder="Search documents..."
           />
         </RetrievalHighlightWrapper>
-
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-            <a
-              href="https://github.com/514-labs/area-code"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="dark:text-foreground"
-            >
-              GitHub
-            </a>
-          </Button>
-        </div>
       </div>
     </header>
   );

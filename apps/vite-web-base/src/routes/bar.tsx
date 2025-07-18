@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@workspace/ui/components/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { BarDataTable } from "../features/bar/bar.data-table";
+import BarTransactionalDataTable from "../features/bar/bar.transactional.data-table";
 import { BarCreateForm } from "../features/bar/bar.create";
 import {
   getAnalyticalConsumptionApiBase,
@@ -14,28 +14,7 @@ import {
   TransactionalHighlightWrapper,
   AnalyticalHighlightWrapper,
 } from "@/features/origin-highlights/origin-highlights-wrappers";
-import { BarCDCDataTable } from "@/features/bar/bar.cdc-data-table";
-
-function TransactionalBarDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getTransactionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar`;
-  const deleteApiEndpoint = `${API_BASE}/bar`;
-  const editApiEndpoint = `${API_BASE}/bar`;
-
-  return (
-    <BarDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-      selectableRows={true}
-      deleteApiEndpoint={deleteApiEndpoint}
-      editApiEndpoint={editApiEndpoint}
-    />
-  );
-}
+import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
 
 function TransactionalBarAverageValue({
   cacheEnabled,
@@ -69,23 +48,7 @@ function AnalyticalConsumptionBarAverageValue({
   );
 }
 
-function AnalyticalBarCDCDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar`;
-
-  return (
-    <BarCDCDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-    />
-  );
-}
-
-function BarManagement() {
+function BarPage() {
   const { cacheEnabled } = useFrontendCaching();
 
   return (
@@ -106,25 +69,28 @@ function BarManagement() {
         <BarCreateForm />
       </div>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalBarCDCDataTable cacheEnabled={cacheEnabled} />
+        <BarAnalyticalDataTable disableCache={!cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
+        <BarTransactionalDataTable
+          disableCache={!cacheEnabled}
+          selectableRows={true}
+        />
       </TransactionalHighlightWrapper>
     </div>
   );
 }
 
 export const Route = createFileRoute("/bar")({
-  component: BarManagement,
+  component: BarPage,
 });
