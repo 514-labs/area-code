@@ -39,7 +39,16 @@ def show():
         breakdown["Count"] = breakdown["Count"].astype(str)
         
         st.subheader("Connector Entity Breakdown")
-        st.dataframe(breakdown, hide_index=True)
+        
+        # Create metric cards for each connector
+        cols = st.columns(len(breakdown))
+        for idx, (connector, count) in enumerate(zip(breakdown["Connector"], breakdown["Count"])):
+            with cols[idx]:
+                ui.metric_card(
+                    title=connector,
+                    content=count,
+                    description=f"Total entities from {connector} connector"
+                )
         
         # --- Items per minute chart ---
         if "Processed On" in df.columns:

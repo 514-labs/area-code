@@ -39,8 +39,7 @@ def create_navigation():
         overview.show,
         title="All",
         icon="🏠",
-        url_path="overview",
-        default=True
+        url_path="overview"
     )
     
     s3_page = st.Page(
@@ -61,13 +60,14 @@ def create_navigation():
         analytics.show,
         title="Connector Analytics",
         icon="📈",
-        url_path="analytics"
+        url_path="analytics",
+        default=True
     )
     
     # Create navigation with grouped sections
     nav = st.navigation({
-        "Data Warehouse": [overview_page, s3_page, datadog_page],
-        "Reports": [analytics_page]
+        "Data Warehouse": [analytics_page],
+        "Connectors": [overview_page, s3_page, datadog_page]
     })
     
     return nav
@@ -89,7 +89,7 @@ cleanup_old_status_messages()
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center'>
-                <span style='font-size:.8rem;'>Made with MOOSE</span><br>
+    <span style='font-size:.8rem;'>Made with MOOSE</span><br>
     <span style='font-size:.8rem;'><a href="https://docs.fiveonefour.com/moose" style="color:#4FC3F7;" target="_blank">Learn More: docs.fiveonefour.com/moose</a></span>
 </div>
 """, unsafe_allow_html=True)
