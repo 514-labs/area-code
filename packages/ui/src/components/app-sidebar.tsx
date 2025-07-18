@@ -33,9 +33,10 @@ export function AppSidebar({
   navSecondary,
   user,
   topHero,
+  variant = "inset",
 }: AppSidebarProps) {
   return (
-    <Sidebar collapsible="offcanvas">
+    <Sidebar collapsible="offcanvas" variant={variant}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
