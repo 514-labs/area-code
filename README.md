@@ -29,6 +29,9 @@ pnpm dev:seed
 
 # 5. Run development workflow
 pnpm dev:workflow
+
+# 6. Open front-end
+http://localhost:5173/
 ```
 
 Additional useful commands:
