@@ -126,7 +126,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
             averageScore: number;
             totalCount: number;
           }[];
-          dbQueryTime?: number;
+          queryTime: number;
         }
       | { error: string };
   }>("/foo/score-over-time", async (request, reply) => {
@@ -168,7 +168,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
         .orderBy(sql`DATE(created_at) ASC`);
 
       const endTime = Date.now();
-      const dbQueryTime = endTime - startTime;
+      const queryTime = endTime - startTime;
 
       // Fill in missing dates with zero values
       const filledData: {
@@ -195,7 +195,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
 
       return reply.send({
         data: filledData,
-        dbQueryTime,
+        queryTime,
       });
     } catch (error) {
       console.error("Error calculating score over time:", error);
