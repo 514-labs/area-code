@@ -29,6 +29,7 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { Foo, FooStatus } from "@workspace/models";
+import { getTransactionApiBase } from "@/env-vars";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import { Badge } from "@workspace/ui/components/badge";
@@ -347,17 +348,11 @@ const fetchFoos = async (
 };
 
 export default function FooTransactionalDataTable({
-  fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,
-  deleteApiEndpoint,
-  editApiEndpoint,
 }: {
-  fetchApiEndpoint: string;
   disableCache?: boolean;
   selectableRows?: boolean;
-  deleteApiEndpoint?: string;
-  editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -371,12 +366,11 @@ export default function FooTransactionalDataTable({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Reset pagination and state when endpoint changes
-  useEffect(() => {
-    setPagination({ pageIndex: 0, pageSize: 10 });
-    setSorting([]);
-    setRowSelection({});
-  }, [fetchApiEndpoint]);
+  // Internal API endpoints for transactional data
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/foo`;
+  const deleteApiEndpoint = `${API_BASE}/foo`;
+  const editApiEndpoint = `${API_BASE}/foo`;
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
@@ -465,10 +459,8 @@ export default function FooTransactionalDataTable({
     ? columns
     : columns.filter((col) => col.id !== "select");
 
-  // Add actions column if editApiEndpoint is provided
-  if (editApiEndpoint) {
-    availableColumns = [...availableColumns, actionsColumn];
-  }
+  // Add actions column for transactional tables
+  availableColumns = [...availableColumns, actionsColumn];
 
   const table = useReactTable({
     data,
@@ -508,7 +500,7 @@ export default function FooTransactionalDataTable({
   const selectedFoos = selectedRows.map((row) => row.original);
 
   const handleDelete = async () => {
-    if (!deleteApiEndpoint || selectedFoos.length === 0) return;
+    if (selectedFoos.length === 0) return;
 
     setIsDeleting(true);
     try {
@@ -589,7 +581,7 @@ export default function FooTransactionalDataTable({
 
       <div
         className="relative flex flex-col gap-4 overflow-auto"
-        key={fetchApiEndpoint} // Changed key to fetchApiEndpoint
+        key="foo-transactional-table"
       >
         <div className="overflow-hidden rounded-lg border">
           <Table>
@@ -667,7 +659,7 @@ export default function FooTransactionalDataTable({
         <div className="flex items-center justify-between px-4">
           {selectableRows && (
             <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-              {deleteApiEndpoint && selectedFoos.length > 0 ? (
+              {selectedFoos.length > 0 ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
                   onOpenChange={setIsDeleteDialogOpen}

@@ -27,6 +27,7 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { Bar as BaseBar } from "@workspace/models";
+import { getTransactionApiBase } from "@/env-vars";
 
 interface Bar extends BaseBar {
   foo?: Foo;
@@ -268,17 +269,11 @@ const columns: ColumnDef<Bar>[] = [
 ];
 
 export default function BarTransactionalDataTable({
-  fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,
-  deleteApiEndpoint,
-  editApiEndpoint,
 }: {
-  fetchApiEndpoint: string;
   disableCache?: boolean;
   selectableRows?: boolean;
-  deleteApiEndpoint?: string;
-  editApiEndpoint?: string;
 }) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -295,12 +290,11 @@ export default function BarTransactionalDataTable({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  // Reset pagination and state when endpoint changes
-  React.useEffect(() => {
-    setPagination({ pageIndex: 0, pageSize: 10 });
-    setSorting([]);
-    setRowSelection({});
-  }, [fetchApiEndpoint]);
+  // Internal API endpoints for transactional data
+  const API_BASE = getTransactionApiBase();
+  const fetchApiEndpoint = `${API_BASE}/bar`;
+  const deleteApiEndpoint = `${API_BASE}/bar`;
+  const editApiEndpoint = `${API_BASE}/bar`;
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
@@ -389,10 +383,8 @@ export default function BarTransactionalDataTable({
     ? columns
     : columns.filter((col) => col.id !== "select");
 
-  // Add actions column if editApiEndpoint is provided
-  if (editApiEndpoint) {
-    availableColumns = [...availableColumns, actionsColumn];
-  }
+  // Add actions column for transactional tables
+  availableColumns = [...availableColumns, actionsColumn];
 
   const table = useReactTable({
     data,
@@ -432,7 +424,7 @@ export default function BarTransactionalDataTable({
   const selectedBars = selectedRows.map((row) => row.original);
 
   const handleDelete = async () => {
-    if (!deleteApiEndpoint || selectedBars.length === 0) return;
+    if (selectedBars.length === 0) return;
 
     setIsDeleting(true);
     try {
@@ -588,7 +580,7 @@ export default function BarTransactionalDataTable({
         <div className="flex items-center justify-between px-2">
           {selectableRows && (
             <div className="flex-1 text-sm text-muted-foreground">
-              {deleteApiEndpoint && selectedBars.length > 0 ? (
+              {selectedBars.length > 0 ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
                   onOpenChange={setIsDeleteDialogOpen}

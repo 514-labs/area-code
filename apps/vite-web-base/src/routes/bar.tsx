@@ -16,27 +16,6 @@ import {
 } from "@/features/origin-highlights/origin-highlights-wrappers";
 import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
 
-function TransactionalBarDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getTransactionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar`;
-  const deleteApiEndpoint = `${API_BASE}/bar`;
-  const editApiEndpoint = `${API_BASE}/bar`;
-
-  return (
-    <BarTransactionalDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-      selectableRows={true}
-      deleteApiEndpoint={deleteApiEndpoint}
-      editApiEndpoint={editApiEndpoint}
-    />
-  );
-}
-
 function TransactionalBarAverageValue({
   cacheEnabled,
 }: {
@@ -69,23 +48,7 @@ function AnalyticalConsumptionBarAverageValue({
   );
 }
 
-function AnalyticalBarCDCDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar`;
-
-  return (
-    <BarAnalyticalDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-    />
-  );
-}
-
-function BarManagement() {
+function BarPage() {
   const { cacheEnabled } = useFrontendCaching();
 
   return (
@@ -115,16 +78,19 @@ function BarManagement() {
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalBarCDCDataTable cacheEnabled={cacheEnabled} />
+        <BarAnalyticalDataTable disableCache={!cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalBarDataTable cacheEnabled={cacheEnabled} />
+        <BarTransactionalDataTable
+          disableCache={!cacheEnabled}
+          selectableRows={true}
+        />
       </TransactionalHighlightWrapper>
     </div>
   );
 }
 
 export const Route = createFileRoute("/bar")({
-  component: BarManagement,
+  component: BarPage,
 });

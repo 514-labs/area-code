@@ -42,44 +42,7 @@ function AnalyticalConsumptionFooAverageScore({
   );
 }
 
-function TransactionalFooDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getTransactionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
-  const deleteApiEndpoint = `${API_BASE}/foo`;
-  const editApiEndpoint = `${API_BASE}/foo`;
-
-  return (
-    <FooTransactionalDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-      selectableRows={true}
-      deleteApiEndpoint={deleteApiEndpoint}
-      editApiEndpoint={editApiEndpoint}
-    />
-  );
-}
-
-function AnalyticalConsumptionFooDataTable({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
-
-  return (
-    <FooAnalyticalDataTable
-      fetchApiEndpoint={fetchApiEndpoint}
-      disableCache={!cacheEnabled}
-    />
-  );
-}
-
-function FooManagement() {
+function FooPage() {
   const { cacheEnabled } = useFrontendCaching();
 
   return (
@@ -109,16 +72,19 @@ function FooManagement() {
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalConsumptionFooDataTable cacheEnabled={cacheEnabled} />
+        <FooAnalyticalDataTable disableCache={!cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
+        <FooTransactionalDataTable
+          disableCache={!cacheEnabled}
+          selectableRows={true}
+        />
       </TransactionalHighlightWrapper>
     </div>
   );
 }
 
 export const Route = createFileRoute("/foo")({
-  component: FooManagement,
+  component: FooPage,
 });
