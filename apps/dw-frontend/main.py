@@ -135,10 +135,27 @@ def render_dlq_controls(endpoint_path, refresh_key):
                         st.session_state["extract_status_msg"] = f"DLQ triggered successfully with batch size {batch_size} and {failure_percentage}% failure rate."
                         st.session_state["extract_status_type"] = "success"
                         st.session_state["extract_status_time"] = time.time()
-                        time.sleep(2)
+                        
+                        # Also trigger a regular extract to ensure successful items are in the main table
+                        if "extract-s3" in endpoint_path:
+                            regular_extract_url = f"{API_BASE}/extract-s3?batch_size={batch_size}"
+                        elif "extract-datadog" in endpoint_path:
+                            regular_extract_url = f"{API_BASE}/extract-datadog?batch_size={batch_size}"
+                        else:
+                            regular_extract_url = None
+                        
+                        if regular_extract_url:
+                            try:
+                                regular_response = requests.get(regular_extract_url)
+                                regular_response.raise_for_status()
+                                st.session_state["extract_status_msg"] += f" Also triggered regular extract for successful items."
+                            except Exception as regular_e:
+                                st.session_state["extract_status_msg"] += f" (Note: Regular extract failed: {regular_e})"
+                        
+                        time.sleep(2)  # Wait for initial processing
                     
-                    # Wait 3 seconds and then fetch DLQ messages
-                    with st.spinner("Waiting 3 seconds and fetching DLQ messages..."):
+                    # Fetch DLQ messages immediately after successful trigger
+                    with st.spinner("Fetching DLQ messages..."):
                         time.sleep(3)
                         dlq_messages_url = "http://localhost:9999/topic/FooDeadLetterQueue/messages?partition=0&offset=0&count=100&isAnyProto=false"
                         
@@ -156,10 +173,23 @@ def render_dlq_controls(endpoint_path, refresh_key):
                             if dlq_data:
                                 # Determine filter type based on endpoint
                                 filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
+                                
+                                # Get the current highest offset for this endpoint to avoid duplicates
+                                highest_offset_key = f"dlq_highest_offset_{endpoint_path}"
+                                current_highest_offset = st.session_state.get(highest_offset_key, -1)
+                                new_highest_offset = current_highest_offset
                                                                 
                                 filtered_messages = []
                                 for i, item in enumerate(dlq_data):
                                     if "message" in item and item["message"]:
+                                        # Only process messages with offset higher than our current highest
+                                        item_offset = item.get('offset', 0)
+                                        if item_offset <= current_highest_offset:
+                                            continue
+                                        
+                                        # Track the new highest offset
+                                        new_highest_offset = max(new_highest_offset, item_offset)
+                                        
                                         try:
                                             # Parse the stringified JSON message
                                             import json
@@ -209,11 +239,20 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                     # Store both table data and raw JSON in session state
                                     st.session_state[dlq_messages_key] = table_data
                                     st.session_state[f"dlq_raw_messages_{endpoint_path}"] = raw_json_data
+                                    
+                                    # Update the highest offset for this endpoint
+                                    st.session_state[highest_offset_key] = new_highest_offset
                                 else:
                                     # Clear any existing data and show info message
                                     st.session_state[dlq_messages_key] = []
                                     st.session_state[f"dlq_raw_messages_{endpoint_path}"] = []
-                                    st.info(f"No {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue.")
+                                    
+                                    # Still update the highest offset even if no new filtered messages
+                                    if new_highest_offset > current_highest_offset:
+                                        st.session_state[highest_offset_key] = new_highest_offset
+                                        st.info(f"No new {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue since last check.")
+                                    else:
+                                        st.info(f"No {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue.")
                             else:
                                 st.info("No messages found in the Dead Letter Queue.")
                                 
@@ -225,7 +264,9 @@ def render_dlq_controls(endpoint_path, refresh_key):
                             st.text(f"Response headers: {dict(dlq_response.headers)}")
                             st.text(f"Response content: {dlq_response.text}")
                     
+                    # Refresh the main items table after all DLQ processing is complete
                     st.session_state[refresh_key] = True
+                    st.rerun()  # Force immediate page refresh to show updated data
                 except Exception as e:
                     st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
                     st.session_state["extract_status_type"] = "error"
@@ -364,6 +405,7 @@ elif page == "S3":
             trigger_extract(f"{API_BASE}/extract-s3", "S3")
             time.sleep(2)
         st.session_state["refresh_s3"] = True
+        st.rerun()
     
     st.subheader("S3 Items Table")
     if not df.empty and "large_text" in df.columns:
@@ -384,10 +426,13 @@ elif page == "S3":
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
         filter_tag = "S3"
         st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
-        
-        # Status line showing count of retrieved items
+        st.markdown("**These entries have been auto resolved.**")
+
+        # Status line showing count of retrieved items and offset tracking
         item_count = len(st.session_state[dlq_messages_key])
-        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter")
+        highest_offset_key = "dlq_highest_offset_extract-s3"
+        current_highest_offset = st.session_state.get(highest_offset_key, -1)
+        st.info(f"📊 Retrieved {item_count} new DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter (showing messages after offset {current_highest_offset})")
         
         # Create and display DataFrame at full width
         df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
@@ -428,6 +473,7 @@ elif page == "Datadog":
             trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
             time.sleep(2)
         st.session_state["refresh_datadog"] = True
+        st.rerun()
     st.subheader("Datadog Items Table")
     if not df.empty:
         log_col = df.columns[-1]
@@ -447,10 +493,13 @@ elif page == "Datadog":
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
         filter_tag = "Datadog"
         st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
+        st.markdown("**These entries have been auto resolved.**")
         
-        # Status line showing count of retrieved items
+        # Status line showing count of retrieved items and offset tracking
         item_count = len(st.session_state[dlq_messages_key])
-        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter")
+        highest_offset_key = "dlq_highest_offset_extract-datadog"
+        current_highest_offset = st.session_state.get(highest_offset_key, -1)
+        st.info(f"📊 Retrieved {item_count} new DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter (showing messages after offset {current_highest_offset})")
         
         # Create and display DataFrame at full width
         df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
