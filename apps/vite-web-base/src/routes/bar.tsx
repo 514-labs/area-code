@@ -106,11 +106,11 @@ function BarManagement() {
         <BarCreateForm />
       </div>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 

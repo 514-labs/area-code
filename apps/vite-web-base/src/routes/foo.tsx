@@ -100,11 +100,11 @@ function FooManagement() {
         <FooCreateForm />
       </div>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionFooAverageScore cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 

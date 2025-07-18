@@ -97,8 +97,8 @@ is_service_setup() {
     
     case "$service" in
         "transactional-base")
-            # Check if Docker containers are running or can be started
-            if [ -f "$service_dir/docker-compose.yml" ] && command -v docker >/dev/null 2>&1; then
+            # Check if Docker containers are running or can be started AND .env file exists
+            if [ -f "$service_dir/docker-compose.yml" ] && command -v docker >/dev/null 2>&1 && [ -f "$service_dir/.env" ]; then
                 return 0  # Setup files exist
             fi
             ;;
@@ -109,20 +109,20 @@ is_service_setup() {
             fi
             ;;
         "analytical-base")
-            # Check if Moose dependencies are installed
-            if [ -d "$service_dir/node_modules" ] && command -v moose >/dev/null 2>&1; then
+            # Check if Moose dependencies are installed AND transactional-base .env exists
+            if [ -d "$service_dir/node_modules" ] && command -v moose >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/services/transactional-base/.env" ]; then
                 return 0
             fi
             ;;
         "sync-base")
-            # Check if Moose dependencies are installed  
-            if [ -d "$service_dir/node_modules" ] && command -v moose >/dev/null 2>&1; then
+            # Check if Moose dependencies are installed AND service has its own .env file
+            if [ -d "$service_dir/node_modules" ] && command -v moose >/dev/null 2>&1 && [ -f "$service_dir/.env" ]; then
                 return 0
             fi
             ;;
         "data-warehouse")
-            # Check if Python dependencies are installed
-            if [ -f "$service_dir/requirements.txt" ] && [ -d "$service_dir/.venv" ]; then
+            # Check if Python dependencies are installed AND service has its own .env file
+            if [ -f "$service_dir/requirements.txt" ] && [ -d "$service_dir/.venv" ] && [ -f "$service_dir/.env" ]; then
                 return 0
             fi
             ;;
@@ -158,32 +158,44 @@ setup_service() {
     }
     
     echo "📦 Running setup for $service..."
+    local setup_exit_code=0
     case "$service" in
         "transactional-base")
             # For transactional service, run the setup (default behavior)
             "$script_path"
+            setup_exit_code=$?
             ;;
         "retrieval-base")
             # For retrieval service, use the setup command
             "$script_path" setup
+            setup_exit_code=$?
             ;;
         "analytical-base")
             # For analytical service, use the setup command
             "$script_path" setup
+            setup_exit_code=$?
             ;;
         "sync-base")
             # For sync service, use the setup command
             "$script_path" setup
+            setup_exit_code=$?
             ;;
         "data-warehouse")
             # For data-warehouse service, use the setup command
             "$script_path" setup
+            setup_exit_code=$?
             ;;
         *)
             echo "❌ Unknown service: $service"
             return 1
             ;;
     esac
+    
+    # Check if setup script failed
+    if [ $setup_exit_code -ne 0 ]; then
+        echo "❌ $service setup script failed with exit code: $setup_exit_code"
+        return 1
+    fi
     
     # Return to original directory
     cd "$PROJECT_ROOT"

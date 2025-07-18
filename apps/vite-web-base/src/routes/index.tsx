@@ -185,11 +185,11 @@ function IndexPage() {
 
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5">
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
@@ -209,11 +209,11 @@ function IndexPage() {
         <TransactionalFooDataTable cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-4">
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 

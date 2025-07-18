@@ -67,9 +67,10 @@ check_prerequisites() {
     # Check if transactional-base service is accessible
     local transactional_env_path="../transactional-base/.env"
     if [ ! -f "$transactional_env_path" ]; then
-        print_warning "transactional-base/.env not found"
-        print_status "Make sure the transactional-base service is set up first"
-        print_status "The sync-base service depends on transactional-base configuration"
+        print_error "transactional-base/.env not found at: $transactional_env_path"
+        print_error "The sync-base service REQUIRES transactional-base configuration"
+        print_error "Please run 'pnpm dev:setup --service=transactional-base' first"
+        exit 1
     else
         print_success "Found transactional-base/.env - will copy configuration values"
     fi

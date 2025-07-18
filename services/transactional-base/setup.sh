@@ -203,6 +203,13 @@ main() {
         exit 1
     fi
 
+    # Verify .env file was created successfully
+    if [ ! -f ".env" ]; then
+        echo "❌ Error: .env file was not created successfully"
+        echo "Setup failed - other services depend on this .env file"
+        exit 1
+    fi
+
     echo ""
     echo "✅ Setup complete!"
     echo ""
