@@ -1,0 +1,24 @@
+[theme]
+base = "light"
+primaryColor = "#FF6B6B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans-serif"
+
+[server]
+port = 8501
+headless = false
+runOnSave = false
+maxUploadSize = 200
+
+[client]
+showErrorDetails = "full"
+toolbarMode = "auto"
+
+[runner]
+magicEnabled = true
+fastReruns = true
+
+[browser]
+gatherUsageStats = false  # Disable telemetry
