@@ -4,6 +4,7 @@ import { type NavMainItem } from "@workspace/ui/components/nav-main";
 import { type NavItem } from "@workspace/ui/components/nav-secondary";
 import { SidebarThemeToggle } from "../theme/sidebar-theme-toggle";
 import { SidebarFrontendCacheToggle } from "../frontend-caching/sidebar-frontend-cache-toggle";
+import { SidebarGithubButton } from "./sidebar-github-button";
 import { OriginHighlightsCheckboxes } from "../origin-highlights/origin-highlights-checkboxes";
 
 export const navigationConfig = {
@@ -33,5 +34,6 @@ export const navigationConfig = {
     <OriginHighlightsCheckboxes key="origin-highlights-checkboxes" />,
     <SidebarThemeToggle key="theme-toggle" />,
     <SidebarFrontendCacheToggle key="cache-toggle" />,
+    <SidebarGithubButton key="github-button" />,
   ] as (NavItem | React.ReactNode)[],
 };
