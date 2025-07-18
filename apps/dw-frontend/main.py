@@ -173,10 +173,23 @@ def render_dlq_controls(endpoint_path, refresh_key):
                             if dlq_data:
                                 # Determine filter type based on endpoint
                                 filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
+                                
+                                # Get the current highest offset for this endpoint to avoid duplicates
+                                highest_offset_key = f"dlq_highest_offset_{endpoint_path}"
+                                current_highest_offset = st.session_state.get(highest_offset_key, -1)
+                                new_highest_offset = current_highest_offset
                                                                 
                                 filtered_messages = []
                                 for i, item in enumerate(dlq_data):
                                     if "message" in item and item["message"]:
+                                        # Only process messages with offset higher than our current highest
+                                        item_offset = item.get('offset', 0)
+                                        if item_offset <= current_highest_offset:
+                                            continue
+                                        
+                                        # Track the new highest offset
+                                        new_highest_offset = max(new_highest_offset, item_offset)
+                                        
                                         try:
                                             # Parse the stringified JSON message
                                             import json
@@ -226,11 +239,20 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                     # Store both table data and raw JSON in session state
                                     st.session_state[dlq_messages_key] = table_data
                                     st.session_state[f"dlq_raw_messages_{endpoint_path}"] = raw_json_data
+                                    
+                                    # Update the highest offset for this endpoint
+                                    st.session_state[highest_offset_key] = new_highest_offset
                                 else:
                                     # Clear any existing data and show info message
                                     st.session_state[dlq_messages_key] = []
                                     st.session_state[f"dlq_raw_messages_{endpoint_path}"] = []
-                                    st.info(f"No {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue.")
+                                    
+                                    # Still update the highest offset even if no new filtered messages
+                                    if new_highest_offset > current_highest_offset:
+                                        st.session_state[highest_offset_key] = new_highest_offset
+                                        st.info(f"No new {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue since last check.")
+                                    else:
+                                        st.info(f"No {filter_tag + ' ' if filter_tag else ''}messages found in the Dead Letter Queue.")
                             else:
                                 st.info("No messages found in the Dead Letter Queue.")
                                 
@@ -403,12 +425,14 @@ elif page == "S3":
     dlq_messages_key = "dlq_messages_extract-s3"
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
         filter_tag = "S3"
-        st.subheader(f"Historical Dead Letter Queue Messages (Filtered for {filter_tag})")
+        st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
         st.markdown("**These entries have been auto resolved.**")
 
-        # Status line showing count of retrieved items
+        # Status line showing count of retrieved items and offset tracking
         item_count = len(st.session_state[dlq_messages_key])
-        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter")
+        highest_offset_key = "dlq_highest_offset_extract-s3"
+        current_highest_offset = st.session_state.get(highest_offset_key, -1)
+        st.info(f"📊 Retrieved {item_count} new DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter (showing messages after offset {current_highest_offset})")
         
         # Create and display DataFrame at full width
         df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
@@ -468,12 +492,14 @@ elif page == "Datadog":
     dlq_messages_key = "dlq_messages_extract-datadog"
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
         filter_tag = "Datadog"
-        st.subheader(f"Historical Dead Letter Queue Messages (Filtered for {filter_tag})")
+        st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
         st.markdown("**These entries have been auto resolved.**")
         
-        # Status line showing count of retrieved items
+        # Status line showing count of retrieved items and offset tracking
         item_count = len(st.session_state[dlq_messages_key])
-        st.info(f"📊 Retrieved {item_count} DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter")
+        highest_offset_key = "dlq_highest_offset_extract-datadog"
+        current_highest_offset = st.session_state.get(highest_offset_key, -1)
+        st.info(f"📊 Retrieved {item_count} new DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter (showing messages after offset {current_highest_offset})")
         
         # Create and display DataFrame at full width
         df_dlq = pd.DataFrame(st.session_state[dlq_messages_key])
