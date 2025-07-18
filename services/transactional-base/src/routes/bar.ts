@@ -83,6 +83,7 @@ export async function barRoutes(fastify: FastifyInstance) {
             total: number;
             hasMore: boolean;
           };
+          queryTime: number;
         }
       | { error: string };
   }>("/bar", async (request, reply) => {
@@ -135,6 +136,8 @@ export async function barRoutes(fastify: FastifyInstance) {
         orderByClause = desc(bar.createdAt);
       }
 
+      const startTime = Date.now();
+
       // Execute query with sorting and pagination
       const barItems = await db
         .select({
@@ -164,6 +167,8 @@ export async function barRoutes(fastify: FastifyInstance) {
         .select({ count: sql<number>`cast(count(*) as int)` })
         .from(bar);
 
+      const queryTime = Date.now() - startTime;
+
       const total = totalResult[0].count;
       const hasMore = offset + limit < total;
 
@@ -175,6 +180,7 @@ export async function barRoutes(fastify: FastifyInstance) {
           total,
           hasMore,
         },
+        queryTime,
       });
     } catch (err) {
       console.error("Error fetching bars:", err);

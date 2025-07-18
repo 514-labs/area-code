@@ -128,6 +128,7 @@ interface FooResponse {
     total: number;
     hasMore: boolean;
   };
+  queryTime: number;
 }
 
 const fetchFoos = async (
@@ -402,7 +403,6 @@ export function FooCDCDataTable({
       sorting,
     ],
     queryFn: async () => {
-      const startTime = performance.now();
       const sortBy = sorting[0]?.id;
       const sortOrder = sorting[0]?.desc ? "desc" : "asc";
       const result = await fetchFoos(
@@ -412,8 +412,7 @@ export function FooCDCDataTable({
         sortBy,
         sortOrder
       );
-      const endTime = performance.now();
-      setQueryTime(endTime - startTime);
+      setQueryTime(result.queryTime);
       return result;
     },
     // Keep previous data visible while fetching new data

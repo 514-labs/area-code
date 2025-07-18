@@ -222,6 +222,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
             total: number;
             hasMore: boolean;
           };
+          queryTime: number;
         }
       | { error: string };
   }>("/foo", async (request, reply) => {
@@ -288,6 +289,8 @@ export async function fooRoutes(fastify: FastifyInstance) {
         orderByClause = desc(foo.createdAt);
       }
 
+      const startTime = Date.now();
+
       // Execute query with sorting and pagination
       const fooItems = await db
         .select()
@@ -300,6 +303,8 @@ export async function fooRoutes(fastify: FastifyInstance) {
       const totalResult = await db
         .select({ count: sql<number>`cast(count(*) as int)` })
         .from(foo);
+
+      const queryTime = Date.now() - startTime;
 
       const total = totalResult[0].count;
       const hasMore = offset + limit < total;
@@ -314,6 +319,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
           total,
           hasMore,
         },
+        queryTime,
       });
     } catch (error) {
       console.error("Error fetching foo items:", error);

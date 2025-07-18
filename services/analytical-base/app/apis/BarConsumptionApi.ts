@@ -22,6 +22,7 @@ interface BarResponse {
     total: number;
     hasMore: boolean;
   };
+  queryTime: number;
 }
 
 // Interface for average value response
@@ -63,6 +64,8 @@ export const barConsumptionApi = new ConsumptionApi<QueryParams, BarResponse>(
     }[];
     const totalCount = countResults[0]?.total || 0;
 
+    const startTime = Date.now();
+
     // Build dynamic query including CDC fields
     const query = sql`
       SELECT *,
@@ -78,6 +81,8 @@ export const barConsumptionApi = new ConsumptionApi<QueryParams, BarResponse>(
     const resultSet = await client.query.execute<BarForConsumption>(query);
     const results = (await resultSet.json()) as BarForConsumption[];
 
+    const queryTime = Date.now() - startTime;
+
     // Create pagination metadata
     const hasMore = offset + results.length < totalCount;
 
@@ -89,6 +94,7 @@ export const barConsumptionApi = new ConsumptionApi<QueryParams, BarResponse>(
         total: totalCount,
         hasMore,
       },
+      queryTime,
     };
   }
 );
@@ -136,15 +142,10 @@ export const barAverageValueApi = new ConsumptionApi<
 export const barCdcStatsApi = new ConsumptionApi<
   EmptyParams,
   { operationCounts: Record<string, number>; queryTime: number }
->(
-  "bar-cdc-stats",
-  async (
-    _params: EmptyParams,
-    { client, sql }
-  ) => {
-    const startTime = Date.now();
+>("bar-cdc-stats", async (_params: EmptyParams, { client, sql }) => {
+  const startTime = Date.now();
 
-    const query = sql`
+  const query = sql`
       SELECT 
         cdc_operation,
         COUNT(*) as count
@@ -153,26 +154,28 @@ export const barCdcStatsApi = new ConsumptionApi<
       GROUP BY cdc_operation
     `;
 
-    const resultSet = await client.query.execute<{
-      cdc_operation: string;
-      count: number;
-    }>(query);
+  const resultSet = await client.query.execute<{
+    cdc_operation: string;
+    count: number;
+  }>(query);
 
-    const results = (await resultSet.json()) as {
-      cdc_operation: string;
-      count: number;
-    }[];
-    
-    const operationCounts = results.reduce((acc, row) => {
+  const results = (await resultSet.json()) as {
+    cdc_operation: string;
+    count: number;
+  }[];
+
+  const operationCounts = results.reduce(
+    (acc, row) => {
       acc[row.cdc_operation] = row.count;
       return acc;
-    }, {} as Record<string, number>);
+    },
+    {} as Record<string, number>
+  );
 
-    const queryTime = Date.now() - startTime;
+  const queryTime = Date.now() - startTime;
 
-    return {
-      operationCounts,
-      queryTime,
-    };
-  }
-);
+  return {
+    operationCounts,
+    queryTime,
+  };
+});
