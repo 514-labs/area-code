@@ -85,14 +85,6 @@ check_prerequisites() {
         print_success "Docker version: $(docker --version)"
     fi
     
-    # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose is not installed. Please install Docker Compose"
-        has_errors=1
-    else
-        print_success "Docker Compose version: $(docker-compose --version)"
-    fi
-    
     if [ $has_errors -eq 1 ]; then
         print_error "Please install missing prerequisites before continuing"
         exit 1
