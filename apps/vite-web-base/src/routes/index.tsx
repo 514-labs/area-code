@@ -42,18 +42,36 @@ function AnalyticalFooAverageScore({
   );
 }
 
-function AnalyticalFooScoreOverTimeGraph() {
+function AnalyticalFooScoreOverTimeGraph({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
   const API_BASE = getAnalyticalConsumptionApiBase();
   const apiEndpoint = `${API_BASE}/foo-score-over-time`;
 
-  return <FooScoreOverTimeGraph fetchApiEndpoint={apiEndpoint} />;
+  return (
+    <FooScoreOverTimeGraph
+      fetchApiEndpoint={apiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
 }
 
-function TransactionalFooScoreOverTimeGraph() {
+function TransactionalFooScoreOverTimeGraph({
+  cacheEnabled,
+}: {
+  cacheEnabled: boolean;
+}) {
   const API_BASE = getTransactionApiBase();
   const apiEndpoint = `${API_BASE}/foo/score-over-time`;
 
-  return <FooScoreOverTimeGraph fetchApiEndpoint={apiEndpoint} />;
+  return (
+    <FooScoreOverTimeGraph
+      fetchApiEndpoint={apiEndpoint}
+      disableCache={!cacheEnabled}
+    />
+  );
 }
 
 function TransactionalFooDataTable({
@@ -176,11 +194,11 @@ function IndexPage() {
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalFooScoreOverTimeGraph />
+        <TransactionalFooScoreOverTimeGraph cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <AnalyticalFooScoreOverTimeGraph />
+        <AnalyticalFooScoreOverTimeGraph cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
