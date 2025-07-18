@@ -8,8 +8,24 @@ from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_
 from utils.constants import API_BASE
 
 def show():
-    st.title("Datadog View")
-    
+    level_counts = {"INFO": 0, "DEBUG": 0, "ERROR": 0}
+
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.markdown("<h2 style='margin: 0; line-height: 1;'>Datadog View</h2>", unsafe_allow_html=True)
+    with col2:
+        # Use empty space to push button to the right
+        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
+        # Create three sub-columns to push the button to the right
+        _, _, button_col = st.columns([1, 1, 1])
+        with button_col:
+            if ui.button(text="Extract", key="trigger_datadog_btn", size="sm"):
+                with st.spinner(""):
+                    trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+                    time.sleep(2)
+                st.session_state["refresh_datadog"] = True
+                st.rerun()
+
     df = handle_refresh_and_fetch(
         "refresh_datadog",
         "Datadog",
@@ -17,21 +33,34 @@ def show():
         trigger_label="Datadog",
         button_label=None  # We'll use ShadCN button below
     )
-    
-    if ui.button(text="Trigger Datadog Extract", key="trigger_datadog_btn"):
-        with st.spinner("Triggering Datadog extract and waiting for backend to finish..."):
-            trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
-            time.sleep(2)
-        st.session_state["refresh_datadog"] = True
-        st.rerun()
-    
-    st.subheader("Datadog Items Table")
+
+    # Parse logs and count levels if data exists
     if not df.empty:
         log_col = df.columns[-1]
         parsed_logs = df[log_col].str.split("|", n=2, expand=True)
         parsed_logs.columns = ["Level", "Timestamp", "Message"]
         if "Processed On" in df.columns:
             parsed_logs.insert(1, "Processed On", df["Processed On"])
+
+        # Update counts with actual data
+        actual_counts = parsed_logs["Level"].value_counts().to_dict()
+        for level, count in actual_counts.items():
+            level_upper = level.upper().strip()
+            if level_upper in level_counts:
+                level_counts[level_upper] = count
+
+    # Metric cards
+    cols = st.columns(len(level_counts))
+    for idx, (level, count) in enumerate(level_counts.items()):
+        with cols[idx]:
+            ui.metric_card(
+                title=level.title(),
+                content=str(count),
+                key=f"datadog_metric_{level.lower()}"
+            )
+
+    st.subheader("Datadog Items Table")
+    if not df.empty:
         st.dataframe(parsed_logs, use_container_width=True)
     else:
         st.write("No Datadog log data available.")

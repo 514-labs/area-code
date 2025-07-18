@@ -117,23 +117,6 @@ def render_dlq_controls(endpoint_path, refresh_key):
                         st.session_state["extract_status_msg"] = f"DLQ triggered successfully with batch size {batch_size} and {failure_percentage}% failure rate."
                         st.session_state["extract_status_type"] = "success"
                         st.session_state["extract_status_time"] = time.time()
-                        
-                        # Also trigger a regular extract to ensure successful items are in the main table
-                        if "extract-s3" in endpoint_path:
-                            regular_extract_url = f"{API_BASE}/extract-s3?batch_size={batch_size}"
-                        elif "extract-datadog" in endpoint_path:
-                            regular_extract_url = f"{API_BASE}/extract-datadog?batch_size={batch_size}"
-                        else:
-                            regular_extract_url = None
-                        
-                        if regular_extract_url:
-                            try:
-                                regular_response = requests.get(regular_extract_url)
-                                regular_response.raise_for_status()
-                                st.session_state["extract_status_msg"] += f" Also triggered regular extract for successful items."
-                            except Exception as regular_e:
-                                st.session_state["extract_status_msg"] += f" (Note: Regular extract failed: {regular_e})"
-                        
                         time.sleep(2)  # Wait for initial processing
                     
                     # Fetch DLQ messages immediately after successful trigger
