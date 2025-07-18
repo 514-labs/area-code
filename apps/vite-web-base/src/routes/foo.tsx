@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@workspace/ui/components/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { FooDataTable } from "../features/foo/foo.data-table";
-import { FooCDCDataTable } from "../features/foo/foo.cdc-data-table";
+import FooTransactionalDataTable from "../features/foo/foo.transactional.data-table";
+import FooAnalyticalDataTable from "../features/foo/foo.analytical.data-table";
 import { FooCreateForm } from "../features/foo/foo.create";
 import {
   getAnalyticalConsumptionApiBase,
@@ -53,7 +53,7 @@ function TransactionalFooDataTable({
   const editApiEndpoint = `${API_BASE}/foo`;
 
   return (
-    <FooDataTable
+    <FooTransactionalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
       selectableRows={true}
@@ -72,7 +72,7 @@ function AnalyticalConsumptionFooDataTable({
   const fetchApiEndpoint = `${API_BASE}/foo`;
 
   return (
-    <FooCDCDataTable
+    <FooAnalyticalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />

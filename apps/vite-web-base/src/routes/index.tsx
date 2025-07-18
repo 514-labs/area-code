@@ -10,11 +10,11 @@ import {
   AnalyticalHighlightWrapper,
 } from "../features/origin-highlights/origin-highlights-wrappers";
 import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph";
-import { FooDataTable } from "@/features/foo/foo.data-table";
+import FooTransactionalDataTable from "@/features/foo/foo.transactional.data-table";
 import BarAverageValue from "@/features/bar/bar.average-value";
-import { BarDataTable } from "@/features/bar/bar.data-table";
-import { FooCDCDataTable } from "@/features/foo/foo.cdc-data-table";
-import { BarCDCDataTable } from "@/features/bar/bar.cdc-data-table";
+import BarTransactionalDataTable from "@/features/bar/bar.transactional.data-table";
+import FooAnalyticalDataTable from "@/features/foo/foo.analytical.data-table";
+import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -85,7 +85,7 @@ function TransactionalFooDataTable({
   const editApiEndpoint = `${API_BASE}/foo`;
 
   return (
-    <FooDataTable
+    <FooTransactionalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
       selectableRows={true}
@@ -104,7 +104,7 @@ function AnalyticalConsumptionFooDataTable({
   const fetchApiEndpoint = `${API_BASE}/foo`;
 
   return (
-    <FooCDCDataTable
+    <FooAnalyticalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />
@@ -154,7 +154,7 @@ function TransactionalBarDataTable({
   const editApiEndpoint = `${API_BASE}/bar`;
 
   return (
-    <BarDataTable
+    <BarTransactionalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
       selectableRows={true}
@@ -173,7 +173,7 @@ function AnalyticalBarCDCDataTable({
   const fetchApiEndpoint = `${API_BASE}/bar`;
 
   return (
-    <BarCDCDataTable
+    <BarAnalyticalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />

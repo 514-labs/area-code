@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@workspace/ui/components/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { BarDataTable } from "../features/bar/bar.data-table";
+import BarTransactionalDataTable from "../features/bar/bar.transactional.data-table";
 import { BarCreateForm } from "../features/bar/bar.create";
 import {
   getAnalyticalConsumptionApiBase,
@@ -14,7 +14,7 @@ import {
   TransactionalHighlightWrapper,
   AnalyticalHighlightWrapper,
 } from "@/features/origin-highlights/origin-highlights-wrappers";
-import { BarCDCDataTable } from "@/features/bar/bar.cdc-data-table";
+import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
 
 function TransactionalBarDataTable({
   cacheEnabled,
@@ -27,7 +27,7 @@ function TransactionalBarDataTable({
   const editApiEndpoint = `${API_BASE}/bar`;
 
   return (
-    <BarDataTable
+    <BarTransactionalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
       selectableRows={true}
@@ -78,7 +78,7 @@ function AnalyticalBarCDCDataTable({
   const fetchApiEndpoint = `${API_BASE}/bar`;
 
   return (
-    <BarCDCDataTable
+    <BarAnalyticalDataTable
       fetchApiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />

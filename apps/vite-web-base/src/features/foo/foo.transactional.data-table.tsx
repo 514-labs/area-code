@@ -346,7 +346,7 @@ const fetchFoos = async (
   return response.json();
 };
 
-export function FooDataTable({
+export default function FooTransactionalDataTable({
   fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,

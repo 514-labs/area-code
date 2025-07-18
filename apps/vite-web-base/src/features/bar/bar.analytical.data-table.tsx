@@ -279,7 +279,7 @@ const createColumns = (): ColumnDef<BarWithCDC>[] => {
   return baseColumns;
 };
 
-export function BarCDCDataTable({
+export default function BarAnalyticalDataTable({
   fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,

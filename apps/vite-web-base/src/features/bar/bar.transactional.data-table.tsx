@@ -1,16 +1,14 @@
+import * as React from "react";
+import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import {
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-  IconCircleCheckFilled,
-  IconLoader,
-  IconCircleX,
-  IconClock,
-  IconArchive,
   IconArrowUp,
   IconArrowDown,
   IconArrowsSort,
+  IconLoader,
   IconDotsVertical,
   IconEdit,
 } from "@tabler/icons-react";
@@ -28,8 +26,12 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { FooStatus, FooWithCDC } from "@workspace/models";
-import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
+import { Bar as BaseBar } from "@workspace/models";
+
+interface Bar extends BaseBar {
+  foo?: Foo;
+}
+
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -62,6 +64,7 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
 import {
   Select,
   SelectContent,
@@ -77,11 +80,49 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table";
-import { Textarea } from "@workspace/ui/components/textarea";
-import React, { useEffect, useState, useRef } from "react";
-import { NumericFormat } from "react-number-format";
 import { format } from "date-fns";
-import { getCDCOperationBadge, createCDCColumns } from "../cdc/cdc-utils";
+import { NumericFormat } from "react-number-format";
+
+interface Foo {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+}
+
+interface BarResponse {
+  data: Bar[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+  queryTime: number;
+}
+
+// API Functions
+const fetchBars = async (
+  fetchApiEndpoint: string,
+  limit: number = 10,
+  offset: number = 0,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc"
+): Promise<BarResponse> => {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+  });
+
+  if (sortBy && sortOrder) {
+    params.append("sortBy", sortBy);
+    params.append("sortOrder", sortOrder);
+  }
+
+  const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
+  if (!response.ok) throw new Error("Failed to fetch bars");
+  return response.json();
+};
 
 // Add a sortable header component
 const SortableHeader = ({
@@ -89,7 +130,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: Column<FooWithCDC, unknown>;
+  column: Column<Bar, unknown>;
   children: React.ReactNode;
   className?: string;
 }) => {
@@ -120,243 +161,113 @@ const SortableHeader = ({
   );
 };
 
-interface FooResponse {
-  data: FooWithCDC[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-  queryTime: number;
-}
-
-const fetchFoos = async (
-  endpoint: string,
-  limit: number,
-  offset: number,
-  sortBy?: string,
-  sortOrder?: string
-): Promise<FooResponse> => {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-    offset: offset.toString(),
-  });
-
-  if (sortBy) params.append("sortBy", sortBy);
-  if (sortOrder) params.append("sortOrder", sortOrder);
-
-  const response = await fetch(`${endpoint}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch foos");
-  return response.json();
-};
-
-// Create columns with CDC support
-const createColumns = (): ColumnDef<FooWithCDC>[] => {
-  const baseColumns: ColumnDef<FooWithCDC>[] = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <div className="flex items-center justify-center px-1">
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) =>
-              table.toggleAllPageRowsSelected(!!value)
-            }
-            aria-label="Select all"
-          />
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center">
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-  ];
-
-  // Add CDC columns using shared utility
-  const cdcColumns = createCDCColumns<FooWithCDC>();
-  baseColumns.push(...cdcColumns);
-
-  // Add main data columns
-  baseColumns.push(
-    {
-      accessorKey: "name",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Name</SortableHeader>
-      ),
-      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
-      enableSorting: true,
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => (
-        <div
-          className="max-w-xs truncate"
-          title={row.original.description || ""}
-        >
-          {row.original.description || (
-            <span className="text-muted-foreground italic">No description</span>
-          )}
-        </div>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: "status",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Status</SortableHeader>
-      ),
-      cell: ({ row }) => {
-        const status = row.original.status;
-        const getStatusIcon = () => {
-          switch (status) {
-            case FooStatus.ACTIVE:
-              return (
-                <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-              );
-            case FooStatus.INACTIVE:
-              return <IconCircleX className="text-red-500 dark:text-red-400" />;
-            case FooStatus.PENDING:
-              return (
-                <IconClock className="text-yellow-500 dark:text-yellow-400" />
-              );
-            case FooStatus.ARCHIVED:
-              return (
-                <IconArchive className="text-gray-500 dark:text-gray-400" />
-              );
-            default:
-              return <IconCircleX className="text-gray-400" />;
+const columns: ColumnDef<Bar>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center justify-center px-1">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-        };
-
-        return (
-          <div className="flex items-center gap-2">
-            {getStatusIcon()}
-            <span className="capitalize">{status}</span>
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "label",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Label</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="font-medium">
+        {row.original.label || (
+          <span className="text-muted-foreground italic">No label</span>
+        )}
+      </div>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "value",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Value</SortableHeader>
+    ),
+    cell: ({ row }) => <div className="font-mono">{row.original.value}</div>,
+    enableSorting: true,
+  },
+  {
+    accessorKey: "foo_id",
+    header: "Associated Foo",
+    cell: ({ row }) => (
+      <div>
+        {row.original.foo ? (
+          <div className="flex items-center space-x-2">
+            <span className="font-medium">{row.original.foo.name}</span>
+            <Badge variant="outline" className="text-xs">
+              {row.original.foo.status}
+            </Badge>
           </div>
-        );
-      },
-      enableSorting: true,
-    },
-    {
-      accessorKey: "priority",
-      header: ({ column }) => (
-        <SortableHeader column={column} className="text-right">
-          Priority
-        </SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right font-mono">{row.original.priority}</div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "is_active",
-      header: ({ column }) => (
-        <SortableHeader column={column} className="text-center">
-          Active
-        </SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-center">
-          {row.original.is_active ? (
-            <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-          ) : (
-            <IconCircleX className="text-red-500 dark:text-red-400" />
-          )}
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "score",
-      header: ({ column }) => (
-        <SortableHeader column={column} className="text-right">
-          Score
-        </SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">
-          <NumericFormat
-            value={row.original.score}
-            displayType="text"
-            thousandSeparator
-            decimalScale={2}
-            className="font-mono"
-          />
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "tags",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Tags</SortableHeader>
-      ),
-      cell: ({ row }) => {
-        if (!row.original.tags) return null;
-        const validTags = row.original.tags.filter((tag) => tag !== null);
-        if (validTags.length === 0) return null;
+        ) : (
+          <span className="text-muted-foreground">Unknown</span>
+        )}
+      </div>
+    ),
+    enableSorting: false,
+  },
+  {
+    accessorKey: "notes",
+    header: "Notes",
+    cell: ({ row }) => (
+      <div className="max-w-xs truncate" title={row.original.notes || ""}>
+        {row.original.notes || (
+          <span className="text-muted-foreground italic">No notes</span>
+        )}
+      </div>
+    ),
+    enableSorting: false,
+  },
+  {
+    accessorKey: "is_enabled",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Status</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <Badge variant={row.original.is_enabled ? "default" : "secondary"}>
+        {row.original.is_enabled ? "Enabled" : "Disabled"}
+      </Badge>
+    ),
+    enableSorting: true,
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Created</SortableHeader>
+    ),
+    cell: ({ row }) => (
+      <div className="text-sm text-muted-foreground">
+        {format(new Date(row.original.created_at), "MMM d, yyyy h:mm a")}
+      </div>
+    ),
+    enableSorting: true,
+  },
+];
 
-        return (
-          <div className="flex gap-1">
-            {validTags.slice(0, 2).map((tag: string, index: number) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-            {validTags.length > 2 && (
-              <Badge variant="secondary" className="text-xs">
-                +{validTags.length - 2} more
-              </Badge>
-            )}
-          </div>
-        );
-      },
-      enableSorting: true,
-    },
-    {
-      accessorKey: "created_at",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Created</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          {format(new Date(row.original.created_at), "MMM d, yyyy h:mm a")}
-        </div>
-      ),
-      enableSorting: true,
-    },
-    {
-      accessorKey: "updated_at",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Updated</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          {format(row.original.updated_at, "MMM d, yyyy h:mm a")}
-        </div>
-      ),
-      enableSorting: true,
-    }
-  );
-
-  return baseColumns;
-};
-
-export function FooCDCDataTable({
+export default function BarTransactionalDataTable({
   fetchApiEndpoint,
   disableCache = false,
   selectableRows = false,
@@ -369,20 +280,23 @@ export function FooCDCDataTable({
   deleteApiEndpoint?: string;
   editApiEndpoint?: string;
 }) {
-  const [rowSelection, setRowSelection] = useState({});
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState({
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   });
-  const [queryTime, setQueryTime] = useState<number | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [queryTime, setQueryTime] = React.useState<number | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
 
   // Reset pagination and state when endpoint changes
-  useEffect(() => {
+  React.useEffect(() => {
     setPagination({ pageIndex: 0, pageSize: 10 });
     setSorting([]);
     setRowSelection({});
@@ -390,13 +304,13 @@ export function FooCDCDataTable({
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
-    data: fooResponse,
+    data: barResponse,
     isLoading,
     error,
     refetch,
   } = useQuery({
     queryKey: [
-      "foos-cdc",
+      "bars",
       fetchApiEndpoint,
       pagination.pageIndex,
       pagination.pageSize,
@@ -404,12 +318,8 @@ export function FooCDCDataTable({
     ],
     queryFn: async () => {
       const sortBy = sorting[0]?.id;
-      const sortOrder = sorting[0]
-        ? sorting[0].desc
-          ? "desc"
-          : "asc"
-        : undefined;
-      const result = await fetchFoos(
+      const sortOrder = sorting[0]?.desc ? "desc" : "asc";
+      const result = await fetchBars(
         fetchApiEndpoint,
         pagination.pageSize,
         pagination.pageIndex * pagination.pageSize,
@@ -427,17 +337,14 @@ export function FooCDCDataTable({
     refetchOnWindowFocus: false,
   });
 
-  const data = fooResponse?.data || [];
-  const serverPagination = fooResponse?.pagination;
-
-  // Get columns with CDC support
-  const columns = createColumns();
+  const data = barResponse?.data || [];
+  const serverPagination = barResponse?.pagination;
 
   // Create actions column if editApiEndpoint is provided
-  const actionsColumn: ColumnDef<FooWithCDC> = {
+  const actionsColumn: ColumnDef<Bar> = {
     id: "actions",
     cell: ({ row }) => {
-      const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+      const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
 
       return (
         <>
@@ -463,7 +370,7 @@ export function FooCDCDataTable({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <FooCellViewer
+          <BarCellViewer
             item={row.original}
             editApiEndpoint={editApiEndpoint}
             onSave={() => refetch()}
@@ -522,14 +429,14 @@ export function FooCDCDataTable({
 
   // Delete functionality
   const selectedRows = table.getFilteredSelectedRowModel().rows;
-  const selectedFoos = selectedRows.map((row) => row.original);
+  const selectedBars = selectedRows.map((row) => row.original);
 
   const handleDelete = async () => {
-    if (!deleteApiEndpoint || selectedFoos.length === 0) return;
+    if (!deleteApiEndpoint || selectedBars.length === 0) return;
 
     setIsDeleting(true);
     try {
-      const selectedIds = selectedFoos.map((foo) => foo.id);
+      const selectedIds = selectedBars.map((bar) => bar.id);
       const response = await fetch(deleteApiEndpoint, {
         method: "DELETE",
         headers: {
@@ -565,7 +472,7 @@ export function FooCDCDataTable({
             <NumericFormat
               value={serverPagination.offset + 1}
               displayType="text"
-              thousandSeparator
+              thousandSeparator=","
             />{" "}
             to{" "}
             <NumericFormat
@@ -574,15 +481,16 @@ export function FooCDCDataTable({
                 serverPagination.total
               )}
               displayType="text"
-              thousandSeparator
+              thousandSeparator=","
             />{" "}
             of{" "}
             <NumericFormat
               value={serverPagination.total}
               displayType="text"
-              thousandSeparator
+              thousandSeparator=","
             />{" "}
             items
+            {serverPagination.hasMore && " (more available)"}
             {sorting.length > 0 && (
               <span className="ml-2 text-blue-600">
                 • Sorted by {sorting[0].id} ({sorting[0].desc ? "desc" : "asc"})
@@ -680,7 +588,7 @@ export function FooCDCDataTable({
         <div className="flex items-center justify-between px-2">
           {selectableRows && (
             <div className="flex-1 text-sm text-muted-foreground">
-              {deleteApiEndpoint && selectedFoos.length > 0 ? (
+              {deleteApiEndpoint && selectedBars.length > 0 ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
                   onOpenChange={setIsDeleteDialogOpen}
@@ -689,11 +597,11 @@ export function FooCDCDataTable({
                     <Button variant="destructive" size="sm">
                       Delete{" "}
                       <NumericFormat
-                        value={selectedFoos.length}
+                        value={selectedBars.length}
                         displayType="text"
-                        thousandSeparator
+                        thousandSeparator=","
                       />{" "}
-                      selected row{selectedFoos.length === 1 ? "" : "s"}
+                      selected row{selectedBars.length === 1 ? "" : "s"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -704,9 +612,9 @@ export function FooCDCDataTable({
                         delete the following items:
                         <div className="mt-3 p-3 bg-muted rounded-md max-h-40 overflow-y-auto">
                           <ul className="list-disc list-inside space-y-1">
-                            {selectedFoos.map((foo) => (
-                              <li key={foo.id} className="text-sm">
-                                {foo.name}
+                            {selectedBars.map((bar) => (
+                              <li key={bar.id} className="text-sm">
+                                {bar.label || "Untitled Bar"}
                               </li>
                             ))}
                           </ul>
@@ -730,13 +638,13 @@ export function FooCDCDataTable({
                   <NumericFormat
                     value={table.getFilteredSelectedRowModel().rows.length}
                     displayType="text"
-                    thousandSeparator
+                    thousandSeparator=","
                   />{" "}
                   of{" "}
                   <NumericFormat
                     value={table.getFilteredRowModel().rows.length}
                     displayType="text"
-                    thousandSeparator
+                    thousandSeparator=","
                   />{" "}
                   row(s) selected.
                 </>
@@ -774,13 +682,13 @@ export function FooCDCDataTable({
                 <NumericFormat
                   value={table.getState().pagination.pageIndex + 1}
                   displayType="text"
-                  thousandSeparator
+                  thousandSeparator=","
                 />{" "}
                 of{" "}
                 <NumericFormat
                   value={table.getPageCount()}
                   displayType="text"
-                  thousandSeparator
+                  thousandSeparator=","
                 />
               </span>
             </div>
@@ -829,7 +737,7 @@ export function FooCDCDataTable({
   );
 }
 
-function FooCellViewer({
+function BarCellViewer({
   item,
   editApiEndpoint,
   onSave,
@@ -837,7 +745,7 @@ function FooCellViewer({
   isOpen,
   onOpenChange,
 }: {
-  item: FooWithCDC;
+  item: Bar;
   editApiEndpoint?: string;
   onSave?: () => void;
   triggerElement?: React.ReactNode;
@@ -845,8 +753,8 @@ function FooCellViewer({
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
-  const [isSaving, setIsSaving] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   const handleSave = async (formData: FormData) => {
     if (!editApiEndpoint) return;
@@ -854,19 +762,15 @@ function FooCellViewer({
     setIsSaving(true);
     try {
       const updatedItem = {
-        ...item,
-        name: formData.get("name") as string,
-        description: formData.get("description") as string,
-        status: formData.get("status") as string,
-        priority: parseInt(formData.get("priority") as string),
-        score: parseFloat(formData.get("score") as string),
-        is_active: formData.get("is_active") === "on",
-        tags: (formData.get("tags") as string)
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag),
-        large_text: formData.get("large_text") as string,
+        id: item.id,
+        foo_id: formData.get("foo_id") as string,
+        value: parseInt(formData.get("value") as string),
+        label: (formData.get("label") as string) || null,
+        notes: (formData.get("notes") as string) || null,
+        is_enabled: formData.get("is_enabled") === "on",
       };
+
+      console.log("Sending update request:", updatedItem);
 
       const response = await fetch(`${editApiEndpoint}/${item.id}`, {
         method: "PUT",
@@ -877,8 +781,15 @@ function FooCellViewer({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update item");
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `Failed to update item: ${response.status} ${errorText}`
+        );
       }
+
+      const result = await response.json();
+      console.log("Update successful:", result);
 
       // Close the drawer on success
       onOpenChange?.(false);
@@ -906,25 +817,14 @@ function FooCellViewer({
             variant="link"
             className="text-foreground w-fit px-0 text-left"
           >
-            {item.name}
+            {item.label || "Untitled Bar"}
           </Button>
         </DrawerTrigger>
       )}
       <DrawerContent>
         <DrawerHeader className="gap-1">
-          <DrawerTitle>{item.name}</DrawerTitle>
-          <DrawerDescription>Foo details - ID: {item.id}</DrawerDescription>
-          {item.cdc_operation && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Batch Info:</span>
-              {getCDCOperationBadge(item.cdc_operation)}
-              {item.cdc_timestamp && (
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(item.cdc_timestamp), "MMM d, yyyy h:mm a")}
-                </span>
-              )}
-            </div>
-          )}
+          <DrawerTitle>{item.label || "Untitled Bar"}</DrawerTitle>
+          <DrawerDescription>Bar details - ID: {item.id}</DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
           <form
@@ -939,95 +839,62 @@ function FooCellViewer({
             }}
           >
             <div className="flex flex-col gap-3">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="label">Label</Label>
               <Input
-                id="name"
-                name="name"
-                defaultValue={item.name}
-                placeholder="Enter name"
+                id="label"
+                name="label"
+                defaultValue={item.label || ""}
+                placeholder="Enter label"
               />
             </div>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="value">Value</Label>
+              <Input
+                id="value"
+                name="value"
+                type="number"
+                defaultValue={item.value}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="foo_id">Associated Foo ID</Label>
+              <Input
+                id="foo_id"
+                name="foo_id"
+                defaultValue={item.foo_id}
+                placeholder="Foo ID"
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="notes">Notes</Label>
               <Textarea
-                id="description"
-                name="description"
-                defaultValue={item.description || ""}
-                placeholder="Enter description"
+                id="notes"
+                name="notes"
+                defaultValue={item.notes || ""}
+                placeholder="Add notes..."
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="status">Status</Label>
-                <Select name="status" defaultValue={item.status}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={FooStatus.ACTIVE}>Active</SelectItem>
-                    <SelectItem value={FooStatus.INACTIVE}>Inactive</SelectItem>
-                    <SelectItem value={FooStatus.PENDING}>Pending</SelectItem>
-                    <SelectItem value={FooStatus.ARCHIVED}>Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="priority">Priority</Label>
-                <Input
-                  id="priority"
-                  name="priority"
-                  type="number"
-                  min="1"
-                  max="10"
-                  defaultValue={item.priority}
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="is_enabled"
+                name="is_enabled"
+                defaultChecked={item.is_enabled}
+              />
+              <Label htmlFor="is_enabled">Is Enabled</Label>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="score">Score</Label>
-                <Input
-                  id="score"
-                  name="score"
-                  type="number"
-                  step="0.01"
-                  defaultValue={item.score}
-                />
+                <Label>Created At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.created_at).toLocaleString()}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="is_active"
-                  name="is_active"
-                  defaultChecked={item.is_active}
-                />
-                <Label htmlFor="is_active">Is Active</Label>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="tags">Tags</Label>
-              <Input
-                id="tags"
-                name="tags"
-                defaultValue={item.tags.join(", ")}
-                placeholder="Comma-separated tags"
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="large_text">Large Text</Label>
-              <Textarea
-                id="large_text"
-                name="large_text"
-                defaultValue={item.large_text}
-                rows={4}
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label>Metadata</Label>
-              <div className="p-3 bg-muted rounded-md">
-                <pre className="text-xs overflow-auto">
-                  {JSON.stringify(item.metadata, null, 2)}
-                </pre>
+              <div className="flex flex-col gap-3">
+                <Label>Updated At</Label>
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {new Date(item.updated_at).toLocaleString()}
+                </div>
               </div>
             </div>
           </form>
