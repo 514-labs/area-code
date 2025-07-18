@@ -53,3 +53,7 @@ services/data-warehouse/
    ```bash
    ./setup.sh help
    ```
+
+## Presenter - walkthrough docs
+
+[Presenter - walkthrough docs](./docs/README.md)
