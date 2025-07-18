@@ -292,7 +292,7 @@ def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=
 
 def sidebar_navigation():
     with st.sidebar:
-        st.markdown("## Menu")
+        st.markdown("## Data Warehouse")
         
         # Get current page from query params
         current_page = get_page_from_query() or REPORTS[0]
@@ -527,35 +527,6 @@ elif page == "Datadog":
                 else:
                     st.error("Original JSON data not available for this message.")
 elif page == "Connector analytics":
-    # Modern animated banner
-    st.markdown("""
-        <style>
-            .modern-banner {
-                background: black;
-                color: white;
-                padding: 2rem;
-                text-align: center;
-                font-size: 1.7rem;
-                font-weight: 600;
-                font-family: 'Segoe UI', sans-serif;
-                border-radius: 15px;
-                animation: slideFadeIn 0.8s ease-out, pulse 2.5s ease-in-out infinite;
-                margin-bottom: 2rem;
-            }
-            @keyframes slideFadeIn {
-                0% { transform: translateY(-20px); opacity: 0; }
-                100% { transform: translateY(0); opacity: 1; }
-            }
-            @keyframes pulse {
-                0% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
-                50% { box-shadow: 0 0 28px rgba(255, 255, 255, 0.45); }
-                100% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); }
-            }
-        </style>
-        <div class="modern-banner">
-            Data Warehouse Front-end
-        </div>
-    """, unsafe_allow_html=True)
     st.title("Connector Analytics Report")
     # Add Update button to trigger both extracts
     if ui.button(text="Update", key="update_btn"):
