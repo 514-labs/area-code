@@ -10,7 +10,7 @@ This guide walks you through the Data Warehouse demo, which showcases a modern d
 
 ## Quick Start
 
-### 1. Launch the Demo
+### 1. Navigate to the Demo
 Open a terminal window in the root of the Area-code repository and navigate to the data-warehouse project:
 
 ```sh
@@ -18,14 +18,13 @@ cd services/data-warehouse/
 ```
 
 ### 2. Initial Setup
-Run the one-time setup command to install required dependencies:
+Run the one-time setup command to install required dependencies & start the demo:
 
 ```sh
 ./setup.sh setup
 ```
 
-### 3. Start the Demo
-Launch the Moose data warehouse server and web-based frontend:
+After the setup, you may start the demo in the future with:
 
 ```sh
 ./setup.sh start
@@ -33,7 +32,7 @@ Launch the Moose data warehouse server and web-based frontend:
 
 The dashboard will be available at `http://localhost:8501` (or the port shown in the terminal).
 
-### 4. Stop the Demo
+### 3. Stop the Demo
 When finished, shutdown the demo:
 
 ```sh
