@@ -323,6 +323,22 @@ export default function BarAnalyticalDataTable({
     <div className="w-full flex-col justify-start gap-6">
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
+          {queryTime > 0 && (
+            <div className="inline-flex items-baseline gap-2">
+              <span className="leading-none font-semibold text-card-foreground text-[16px]">
+                Bar Analytical
+              </span>
+              <span className="text-xs font-normal text-green-500">
+                Latest query:{" "}
+                <NumericFormat
+                  value={Math.round(queryTime || 0)}
+                  displayType="text"
+                  thousandSeparator=","
+                />
+                ms
+              </span>
+            </div>
+          )}
           <div>
             Showing{" "}
             <NumericFormat
@@ -353,17 +369,6 @@ export default function BarAnalyticalDataTable({
               </span>
             )}
           </div>
-          {queryTime > 0 && (
-            <div className="text-green-600">
-              Latest query:{" "}
-              <NumericFormat
-                value={Math.round(queryTime || 0)}
-                displayType="text"
-                thousandSeparator=","
-              />
-              ms
-            </div>
-          )}
         </div>
       )}
 

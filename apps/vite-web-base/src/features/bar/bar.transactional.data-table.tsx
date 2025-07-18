@@ -459,6 +459,22 @@ export default function BarTransactionalDataTable({
     <div className="w-full flex-col justify-start gap-6">
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
+          {queryTime !== null && (
+            <div className="inline-flex items-baseline gap-2">
+              <span className="leading-none font-semibold text-card-foreground text-[16px]">
+                Bar Transactional
+              </span>
+              <span className="text-xs font-normal text-green-500">
+                Latest query:{" "}
+                <NumericFormat
+                  value={Math.round(queryTime || 0)}
+                  displayType="text"
+                  thousandSeparator=","
+                />
+                ms
+              </span>
+            </div>
+          )}
           <div>
             Showing{" "}
             <NumericFormat
@@ -489,17 +505,6 @@ export default function BarTransactionalDataTable({
               </span>
             )}
           </div>
-          {queryTime !== null && (
-            <div className="text-green-600">
-              Latest query:{" "}
-              <NumericFormat
-                value={Math.round(queryTime || 0)}
-                displayType="text"
-                thousandSeparator=","
-              />
-              ms
-            </div>
-          )}
         </div>
       )}
 
