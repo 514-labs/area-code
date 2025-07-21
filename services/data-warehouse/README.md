@@ -54,7 +54,6 @@ services/data-warehouse/
    ./setup.sh help
    ```
 
-
 ## Installing Aurora AI support
 
 ```bash
