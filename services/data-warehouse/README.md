@@ -54,44 +54,101 @@ services/data-warehouse/
    ./setup.sh help
    ```
 
-## Installing Aurora AI support
+## Installing Aurora AI Support
+
+Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
+
+### Prerequisites
+
+- An Anthropic API key (required for full functionality)
+- Cursor IDE installed
+- Access to the Area-Code repository
+
+### Installation Steps
+
+#### 1. Install Aurora
+
+Run the installation command from your terminal:
 
 ```bash
 bash -i <(curl -fsSL https://fiveonefour.com/install.sh) aurora,moose
-cd services/data-warehouse/
+```
+
+#### 2. Configure Aurora for Cursor
+
+Navigate to the Area-Code repository root and set up Aurora for Cursor:
+
+```bash
 aurora setup --mcp cursor-project
 ```
 
-Next configure Aurora to use all tools. Use the space bar to ensure all tools are selected - then press enter when done.
+#### 3. Enable Required Tools
+
+Configure Aurora to use all available tools. Use the space bar to select all tools, then press Enter:
 
 ```bash
 aurora config tools
-? Select tools to enable (no selection defaults to moose-read-tools):  
-  [x] moose-read-tools - Enable moose read tools for data inspection
-  [x] moose-write-tools - Enable moose write tools for full functionality (requires API key, auto-enables read tools)
-> [x] remote-clickhouse-tools - Enable Remote Clickhouse integration
-[↑↓ to move, space to select one, → to all, ← to none, type to filter]
 ```
 
-Start a cursor instance from within the services/data-warehouse project:
+You should see options like:
+- `moose-read-tools` - Enable Moose read tools for data inspection
+- `moose-write-tools` - Enable Moose write tools for full functionality (requires API key)
+- `remote-clickhouse-tools` - Enable Remote ClickHouse integration
+
+**Note**: Use space bar to select all tools, then press Enter to confirm.
+
+#### 4. Add Your API Key
+
+Configure your Anthropic API key (replace with your actual key):
 
 ```bash
-cd services/data-warehouse/
+aurora config keys sk-ant-api03-your-actual-api-key-here
+```
+
+#### 5. Launch Cursor
+
+Start Cursor from the Area-Code repository:
+
+```bash
 open -a cursor .
 ```
 
-If prompted by Cursor to accept a newly detected MCP tool, accept the invitation.
-Use `Shift -> Command P` to load the Cursor Settings. Under teh `Tools & Integrations` sectin you should see an aurora MCP Tool activated.
+### Verification and Usage
 
-In the Cursor chat try the following prompt:
-`Tell me about this moose project`
+#### 1. Accept MCP Tool
 
-You should see a prompt to run the `read_moose_project` MCP tool.  Allow the tool to run.
-After some thought you should see a description of the moose workflow project.
+When prompted by Cursor to accept a newly detected MCP tool, click "Accept" or "Allow".
 
-Consider trying this additional prompt:
+#### 2. Verify Installation
 
-- Read the contents of my clickhouse database
+1. Open Cursor Settings (`Shift + Command + P`)
+2. Navigate to `Tools & Integrations`
+3. Confirm that "aurora MCP Tool" is activated
+
+#### 3. Test Aurora Integration
+
+1. Add the `data-warehouse` folder to a Cursor chat
+2. Try the following prompt: `Tell me about this moose project`
+3. Allow the `read_moose_project` MCP tool to run when prompted
+4. You should receive a description of the Moose workflow project
+
+#### 4. Explore Additional Features
+
+Try these example prompts to explore Aurora's capabilities:
+
+- `Read the contents of my ClickHouse database`
+- `Show me the current data pipeline status`
+- `Analyze the recent data ingestion patterns`
+
+### Benefits
+
+With Aurora AI enabled, you gain:
+
+- **Intelligent Moose Workflow Analysis**: Understand complex data pipelines
+- **ClickHouse Query Assistance**: Get help with database queries and optimization
+- **RedPanda Integration**: Monitor and manage streaming data
+- **Context-Aware Suggestions**: AI that understands your data warehouse architecture
+- **Automated Documentation**: Generate insights about your data processing workflows
 
 ## Presenter - walkthrough docs
 
