@@ -72,6 +72,29 @@ show_usage() {
     echo ""
 }
 
+show_services() {
+    echo ""
+    echo "Available endpoints:"
+    echo "  • Data Warehouse Service (moose): http://localhost:$DATA_WAREHOUSE_PORT"
+    echo "  • Data Warehouse Frontend: http://localhost:$DW_FRONTEND_PORT"
+    echo "  • Management: http://localhost:5001"
+    echo "  • Temporal UI: http://localhost:8080"
+    echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
+    echo "  • Redpanda: localhost:19092"
+    echo "  • ClickHouse: localhost:18123"
+    echo "  • Redis: localhost:6379"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Explore the data warehouse frontend at http://localhost:$DW_FRONTEND_PORT"
+    echo "  2. Run workflows manually as needed: moose workflow run <workflow-name>"
+    echo ""
+    echo "To stop the service: $0 stop"
+    echo "To check status: $0 status"
+    echo "To validate environment: $0 env:check"
+    echo "Service PID is tracked in: $DATA_WAREHOUSE_PID_FILE and $DW_FRONTEND_PID_FILE"
+    echo ""
+}
+
 # Function to get moose service PID
 get_moose_service_id() {
     if [ -f "$DATA_WAREHOUSE_PID_FILE" ]; then
@@ -734,10 +757,7 @@ start_data_warehouse_service() {
         if curl -s http://localhost:$DATA_WAREHOUSE_PORT > /dev/null 2>&1; then
             print_success "data-warehouse service started successfully!"
             print_status "The service will be available at http://localhost:$DATA_WAREHOUSE_PORT"
-            print_status "Management interface will be available at http://localhost:5001"
-            print_status "Temporal UI will be available at http://localhost:8080"
-            print_status "Kafdrop UI will be available at http://localhost:$KAFDROP_PORT"
-            print_status "data-warehouse service PID: $MOOSE_SERVICE_PID (saved to $DATA_WAREHOUSE_PID_FILE)"
+            print_status "Service PID: $MOOSE_SERVICE_PID (saved to $DATA_WAREHOUSE_PID_FILE)"
             print_status "To stop the service, run: $0 stop"
         else
             print_warning "data-warehouse service may still be starting up..."
@@ -779,7 +799,7 @@ start_dw_frontend_service() {
             if curl -s http://localhost:$DW_FRONTEND_PORT > /dev/null 2>&1; then
                 print_success "data warehouse dashboard started successfully!"
                 print_status "The dashboard will be available at http://localhost:$DW_FRONTEND_PORT"
-                print_status "dashboard PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
+                print_status "Dashboard PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
                 print_status "To stop the dashboard, run: $0 stop"
             else
                 print_error "data warehouse dashboard failed to start"
@@ -804,6 +824,9 @@ start_service() {
     echo ""
 
     start_dw_frontend_service
+    echo ""
+
+    show_services
 }
 
 stop_data_warehouse_service() {
@@ -952,16 +975,7 @@ show_status() {
     echo "  • All infrastructure services (Redpanda, ClickHouse, Redis, Temporal) are managed automatically"
     echo "  • Infrastructure may take time to start up on first run"
     echo ""
-    echo "Available endpoints:"
-    echo "  • Data Warehouse Service: http://localhost:$DATA_WAREHOUSE_PORT"
-    echo "  • Data Warehouse Frontend: http://localhost:$DW_FRONTEND_PORT"
-    echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
-    echo "  • Management: http://localhost:5001"
-    echo "  • Temporal UI: http://localhost:8080"
-    echo "  • Redpanda: localhost:19092"
-    echo "  • ClickHouse: localhost:18123"
-    echo "  • Redis: localhost:6379"
-    echo ""
+    show_services
 }
 
 # Start infrastructure only
@@ -1022,12 +1036,8 @@ full_reset() {
     print_success "Full reset completed successfully!"
     echo ""
     echo "All services have been restarted."
-    echo "Available endpoints:"
-    echo "  • Service: http://localhost:$DATA_WAREHOUSE_PORT"
-    echo "  • Management: http://localhost:5001"
-    echo "  • Temporal UI: http://localhost:8080"
-    echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
     echo ""
+    show_services
 }
 
 # Main setup function (full setup)
@@ -1052,24 +1062,6 @@ full_setup() {
     echo "=========================================="
     print_success "Setup completed successfully!"
     echo "=========================================="
-    echo ""
-    echo "Available endpoints:"
-    echo "  • Service: http://localhost:$DATA_WAREHOUSE_PORT"
-    echo "  • Management: http://localhost:5001"
-    echo "  • Temporal UI: http://localhost:8080"
-    echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Run '$0 env:check' to validate your configuration"
-    echo "  2. Ensure transactional-base service is running"
-    echo "  3. Run workflows manually as needed: moose workflow run <workflow-name>"
-    echo "  4. Test by making changes to foo/bar tables in transactional-base"
-    echo ""
-    echo "To stop the service: $0 stop"
-    echo "To check status: $0 status"
-    echo "To validate environment: $0 env:check"
-    echo "Service PID is tracked in: $DATA_WAREHOUSE_PID_FILE and $DW_FRONTEND_PID_FILE"
-    echo ""
 }
 
 # Main function to handle command-line arguments
