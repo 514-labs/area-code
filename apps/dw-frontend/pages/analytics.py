@@ -5,7 +5,7 @@ import streamlit_shadcn_ui as ui
 
 # Import shared functions
 from utils.api_functions import fetch_data, trigger_extract
-from utils.constants import API_BASE
+from utils.constants import CONSUMPTION_API_BASE
 
 def show():
     connector_counts = {"S3": 0, "Datadog": 0}
@@ -21,8 +21,8 @@ def show():
         with button_col:
             if ui.button(text="Update", key="update_btn", size="sm"):
                 with st.spinner(""):
-                    trigger_extract(f"{API_BASE}/extract-s3", "S3")
-                    trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-s3", "S3")
+                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog")
                     time.sleep(2)
 
     # Fetch all data (no tag filter)

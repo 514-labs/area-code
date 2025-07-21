@@ -13,7 +13,7 @@ class FooStatus(str, Enum):
     ARCHIVED = "archived"
 
 class Foo(BaseModel):
-    id: str
+    id: Key[str]
     name: str
     description: Optional[str]
     status: FooStatus
@@ -24,7 +24,7 @@ class Foo(BaseModel):
     large_text: str
 
 class Bar(BaseModel):
-    id: str
+    id: Key[str]
     name: str
     description: Optional[str]
     status: FooStatus

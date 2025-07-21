@@ -6,10 +6,10 @@ import random
 import json
 import streamlit_shadcn_ui as ui
 
-from .constants import API_BASE
+from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
 def fetch_data(tag):
-    api_url = f"{API_BASE}/getBars?tag={tag}"
+    api_url = f"{CONSUMPTION_API_BASE}/getBars?tag={tag}"
     try:
         response = requests.get(api_url)
         response.raise_for_status()
@@ -42,8 +42,8 @@ def trigger_extract(api_url, label):
         st.session_state["extract_status_time"] = time.time()
 
 def trigger_both_extracts():
-    trigger_extract(f"{API_BASE}/extract-s3", "S3")
-    trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-s3", "S3")
+    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog")
 
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
@@ -109,7 +109,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
                     st.error("Failure percentage must be between 0 and 100")
                 else:
                     # Make the DLQ request
-                    dlq_url = f"{API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
+                    dlq_url = f"{CONSUMPTION_API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
                 try:
                     with st.spinner(f"Triggering DLQ with batch size {batch_size} and {failure_percentage}% failure rate..."):
                         response = requests.get(dlq_url)
@@ -237,4 +237,32 @@ def render_dlq_controls(endpoint_path, refresh_key):
                     st.session_state["extract_status_time"] = time.time()
         
         with btn_col2:
-            st.link_button("Explorer", "http://localhost:9999") 
+            st.link_button("Explorer", "http://localhost:9999")
+
+def fetch_workflows(name_prefix=None):
+    """
+    Fetch workflows from localhost:4200/workflows/list endpoint.
+
+    Args:
+        name_prefix (str, optional): Filter workflows by name prefix
+
+    Returns:
+        list: List of workflow dictionaries sorted by started_at (most recent first)
+    """
+    api_url = f"{WORKFLOW_API_BASE}/list"
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        workflows = response.json()
+
+        # Filter by name prefix if provided
+        if name_prefix:
+            workflows = [w for w in workflows if w.get("name", "").startswith(name_prefix)]
+
+        # Sort by started_at descending (most recent first)
+        workflows.sort(key=lambda x: x.get("started_at", ""), reverse=True)
+
+        return workflows
+    except Exception as e:
+        st.error(f"Failed to fetch workflows from API: {e}")
+        return []

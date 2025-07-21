@@ -4,8 +4,8 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls
-from utils.constants import API_BASE
+from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, fetch_workflows
+from utils.constants import CONSUMPTION_API_BASE
 
 def show():
     level_counts = {"INFO": 0, "DEBUG": 0, "ERROR": 0}
@@ -21,7 +21,7 @@ def show():
         with button_col:
             if ui.button(text="Extract", key="trigger_datadog_btn", size="sm"):
                 with st.spinner(""):
-                    trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog")
                     time.sleep(2)
                 st.session_state["refresh_datadog"] = True
                 st.rerun()
@@ -29,7 +29,7 @@ def show():
     df = handle_refresh_and_fetch(
         "refresh_datadog",
         "Datadog",
-        trigger_func=lambda: trigger_extract(f"{API_BASE}/extract-datadog", "Datadog"),
+        trigger_func=lambda: trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog"),
         trigger_label="Datadog",
         button_label=None  # We'll use ShadCN button below
     )

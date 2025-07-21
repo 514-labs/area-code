@@ -4,8 +4,8 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls
-from utils.constants import API_BASE
+from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, fetch_workflows
+from utils.constants import CONSUMPTION_API_BASE
 
 def show():
     file_type_counts = {"json": 0, "csv": 0, "txt": 0}
@@ -21,7 +21,7 @@ def show():
         with button_col:
             if ui.button(text="Extract", key="trigger_s3_btn", size="sm"):
                 with st.spinner(""):
-                    trigger_extract(f"{API_BASE}/extract-s3", "S3")
+                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-s3", "S3")
                     time.sleep(2)
                 st.session_state["refresh_s3"] = True
                 st.rerun()
@@ -29,7 +29,7 @@ def show():
     df = handle_refresh_and_fetch(
         "refresh_s3",
         "S3",
-        trigger_func=lambda: trigger_extract(f"{API_BASE}/extract-s3", "S3"),
+        trigger_func=lambda: trigger_extract(f"{CONSUMPTION_API_BASE}/extract-s3", "S3"),
         trigger_label="S3",
         button_label=None  # We'll use ShadCN button below
     )
