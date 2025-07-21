@@ -18,7 +18,7 @@
  */
 
 import { RealtimeClient, RealtimeChannel } from "@supabase/realtime-js";
-import { WebSocket } from "ws";
+import WebSocket from "ws";
 import { config as dotenvConfig } from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -27,8 +27,8 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env file in parent directory
-dotenvConfig({ path: path.resolve(__dirname, "../.env") });
+// Load environment variables from the prod directory
+dotenvConfig({ path: path.resolve(__dirname, "../prod/.env") });
 
 // Configuration - Update these values based on your .env file
 const config = {

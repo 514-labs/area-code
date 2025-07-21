@@ -8,8 +8,8 @@ import dotenv from "dotenv";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables
-dotenv.config({ path: resolve(__dirname, "../../.env") });
+// Load environment variables from the prod directory
+dotenv.config({ path: resolve(__dirname, "../prod/.env") });
 
 // Configuration
 const config = {

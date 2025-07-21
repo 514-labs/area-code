@@ -9,8 +9,13 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env.development file in parent directory
-dotenvConfig({ path: path.resolve(__dirname, "../../.env.development") });
+// Load environment variables from the transactional-database service .env file
+dotenvConfig({
+  path: path.resolve(__dirname, "../../../transactional-database/.env"),
+});
+
+// Also load local .env if it exists (for app-specific overrides)
+dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
 
 async function waitForPooler(maxRetries = 60, delayMs = 1000) {
   console.log("🔗 Testing connection to database through pooler...");
@@ -46,13 +51,13 @@ async function waitForPooler(maxRetries = 60, delayMs = 1000) {
 }
 
 async function main() {
-  console.log("🚀 Waiting for services to be ready...");
+  console.log("🚀 Waiting for transactional-database service to be ready...");
 
   try {
     await waitForPooler();
-    console.log("🎉 All services are ready!");
+    console.log("🎉 Database service is ready!");
   } catch (error) {
-    console.error("❌ Services failed to become ready:", error);
+    console.error("❌ Database service failed to become ready:", error);
     process.exit(1);
   } finally {
     await pool.end();
