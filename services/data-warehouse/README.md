@@ -54,6 +54,46 @@ services/data-warehouse/
    ./setup.sh help
    ```
 
+
+## Installing Aurora AI support
+
+```bash
+bash -i <(curl -fsSL https://fiveonefour.com/install.sh) aurora,moose
+cd services/data-warehouse/
+aurora setup --mcp cursor-project
+```
+
+Next configure Aurora to use all tools. Use the space bar to ensure all tools are selected - then press enter when done.
+
+```bash
+aurora config tools
+? Select tools to enable (no selection defaults to moose-read-tools):  
+  [x] moose-read-tools - Enable moose read tools for data inspection
+  [x] moose-write-tools - Enable moose write tools for full functionality (requires API key, auto-enables read tools)
+> [x] remote-clickhouse-tools - Enable Remote Clickhouse integration
+[↑↓ to move, space to select one, → to all, ← to none, type to filter]
+```
+
+Start a cursor instance from within the services/data-warehouse project:
+
+```bash
+cd services/data-warehouse/
+open -a cursor .
+```
+
+If prompted by Cursor to accept a newly detected MCP tool, accept the invitation.
+Use `Shift -> Command P` to load the Cursor Settings. Under teh `Tools & Integrations` sectin you should see an aurora MCP Tool activated.
+
+In the Cursor chat try the following prompt:
+`Tell me about this moose project`
+
+You should see a prompt to run the `read_moose_project` MCP tool.  Allow the tool to run.
+After some thought you should see a description of the moose workflow project.
+
+Consider trying this additional prompt:
+
+- Read the contents of my clickhouse database
+
 ## Presenter - walkthrough docs
 
 [Presenter - walkthrough docs](./docs/README.md)
