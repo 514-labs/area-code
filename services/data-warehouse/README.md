@@ -95,7 +95,7 @@ services/data-warehouse/
 
 ## Installing Aurora AI Support
 
-Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
+Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and Redpanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
 
 ### Prerequisites
 
@@ -185,7 +185,7 @@ With Aurora AI enabled, you gain:
 
 - **Intelligent Moose Workflow Analysis**: Understand complex data pipelines
 - **ClickHouse Query Assistance**: Get help with database queries and optimization
-- **RedPanda Integration**: Monitor and manage streaming data
+- **Redpanda Integration**: Monitor and manage streaming data
 - **Context-Aware Suggestions**: AI that understands your data warehouse architecture
 - **Automated Documentation**: Generate insights about your data processing workflows
 
