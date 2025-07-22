@@ -21,8 +21,6 @@ find "$PROJECT_ROOT/services" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/n
 echo "📄 Making development scripts executable..."
 find "$PROJECT_ROOT/scripts" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
 
-# Make tmux scripts executable
-echo "📄 Making tmux scripts executable..."
-find "$PROJECT_ROOT/tmux" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
+# No tmux scripts to make executable anymore
 
 echo "✅ All setup script permissions fixed!" 
