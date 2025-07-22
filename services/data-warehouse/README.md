@@ -25,7 +25,7 @@ This project is **intentionally focused** on demonstrating key concepts rather t
 
 The current state represents a **simplified but functional** implementation that:
 
-- **Uses mocked data sources**: Datadog, S3, and PostHog integrations are mocked to make this demo self-contained. Developers can easily adapt these patterns for real data sources by configuring appropriate API keys and endpoints for services they want to integrate.
+- **Uses mocked data sources**: Logs, Blob (storage), and Events integrations are mocked to make this demo self-contained. Developers can easily adapt these patterns for real data sources by configuring appropriate API keys and endpoints for services they want to integrate.
 
 - **Demonstrates Moose primitives**: The project showcases core Moose concepts including data models, ingestion pipelines, stream functions, materialized views, and consumption APIs.
 
@@ -50,8 +50,9 @@ See: [Presenter - walkthrough docs](./docs/README.md)
 services/data-warehouse/
 ├── app/
 │   ├── apis/                   # REST API endpoints
-│   ├── datadog/                # Datadog extraction workflow
-│   ├── s3/                     # S3 extracttion workflow
+│   ├── logs/                   # Log extraction workflow
+│   ├── blobs/                  # Blob extracttion workflow
+│   ├── events/                 # Events extracttion workflow
 │   ├── ingest/                 # Data models and transformations
 │   └── main.py                 # Main application entry point
 ├── setup.sh                    # Setup and management script
@@ -79,7 +80,15 @@ services/data-warehouse/
    - Start the data warehouse service (moose app)
    - Start the data warehouse frontend (streamlit in apps/dw-frontend)
 
-2. **Other Commands**:
+2. **Startup** (post setup):
+   ```bash
+   ./setup.sh start
+   ```
+   This will:
+   - Start the data warehouse service (moose app)
+   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
+
+3. **Other Commands**:
    ```bash
    ./setup.sh help
    ```
