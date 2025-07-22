@@ -2,7 +2,8 @@ from moose_lib import ConsumptionApi
 from pydantic import BaseModel
 from typing import Optional
 
-# An API to trigger a the datadog extract workflow.
+# An API to trigger the datadog extract workflow.
+# For more information on consumption apis, see: https://docs.fiveonefour.com/moose/building/consumption-apis.
 
 class ExtractDatadogQueryParams(BaseModel):
   batch_size: Optional[int] = 100

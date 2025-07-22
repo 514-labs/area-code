@@ -3,8 +3,10 @@ from app.ingest.models import Foo, FooStatus
 from pydantic import BaseModel
 from typing import List, Optional
 
-# An API to get Foos from the data warehouse.
+# An API to get a list of Foos from the data warehouse.
+# For more information on consumption apis, see: https://docs.fiveonefour.com/moose/building/consumption-apis.
 
+# Define the query params
 class GetFoosQuery(BaseModel):
     status: Optional[str] = None
     limit: int = 1000
@@ -89,6 +91,7 @@ def get_foos(client, params: GetFoosQuery) -> GetFoosResponse:
         total=total
     )
 
+# Create the consumption API
 get_foos_api = ConsumptionApi[GetFoosQuery, GetFoosResponse](
     "getFoos",
     query_function=get_foos,

@@ -3,7 +3,12 @@ from moose_lib import DeadLetterModel, TransformConfig
 from datetime import datetime
 from typing import Optional
 
-# Transforms Foo to Bar with a way to force errors.
+# This defines how data can be transformed from one model to another.
+# For more information on transformations, see: https://docs.fiveonefour.com/moose/building/streams.
+
+# This transforms Foo to Bar, with a way to force errors.
+# When the transformation fails, the data is sent to the dead letter queue.
+# See dead letter queue handler below.
 
 def foo_to_bar(foo: Foo) -> Bar:
     if "fail" in foo.tags:
@@ -30,7 +35,12 @@ fooModel.get_stream().add_transform(
     )
 )
 
-# Fixes the dead letter queue items from Foo to Bar
+# This fixes the dead letter queue items from Foo to Bar.
+# Above, we force it to fail due to a tag and throwing an error.
+# This shows how to recover from errors, in this case, removing the tag.
+# The returned Bar value is sent to the stream then inserted into the table.
+#
+# For more information on dead letter queue, see: https://docs.fiveonefour.com/moose/building/dead-letter-queues.
 
 def invalid_foo_to_bar(dead_letter: DeadLetterModel[Foo]) -> Optional[Bar]:
     try:

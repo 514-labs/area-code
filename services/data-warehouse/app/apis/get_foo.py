@@ -4,7 +4,9 @@ from typing import Optional
 from pydantic import BaseModel
 
 # An API to get a Foo from the data warehouse.
+# For more information on consumption apis, see: https://docs.fiveonefour.com/moose/building/consumption-apis.
 
+# Define the query params
 class FooQueryParams(BaseModel):
     status: Optional[str] = None
     is_active: Optional[bool] = None
@@ -63,6 +65,7 @@ def get_foo(client, params: FooQueryParams):
     
     return items
 
+# Create the consumption API
 get_foo = ConsumptionApi[FooQueryParams, Foo](
     "getFoos",
     query_function=get_foo
