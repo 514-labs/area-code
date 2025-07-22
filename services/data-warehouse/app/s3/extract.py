@@ -1,14 +1,20 @@
-from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
-from connectors.connector_factory import ConnectorFactory, ConnectorType
-from connectors.s3connector import S3ConnectorConfig
 from app.ingest.models import Foo
 from app.utils.simulator import simulate_failures
+from connectors.connector_factory import ConnectorFactory, ConnectorType
+from connectors.s3connector import S3ConnectorConfig
+from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
 from pydantic import BaseModel
 from typing import Optional
 import requests
 import json
 
-# A workflow that extracts S3 data and sends it to the ingest API.
+# This workflow extracts S3 data and sends it to the ingest API.
+# For more information on workflows, see: https://docs.fiveonefour.com/moose/building/workflows.
+#
+# You may also direct insert into the table: https://docs.fiveonefour.com/moose/building/olap-table#direct-data-insertion.
+#
+# When the data lands in ingest, it goes through a stream where it is transformed.
+# See app/ingest/transforms.py for the transformation logic.
 
 class S3ExtractParams(BaseModel):
     batch_size: Optional[int] = 100
@@ -17,11 +23,13 @@ class S3ExtractParams(BaseModel):
 def run_task(input: S3ExtractParams) -> None:
     cli_log(CliLogData(action="S3Workflow", message="Running S3 task...", message_type="Info"))
 
+    # Create a connector to extract data from S3
     connector = ConnectorFactory[Foo].create(
         ConnectorType.S3,
         S3ConnectorConfig(batch_size=input.batch_size)
     )
 
+    # Extract data from S3
     data = connector.extract()
 
     cli_log(CliLogData(

@@ -3,18 +3,22 @@ from app.ingest.models import Bar, Foo, FooStatus
 from pydantic import BaseModel
 from typing import List, Optional
 
-# An API to get Bars from the data warehouse.
+# An API to get a list of Bars from the data warehouse.
+# For more information on consumption apis, see: https://docs.fiveonefour.com/moose/building/consumption-apis.
 
+# Define the query params
 class GetBarsQuery(BaseModel):
     status: Optional[str] = None
     limit: int = 1000
     offset: int = 0
     tag: Optional[str] = None
 
+# Define the response model
 class GetBarsResponse(BaseModel):
     items: List[Bar] = []
     total: int = 0
 
+# Define the query function
 def get_bars(client, params: GetBarsQuery) -> GetBarsResponse:
     query = """
         SELECT id, name, description, status, priority, is_active, tags, score, large_text, transform_timestamp

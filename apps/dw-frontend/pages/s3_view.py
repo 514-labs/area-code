@@ -63,6 +63,7 @@ def show():
                 key=f"s3_metric_{file_type}"
             )
 
+    # Show workflow runs
     render_workflows_table("s3-workflow", "S3")
 
     st.subheader("S3 Items Table")

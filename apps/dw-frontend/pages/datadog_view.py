@@ -59,6 +59,7 @@ def show():
                 key=f"datadog_metric_{level.lower()}"
             )
 
+    # Show workflow runs
     render_workflows_table("datadog-workflow", "Datadog")
 
     st.subheader("Datadog Items Table")

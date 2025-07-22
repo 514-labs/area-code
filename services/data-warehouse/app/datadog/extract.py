@@ -1,14 +1,20 @@
-from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
-from connectors.connector_factory import ConnectorFactory, ConnectorType
-from connectors.datadog_connector import DatadogConnectorConfig
 from app.ingest.models import Foo
 from app.utils.simulator import simulate_failures
+from connectors.connector_factory import ConnectorFactory, ConnectorType
+from connectors.datadog_connector import DatadogConnectorConfig
+from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
 from pydantic import BaseModel
 from typing import Optional
 import requests
 import json
 
-# A workflow that extracts Datadog data and sends it to the ingest API.
+# This workflow extracts Datadog data and sends it to the ingest API.
+# For more information on workflows, see: https://docs.fiveonefour.com/moose/building/workflows.
+#
+# You may also direct insert into the table: https://docs.fiveonefour.com/moose/building/olap-table#direct-data-insertion.
+#
+# When the data lands in ingest, it goes through a stream where it is transformed.
+# See app/ingest/transforms.py for the transformation logic.
 
 class DatadogExtractParams(BaseModel):
     batch_size: Optional[int] = 100
@@ -17,11 +23,13 @@ class DatadogExtractParams(BaseModel):
 def run_task(input: DatadogExtractParams) -> None:
     cli_log(CliLogData(action="DatadogWorkflow", message="Running Datadog task...", message_type="Info"))
 
+    # Create a connector to extract data from Datadog
     connector = ConnectorFactory[Foo].create(
         ConnectorType.Datadog,
         DatadogConnectorConfig(batch_size=input.batch_size)
     )
 
+    # Extract data from Datadog
     data = connector.extract()
 
     cli_log(CliLogData(
