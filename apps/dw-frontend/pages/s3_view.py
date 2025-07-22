@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, fetch_workflows
+from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, render_workflows_table
 from utils.constants import CONSUMPTION_API_BASE
 
 def show():
@@ -62,6 +62,8 @@ def show():
                 content=str(count),
                 key=f"s3_metric_{file_type}"
             )
+
+    render_workflows_table("s3-workflow", "S3")
 
     st.subheader("S3 Items Table")
     if parsed is not None:

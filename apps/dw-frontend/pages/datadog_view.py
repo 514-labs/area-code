@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, fetch_workflows
+from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, render_workflows_table
 from utils.constants import CONSUMPTION_API_BASE
 
 def show():
@@ -58,6 +58,8 @@ def show():
                 content=str(count),
                 key=f"datadog_metric_{level.lower()}"
             )
+
+    render_workflows_table("datadog-workflow", "Datadog")
 
     st.subheader("Datadog Items Table")
     if not df.empty:

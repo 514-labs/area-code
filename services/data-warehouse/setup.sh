@@ -108,7 +108,7 @@ get_moose_service_id() {
 # Function to check if moose service is running
 is_moose_service_running() {
     local pid=$(get_moose_service_id)
-    if [ -n "$pid" ]; then
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
         return 0  # Service is running
     else
         return 1  # Service is not running
@@ -127,7 +127,7 @@ get_dw_frontend_pid() {
 # Function to check if dw-frontend is running
 is_dw_frontend_running() {
     local pid=$(get_dw_frontend_pid)
-    if [ -n "$pid" ]; then
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
         return 0  # Service is running
     else
         return 1  # Service is not running
