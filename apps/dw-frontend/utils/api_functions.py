@@ -6,10 +6,10 @@ import random
 import json
 import streamlit_shadcn_ui as ui
 
-from .constants import API_BASE
+from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
 def fetch_data(tag):
-    api_url = f"{API_BASE}/getBars?tag={tag}"
+    api_url = f"{CONSUMPTION_API_BASE}/getBars?tag={tag}"
     try:
         response = requests.get(api_url)
         response.raise_for_status()
@@ -42,8 +42,8 @@ def trigger_extract(api_url, label):
         st.session_state["extract_status_time"] = time.time()
 
 def trigger_both_extracts():
-    trigger_extract(f"{API_BASE}/extract-s3", "S3")
-    trigger_extract(f"{API_BASE}/extract-datadog", "Datadog")
+    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-s3", "S3")
+    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog")
 
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
@@ -109,7 +109,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
                     st.error("Failure percentage must be between 0 and 100")
                 else:
                     # Make the DLQ request
-                    dlq_url = f"{API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
+                    dlq_url = f"{CONSUMPTION_API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
                 try:
                     with st.spinner(f"Triggering DLQ with batch size {batch_size} and {failure_percentage}% failure rate..."):
                         response = requests.get(dlq_url)
@@ -237,4 +237,105 @@ def render_dlq_controls(endpoint_path, refresh_key):
                     st.session_state["extract_status_time"] = time.time()
         
         with btn_col2:
-            st.link_button("Explorer", "http://localhost:9999") 
+            st.link_button("Explorer", "http://localhost:9999")
+
+def fetch_workflows(name_prefix=None):
+    """
+    Fetch workflows from localhost:4200/workflows/list endpoint.
+
+    Args:
+        name_prefix (str, optional): Filter workflows by name prefix
+
+    Returns:
+        list: List of workflow dictionaries sorted by started_at (most recent first)
+    """
+    api_url = f"{WORKFLOW_API_BASE}/list"
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        workflows = response.json()
+
+        # Filter by name prefix if provided
+        if name_prefix:
+            workflows = [w for w in workflows if w.get("name", "").startswith(name_prefix)]
+
+        # Sort by started_at descending (most recent first)
+        workflows.sort(key=lambda x: x.get("started_at", ""), reverse=True)
+
+        return workflows
+    except Exception as e:
+        st.error(f"Failed to fetch workflows from API: {e}")
+        return []
+
+def format_workflow_status(status):
+    """
+    Convert temporal workflow status enum to user-friendly display text.
+
+    Args:
+        status (str): Temporal workflow status enum
+
+    Returns:
+        str: User-friendly status text
+    """
+    status_mapping = {
+        'WORKFLOW_EXECUTION_STATUS_UNSPECIFIED': 'Unknown',
+        'WORKFLOW_EXECUTION_STATUS_RUNNING': 'Running',
+        'WORKFLOW_EXECUTION_STATUS_COMPLETED': 'Completed',
+        'WORKFLOW_EXECUTION_STATUS_FAILED': 'Failed',
+        'WORKFLOW_EXECUTION_STATUS_CANCELED': 'Canceled',
+        'WORKFLOW_EXECUTION_STATUS_TERMINATED': 'Terminated',
+        'WORKFLOW_EXECUTION_STATUS_CONTINUED_AS_NEW': 'Continued',
+        'WORKFLOW_EXECUTION_STATUS_TIMED_OUT': 'Timed Out'
+    }
+
+    return status_mapping.get(status, status)
+
+def render_workflows_table(workflow_prefix, display_name):
+    """
+    Fetch and display workflows in a formatted table.
+
+    Args:
+        workflow_prefix (str): The prefix to filter workflows by (e.g., "s3-workflow")
+        display_name (str): The display name for the subheader (e.g., "S3")
+    """
+    workflows = fetch_workflows(workflow_prefix)
+    if workflows:
+        st.subheader(f"{display_name} Workflows")
+        workflows_df = pd.DataFrame(workflows)
+
+        # Convert status enums to user-friendly text
+        if 'status' in workflows_df.columns:
+            workflows_df['status'] = workflows_df['status'].apply(format_workflow_status)
+
+        # Create temporal URLs for linking. Seems like you can have links in dataframe, but requires
+        # LinkColumn and can't customize the display text per cell. Ideally, we just have the run id clickable
+        if 'run_id' in workflows_df.columns and 'name' in workflows_df.columns:
+            workflows_df['temporal_url'] = workflows_df.apply(
+                lambda row: f"http://localhost:8080/namespaces/default/workflows/{row['name']}/{row['run_id']}/history", 
+                axis=1
+            )
+
+        # Remove the name column from display
+        # Used for link, but not that useful on its own
+        if 'name' in workflows_df.columns:
+            workflows_df = workflows_df.drop(columns=['name'])
+
+        # Rename columns for better display
+        workflows_df = workflows_df.rename(columns={
+            'run_id': 'Run ID',
+            'status': 'Status',
+            'started_at': 'Start Time',
+            'duration': 'Duration',
+            'temporal_url': 'Temporal Link'
+        })
+
+        # Configure column display with clickable links
+        column_config = {
+            "Temporal Link": st.column_config.LinkColumn(
+                "Details",
+                help="Open workflow history in Temporal UI",
+                display_text="View Details"
+            )
+        }
+
+        st.dataframe(workflows_df, use_container_width=True, column_config=column_config)

@@ -1,2 +1,3 @@
 # Shared constants
-API_BASE = "http://localhost:4200/consumption" 
+CONSUMPTION_API_BASE = "http://localhost:4200/consumption"
+WORKFLOW_API_BASE = "http://localhost:4200/workflows"
