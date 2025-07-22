@@ -21,7 +21,6 @@ ensure_scripts_executable() {
 # Define available services
 SERVICES=(
     "transactional-base" # Has to be first
-    "retrieval-base"
     "sync-base"
     "analytical-base"
     # "data-warehouse"
@@ -44,7 +43,7 @@ show_help() {
     echo "  $0                                    # Setup all services"
     echo "  $0 --all                             # Setup all services"
     echo "  $0 --service=transactional-base      # Setup only transactional service"
-    echo "  $0 --service=retrieval-base          # Setup only retrieval service"
+
     echo ""
     echo "Available Services:"
     for service in "${SERVICES[@]}"; do
@@ -102,12 +101,7 @@ is_service_setup() {
                 return 0  # Setup files exist
             fi
             ;;
-        "retrieval-base")
-            # Check if node_modules exists and Elasticsearch can be started
-            if [ -d "$service_dir/node_modules" ] && [ -f "$service_dir/docker-compose.yml" ]; then
-                return 0
-            fi
-            ;;
+
         "analytical-base")
             # Check if Moose dependencies are installed AND transactional-base .env exists
             if [ -d "$service_dir/node_modules" ] && command -v moose >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/services/transactional-base/.env" ]; then
@@ -165,11 +159,7 @@ setup_service() {
             "$script_path"
             setup_exit_code=$?
             ;;
-        "retrieval-base")
-            # For retrieval service, use the setup command
-            "$script_path" setup
-            setup_exit_code=$?
-            ;;
+
         "analytical-base")
             # For analytical service, use the setup command
             "$script_path" setup

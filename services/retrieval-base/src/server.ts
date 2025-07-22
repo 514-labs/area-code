@@ -143,8 +143,14 @@ const start = async () => {
     const port = parseInt(process.env.PORT || "8082");
     const host = process.env.HOST || "0.0.0.0";
 
-    // Wait for Elasticsearch
-    await waitForElasticsearch();
+    // Wait for Elasticsearch (unless in server-only mode)
+    if (process.env.SKIP_ES_WAIT !== "true") {
+      await waitForElasticsearch();
+    } else {
+      fastify.log.info(
+        "⚠️  Skipping Elasticsearch connection (server-only mode)"
+      );
+    }
 
     // Ensure all routes are registered so Swagger captures them
     await fastify.ready();
