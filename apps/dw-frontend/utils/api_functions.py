@@ -316,7 +316,7 @@ def render_workflows_table(workflow_prefix, display_name):
             )
 
         # Remove the name column from display
-        # Used for link, but that useful on its own
+        # Used for link, but not that useful on its own
         if 'name' in workflows_df.columns:
             workflows_df = workflows_df.drop(columns=['name'])
 
