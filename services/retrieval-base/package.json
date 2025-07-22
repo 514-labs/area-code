@@ -8,7 +8,6 @@
     "dev:server-only": "SKIP_ES_WAIT=true PORT=8082 tsx watch src/server.ts",
     "build": "tsc",
     "lint": "eslint src/",
-    "shutdown": "../../scripts/dev-shutdown.sh retrieval-base",
     "es:start": "docker compose up -d && ./scripts/es-wait.sh && pnpm es:init-indices",
     "es:stop": "docker compose down",
     "es:reset": "docker compose down -v && docker compose up -d && ./scripts/es-wait.sh && pnpm es:init-indices",

@@ -8,12 +8,9 @@
     "build": "tsc",
     "dev": "SUPABASE_CLI=true pnpm tsx watch src/server.ts",
     "dev:migrate": "SUPABASE_CLI=true pnpm run db:migrate",
-    "setup": "../../scripts/dev-setup.sh --service=transactional-base",
-    "setup:force": "../../scripts/dev-setup.sh --service=transactional-base --force",
     "start": "node dist/server.js",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
-    "shutdown": "../../scripts/dev-shutdown.sh transactional-base",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "pnpm tsx src/scripts/migrate.ts",
     "db:studio": "drizzle-kit studio"

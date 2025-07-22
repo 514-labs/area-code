@@ -80,9 +80,6 @@ check_and_make_executable() {
 get_service_script() {
     local service="$1"
     case "$service" in
-        "analytical-base")
-            echo "$PROJECT_ROOT/services/$service/scripts/setup.sh"
-            ;;
         *)
             echo "$PROJECT_ROOT/services/$service/setup.sh"
             ;;
@@ -103,10 +100,8 @@ is_service_setup() {
             ;;
 
         "analytical-base")
-            # Check if Moose dependencies are installed AND transactional-base .env exists
-            if [ -d "$service_dir/node_modules" ] && command -v moose >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/services/transactional-base/.env" ]; then
-                return 0
-            fi
+            # analytical-base has no setup requirements - always consider it "setup"
+            return 0
             ;;
         "sync-base")
             # Check if Moose dependencies are installed AND service has its own .env file
@@ -161,9 +156,9 @@ setup_service() {
             ;;
 
         "analytical-base")
-            # For analytical service, use the setup command
-            "$script_path" setup
-            setup_exit_code=$?
+            # analytical-base has no setup script - skip
+            echo "📦 analytical-base has no setup requirements, skipping..."
+            setup_exit_code=0
             ;;
         "sync-base")
             # For sync service, use the setup command
