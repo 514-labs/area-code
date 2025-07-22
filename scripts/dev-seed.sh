@@ -9,15 +9,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Get the project root (parent of scripts directory)
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Function to ensure all scripts are executable
-ensure_scripts_executable() {
-    # Make fix-permissions script executable first
-    chmod +x "$SCRIPT_DIR/fix-permissions.sh" 2>/dev/null || true
-    
-    # Call the dedicated fix-permissions script
-    "$SCRIPT_DIR/fix-permissions.sh"
-}
-
 # Function to show help
 show_help() {
     echo "Usage: $0 [OPTIONS]"
@@ -513,10 +504,6 @@ fi
 echo "=========================================="
 echo "  Area Code Data Seeding"
 echo "=========================================="
-echo ""
-
-# Ensure all scripts are executable first
-ensure_scripts_executable
 echo ""
 
 echo "This will seed sample data across all services."
