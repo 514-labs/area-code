@@ -42,8 +42,8 @@ def trigger_extract(api_url, label):
         st.session_state["extract_status_time"] = time.time()
 
 def trigger_both_extracts():
-    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-s3", "S3")
-    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog")
+    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
+    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
 
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
@@ -65,7 +65,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
     Renders DLQ testing controls with batch size and failure percentage inputs.
     
     Args:
-        endpoint_path (str): The API endpoint path (e.g., "extract-s3", "extract-datadog")
+        endpoint_path (str): The API endpoint path (e.g., "extract-blob", "extract-logs")
         refresh_key (str): The session state key for refreshing data after DLQ trigger
     """
     # DLQ section positioned below the table and to the left
@@ -137,7 +137,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
                             # Display DLQ messages
                             if dlq_data:
                                 # Determine filter type based on endpoint
-                                filter_tag = "S3" if "extract-s3" in endpoint_path else "Datadog" if "extract-datadog" in endpoint_path else None
+                                filter_tag = "Blob" if "extract-blob" in endpoint_path else "Logs" if "extract-logs" in endpoint_path else None
                                 
                                 # Get the current highest offset for this endpoint to avoid duplicates
                                 highest_offset_key = f"dlq_highest_offset_{endpoint_path}"
@@ -295,8 +295,8 @@ def render_workflows_table(workflow_prefix, display_name):
     Fetch and display workflows in a formatted table.
 
     Args:
-        workflow_prefix (str): The prefix to filter workflows by (e.g., "s3-workflow")
-        display_name (str): The display name for the subheader (e.g., "S3")
+        workflow_prefix (str): The prefix to filter workflows by
+        display_name (str): The display name for the subheader
     """
     workflows = fetch_workflows(workflow_prefix)
     if workflows:

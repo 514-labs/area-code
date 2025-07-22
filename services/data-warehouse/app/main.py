@@ -2,11 +2,11 @@
 # which infrastructure to setup.
 
 from app.ingest import models, transforms
-from app.s3.extract import s3_workflow, s3_task
-from app.datadog.extract import datadog_workflow, datadog_task
+from app.blobs.extract import blob_workflow, blob_task
+from app.logs.extract import logs_workflow, logs_task
 
 import app.apis.get_foo
 import app.apis.get_foos
 import app.apis.get_bars
-import app.apis.extract_s3
-import app.apis.extract_datadog
+import app.apis.extract_blob
+import app.apis.extract_logs

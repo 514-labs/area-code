@@ -3,17 +3,17 @@ from .random import random_foo, DataSourceType
 
 T = TypeVar('T')
 
-class S3ConnectorConfig:
+class LogsConnectorConfig:
     def __init__(self, batch_size: Optional[int] = None):
         self.batch_size = batch_size
 
-class S3Connector(Generic[T]):
-    def __init__(self, config: S3ConnectorConfig):
+class LogsConnector(Generic[T]):
+    def __init__(self, config: LogsConnectorConfig):
         self._batch_size = config.batch_size or 1000
 
     def extract(self) -> List[T]:
-        print("Extracting data from S3")
+        print("Extracting data from Logs")
         data: List[T] = []
         for i in range(self._batch_size):
-            data.append(random_foo(DataSourceType.S3))
+            data.append(random_foo(DataSourceType.Logs))
         return data

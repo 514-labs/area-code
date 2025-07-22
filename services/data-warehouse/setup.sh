@@ -355,16 +355,17 @@ stop_kafdrop() {
 check_prerequisites() {
     print_status "Checking prerequisites..."
 
+    # Commented out because this is not needed for now
     # Check if transactional-base service is accessible
-    local transactional_env_path="../transactional-base/.env"
-    if [ ! -f "$transactional_env_path" ]; then
-        print_error "transactional-base/.env not found at: $transactional_env_path"
-        print_error "The data-warehouse service REQUIRES transactional-base configuration"
-        print_error "Please run 'pnpm dev:setup --service=transactional-base' first"
-        exit 1
-    else
-        print_success "Found transactional-base/.env - will copy configuration values"
-    fi
+    # local transactional_env_path="../transactional-base/.env"
+    # if [ ! -f "$transactional_env_path" ]; then
+    #     print_error "transactional-base/.env not found at: $transactional_env_path"
+    #     print_error "The data-warehouse service REQUIRES transactional-base configuration"
+    #     print_error "Please run 'pnpm dev:setup --service=transactional-base' first"
+    #     exit 1
+    # else
+    #     print_success "Found transactional-base/.env - will copy configuration values"
+    # fi
 }
 
 print_python_install_instructions() {
@@ -492,43 +493,44 @@ check_environment() {
     fi
     echo ""
 
-    print_status "Checking environment configuration..."
+    # Commented out because this is not needed for now
+    # print_status "Checking environment configuration..."
     
-    # Check if .env file exists, generate if missing
-    if [ ! -f ".env" ]; then
-        print_warning ".env file not found. Generating with default values..."
-        generate_env_file
-        print_warning "Setup will continue, but you must update the .env file with actual values before running workflows."
-        print_status "You can run '$0 env:check' later to validate your configuration."
-        return 0
-    fi
+    # # Check if .env file exists, generate if missing
+    # if [ ! -f ".env" ]; then
+    #     print_warning ".env file not found. Generating with default values..."
+    #     generate_env_file
+    #     print_warning "Setup will continue, but you must update the .env file with actual values before running workflows."
+    #     print_status "You can run '$0 env:check' later to validate your configuration."
+    #     return 0
+    # fi
     
-    # Check required environment variables
-    local missing_vars=()
+    # # Check required environment variables
+    # local missing_vars=()
     
-    if [ -z "$SUPABASE_PUBLIC_URL" ]; then
-        missing_vars+=("SUPABASE_PUBLIC_URL")
-    fi
+    # if [ -z "$SUPABASE_PUBLIC_URL" ]; then
+    #     missing_vars+=("SUPABASE_PUBLIC_URL")
+    # fi
     
-    if [ -z "$ANON_KEY" ]; then
-        missing_vars+=("ANON_KEY")
-    fi
+    # if [ -z "$ANON_KEY" ]; then
+    #     missing_vars+=("ANON_KEY")
+    # fi
     
-    if [ -z "$DB_SCHEMA" ]; then
-        missing_vars+=("DB_SCHEMA")
-    fi
+    # if [ -z "$DB_SCHEMA" ]; then
+    #     missing_vars+=("DB_SCHEMA")
+    # fi
     
-    if [ ${#missing_vars[@]} -gt 0 ]; then
-        print_warning "Some environment variables are missing or have default values: ${missing_vars[*]}"
-        print_status "The setup script will attempt to copy values from transactional-base/.env automatically."
-        print_status "You can run '$0 env:check' to validate your configuration."
-        return 0
-    fi
+    # if [ ${#missing_vars[@]} -gt 0 ]; then
+    #     print_warning "Some environment variables are missing or have default values: ${missing_vars[*]}"
+    #     print_status "The setup script will attempt to copy values from transactional-base/.env automatically."
+    #     print_status "You can run '$0 env:check' to validate your configuration."
+    #     return 0
+    # fi
     
-    print_success "Environment configuration looks good"
-    print_status "SUPABASE_PUBLIC_URL: $SUPABASE_PUBLIC_URL"
-    print_status "DB_SCHEMA: $DB_SCHEMA"
-    print_status "ANON_KEY: ${ANON_KEY:0:10}... (truncated for security)"
+    # print_success "Environment configuration looks good"
+    # print_status "SUPABASE_PUBLIC_URL: $SUPABASE_PUBLIC_URL"
+    # print_status "DB_SCHEMA: $DB_SCHEMA"
+    # print_status "ANON_KEY: ${ANON_KEY:0:10}... (truncated for security)"
 }
 
 # Validate environment configuration (detailed check)
@@ -566,21 +568,21 @@ validate_environment() {
     fi
     echo ""
 
-    echo "=========================================="
-    echo "  Environment Configuration Validation"
-    echo "=========================================="
-    echo ""
+    # Commented out because these are not needed for now
+    # echo "=========================================="
+    # echo "  Environment Configuration Validation"
+    # echo "=========================================="
+    # echo ""
     
-    # Check if .env file exists
-    if [ ! -f ".env" ]; then
-        print_error ".env file not found"
-        print_status "Run '$0 setup' to generate a default .env file"
-        exit 1
-    fi
+    # # Check if .env file exists
+    # if [ ! -f ".env" ]; then
+    #     print_error ".env file not found"
+    #     print_status "Run '$0 setup' to generate a default .env file"
+    #     exit 1
+    # fi
     
-    print_success ".env file found"
+    # print_success ".env file found"
     
-    # Commented out because these are not needed for data-warehouse service for now
     # echo ""
     # echo "Checking environment variables:"
     # echo "--------------------------------"
