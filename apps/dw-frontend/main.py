@@ -1,7 +1,7 @@
 import streamlit as st
 
 # Import pages
-from pages import overview, s3_view, datadog_view, analytics
+from pages import overview, blob_view, logs_view, analytics
 from utils.status_handler import display_status_messages, cleanup_old_status_messages
 
 # Page config
@@ -42,18 +42,18 @@ def create_navigation():
         url_path="overview"
     )
     
-    s3_page = st.Page(
-        s3_view.show,
-        title="S3",
+    blob_page = st.Page(
+        blob_view.show,
+        title="Blob",
         icon="📦",
-        url_path="s3"
+        url_path="blob"
     )
     
-    datadog_page = st.Page(
-        datadog_view.show,
-        title="Datadog",
+    logs_page = st.Page(
+        logs_view.show,
+        title="Logs",
         icon="📊",
-        url_path="datadog"
+        url_path="logs"
     )
     
     analytics_page = st.Page(
@@ -67,7 +67,7 @@ def create_navigation():
     # Create navigation with grouped sections
     nav = st.navigation({
         "Data Warehouse": [analytics_page],
-        "Connectors": [overview_page, s3_page, datadog_page]
+        "Connectors": [overview_page, blob_page, logs_page]
     })
     
     return nav

@@ -8,7 +8,7 @@ from utils.api_functions import fetch_data, trigger_extract
 from utils.constants import CONSUMPTION_API_BASE
 
 def show():
-    connector_counts = {"S3": 0, "Datadog": 0}
+    connector_counts = {"Blob": 0, "Logs": 0}
 
     col1, col2 = st.columns([5, 1])
     with col1:
@@ -21,21 +21,21 @@ def show():
         with button_col:
             if ui.button(text="Update", key="update_btn", size="sm"):
                 with st.spinner(""):
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-s3", "S3")
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog")
+                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
+                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
                     time.sleep(2)
 
     # Fetch all data (no tag filter)
     df = fetch_data("All")
 
     if not df.empty:
-        # --- S3 vs Datadog breakdown ---
+        # --- Blob vs Logs breakdown ---
         def detect_source(tags):
             if isinstance(tags, list):
-                if any("s3" in t.lower() for t in tags):
-                    return "S3"
-                if any("datadog" in t.lower() for t in tags):
-                    return "Datadog"
+                if any("blob" in t.lower() for t in tags):
+                    return "Blob"
+                if any("logs" in t.lower() for t in tags):
+                    return "Logs"
             return "Other"
         
         df["Source"] = df["tags"].apply(detect_source)
