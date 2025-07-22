@@ -336,7 +336,7 @@ check_prerequisites() {
     if [ ! -f "$transactional_env_path" ]; then
         print_error "transactional-base/.env not found at: $transactional_env_path"
         print_error "The data-warehouse service REQUIRES transactional-base configuration"
-        print_error "Please run 'pnpm dev:setup --service=transactional-base' first"
+        print_error "Please start transactional-base service first with 'pnpm dev:start --service=transactional-base'"
         exit 1
     else
         print_success "Found transactional-base/.env - will copy configuration values"

@@ -18,28 +18,22 @@ Follow these commands in order to set up and run the application:
 # 1. Install dependencies
 pnpm i
 
-# 2. Setup all services (initializes configuration and data)
-pnpm dev:setup
-
-# 3. Start all services
+# 2. Start all services
 pnpm dev:start
 
-# 4. Seed databases with sample data
+# 3. Seed databases with sample data
 pnpm dev:seed
 
-# 5. Run development workflow
+# 4. Run development workflow
 pnpm dev:workflow
 
-# 6. Open front-end
+# 5. Open front-end
 http://localhost:5173/
 ```
 
 Additional useful commands:
 
 ```bash
-# Check status of all services
-pnpm dev:status
-
 # Stop all services
 pnpm dev:shutdown
 
@@ -49,10 +43,8 @@ pnpm dev:reset
 
 ### Available Commands
 
-- `pnpm dev:setup` - Install dependencies and initialize all services
 - `pnpm dev:start` - Start all services
 - `pnpm dev:shutdown` - Stop all services
-- `pnpm dev:status` - Show status of all services
 - `pnpm dev:reset` - Reset all services (stop, clear data, restart)
 - `pnpm dev:seed` - Seed databases with sample data
 - `pnpm dev:workflow` - Run development workflow
@@ -65,11 +57,8 @@ You can target individual services using the `--service` flag:
 # Start only the transactional service
 pnpm dev:start --service=transactional-base
 
-# Setup only the retrieval service
-pnpm dev:setup --service=retrieval-base
-
-# Check status of analytical service
-pnpm dev:status --service=analytical-base
+# Seed only the analytical service
+pnpm dev:seed --service=analytical-base
 ```
 
 ### Available Services

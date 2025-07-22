@@ -14,17 +14,8 @@
     "dev:services": "turbo run dev --filter @workspace/transactional-base --filter @workspace/retrieval-base --filter sync-base",
     "build": "turbo run build",
     "clean": "turbo run clean",
-    "dev:turbo": "turbo",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "dev:setup": "chmod +x ./scripts/dev-setup.sh && ./scripts/dev-setup.sh",
-    "dev:setup:force": "chmod +x ./scripts/dev-setup.sh && ./scripts/dev-setup.sh --force",
-    "dev:start": "./scripts/dev-start.sh",
     "dev:workflow": "./scripts/dev-workflow.sh",
-    "dev:shutdown": "./scripts/dev-shutdown.sh",
-    "dev:seed": "./scripts/dev-seed.sh",
-    "dev:status": "./scripts/dev-status.sh",
-    "dev:reset": "./scripts/dev-reset.sh",
-    "services:health": "./scripts/health-check.sh"
+    "dev:seed": "./scripts/dev-seed.sh"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",
