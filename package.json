@@ -8,10 +8,7 @@
     "services/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --filter vite-web-base --filter @workspace/transactional-base --filter @workspace/retrieval-base --filter sync-base",
-    "dev:all": "npm run dev",
-    "dev:web": "turbo run dev --filter vite-web-base",
-    "dev:services": "turbo run dev --filter @workspace/transactional-base --filter @workspace/retrieval-base --filter sync-base",
+    "dev": "turbo run dev:ufa --ui=tui",
     "build": "turbo run build",
     "clean": "turbo run clean",
     "dev:workflow": "./scripts/dev-workflow.sh",

@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "./scripts/dev-startup.sh",
+    "dev:ufa": "./scripts/dev-startup.sh",
     "dev:server-only": "SUPABASE_CLI=true pnpm tsx watch src/server.ts",
     "dev:migrate": "SUPABASE_CLI=true pnpm run db:migrate",
     "start": "node dist/server.js",

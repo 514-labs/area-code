@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm es:start && PORT=8082 tsx watch src/server.ts",
+    "dev:ufa": "pnpm es:start && PORT=8082 tsx watch src/server.ts",
     "dev:server-only": "SKIP_ES_WAIT=true PORT=8082 tsx watch src/server.ts",
     "build": "tsc",
     "lint": "eslint src/",
