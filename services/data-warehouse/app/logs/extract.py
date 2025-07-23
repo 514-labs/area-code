@@ -1,31 +1,39 @@
-from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
-from connectors.connector_factory import ConnectorFactory, ConnectorType
-from connectors.datadog_connector import DatadogConnectorConfig
 from app.ingest.models import Foo
 from app.utils.simulator import simulate_failures
+from connectors.connector_factory import ConnectorFactory, ConnectorType
+from connectors.logs_connector import LogsConnectorConfig
+from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
 from pydantic import BaseModel
 from typing import Optional
 import requests
 import json
 
-# A workflow that extracts Datadog data and sends it to the ingest API.
+# This workflow extracts Logs data and sends it to the ingest API.
+# For more information on workflows, see: https://docs.fiveonefour.com/moose/building/workflows.
+#
+# You may also direct insert into the table: https://docs.fiveonefour.com/moose/building/olap-table#direct-data-insertion.
+#
+# When the data lands in ingest, it goes through a stream where it is transformed.
+# See app/ingest/transforms.py for the transformation logic.
 
-class DatadogExtractParams(BaseModel):
+class LogsExtractParams(BaseModel):
     batch_size: Optional[int] = 100
     fail_percentage: Optional[int] = 0
 
-def run_task(input: DatadogExtractParams) -> None:
-    cli_log(CliLogData(action="DatadogWorkflow", message="Running Datadog task...", message_type="Info"))
+def run_task(input: LogsExtractParams) -> None:
+    cli_log(CliLogData(action="LogsWorkflow", message="Running Logs task...", message_type="Info"))
 
+    # Create a connector to extract data from Logs
     connector = ConnectorFactory[Foo].create(
-        ConnectorType.Datadog,
-        DatadogConnectorConfig(batch_size=input.batch_size)
+        ConnectorType.Logs,
+        LogsConnectorConfig(batch_size=input.batch_size)
     )
 
+    # Extract data from Logs
     data = connector.extract()
 
     cli_log(CliLogData(
-        action="DatadogWorkflow",
+        action="LogsWorkflow",
         message=f"Extracted {len(data)} items",
         message_type="Info"
     ))
@@ -33,7 +41,7 @@ def run_task(input: DatadogExtractParams) -> None:
     failed_count = simulate_failures(data, input.fail_percentage)
     if failed_count > 0:
         cli_log(CliLogData(
-            action="DatadogWorkflow",
+            action="LogsWorkflow",
             message=f"Marked {failed_count} items ({input.fail_percentage}%) as failed",
             message_type="Info"
         ))
@@ -49,23 +57,23 @@ def run_task(input: DatadogExtractParams) -> None:
         response.raise_for_status()
         
         cli_log(CliLogData(
-            action="DatadogWorkflow",
+            action="LogsWorkflow",
             message=f"Successfully sent {len(data)} items to ingest API",
             message_type="Info"
         ))
     except Exception as e:
         cli_log(CliLogData(
-            action="DatadogWorkflow",
+            action="LogsWorkflow",
             message=f"Failed to send data to ingest API: {str(e)}",
             message_type="Error"
         ))
 
-datadog_task = Task[DatadogExtractParams, None](
-    name="datadog-task",
+logs_task = Task[LogsExtractParams, None](
+    name="logs-task",
     config=TaskConfig(run=run_task)
 )
 
-datadog_workflow = Workflow(
-    name="datadog-workflow",
-    config=WorkflowConfig(starting_task=datadog_task)
+logs_workflow = Workflow(
+    name="logs-workflow",
+    config=WorkflowConfig(starting_task=logs_task)
 )

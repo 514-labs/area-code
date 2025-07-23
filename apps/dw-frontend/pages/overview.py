@@ -23,7 +23,7 @@ def show():
                     time.sleep(2)
                 st.session_state["refresh_data"] = True
     
-    tags_options = ["All", "S3", "Datadog"]
+    tags_options = ["All", "Blob", "Logs"]
     selected_tag = ui.select(options=tags_options, label="Filter by Tag", key="tag_select")
     df = handle_refresh_and_fetch("refresh_data", selected_tag)
     

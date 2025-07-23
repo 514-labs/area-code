@@ -12,25 +12,25 @@ def show():
 
     col1, col2 = st.columns([5, 1])
     with col1:
-        st.markdown("<h2 style='margin: 0; line-height: 1;'>Datadog View</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='margin: 0; line-height: 1;'>Logs View</h2>", unsafe_allow_html=True)
     with col2:
         # Use empty space to push button to the right
         st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
         # Create three sub-columns to push the button to the right
         _, _, button_col = st.columns([1, 1, 1])
         with button_col:
-            if ui.button(text="Extract", key="trigger_datadog_btn", size="sm"):
+            if ui.button(text="Extract", key="trigger_logs_btn", size="sm"):
                 with st.spinner(""):
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog")
+                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
                     time.sleep(2)
-                st.session_state["refresh_datadog"] = True
+                st.session_state["refresh_logs"] = True
                 st.rerun()
 
     df = handle_refresh_and_fetch(
-        "refresh_datadog",
-        "Datadog",
-        trigger_func=lambda: trigger_extract(f"{CONSUMPTION_API_BASE}/extract-datadog", "Datadog"),
-        trigger_label="Datadog",
+        "refresh_logs",
+        "Logs",
+        trigger_func=lambda: trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs"),
+        trigger_label="Logs",
         button_label=None  # We'll use ShadCN button below
     )
 
@@ -56,30 +56,31 @@ def show():
             ui.metric_card(
                 title=level.title(),
                 content=str(count),
-                key=f"datadog_metric_{level.lower()}"
+                key=f"logs_metric_{level.lower()}"
             )
 
-    render_workflows_table("datadog-workflow", "Datadog")
+    # Show workflow runs
+    render_workflows_table("logs-workflow", "Logs")
 
-    st.subheader("Datadog Items Table")
+    st.subheader("Logs Items Table")
     if not df.empty:
         st.dataframe(parsed_logs, use_container_width=True)
     else:
-        st.write("No Datadog log data available.")
+        st.write("No logs data available.")
     
     # Use the reusable DLQ controls function
-    render_dlq_controls("extract-datadog", "refresh_datadog")
+    render_dlq_controls("extract-logs", "refresh_logs")
     
     # Always check for and display existing DLQ data
-    dlq_messages_key = "dlq_messages_extract-datadog"
+    dlq_messages_key = "dlq_messages_extract-logs"
     if dlq_messages_key in st.session_state and st.session_state[dlq_messages_key]:
-        filter_tag = "Datadog"
+        filter_tag = "Logs"
         st.subheader(f"Dead Letter Queue Messages (Filtered for {filter_tag})")
         st.markdown("**These entries have been auto resolved.**")
         
         # Status line showing count of retrieved items and offset tracking
         item_count = len(st.session_state[dlq_messages_key])
-        highest_offset_key = "dlq_highest_offset_extract-datadog"
+        highest_offset_key = "dlq_highest_offset_extract-logs"
         current_highest_offset = st.session_state.get(highest_offset_key, -1)
         st.info(f"📊 Retrieved {item_count} new DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter (showing messages after offset {current_highest_offset})")
         
@@ -102,7 +103,7 @@ def show():
                 st.subheader(f"JSON Details for Message #{selected_idx + 1}")
                 
                 # Get the original parsed message from session state
-                raw_messages_key = "dlq_raw_messages_extract-datadog"
+                raw_messages_key = "dlq_raw_messages_extract-logs"
                 if raw_messages_key in st.session_state and selected_idx < len(st.session_state[raw_messages_key]):
                     original_json = st.session_state[raw_messages_key][selected_idx]
                     st.json(original_json)

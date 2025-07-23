@@ -13,8 +13,8 @@ class FooStatus(str, Enum):
     ARCHIVED = "archived"
 
 class DataSourceType(str, Enum):
-    S3 = "s3"
-    Datadog = "datadog"
+    Blob = "blob"
+    Logs = "logs"
 
 class Foo(BaseModel):
     id: str
@@ -89,7 +89,7 @@ def generate_log_line() -> str:
 
     return f"{log_level} | {timestamp} | {message}"
 
-# --- S3 simulation arrays ---
+# --- Blob simulation arrays ---
 BUCKET_NAMES = [
     "data-archive-2024", "user-uploads-prod", "logs-bucket-main", "backup-jan2024", "media-assets-eu",
     "project-x-files", "customer-data", "analytics-results", "temp-storage", "archive-2023",
@@ -116,32 +116,32 @@ FILE_NAMES = [
     "form_20240601.pdf", "statement_20240601.pdf", "bill_20240601.pdf", "ticket_20240601.pdf", "evidence_20240601.png"
 ]
 
-S3_PERMISSIONS = ["READ", "WRITE", "DELETE", "LIST"]
+BLOB_PERMISSIONS = ["READ", "WRITE", "DELETE", "LIST"]
 
 import os
 
-def generate_s3_log_line() -> str:
+def generate_blob_log_line() -> str:
     bucket = random.choice(BUCKET_NAMES)
     file = random.choice(FILE_NAMES)
     # Simulate a path depth of 1-3 folders
     path_depth = random.randint(1, 3)
     folders = [random_string(random.randint(3, 8)) for _ in range(path_depth)]
-    s3_path = f"s3://{bucket}/{'/'.join(folders)}/{file}"
+    blob_path = f"blob://{bucket}/{'/'.join(folders)}/{file}"
     # Pick 1-4 unique permissions, comma separated
-    num_permissions = random.randint(1, len(S3_PERMISSIONS))
-    permissions = ", ".join(random.sample(S3_PERMISSIONS, num_permissions))
+    num_permissions = random.randint(1, len(BLOB_PERMISSIONS))
+    permissions = ", ".join(random.sample(BLOB_PERMISSIONS, num_permissions))
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     file_size = random.randint(256, 10 * 1024 * 1024)  # 256 bytes to 10 MB
-    return f"{timestamp} | {s3_path} | {permissions} | {file_size} bytes"
+    return f"{timestamp} | {blob_path} | {permissions} | {file_size} bytes"
 
 def random_foo(source_type: DataSourceType) -> Foo:
     base_tags = [random_string(4) for _ in range(random.randint(1, 3))]
 
-    if source_type == DataSourceType.S3:
-        tags = base_tags + ["S3"]
-        large_text = generate_s3_log_line()
-    elif source_type == DataSourceType.Datadog:
-        tags = base_tags + ["Datadog"]
+    if source_type == DataSourceType.Blob:
+        tags = base_tags + ["Blob"]
+        large_text = generate_blob_log_line()
+    elif source_type == DataSourceType.Logs:
+        tags = base_tags + ["Logs"]
         large_text = generate_log_line()
     else:
         tags = base_tags
