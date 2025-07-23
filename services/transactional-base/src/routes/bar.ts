@@ -10,31 +10,17 @@ import {
   type UpdateBar,
   type NewDbBar,
 } from "../database/schema";
-
-// Type for bar with associated foo details (joined query result)
-type BarWithFoo = {
-  id: string;
-  foo_id: string;
-  value: number;
-  label: string | null;
-  notes: string | null;
-  is_enabled: boolean;
-  created_at: Date;
-  updated_at: Date;
-  foo: {
-    id: string;
-    name: string;
-    description: string | null;
-    status: string;
-  } | null;
-};
+import {
+  GetBarsAverageValueResponse,
+  GetBarsParams,
+  GetBarsResponse,
+  BarWithFoo,
+} from "@workspace/models/bar";
 
 export async function barRoutes(fastify: FastifyInstance) {
   // Get average value of all bar items with query time
   fastify.get<{
-    Reply:
-      | { averageValue: number; queryTime: number; count: number }
-      | { error: string };
+    Reply: GetBarsAverageValueResponse | { error: string };
   }>("/bar/average-value", async (request, reply) => {
     try {
       const startTime = Date.now();
@@ -68,28 +54,12 @@ export async function barRoutes(fastify: FastifyInstance) {
 
   // Get all bar items with pagination and sorting
   fastify.get<{
-    Querystring: {
-      limit?: string;
-      offset?: string;
-      sortBy?: string;
-      sortOrder?: string;
-    };
-    Reply:
-      | {
-          data: BarWithFoo[];
-          pagination: {
-            limit: number;
-            offset: number;
-            total: number;
-            hasMore: boolean;
-          };
-          queryTime: number;
-        }
-      | { error: string };
+    Querystring: GetBarsParams;
+    Reply: GetBarsResponse | { error: string };
   }>("/bar", async (request, reply) => {
     try {
-      const limit = parseInt(request.query.limit || "10");
-      const offset = parseInt(request.query.offset || "0");
+      const limit = request.query.limit || 10;
+      const offset = request.query.offset || 0;
       const sortBy = request.query.sortBy;
       const sortOrder = request.query.sortOrder || "asc";
 
@@ -154,10 +124,18 @@ export async function barRoutes(fastify: FastifyInstance) {
             name: foo.name,
             description: foo.description,
             status: foo.status,
+            priority: foo.priority,
+            is_active: foo.isActive,
+            metadata: foo.metadata,
+            tags: foo.tags,
+            created_at: foo.createdAt,
+            updated_at: foo.updatedAt,
+            score: foo.score,
+            large_text: foo.largeText,
           },
         })
         .from(bar)
-        .leftJoin(foo, eq(bar.fooId, foo.id))
+        .innerJoin(foo, eq(bar.fooId, foo.id))
         .orderBy(orderByClause)
         .limit(limit)
         .offset(offset);
@@ -165,7 +143,8 @@ export async function barRoutes(fastify: FastifyInstance) {
       // Get total count for pagination metadata
       const totalResult = await db
         .select({ count: sql<number>`cast(count(*) as int)` })
-        .from(bar);
+        .from(bar)
+        .innerJoin(foo, eq(bar.fooId, foo.id));
 
       const queryTime = Date.now() - startTime;
 
@@ -173,7 +152,7 @@ export async function barRoutes(fastify: FastifyInstance) {
       const hasMore = offset + limit < total;
 
       return reply.send({
-        data: barItems,
+        data: barItems as unknown as BarWithFoo[],
         pagination: {
           limit,
           offset,
@@ -211,10 +190,17 @@ export async function barRoutes(fastify: FastifyInstance) {
             name: foo.name,
             description: foo.description,
             status: foo.status,
+            priority: foo.priority,
+            is_active: foo.isActive,
+            metadata: foo.metadata,
+            tags: foo.tags,
+            created_at: foo.createdAt,
+            updated_at: foo.updatedAt,
+            score: foo.score,
           },
         })
         .from(bar)
-        .leftJoin(foo, eq(bar.fooId, foo.id))
+        .innerJoin(foo, eq(bar.fooId, foo.id))
         .where(eq(bar.id, id))
         .limit(1);
 
@@ -222,7 +208,7 @@ export async function barRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: "Bar not found" });
       }
 
-      return reply.send(barWithFoo[0]);
+      return reply.send(barWithFoo[0] as unknown as BarWithFoo);
     } catch (err) {
       console.error("Error fetching bar:", err);
       return reply.status(500).send({ error: "Failed to fetch bar" });
@@ -249,7 +235,16 @@ export async function barRoutes(fastify: FastifyInstance) {
             .send({ error: "Referenced foo does not exist" });
         }
 
-        const newBar = await db.insert(bar).values(validatedData).returning();
+        const newBar = await db.insert(bar).values(validatedData).returning({
+          id: bar.id,
+          foo_id: bar.fooId,
+          value: bar.value,
+          label: bar.label,
+          notes: bar.notes,
+          is_enabled: bar.isEnabled,
+          created_at: bar.createdAt,
+          updated_at: bar.updatedAt,
+        });
 
         return reply.status(201).send(newBar[0]);
       } catch (err) {
@@ -291,7 +286,16 @@ export async function barRoutes(fastify: FastifyInstance) {
         .update(bar)
         .set(updateData)
         .where(eq(bar.id, id))
-        .returning();
+        .returning({
+          id: bar.id,
+          foo_id: bar.fooId,
+          value: bar.value,
+          label: bar.label,
+          notes: bar.notes,
+          is_enabled: bar.isEnabled,
+          created_at: bar.createdAt,
+          updated_at: bar.updatedAt,
+        });
 
       if (updatedBar.length === 0) {
         return reply.status(404).send({ error: "Bar not found" });
@@ -364,7 +368,16 @@ export async function barRoutes(fastify: FastifyInstance) {
       try {
         const { fooId } = request.params;
         const bars = await db
-          .select()
+          .select({
+            id: bar.id,
+            foo_id: bar.fooId,
+            value: bar.value,
+            label: bar.label,
+            notes: bar.notes,
+            is_enabled: bar.isEnabled,
+            created_at: bar.createdAt,
+            updated_at: bar.updatedAt,
+          })
           .from(bar)
           .where(eq(bar.fooId, fooId))
           .orderBy(desc(bar.createdAt));

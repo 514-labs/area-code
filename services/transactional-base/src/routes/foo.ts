@@ -9,7 +9,14 @@ import {
   type DbFoo,
   type NewDbFoo,
 } from "../database/schema";
-import { FooStatus } from "@workspace/models";
+import {
+  FooStatus,
+  GetFoosAverageScoreResponse,
+  GetFoosParams,
+  GetFoosResponse,
+  GetFoosScoreOverTimeParams,
+  GetFoosScoreOverTimeResponse,
+} from "@workspace/models/foo";
 
 // Convert database result to API type
 function getModelFromDBRow(dbFoo: DbFoo): Foo {
@@ -80,9 +87,7 @@ function apiToDbFoo(apiData: CreateFoo | UpdateFoo): Partial<NewDbFoo> {
 export async function fooRoutes(fastify: FastifyInstance) {
   // Get average score of all foo items with query time
   fastify.get<{
-    Reply:
-      | { averageScore: number; queryTime: number; count: number }
-      | { error: string };
+    Reply: GetFoosAverageScoreResponse | { error: string };
   }>("/foo/average-score", async (request, reply) => {
     try {
       const startTime = Date.now();
@@ -116,22 +121,11 @@ export async function fooRoutes(fastify: FastifyInstance) {
 
   // Get foo score over time with daily aggregations
   fastify.get<{
-    Querystring: {
-      days?: string;
-    };
-    Reply:
-      | {
-          data: {
-            date: string;
-            averageScore: number;
-            totalCount: number;
-          }[];
-          queryTime: number;
-        }
-      | { error: string };
+    Querystring: GetFoosScoreOverTimeParams;
+    Reply: GetFoosScoreOverTimeResponse | { error: string };
   }>("/foo/score-over-time", async (request, reply) => {
     try {
-      const days = parseInt(request.query.days || "90");
+      const days = request.query.days || 90;
 
       // Validate days parameter
       if (days < 1 || days > 365) {
@@ -207,28 +201,12 @@ export async function fooRoutes(fastify: FastifyInstance) {
 
   // Get all foo items with pagination and sorting
   fastify.get<{
-    Querystring: {
-      limit?: string;
-      offset?: string;
-      sortBy?: string;
-      sortOrder?: string;
-    };
-    Reply:
-      | {
-          data: Foo[];
-          pagination: {
-            limit: number;
-            offset: number;
-            total: number;
-            hasMore: boolean;
-          };
-          queryTime: number;
-        }
-      | { error: string };
+    Querystring: GetFoosParams;
+    Reply: GetFoosResponse | { error: string };
   }>("/foo", async (request, reply) => {
     try {
-      const limit = parseInt(request.query.limit || "10");
-      const offset = parseInt(request.query.offset || "0");
+      const limit = request.query.limit || 10;
+      const offset = request.query.offset || 0;
       const sortBy = request.query.sortBy;
       const sortOrder = request.query.sortOrder || "asc";
 
