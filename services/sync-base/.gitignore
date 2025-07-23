@@ -8,3 +8,7 @@ node_modules
 dist
 coverage
 .ts-node
+
+# Environment files (local overrides)
+.env
+.env.local

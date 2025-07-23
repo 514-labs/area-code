@@ -22,7 +22,9 @@ function loadEnvironmentVariables(): void {
 
   if (isSupabaseCLI) {
     console.log("🚀 Using Supabase CLI for development");
-    // CLI uses default connection strings, minimal env needed
+    // Load development defaults first
+    dotenvConfig({ path: path.resolve(process.cwd(), ".env.development") });
+    // Then override with local .env if it exists
     dotenvConfig({ path: path.resolve(process.cwd(), ".env") });
   } else {
     console.log("🏭 Using production database setup");
@@ -44,18 +46,22 @@ export function getSupabaseConfig(): SyncConfig {
   let config: SyncConfig;
 
   if (isSupabaseCLI) {
-    // CLI mode: use standard CLI defaults
+    // CLI mode: use values from .env.development (with .env overrides)
     config = {
-      supabaseUrl: process.env.SUPABASE_PUBLIC_URL || "http://localhost:8000",
-      // Default Supabase CLI anon key (public, safe to include)
-      supabaseKey:
-        process.env.ANON_KEY ||
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0",
-      dbSchema: process.env.DB_SCHEMA || "public",
+      supabaseUrl: process.env.SUPABASE_PUBLIC_URL!,
+      supabaseKey: process.env.SERVICE_ROLE_KEY!,
+      dbSchema: process.env.DB_SCHEMA!,
     };
     console.log("🔗 Auto-configured for Supabase CLI");
     console.log(`   URL: ${config.supabaseUrl}`);
     console.log(`   Schema: ${config.dbSchema}`);
+
+    // Validate development configuration
+    if (!config.supabaseKey) {
+      throw new Error(
+        "SERVICE_ROLE_KEY is missing. Ensure .env.development file exists and contains the proper Supabase CLI keys."
+      );
+    }
   } else {
     // Production mode: use environment variables
     config = {

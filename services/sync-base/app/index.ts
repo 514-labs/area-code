@@ -344,31 +344,6 @@ async function handleBarChange(payload: RealtimePayload) {
   }
 }
 
-function handleFooBarChange(payload: RealtimePayload) {
-  const { eventType, new: newRecord } = payload;
-
-  switch (eventType) {
-    case "INSERT":
-      if (!newRecord) {
-        console.error("INSERT event missing new record");
-        return;
-      }
-      console.log(
-        `🔔 Business Logic: New foo-bar relationship created (${newRecord.relationship_type})`
-      );
-      // Add your sync logic here
-      break;
-    case "UPDATE":
-      console.log(`🔔 Business Logic: Foo-bar relationship updated`);
-      // Add your sync logic here
-      break;
-    case "DELETE":
-      console.log(`🔔 Business Logic: Foo-bar relationship deleted`);
-      // Add your sync logic here
-      break;
-  }
-}
-
 // Long-running Supabase listener task
 export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
   run: async () => {
@@ -410,30 +385,76 @@ export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
           await handleBarChange(payload);
         }
       )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: supabaseConfig.dbSchema,
-          table: "foo_bar",
-        },
-        (payload) => {
-          logEvent("FOO_BAR CHANGE", "foo_bar", payload);
-          handleFooBarChange(payload);
-        }
-      )
       .subscribe((status, error) => {
-        console.log(`✅ Database changes listener status: ${status}`);
-        if (error) {
-          console.error("Subscription error:", error);
-        }
+        // Log status with appropriate emoji/level based on status type
+        const timestamp = new Date().toISOString();
+
         if (status === "SUBSCRIBED") {
+          console.log(
+            `✅ [${timestamp}] Database changes listener status: ${status}`
+          );
           console.log("🎉 Successfully connected to all database tables!");
           console.log("   - foo table: ✅");
           console.log("   - bar table: ✅");
-          console.log("   - foo_bar table: ✅");
         } else if (status === "CLOSED") {
-          console.log("❌ Connection to database tables closed");
+          console.warn(
+            `❌ [${timestamp}] Database changes listener status: ${status}`
+          );
+          console.warn("Connection to database tables closed");
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.error(
+            `❌ [${timestamp}] Database changes listener ERROR: ${status}`
+          );
+          console.error("🚨 Realtime connection failed!");
+          console.error("Debugging information:");
+          console.error("- Status:", status);
+          console.error("- Supabase URL:", supabaseConfig.supabaseUrl);
+          console.error("- Database schema:", supabaseConfig.dbSchema);
+          console.error("- Tables being monitored: foo, bar");
+
+          if (error) {
+            console.error("- Error details:", error);
+            console.error(
+              "- Error message:",
+              error.message || "No message available"
+            );
+            // Safely access extended error properties
+            const errorWithDetails = error as Error & {
+              code?: string;
+              details?: string;
+              hint?: string;
+            };
+            console.error(
+              "- Error code:",
+              errorWithDetails.code || "No code available"
+            );
+          } else {
+            console.error("- No additional error details...");
+          }
+        } else {
+          // Handle other statuses (CONNECTING, etc.)
+          console.log(
+            `🔄 [${timestamp}] Database changes listener status: ${status}`
+          );
+        }
+
+        // Always log error details if provided
+        if (error) {
+          console.error(`❌ [${timestamp}] Subscription error:`, error);
+          if (error.message) {
+            console.error("Error message:", error.message);
+          }
+          // Safely access extended error properties
+          const errorWithDetails = error as Error & {
+            details?: string;
+            hint?: string;
+          };
+          if (errorWithDetails.details) {
+            console.error("Error details:", errorWithDetails.details);
+          }
+          if (errorWithDetails.hint) {
+            console.error("Error hint:", errorWithDetails.hint);
+          }
         }
       });
 
@@ -450,7 +471,7 @@ export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
     process.on("SIGTERM", cleanup);
 
     console.log("\n🎯 Supabase realtime listeners are now active!");
-    console.log("Listening for changes on tables: foo, bar, foo_bar");
+    console.log("Listening for changes on tables: foo, bar");
     console.log("The task will run indefinitely until stopped...");
 
     // Wait a bit to see initial connection status

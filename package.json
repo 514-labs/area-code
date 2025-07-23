@@ -8,7 +8,7 @@
     "services/*"
   ],
   "scripts": {
-    "dev": "turbo run dev:ufa --ui=tui",
+    "dev": "turbo run dev:ufa dev:workflow --ui=tui",
     "build": "turbo run build",
     "clean": "turbo run clean",
     "dev:clean": "pnpm --filter @workspace/transactional-database dev:clean && pnpm --filter @workspace/retrieval-base dev:clean && pnpm --filter sync-base dev:clean",
