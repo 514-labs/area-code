@@ -1,6 +1,6 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
 import { Foo, FooWithCDC } from "@workspace/models";
-import { FooPipeline } from "../../index";
+import { FooPipeline } from "../../../index";
 
 // Define query parameters interface
 interface QueryParams {
