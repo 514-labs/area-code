@@ -6,7 +6,7 @@ import streamlit_shadcn_ui as ui
 # Import shared functions
 from utils.api_functions import (
     fetch_events_data, fetch_event_analytics, trigger_extract, 
-    render_dlq_controls, render_workflows_table
+    render_dlq_controls, render_workflows_table, fetch_daily_pageviews_data
 )
 from utils.constants import CONSUMPTION_API_BASE
 
@@ -54,6 +54,69 @@ def show():
                 content=str(count),
                 key=f"events_metric_{event_type}"
             )
+
+    # Daily Page Views Materialized View Section
+    st.subheader("📈 Daily Page Views Trend (Materialized View Demo)")
+    
+    # Fetch daily page views data
+    pageviews_df = fetch_daily_pageviews_data(days_back=14, limit=14)
+    
+    if not pageviews_df.empty:
+        # Create metrics for today vs yesterday comparison
+        today = pageviews_df.iloc[-1] if len(pageviews_df) > 0 else None
+        yesterday = pageviews_df.iloc[-2] if len(pageviews_df) > 1 else None
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if today is not None:
+                ui.metric_card(
+                    title="Today's Page Views",
+                    content=str(today['total_pageviews']),
+                    key="today_pageviews"
+                )
+        
+        with col2:
+            if today is not None:
+                ui.metric_card(
+                    title="Today's Unique Visitors", 
+                    content=str(today['unique_visitors']),
+                    key="today_visitors"
+                )
+        
+        with col3:
+            if today is not None and yesterday is not None:
+                change = today['total_pageviews'] - yesterday['total_pageviews']
+                change_pct = (change / yesterday['total_pageviews'] * 100) if yesterday['total_pageviews'] > 0 else 0
+                change_text = f"+{change}" if change >= 0 else str(change)
+                ui.metric_card(
+                    title="Change from Yesterday",
+                    content=f"{change_text} ({change_pct:+.1f}%)",
+                    key="pageviews_change"
+                )
+        
+        # Simple line chart
+        st.subheader("📊 Page Views Over Time")
+        chart_df = pageviews_df.copy()
+        chart_df['Date'] = chart_df['view_date'].dt.strftime('%m/%d')
+        
+        st.line_chart(
+            chart_df.set_index('Date')[['total_pageviews', 'unique_visitors']],
+            height=300
+        )
+        
+        # Data table
+        st.subheader("📋 Daily Breakdown")
+        display_df = pageviews_df.copy()
+        display_df['view_date'] = display_df['view_date'].dt.strftime('%Y-%m-%d')
+        display_df.columns = ['Date', 'Total Page Views', 'Unique Visitors']
+        st.dataframe(display_df, use_container_width=True)
+        
+        # Educational note
+        st.info("💡 **Materialized View Demo**: This data is pre-aggregated using Moose's materialized views with AggregatingMergeTree engine. The aggregation updates automatically as new pageview events are ingested, providing fast query performance.")
+        
+    else:
+        st.info("📊 No daily page views data available yet. Generate some pageview events using the Extract button to see this materialized view in action!")
 
     # Show workflow runs
     render_workflows_table("events-workflow", "Events")
