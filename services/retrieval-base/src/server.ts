@@ -39,7 +39,7 @@ await fastify.register(swagger, {
         "RESTful API for searching foo and bar entities using Elasticsearch",
     },
   },
-} as any);
+});
 
 await fastify.register(swaggerUi, {
   routePrefix: "/docs", // Swagger UI served at /docs
@@ -58,7 +58,7 @@ fastify.get("/health", async (request, reply) => {
         cluster: esHealth.cluster_name,
       },
     };
-  } catch (error) {
+  } catch {
     reply.status(503).send({
       status: "error",
       timestamp: new Date().toISOString(),
@@ -68,7 +68,7 @@ fastify.get("/health", async (request, reply) => {
 });
 
 // API info route
-fastify.get("/", async (request, reply) => {
+fastify.get("/", async () => {
   return {
     name: "Retrieval Base Service API",
     version: "1.0.0",
@@ -92,7 +92,7 @@ await fastify.register(searchRoutes, { prefix: "/api" });
 await fastify.register(ingestRoutes, { prefix: "/api" });
 
 // Manual OpenAPI documentation endpoints
-fastify.get("/documentation/json", async (request, reply) => {
+fastify.get("/documentation/json", async () => {
   return fastify.swagger();
 });
 
@@ -127,7 +127,7 @@ async function waitForElasticsearch(maxRetries = 30, delay = 1000) {
       await esClient.ping();
       fastify.log.info("✅ Connected to Elasticsearch");
       return true;
-    } catch (error) {
+    } catch {
       fastify.log.info(
         `⏳ Waiting for Elasticsearch... (${i + 1}/${maxRetries})`
       );
