@@ -20,7 +20,7 @@
     "dev:status": "pnpm supabase status",
     "dev:logs": "pnpm supabase logs",
     "dev:studio": "pnpm supabase studio",
-    "dev:clean": "sh scripts/cleanup.sh",
+    "dev:clean": "pnpm dev:stop",
     "setup:replication": "pnpm tsx scripts/setup-replication.ts",
     "setup:replication:status": "pnpm tsx scripts/setup-replication.ts --status",
     "test:realtime": "pnpm tsx tests/test-realtime.ts",
