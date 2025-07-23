@@ -59,7 +59,6 @@ def event_source_to_event(event_source: EventSource) -> Event:
         properties=event_source.properties,
         ip_address=event_source.ip_address,
         user_agent=event_source.user_agent,
-        ingested_at=event_source.ingested_at,
         transform_timestamp=datetime.now().isoformat()
     )
 

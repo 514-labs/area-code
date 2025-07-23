@@ -14,29 +14,6 @@ class LogLevel(str, Enum):
     ERROR = "ERROR"
     WARN = "WARN"
 
-class EventType(str, Enum):
-    PAGEVIEW = "pageview"
-    SIGNUP = "signup"
-    LOGIN = "login"
-    LOGOUT = "logout"
-    CLICK = "click"
-    PURCHASE = "purchase"
-    ADD_TO_CART = "add_to_cart"
-    REMOVE_FROM_CART = "remove_from_cart"
-    CHECKOUT_STARTED = "checkout_started"
-    CHECKOUT_COMPLETED = "checkout_completed"
-    FORM_SUBMITTED = "form_submitted"
-    VIDEO_PLAYED = "video_played"
-    VIDEO_PAUSED = "video_paused"
-    SEARCH = "search"
-    SHARE = "share"
-    DOWNLOAD = "download"
-    FEATURE_USED = "feature_used"
-    EXPERIMENT_VIEWED = "experiment_viewed"
-    ERROR_OCCURRED = "error_occurred"
-    SESSION_STARTED = "session_started"
-    SESSION_ENDED = "session_ended"
-
 # Source models - raw data from connectors
 class BlobSource(BaseModel):
     id: Key[str]
@@ -58,15 +35,14 @@ class LogSource(BaseModel):
 
 class EventSource(BaseModel):
     id: Key[str]
-    event_name: EventType
-    timestamp: str  # ISO8601 format
-    distinct_id: str  # User identifier (identified or anonymous)
+    event_name: str
+    timestamp: str
+    distinct_id: str
     session_id: Optional[str]
     project_id: str
-    properties: Optional[str]  # JSON string for ClickHouse compatibility
+    properties: Optional[str]
     ip_address: Optional[str]
     user_agent: Optional[str]
-    ingested_at: str
 
 # Final models - processed data with transformations
 class Blob(BaseModel):
@@ -91,15 +67,14 @@ class Log(BaseModel):
 
 class Event(BaseModel):
     id: Key[str]
-    event_name: EventType
-    timestamp: str  # ISO8601 format
-    distinct_id: str  # User identifier (identified or anonymous)
+    event_name: str
+    timestamp: str
+    distinct_id: str
     session_id: Optional[str]
     project_id: str
-    properties: Optional[str]  # JSON string for ClickHouse compatibility
+    properties: Optional[str]
     ip_address: Optional[str]
     user_agent: Optional[str]
-    ingested_at: str
     transform_timestamp: str
 
 # Source ingest pipelines

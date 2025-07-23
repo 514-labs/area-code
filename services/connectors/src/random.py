@@ -18,29 +18,6 @@ class DataSourceType(str, Enum):
     Logs = "logs"
     Events = "events"
 
-class EventType(str, Enum):
-    PAGEVIEW = "pageview"
-    SIGNUP = "signup"
-    LOGIN = "login"
-    LOGOUT = "logout"
-    CLICK = "click"
-    PURCHASE = "purchase"
-    ADD_TO_CART = "add_to_cart"
-    REMOVE_FROM_CART = "remove_from_cart"
-    CHECKOUT_STARTED = "checkout_started"
-    CHECKOUT_COMPLETED = "checkout_completed"
-    FORM_SUBMITTED = "form_submitted"
-    VIDEO_PLAYED = "video_played"
-    VIDEO_PAUSED = "video_paused"
-    SEARCH = "search"
-    SHARE = "share"
-    DOWNLOAD = "download"
-    FEATURE_USED = "feature_used"
-    EXPERIMENT_VIEWED = "experiment_viewed"
-    ERROR_OCCURRED = "error_occurred"
-    SESSION_STARTED = "session_started"
-    SESSION_ENDED = "session_ended"
-
 class BlobSource(BaseModel):
     id: str
     bucket_name: str
@@ -61,7 +38,7 @@ class LogSource(BaseModel):
 
 class EventSource(BaseModel):
     id: str
-    event_name: EventType
+    event_name: str
     timestamp: str
     distinct_id: str
     session_id: Optional[str]
@@ -69,7 +46,6 @@ class EventSource(BaseModel):
     properties: Optional[str]
     ip_address: Optional[str]
     user_agent: Optional[str]
-    ingested_at: str
 
 def random_string(length: int) -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
@@ -266,7 +242,7 @@ def random_event_source() -> EventSource:
     operating_systems = ["Windows", "macOS", "Linux", "iOS", "Android"]
     
     event_name = random.choice(event_names)
-    timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    timestamp = datetime.now().isoformat()
     
     # Generate user IDs (mix of identified and anonymous)
     if random.random() > 0.3:  # 70% identified users
@@ -312,8 +288,6 @@ def random_event_source() -> EventSource:
     ]
     user_agent = random.choice(user_agents)
     
-    ingested_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-    
     # Serialize properties as JSON string for ClickHouse compatibility
     properties_json = json.dumps(properties)
     
@@ -326,6 +300,5 @@ def random_event_source() -> EventSource:
         project_id=project_id,
         properties=properties_json,
         ip_address=ip_address,
-        user_agent=user_agent,
-        ingested_at=ingested_at
+        user_agent=user_agent
     )

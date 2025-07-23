@@ -46,11 +46,12 @@ def run_task(input: EventsExtractParams) -> None:
             message_type="Info"
         ))
 
-    # Convert dict data to JSON for posting
+    data_dicts = [item.model_dump() for item in data]
+
     try:
         response = requests.post(
             "http://localhost:4200/ingest/EventSource",
-            json=data,
+            json=data_dicts,
             headers={"Content-Type": "application/json"}
         )
         response.raise_for_status()

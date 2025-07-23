@@ -1,23 +1,12 @@
+from app.ingest.models import Event
 from moose_lib import ConsumptionApi, EgressConfig
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
-class EventResponse(BaseModel):
-    id: str
-    event_name: str
-    timestamp: str
-    distinct_id: str
-    session_id: Optional[str]
-    project_id: str
-    properties: Optional[str]  # JSON string
-    ip_address: Optional[str]
-    user_agent: Optional[str]
-    ingested_at: str
-    transform_timestamp: Optional[str] = None
-
 class GetEventsResponse(BaseModel):
-    items: List[EventResponse] = []
+    items: List[Event] = []
     total: int = 0
+
 class GetEventsQueryParams(BaseModel):
     limit: Optional[int] = 100
     offset: Optional[int] = 0
@@ -38,7 +27,6 @@ def get_events(client, params: GetEventsQueryParams):
             properties,
             ip_address,
             user_agent,
-            ingested_at,
             transform_timestamp
         FROM Event
         WHERE 1=1
@@ -66,7 +54,7 @@ def get_events(client, params: GetEventsQueryParams):
     result = client.query.execute(query, query_params)
     
     # Convert results to EventResponse objects
-    items = [EventResponse(**item) for item in result]
+    items = [Event(**item) for item in result]
     
     return GetEventsResponse(
         items=items,
