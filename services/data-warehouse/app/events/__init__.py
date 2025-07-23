@@ -1,0 +1,1 @@
+# Events package for extracting PostHog-style event data 

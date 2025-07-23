@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_both_extracts, handle_refresh_and_fetch
+from utils.api_functions import fetch_data, trigger_all_extracts, handle_refresh_and_fetch
 
 def show():
     col1, col2 = st.columns([5, 1])
@@ -19,11 +19,11 @@ def show():
         with button_col:
             if ui.button(text="Extract", key="trigger_extracts_btn", size="sm"):
                 with st.spinner(""):
-                    trigger_both_extracts()
+                    trigger_all_extracts()
                     time.sleep(2)
                 st.session_state["refresh_data"] = True
     
-    tags_options = ["All", "Blob", "Logs"]
+    tags_options = ["All", "Blob", "Logs", "Events"]
     selected_tag = ui.select(options=tags_options, label="Filter by Tag", key="tag_select")
     df = handle_refresh_and_fetch("refresh_data", selected_tag)
     

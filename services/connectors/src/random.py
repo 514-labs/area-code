@@ -15,6 +15,7 @@ class FooStatus(str, Enum):
 class DataSourceType(str, Enum):
     Blob = "blob"
     Logs = "logs"
+    Events = "events"
 
 class Foo(BaseModel):
     id: str
@@ -134,6 +135,67 @@ def generate_blob_log_line() -> str:
     file_size = random.randint(256, 10 * 1024 * 1024)  # 256 bytes to 10 MB
     return f"{timestamp} | {blob_path} | {permissions} | {file_size} bytes"
 
+def generate_event_log_line() -> str:
+    """Generate a PostHog-style event log line"""
+    event_names = [
+        "pageview", "signup", "login", "logout", "click", "purchase", "add_to_cart", 
+        "remove_from_cart", "checkout_started", "checkout_completed", "form_submitted",
+        "video_played", "video_paused", "search", "share", "download", "feature_used",
+        "experiment_viewed", "error_occurred", "session_started", "session_ended"
+    ]
+    
+    browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"]
+    referrers = [
+        "https://google.com/search", "https://facebook.com", "https://twitter.com",
+        "https://linkedin.com", "https://github.com", "direct", "email_campaign",
+        "https://reddit.com", "https://stackoverflow.com", "organic_search"
+    ]
+    
+    signup_methods = ["email", "google_oauth", "github_oauth", "facebook_oauth", "manual"]
+    devices = ["desktop", "mobile", "tablet"]
+    operating_systems = ["Windows", "macOS", "Linux", "iOS", "Android"]
+    
+    event_name = random.choice(event_names)
+    timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    
+    # Generate user IDs (mix of identified and anonymous)
+    if random.random() > 0.3:  # 70% identified users
+        distinct_id = f"user_{random.randint(1000, 9999)}"
+    else:  # 30% anonymous
+        distinct_id = str(uuid.uuid4())
+    
+    session_id = str(uuid.uuid4())
+    project_id = f"proj_{random.choice(['web', 'mobile', 'api', 'admin'])}"
+    
+    # Generate realistic properties based on event type
+    properties = {
+        "browser": random.choice(browsers),
+        "device_type": random.choice(devices),
+        "os": random.choice(operating_systems),
+        "referrer": random.choice(referrers),
+        "ip": f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
+    }
+    
+    # Add event-specific properties
+    if event_name == "signup":
+        properties["signup_method"] = random.choice(signup_methods)
+    elif event_name == "purchase":
+        properties["amount"] = round(random.uniform(10.0, 500.0), 2)
+        properties["currency"] = "USD"
+        properties["product_count"] = random.randint(1, 5)
+    elif event_name == "pageview":
+        pages = ["/home", "/about", "/products", "/pricing", "/contact", "/blog", "/docs"]
+        properties["page"] = random.choice(pages)
+        properties["page_title"] = f"Page {properties['page'].replace('/', '').title()}"
+    elif event_name == "click":
+        properties["element_type"] = random.choice(["button", "link", "image", "form"])
+        properties["element_text"] = random.choice(["Get Started", "Learn More", "Sign Up", "Download"])
+    
+    # Convert properties to a more compact string representation for storage
+    props_str = " | ".join([f"{k}={v}" for k, v in properties.items()])
+    
+    return f"{event_name} | {timestamp} | {distinct_id} | {session_id} | {project_id} | {props_str}"
+
 def random_foo(source_type: DataSourceType) -> Foo:
     base_tags = [random_string(4) for _ in range(random.randint(1, 3))]
 
@@ -143,6 +205,9 @@ def random_foo(source_type: DataSourceType) -> Foo:
     elif source_type == DataSourceType.Logs:
         tags = base_tags + ["Logs"]
         large_text = generate_log_line()
+    elif source_type == DataSourceType.Events:
+        tags = base_tags + ["Events"]
+        large_text = generate_event_log_line()
     else:
         tags = base_tags
         large_text = random_string(100)

@@ -1,7 +1,7 @@
 import streamlit as st
 
 # Import pages
-from pages import overview, blob_view, logs_view, analytics
+from pages import overview, blob_view, logs_view, events_view, analytics
 from utils.status_handler import display_status_messages, cleanup_old_status_messages
 
 # Page config
@@ -56,6 +56,13 @@ def create_navigation():
         url_path="logs"
     )
     
+    events_page = st.Page(
+        events_view.show,
+        title="Events",
+        icon="📈",
+        url_path="events"
+    )
+    
     analytics_page = st.Page(
         analytics.show,
         title="Connector Analytics",
@@ -67,7 +74,7 @@ def create_navigation():
     # Create navigation with grouped sections
     nav = st.navigation({
         "Data Warehouse": [analytics_page],
-        "Connectors": [overview_page, blob_page, logs_page]
+        "Connectors": [overview_page, blob_page, logs_page, events_page]
     })
     
     return nav

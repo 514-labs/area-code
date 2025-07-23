@@ -41,9 +41,10 @@ def trigger_extract(api_url, label):
         st.session_state["extract_status_type"] = "error"
         st.session_state["extract_status_time"] = time.time()
 
-def trigger_both_extracts():
+def trigger_all_extracts():
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
+    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
 
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
