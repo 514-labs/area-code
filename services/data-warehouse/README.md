@@ -1,18 +1,48 @@
 # Data Warehouse Service
 
-A high-performance data warehouse service built with **Moose** for real-time data ingestion, processing, and analytics. This service provides APIs for data extraction from multiple sources (S3, Datadog) and supports streaming data pipelines with ClickHouse as the storage backend.
+**Learn to build operational data warehouses with Moose** - from real-time ingestion to analytics APIs. This hands-on demonstration showcases how to create a complete data pipeline using Moose primitives, with mocked data sources for easy experimentation and clear examples using simple data models.
 
-![dw-logo.png](dw-logo.png)
+<a href="dw-logo.png"><img src="dw-logo.png" alt="Data Warehouse Logo" width="512"></a>
 
 ## Overview
 
-The Data Warehouse Service is designed to handle large-scale data ingestion and processing with the following key capabilities:
+<a href="./docs/ODW-architecture.jpg"><img src="./docs/ODW-architecture.jpg" alt="Data Warehouse Architecture" width="800"></a>
+
+This project is your **practical guide** to understanding how Moose can power modern operational data warehouses. Rather than implementing every feature in the reference architecture above, we've created a focused, working example that you can run immediately and extend based on your specific needs.
+
+The codebase is **commented** to help you understand each component and pattern. Feel free to explore the code with your favorite LLM - it can provide detailed explanations of how the various Moose primitives work together and help you understand the data flow from ingestion to consumption.
+
+### Purpose and Scope
+
+This project is **intentionally focused** on demonstrating key concepts rather than implementing the full reference architecture shown above. It provides enough practical insights and working examples to help developers understand how to:
+
+- Build data ingestion pipelines with Moose
+- Implement stream processing workflows 
+- Create analytical APIs and consumption endpoints
+- Integrate multiple data sources into a unified warehouse
+
+### Current Implementation
+
+The current state represents a **simplified but functional** implementation that:
+
+- **Uses mocked data sources**: Logs, Blob (storage), and Events integrations are mocked to make this demo self-contained. Developers can easily adapt these patterns for real data sources by configuring appropriate API keys and endpoints for services they want to integrate.
+
+- **Demonstrates Moose primitives**: The project showcases core Moose concepts including data models, ingestion pipelines, stream functions, materialized views, and consumption APIs.
+
+- **Keeps data models simple**: Uses only `foo` and `bar` data models to make the data flow easy to follow and understand. Moose makes it straightforward to create much richer and more complex data models as your use case requires.
+
+- **Provides a complete workflow**: From data ingestion through processing to consumption, giving developers a full picture of an operational data warehouse built with Moose.
+
+### Key Technical Capabilities
 
 - **Real-time Data Ingestion**: Stream data processing with RedPanda
-- **Multi-Source Data Extraction**: Support for S3, Datadog, and custom connectors
-- **REST API**: Query interface for accessing stored data
-- **Scalable Storage**: ClickHouse backend for high-performance analytics
-- **Workflow Engine**: Temporal-based data processing workflows
+- **Multi-Source Data Extraction**: Configurable connectors for various data sources
+- **REST API**: Query interface for accessing processed data
+- **Scalable Storage**: ClickHouse backend optimized for analytical workloads
+- **Stream Processing**: Real-time data transformation and enrichment
+
+### Demo presentation walkthrough
+See: [Presenter - walkthrough docs](./docs/README.md)
 
 ## Project Structure
 
@@ -20,8 +50,9 @@ The Data Warehouse Service is designed to handle large-scale data ingestion and 
 services/data-warehouse/
 ├── app/
 │   ├── apis/                   # REST API endpoints
-│   ├── datadog/                # Datadog extraction workflow
-│   ├── s3/                     # S3 extracttion workflow
+│   ├── logs/                   # Log extraction workflow
+│   ├── blobs/                  # Blob extracttion workflow
+│   ├── events/                 # Events extracttion workflow
 │   ├── ingest/                 # Data models and transformations
 │   └── main.py                 # Main application entry point
 ├── setup.sh                    # Setup and management script
@@ -49,14 +80,22 @@ services/data-warehouse/
    - Start the data warehouse service (moose app)
    - Start the data warehouse frontend (streamlit in apps/dw-frontend)
 
-2. **Other Commands**:
+2. **Startup** (post setup):
+   ```bash
+   ./setup.sh start
+   ```
+   This will:
+   - Start the data warehouse service (moose app)
+   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
+
+3. **Other Commands**:
    ```bash
    ./setup.sh help
    ```
 
 ## Installing Aurora AI Support
 
-Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
+Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and Redpanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
 
 ### Prerequisites
 
@@ -146,7 +185,7 @@ With Aurora AI enabled, you gain:
 
 - **Intelligent Moose Workflow Analysis**: Understand complex data pipelines
 - **ClickHouse Query Assistance**: Get help with database queries and optimization
-- **RedPanda Integration**: Monitor and manage streaming data
+- **Redpanda Integration**: Monitor and manage streaming data
 - **Context-Aware Suggestions**: AI that understands your data warehouse architecture
 - **Automated Documentation**: Generate insights about your data processing workflows
 
