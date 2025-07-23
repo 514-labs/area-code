@@ -186,6 +186,8 @@ def get_dlq_topic_name(endpoint_path):
         return "BlobSourceDeadLetterQueue"
     elif "logs" in endpoint_path.lower():
         return "LogSourceDeadLetterQueue"
+    elif "events" in endpoint_path.lower():
+        return "EventSourceDeadLetterQueue"
     else:
         # Fallback to old name for backward compatibility
         return "FooDeadLetterQueue"
@@ -271,6 +273,8 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                 filter_tag = "Blob"
                             elif "logs" in endpoint_path.lower():
                                 filter_tag = "Logs"
+                            elif "events" in endpoint_path.lower():
+                                filter_tag = "Events"
                             else:
                                 filter_tag = None
 
@@ -302,10 +306,13 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                         # Check if this is the type we want to filter for
                                         is_blob = "bucket_name" in original_record
                                         is_log = "level" in original_record
+                                        is_event = "event_name" in original_record
 
                                         if filter_tag == "Blob" and not is_blob:
                                             continue
                                         elif filter_tag == "Logs" and not is_log:
+                                            continue
+                                        elif filter_tag == "Events" and not is_event:
                                             continue
                                         
                                         filtered_messages.append((i, item, parsed_message))
@@ -336,7 +343,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                             "Bucket": original_record.get("bucket_name", "Unknown"),
                                             "File Size": original_record.get("file_size", "Unknown")
                                         }
-                                    else:  # Log
+                                    elif "level" in original_record: # Log
                                         row = {
                                             "Partition": item.get('partition', 'N/A'),
                                             "Offset": item.get('offset', 'N/A'),
@@ -346,6 +353,17 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                             "Level": original_record.get("level", "Unknown"),
                                             "Source": original_record.get("source", "Unknown"),
                                             "Message": (original_record.get("message", "Unknown")[:50] + "...") if len(original_record.get("message", "")) > 50 else original_record.get("message", "Unknown")
+                                        }
+                                    elif "event_name" in original_record: # Event
+                                        row = {
+                                            "Partition": item.get('partition', 'N/A'),
+                                            "Offset": item.get('offset', 'N/A'),
+                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                            "Record ID": original_record.get("id", "Unknown"),
+                                            "Event Name": original_record.get("event_name", "Unknown"),
+                                            "Project ID": original_record.get("project_id", "Unknown"),
+                                            "Distinct ID": original_record.get("distinct_id", "Unknown")
                                         }
 
                                     table_data.append(row)

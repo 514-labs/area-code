@@ -24,7 +24,7 @@ def run_task(input: EventsExtractParams) -> None:
     cli_log(CliLogData(action="EventsWorkflow", message="Running Events task...", message_type="Info"))
 
     # Create a connector to extract data from Events
-    connector = ConnectorFactory.create(
+    connector = ConnectorFactory[EventSource].create(
         ConnectorType.Events,
         EventsConnectorConfig(batch_size=input.batch_size)
     )

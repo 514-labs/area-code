@@ -5,6 +5,7 @@ from enum import Enum
 import random
 import string
 import uuid
+import json
 
 class LogLevel(str, Enum):
     INFO = "INFO"
@@ -16,6 +17,29 @@ class DataSourceType(str, Enum):
     Blob = "blob"
     Logs = "logs"
     Events = "events"
+
+class EventType(str, Enum):
+    PAGEVIEW = "pageview"
+    SIGNUP = "signup"
+    LOGIN = "login"
+    LOGOUT = "logout"
+    CLICK = "click"
+    PURCHASE = "purchase"
+    ADD_TO_CART = "add_to_cart"
+    REMOVE_FROM_CART = "remove_from_cart"
+    CHECKOUT_STARTED = "checkout_started"
+    CHECKOUT_COMPLETED = "checkout_completed"
+    FORM_SUBMITTED = "form_submitted"
+    VIDEO_PLAYED = "video_played"
+    VIDEO_PAUSED = "video_paused"
+    SEARCH = "search"
+    SHARE = "share"
+    DOWNLOAD = "download"
+    FEATURE_USED = "feature_used"
+    EXPERIMENT_VIEWED = "experiment_viewed"
+    ERROR_OCCURRED = "error_occurred"
+    SESSION_STARTED = "session_started"
+    SESSION_ENDED = "session_ended"
 
 class BlobSource(BaseModel):
     id: str
@@ -34,6 +58,18 @@ class LogSource(BaseModel):
     message: str
     source: Optional[str]
     trace_id: Optional[str]
+
+class EventSource(BaseModel):
+    id: str
+    event_name: EventType
+    timestamp: str
+    distinct_id: str
+    session_id: Optional[str]
+    project_id: str
+    properties: Optional[str]
+    ip_address: Optional[str]
+    user_agent: Optional[str]
+    ingested_at: str
 
 def random_string(length: int) -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
@@ -209,7 +245,7 @@ def random_log_source() -> LogSource:
         trace_id=trace_id
     )
 
-def random_event_source():
+def random_event_source() -> EventSource:
     """Generate a structured EventSource object following PostHog model"""
     event_names = [
         "pageview", "signup", "login", "logout", "click", "purchase", "add_to_cart", 
@@ -279,18 +315,17 @@ def random_event_source():
     ingested_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     
     # Serialize properties as JSON string for ClickHouse compatibility
-    import json
     properties_json = json.dumps(properties)
     
-    return {
-        "id": str(uuid.uuid4()),
-        "event_name": event_name,
-        "timestamp": timestamp,
-        "distinct_id": distinct_id,
-        "session_id": session_id,
-        "project_id": project_id,
-        "properties": properties_json,
-        "ip_address": ip_address,
-        "user_agent": user_agent,
-        "ingested_at": ingested_at
-    }
+    return EventSource(
+        id=str(uuid.uuid4()),
+        event_name=event_name,
+        timestamp=timestamp,
+        distinct_id=distinct_id,
+        session_id=session_id,
+        project_id=project_id,
+        properties=properties_json,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        ingested_at=ingested_at
+    )

@@ -1,5 +1,5 @@
 from typing import List, Optional
-from .random import random_event_source
+from .random import random_event_source, EventSource
 
 class EventsConnectorConfig:
     def __init__(self, batch_size: Optional[int] = None):
@@ -9,9 +9,9 @@ class EventsConnector:
     def __init__(self, config: EventsConnectorConfig):
         self._batch_size = config.batch_size or 1000
 
-    def extract(self):
+    def extract(self) -> List[EventSource]:
         print("Extracting data from Events")
-        data = []
+        data: List[EventSource] = []
         for i in range(self._batch_size):
             data.append(random_event_source())
         return data 
