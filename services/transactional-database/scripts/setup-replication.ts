@@ -13,12 +13,12 @@ dotenv.config({ path: resolve(__dirname, "../prod/.env") });
 
 // Configuration
 const config = {
-  dbHost: process.env.POSTGRES_HOST || "localhost",
-  dbPort: process.env.POSTGRES_PORT || "5432",
+  dbHost: process.env.POSTGRES_HOST || "127.0.0.1",
+  dbPort: process.env.POSTGRES_PORT || "54322", // Updated to Supabase CLI port
   dbName: process.env.POSTGRES_DB || "postgres",
   dbUser: "postgres",
   dbPassword: process.env.POSTGRES_PASSWORD || "postgres",
-  dockerContainer: "supabase-db",
+  dockerContainer: "supabase_db_transactional-database", // Updated to Supabase CLI container name
 };
 
 async function setupReplication() {
@@ -40,7 +40,7 @@ async function setupReplication() {
     try {
       readFileSync(sqlScriptPath);
       console.log("✅ SQL script file found");
-    } catch (error) {
+    } catch {
       console.error("❌ SQL script file not found:", sqlScriptPath);
       process.exit(1);
     }
@@ -54,7 +54,7 @@ async function setupReplication() {
 
       if (!containerStatus) {
         console.error(
-          "❌ Database container is not running. Please start it with: npm run db:start"
+          "❌ Database container is not running. Please start it with: pnpm dev:start"
         );
         process.exit(1);
       }
@@ -83,7 +83,9 @@ async function setupReplication() {
       console.log(output);
     } catch (error) {
       console.error("❌ Error executing SQL script:");
-      console.error((error as any).stdout || (error as Error).message);
+      console.error(
+        (error as { stdout?: string }).stdout || (error as Error).message
+      );
       process.exit(1);
     }
 
@@ -108,15 +110,15 @@ async function setupReplication() {
           "⚠️  No tables found in publication - this might be normal if no tables exist"
         );
       }
-    } catch (error) {
+    } catch {
       console.log(
         "⚠️  Could not verify setup, but script execution was successful"
       );
     }
 
     console.log("\n🎯 Next Steps:");
-    console.log("1. Run the realtime test: npm run test:postgres-changes:dev");
-    console.log("2. Start your API server: npm run dev");
+    console.log("1. Run the realtime test: pnpm test:realtime:postgres");
+    console.log("2. Start your API server: pnpm dev");
     console.log("3. Make changes to your tables to see realtime events");
   } catch (error) {
     console.error("❌ Setup failed:", (error as Error).message);
