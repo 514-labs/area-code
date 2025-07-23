@@ -56,7 +56,7 @@ def show():
             )
 
     # Daily Page Views Materialized View Section
-    st.subheader("📈 Daily Page Views Trend (Materialized View Demo)")
+    st.subheader("Daily Page Views Trend")
     
     # Fetch daily page views data
     pageviews_df = fetch_daily_pageviews_data(days_back=14, limit=14)
@@ -96,7 +96,8 @@ def show():
                 )
         
         # Simple line chart
-        st.subheader("📊 Page Views Over Time")
+        st.divider()
+        st.subheader("Page Views Over Time")
         chart_df = pageviews_df.copy()
         chart_df['Date'] = chart_df['view_date'].dt.strftime('%m/%d')
         
@@ -106,21 +107,23 @@ def show():
         )
         
         # Data table
-        st.subheader("📋 Daily Breakdown")
+        st.divider()
+        st.subheader("Daily Breakdown")
         display_df = pageviews_df.copy()
         display_df['view_date'] = display_df['view_date'].dt.strftime('%Y-%m-%d')
         display_df.columns = ['Date', 'Total Page Views', 'Unique Visitors']
         st.dataframe(display_df, use_container_width=True)
         
         # Educational note
-        st.info("💡 **Materialized View Demo**: This data is pre-aggregated using Moose's materialized views with AggregatingMergeTree engine. The aggregation updates automatically as new pageview events are ingested, providing fast query performance.")
+        st.info("**Materialized View Demo**: This data is pre-aggregated using Moose's materialized views with AggregatingMergeTree engine. The aggregation updates automatically as new pageview events are ingested, providing fast query performance.")
         
     else:
-        st.info("📊 No daily page views data available yet. Generate some pageview events using the Extract button to see this materialized view in action!")
+        st.info("No daily page views data available yet. Generate some pageview events using the Extract button to see this materialized view in action!")
 
     # Show workflow runs
     render_workflows_table("events-workflow", "Events")
     
+    st.divider()
     st.subheader("Events Table")
     
     # Add filtering controls just above the table
@@ -155,6 +158,7 @@ def show():
     else:
         st.write("No events data available.")
     
+
     # Use the reusable DLQ controls function
     render_dlq_controls("extract-events", "refresh_events")
     

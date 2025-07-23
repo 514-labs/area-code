@@ -275,7 +275,8 @@ def render_dlq_controls(endpoint_path, refresh_key):
         refresh_key (str): The session state key for refreshing data after DLQ trigger
     """
     # DLQ section positioned below the table and to the left
-    st.markdown("**Dead Letter Queue Testing**")
+    st.divider()
+    st.markdown("#### Dead Letter Queue Testing")
     
     # Create columns to keep DLQ controls on the left side
     dlq_col, _ = st.columns([1, 2])
@@ -538,6 +539,7 @@ def render_workflows_table(workflow_prefix, display_name):
     """
     workflows = fetch_workflows(workflow_prefix)
     if workflows:
+        st.divider()
         st.subheader(f"{display_name} Workflows")
         workflows_df = pd.DataFrame(workflows)
 

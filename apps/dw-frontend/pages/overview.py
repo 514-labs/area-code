@@ -41,6 +41,7 @@ def show():
             with metric_cols[2]:
                 st.metric("Total Events", metrics.get("total_events", 0))
     
+    st.divider()
     st.subheader("API Results Table")
     st.dataframe(df)
     
