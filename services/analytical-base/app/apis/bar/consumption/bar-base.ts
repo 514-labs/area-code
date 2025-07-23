@@ -1,29 +1,15 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { Bar, BarWithCDC } from "@workspace/models";
+import {
+  BarWithCDC,
+  GetBarsWithCDCParams,
+  GetBarsWithCDCResponse,
+} from "@workspace/models/bar";
 import { BarPipeline } from "../../../index";
 
-type BarForConsumption = BarWithCDC;
-
-interface QueryParams {
-  limit?: number;
-  offset?: number;
-  sortBy?: keyof Bar | "cdc_operation" | "cdc_timestamp";
-  sortOrder?: "ASC" | "DESC" | "asc" | "desc";
-}
-
-interface BarResponse {
-  data: BarForConsumption[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-  queryTime: number;
-}
-
-// Consumption API for Bar data with CDC information
-export const barConsumptionApi = new ConsumptionApi<QueryParams, BarResponse>(
+export const barConsumptionApi = new ConsumptionApi<
+  GetBarsWithCDCParams,
+  GetBarsWithCDCResponse
+>(
   "bar",
   async (
     {
@@ -31,7 +17,7 @@ export const barConsumptionApi = new ConsumptionApi<QueryParams, BarResponse>(
       offset = 0,
       sortBy = "cdc_timestamp",
       sortOrder = "DESC",
-    }: QueryParams,
+    }: GetBarsWithCDCParams,
     { client, sql }
   ) => {
     // Convert sortOrder to uppercase for consistency
@@ -64,8 +50,8 @@ export const barConsumptionApi = new ConsumptionApi<QueryParams, BarResponse>(
       OFFSET ${offset}
     `;
 
-    const resultSet = await client.query.execute<BarForConsumption>(query);
-    const results = (await resultSet.json()) as BarForConsumption[];
+    const resultSet = await client.query.execute<BarWithCDC>(query);
+    const results = (await resultSet.json()) as BarWithCDC[];
 
     const queryTime = Date.now() - startTime;
 

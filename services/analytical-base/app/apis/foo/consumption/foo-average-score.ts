@@ -1,12 +1,6 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
 import { FooPipeline } from "../../../index";
-
-// Interface for average score response
-interface AverageScoreResponse {
-  averageScore: number;
-  queryTime: number;
-  count: number;
-}
+import { GetFoosAverageScoreResponse } from "@workspace/models/foo";
 
 // Type for endpoints with no parameters
 // eslint-disable-next-line
@@ -15,13 +9,13 @@ type EmptyParams = {};
 // New endpoint to calculate average score
 export const fooAverageScoreApi = new ConsumptionApi<
   EmptyParams,
-  AverageScoreResponse
+  GetFoosAverageScoreResponse
 >(
   "foo-average-score",
   async (
     _params: EmptyParams,
     { client, sql }
-  ): Promise<AverageScoreResponse> => {
+  ): Promise<GetFoosAverageScoreResponse> => {
     const startTime = Date.now();
 
     const query = sql`

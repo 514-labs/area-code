@@ -1,4 +1,4 @@
-import { CDC } from "./cdc";
+import { CDC } from "../cdc";
 
 // Bar data model interfaces
 export interface Bar {
@@ -13,4 +13,4 @@ export interface Bar {
 }
 
 // Bar with CDC metadata for analytical pipelines
-export interface BarWithCDC extends Bar, CDC {}
+export type BarWithCDC = Bar & CDC;

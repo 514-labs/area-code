@@ -2,9 +2,8 @@
   "name": "@workspace/models",
   "exports": {
     ".": "./src/index.ts",
-    "./foo": "./src/foo.ts",
-    "./bar": "./src/bar.ts",
-    "./events": "./src/events.ts"
+    "./foo": "./src/foo/index.ts",
+    "./bar": "./src/bar/index.ts"
   },
   "dependencies": {
     "@514labs/moose-lib": "latest"
