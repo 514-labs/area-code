@@ -39,6 +39,20 @@ start_supabase() {
     echo "Supabase services started successfully"
 }
 
+setup_realtime_replication() {
+    echo "Setting up Supabase realtime replication..."
+    
+    cd ../transactional-database
+    
+    if ! pnpm setup:replication; then
+        echo "Failed to setup realtime replication"
+        exit 1
+    fi
+    
+    cd ../transactional-base
+    echo "Realtime replication setup completed"
+}
+
 run_migrations() {
     echo "Checking database migrations..."
     
@@ -65,6 +79,9 @@ main() {
     else
         start_supabase
     fi
+    
+    # Setup realtime replication for Supabase listener
+    setup_realtime_replication
     
     # Run migrations
     run_migrations
