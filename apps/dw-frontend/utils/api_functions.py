@@ -5,6 +5,7 @@ import pandas as pd
 import random
 import json
 import streamlit_shadcn_ui as ui
+from datetime import datetime, timedelta
 
 from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
@@ -274,7 +275,8 @@ def render_dlq_controls(endpoint_path, refresh_key):
         refresh_key (str): The session state key for refreshing data after DLQ trigger
     """
     # DLQ section positioned below the table and to the left
-    st.markdown("**Dead Letter Queue Testing**")
+    st.divider()
+    st.markdown("#### Dead Letter Queue Testing")
     
     # Create columns to keep DLQ controls on the left side
     dlq_col, _ = st.columns([1, 2])
@@ -537,6 +539,7 @@ def render_workflows_table(workflow_prefix, display_name):
     """
     workflows = fetch_workflows(workflow_prefix)
     if workflows:
+        st.divider()
         st.subheader(f"{display_name} Workflows")
         workflows_df = pd.DataFrame(workflows)
 
@@ -576,3 +579,40 @@ def render_workflows_table(workflow_prefix, display_name):
         }
 
         st.dataframe(workflows_df, use_container_width=True, column_config=column_config)
+
+def fetch_daily_pageviews_data(days_back=14, limit=14):
+    """Fetch daily page views data from the materialized view API"""
+    try:
+        response = requests.get(
+            f"{CONSUMPTION_API_BASE}/getDailyPageViews",
+            params={
+                "days_back": days_back,
+                "limit": limit
+            },
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            items = data.get("items", [])
+            
+            if items:
+                # Convert to DataFrame for easy manipulation
+                df = pd.DataFrame(items)
+                # Convert view_date to datetime for proper sorting and display
+                df['view_date'] = pd.to_datetime(df['view_date'])
+                # Sort by date ascending for chronological display
+                df = df.sort_values('view_date')
+                return df
+            else:
+                return pd.DataFrame()
+        else:
+            st.error(f"Failed to fetch daily page views: {response.status_code}")
+            return pd.DataFrame()
+            
+    except requests.RequestException as e:
+        st.error(f"Error fetching daily page views: {str(e)}")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Unexpected error fetching daily page views: {str(e)}")
+        return pd.DataFrame()

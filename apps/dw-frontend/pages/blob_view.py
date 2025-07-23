@@ -121,6 +121,7 @@ def show():
     # Show workflow runs
     render_workflows_table("blob-workflow", "Blob")
 
+    st.divider()
     st.subheader("Blob Table")
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)

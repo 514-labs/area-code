@@ -113,6 +113,7 @@ def show():
     # Show workflow runs
     render_workflows_table("logs-workflow", "Logs")
 
+    st.divider()
     st.subheader("Logs Table")
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)
