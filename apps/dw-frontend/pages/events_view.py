@@ -60,17 +60,6 @@ def show():
     
     st.subheader("Events Table")
     
-    # Display user metrics if available
-    if analytics and "user_metrics" in analytics:
-        user_metrics = analytics["user_metrics"]
-        metric_cols = st.columns(3)
-        with metric_cols[0]:
-            st.metric("Unique Users (24h)", user_metrics.get("unique_users", 0))
-        with metric_cols[1]:
-            st.metric("Active Sessions (24h)", user_metrics.get("unique_sessions", 0))
-        with metric_cols[2]:
-            st.metric("Total Events (24h)", user_metrics.get("total_events", 0))
-    
     # Add filtering controls just above the table
     col1, col2, col3 = st.columns(3)
     with col1:
