@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --clearScreen false",
+    "dev:ufa": "vite --clearScreen false",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint \"src/**/*.ts\"",
-    "shutdown": "../../scripts/dev-shutdown.sh frontend"
+    "lint": "eslint \"src/**/*.ts\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

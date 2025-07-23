@@ -9,13 +9,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Get the project root (parent of scripts directory)
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Function to ensure all scripts are executable
-ensure_scripts_executable() {
-    # Make fix-permissions script executable first
-    chmod +x "$SCRIPT_DIR/fix-permissions.sh" 2>/dev/null || true
-    
-    # Call the dedicated fix-permissions script
-    "$SCRIPT_DIR/fix-permissions.sh"
+# Create log directory if it doesn't exist
+LOG_DIR="$PROJECT_ROOT/logs"
+mkdir -p "$LOG_DIR"
+
+# Set up log files
+SEED_LOG="$LOG_DIR/seed-$(date +%Y%m%d-%H%M%S).log"
+VERBOSE_MODE="false"
+
+# Function to log with timestamp
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$SEED_LOG"
 }
 
 # Function to show help
@@ -29,18 +33,23 @@ show_help() {
     echo "  --clear-data        Clear existing data before seeding (skip prompt)"
     echo "  --foo-rows=N        Number of foo records to create (skip prompt)"
     echo "  --bar-rows=N        Number of bar records to create (skip prompt)"
+    echo "  --verbose           Show detailed output (otherwise logged to file)"
     echo "  --help              Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0                                        # Interactive seeding"
     echo "  $0 --clear-data                          # Clear data and prompt for counts"
     echo "  $0 --foo-rows=500,000 --bar-rows=100,000  # Automated seeding"
-    echo "  $0 --clear-data --foo-rows=1,000,000     # Clear data with specific counts"
+    echo "  $0 --clear-data --foo-rows=1,000,000 --verbose  # Detailed output"
     echo ""
     echo "Process:"
-    echo "  1. Seeds transactional-base (PostgreSQL) with foo/bar data"
-    echo "  2. Migrates data to analytical-base (ClickHouse) - Fast"
-    echo "  3. Migrates data to retrieval-base (Elasticsearch) - Background (15-30 min)"
+    echo "  1. Stop any running workflows"
+    echo "  2. Seeds transactional-base (PostgreSQL) with foo/bar data"
+    echo "  3. Migrates data to analytical-base (ClickHouse) - Fast"
+    echo "  4. Migrates data to retrieval-base (Elasticsearch) - Background (15-30 min)"
+    echo "  5. Restart workflows to resume real-time synchronization"
+    echo ""
+    echo "Logs are saved to: $LOG_DIR/"
     echo ""
 }
 
@@ -120,9 +129,57 @@ is_service_running() {
     fi
 }
 
+# Function to cleanup existing workflows
+cleanup_existing_workflows() {
+    echo "🛑 Stopping workflows..."
+    log_message "Stopping existing workflows before seeding"
+    cd "$PROJECT_ROOT/services/sync-base" || true
+    if command -v pnpm >/dev/null 2>&1; then
+        if [ "$VERBOSE_MODE" = "true" ]; then
+            pnpm moose workflow terminate supabase-listener
+        else
+            pnpm moose workflow terminate supabase-listener >> "$SEED_LOG" 2>&1 || true
+        fi
+    fi
+    cd "$PROJECT_ROOT"
+    
+    # Give it a moment to properly terminate
+    sleep 2
+    echo "✅ Workflows stopped"
+    log_message "Existing workflows stopped successfully"
+}
+
+# Function to restart workflows after seeding
+restart_workflows() {
+    echo "🔄 Restarting workflows..."
+    log_message "Restarting workflows after seeding"
+    cd "$PROJECT_ROOT/services/sync-base" || true
+    if command -v pnpm >/dev/null 2>&1; then
+        # Start the workflow in background to not block the script
+        if [ "$VERBOSE_MODE" = "true" ]; then
+            echo "Starting supabase-listener workflow..."
+            pnpm moose workflow run supabase-listener &
+            WORKFLOW_PID=$!
+        else
+            nohup pnpm moose workflow run supabase-listener >> "$SEED_LOG" 2>&1 &
+            WORKFLOW_PID=$!
+        fi
+        echo "✅ Workflows restarted (PID: $WORKFLOW_PID)"
+        log_message "supabase-listener workflow started in background (PID: $WORKFLOW_PID)"
+    else
+        echo "⚠️  pnpm not found, skipping workflow restart"
+        log_message "pnpm not found, skipping workflow restart"
+    fi
+    cd "$PROJECT_ROOT"
+}
+
 # Function to seed data across all services
 seed_all_data() {
     echo "🌱 Starting data seeding across all services..."
+    echo ""
+    
+    # Step 0: Stop any running workflows first
+    cleanup_existing_workflows
     echo ""
     
     # Check for command line flags
@@ -142,8 +199,18 @@ seed_all_data() {
             --bar-rows=*)
                 BAR_ROWS="${arg#*=}"
                 ;;
+            --verbose)
+                VERBOSE_MODE="true"
+                ;;
         esac
     done
+    
+    # Initialize logging
+    log_message "=== Data Seeding Started ==="
+    log_message "Verbose mode: $VERBOSE_MODE"
+    log_message "Clear data: $CLEAR_DATA"
+    log_message "Foo rows: $FOO_ROWS"
+    log_message "Bar rows: $BAR_ROWS"
     
     # Get parameters from user if not provided via flags
     if [ "$CLEAR_DATA" != "true" ]; then
@@ -176,41 +243,35 @@ seed_all_data() {
     echo ""
     
     # Kill any existing ES migration processes BEFORE reset (they hold Docker networks)
-    echo "🔍 Checking for existing Elasticsearch migration processes..."
+    log_message "Checking for existing Elasticsearch migration processes"
     ES_MIGRATION_PIDS=$(ps aux | grep "migrate-from-postgres-to-elasticsearch" | grep -v grep | awk '{print $2}' || true)
     if [ -n "$ES_MIGRATION_PIDS" ]; then
-        echo "🛑 Killing existing Elasticsearch migration processes..."
+        echo "🧹 Cleaning up existing processes..."
+        log_message "Killing existing Elasticsearch migration processes: $ES_MIGRATION_PIDS"
         echo "$ES_MIGRATION_PIDS" | xargs kill -9 2>/dev/null || true
-        echo "✅ Existing migration processes killed"
-    else
-        echo "✅ No existing migration processes found"
     fi
     
     # Also kill any temp migration scripts
     TEMP_SCRIPT_PIDS=$(ps aux | grep "temp_es_migration.sh" | grep -v grep | awk '{print $2}' || true)
     if [ -n "$TEMP_SCRIPT_PIDS" ]; then
-        echo "🛑 Killing existing temp migration scripts..."
+        log_message "Killing existing temp migration scripts: $TEMP_SCRIPT_PIDS"
         echo "$TEMP_SCRIPT_PIDS" | xargs kill -9 2>/dev/null || true
-        echo "✅ Existing temp scripts killed"
     fi
-    echo ""
     
     # 1. Seed transactional-base (both foo and bar data)
     echo "📊 Seeding transactional-base..."
+    log_message "Starting transactional-base seeding"
     if is_service_running "transactional-base"; then
-        echo "✅ transactional-base is running, proceeding with seeding..."
+        log_message "transactional-base is running, proceeding with seeding"
         
         cd "$PROJECT_ROOT/services/transactional-base" || {
             echo "❌ Failed to change to transactional-base directory"
+            log_message "ERROR: Failed to change to transactional-base directory"
             return 1
         }
         
-        echo "🌱 Seeding both foo and bar data..."
-        # Run the enhanced SQL script that seeds both foo and bar
-        if [ -f "src/scripts/run-sql-seed.sh" ]; then
-            chmod +x ./src/scripts/run-sql-seed.sh
-            
-            # Create a temporary script to seed both foo and bar with user-specified amounts
+        # Create a temporary script to seed both foo and bar with user-specified amounts
+        echo "🌱 Seeding foo and bar data..."
             cat > temp_seed_all.sh << EOF
 #!/bin/bash
 # Environment
@@ -218,7 +279,8 @@ if [ -f ".env" ]; then
     export \$(cat .env | grep -v '^#' | grep -v '^$' | xargs)
 fi
 
-DB_CONTAINER=\$(docker ps --format "{{.Names}}" | grep "supabase-db")
+# Detect database container (will be set properly later in the script)
+DB_CONTAINER=""
 DB_USER=\${DB_USER:-postgres}
 DB_NAME=\${DB_NAME:-postgres}
 
@@ -231,10 +293,17 @@ echo "🌱 Seeding both foo and bar data..."
 
 # Clear data if requested using targeted table drop and migration
 if [ "\$CLEAR_DATA" = "true" ]; then
-    echo "🧹 Clearing existing data using targeted table drop approach..."
+    echo "🧹 Clearing existing data..."
     
-    # First get the database container
-    DB_CONTAINER=\$(docker ps --format "{{.Names}}" | grep "supabase-db")
+    # First get the database container (support both Supabase CLI and production Docker)
+    if docker ps --format "{{.Names}}" | grep -q "supabase_db_.*"; then
+        DB_CONTAINER=\$(docker ps --format "{{.Names}}" | grep "supabase_db_.*" | head -1)
+    elif docker ps --format "{{.Names}}" | grep -q "supabase-db"; then
+        DB_CONTAINER="supabase-db"
+    else
+        DB_CONTAINER=""
+    fi
+    
     if [ -z "\$DB_CONTAINER" ]; then
         echo "❌ Error: No PostgreSQL container found"
         exit 1
@@ -248,7 +317,7 @@ if [ "\$CLEAR_DATA" = "true" ]; then
     TABLE_COUNT=\$(docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -t -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';" | tr -d ' ')
     
     if [ "\$TABLE_COUNT" -gt 0 ]; then
-        echo "📋 Found \$TABLE_COUNT table(s) to drop..."
+        echo "🗑️ Dropping \$TABLE_COUNT table(s)..."
         
         # Create a temporary SQL file to avoid bash variable substitution issues
         cat > /tmp/drop_tables.sql << 'EOSQL'
@@ -289,21 +358,20 @@ EOSQL
     fi
     
     # Run drizzle migrations to recreate schema
-    echo "📋 Running drizzle migrations to recreate schema..."
+    echo "📋 Recreating database schema..."
     cd "$PROJECT_ROOT/services/transactional-base"
     
     # Run migration SQL directly via docker exec (same approach as seeding)
-    echo "🔄 Running migration SQL directly..."
     for migration_file in migrations/*.sql; do
         if [ -f "\$migration_file" ]; then
             filename=\$(basename "\$migration_file")
-            echo "  Applying: \$filename"
+            echo "  📄 Applying: \$filename"
             docker cp "\$migration_file" "\$DB_CONTAINER:/tmp/\$filename"
             docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -f "/tmp/\$filename"
             docker exec "\$DB_CONTAINER" rm -f "/tmp/\$filename"
         fi
     done
-    echo "✅ Database migrations completed successfully"
+    echo "✅ Database schema recreated"
     
     # Verify schema exists
     echo "🔍 Verifying database schema was recreated..."
@@ -325,89 +393,138 @@ EOSQL
     fi
 fi
 
-# Copy the SQL procedures
-docker cp src/scripts/seed-transactional-base-rows.sql "\$DB_CONTAINER:/tmp/seed.sql"
-docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -f /tmp/seed.sql
+# Detect the database container (support both Supabase CLI and production Docker)
+if docker ps --format "{{.Names}}" | grep -q "supabase_db_.*"; then
+    DB_CONTAINER=\$(docker ps --format "{{.Names}}" | grep "supabase_db_.*" | head -1)
+elif docker ps --format "{{.Names}}" | grep -q "supabase-db"; then
+    DB_CONTAINER="supabase-db"
+else
+    DB_CONTAINER=""
+fi
+
+if [ -z "\$DB_CONTAINER" ]; then
+    echo "❌ Error: No PostgreSQL container found"
+    exit 1
+fi
+echo "Using container: \$DB_CONTAINER"
+
+# Copy the SQL procedures (from transactional-database service) - use absolute path from project root
+docker cp "$PROJECT_ROOT/services/transactional-database/scripts/seed-transactional-base-rows.sql" "\$DB_CONTAINER:/tmp/seed.sql"
+
+echo "🔧 Dropping functions and procedures"
+# Execute SQL with filtered output - show only relevant messages
+docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -f /tmp/seed.sql 2>&1 | grep -E "(CREATE FUNCTION|CREATE PROCEDURE|^$)" | tail -1 > /dev/null
+echo "🏗️ Creating functions and procedures"
+echo "✅ Done creating functions and procedures"
 
 # Seed foo data with user-specified count
 # Remove commas from numbers for SQL
 FOO_COUNT_SQL=\$(echo "\$FOO_ROWS" | tr -d ',')
 # Convert CLEAR_DATA to lowercase for SQL boolean
 CLEAN_EXISTING_SQL=\$([ "\$CLEAR_DATA" = "true" ] && echo "true" || echo "false")
-echo "📝 Seeding \$FOO_ROWS foo records (clean_existing=\$CLEAN_EXISTING_SQL)..."
-docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "CALL seed_foo_data(\$FOO_COUNT_SQL, \$CLEAN_EXISTING_SQL);"
+echo "📝 Seeding \$FOO_ROWS foo records..."
+docker exec -i "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -v ON_ERROR_STOP=1 -c "CALL seed_foo_data(\$FOO_COUNT_SQL, \$CLEAN_EXISTING_SQL);" 2>&1
+echo "✅ foo seeding complete"
 
 # Seed bar data with user-specified count
 # Remove commas from numbers for SQL  
 BAR_COUNT_SQL=\$(echo "\$BAR_ROWS" | tr -d ',')
-echo "📊 Seeding \$BAR_ROWS bar records (clean_existing=\$CLEAN_EXISTING_SQL)..."
-docker exec "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -c "CALL seed_bar_data(\$BAR_COUNT_SQL, \$CLEAN_EXISTING_SQL);"
+echo "📊 Seeding \$BAR_ROWS bar records..."
+docker exec -i "\$DB_CONTAINER" psql -U "\$DB_USER" -d "\$DB_NAME" -v ON_ERROR_STOP=1 -c "CALL seed_bar_data(\$BAR_COUNT_SQL, \$CLEAN_EXISTING_SQL);" 2>&1
+echo "✅ bar seeding complete"
 
 # Cleanup
 docker exec "\$DB_CONTAINER" rm -f /tmp/seed.sql
 echo "✅ Both foo and bar data seeded successfully"
 EOF
             chmod +x temp_seed_all.sh
-            ./temp_seed_all.sh
+            log_message "Executing transactional database seeding script"
+            if [ "$VERBOSE_MODE" = "true" ]; then
+                ./temp_seed_all.sh
+            else
+                # Show progress but hide verbose docker output
+                ./temp_seed_all.sh 2>> "$SEED_LOG"
+            fi
             rm temp_seed_all.sh
-        fi
         
         cd "$PROJECT_ROOT"
-        echo "✅ transactional-base seeding completed"
+        echo "✅ transactional-base seeded"
+        log_message "transactional-base seeding completed successfully"
     else
         echo "⚠️  transactional-base is not running, skipping seeding"
+        log_message "transactional-base is not running, skipping seeding"
     fi
-    echo ""
     
     # 2. Seed analytical-base (migrate data from transactional) - FAST
     echo "📈 Seeding analytical-base..."
+    log_message "Starting analytical-base migration"
     if is_service_running "analytical-base"; then
-        echo "✅ analytical-base is running, proceeding with data migration..."
+        log_message "analytical-base is running, proceeding with data migration"
         
         cd "$PROJECT_ROOT/services/analytical-base" || {
             echo "❌ Failed to change to analytical-base directory"
+            log_message "ERROR: Failed to change to analytical-base directory"
             cd "$PROJECT_ROOT"
             return 1
         }
         
         # Migrate foo table to Foo
-        echo "🔄 Migrating foo data to Foo..."
+        echo "🔄 Migrating foo → Foo..."
         if [ "$CLEAR_DATA" = "true" ]; then
-            echo "🧹 Running foo migration with data clearing..."
-            ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo --clear-data
+            log_message "Running foo migration with data clearing"
+            if [ "$VERBOSE_MODE" = "true" ]; then
+                ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo --clear-data
+            else
+                ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo --clear-data 2>> "$SEED_LOG"
+            fi
         else
-            echo "📊 Running foo migration keeping existing data..."
-            ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo
+            log_message "Running foo migration keeping existing data"
+            if [ "$VERBOSE_MODE" = "true" ]; then
+                ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo
+            else
+                ./scripts/migrate-pg-table-to-ch.sh --source-table foo --dest-table Foo 2>> "$SEED_LOG"
+            fi
         fi
+        echo "✅ foo migration complete"
         
         # Migrate bar table to Bar
-        echo "🔄 Migrating bar data to Bar..."
+        echo "🔄 Migrating bar → Bar..."
         if [ "$CLEAR_DATA" = "true" ]; then
-            echo "🧹 Running bar migration with data clearing..."
-            ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar --clear-data
+            log_message "Running bar migration with data clearing"
+            if [ "$VERBOSE_MODE" = "true" ]; then
+                ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar --clear-data
+            else
+                ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar --clear-data 2>> "$SEED_LOG"
+            fi
         else
-            echo "📊 Running bar migration keeping existing data..."
-            ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar
+            log_message "Running bar migration keeping existing data"
+            if [ "$VERBOSE_MODE" = "true" ]; then
+                ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar
+            else
+                ./scripts/migrate-pg-table-to-ch.sh --source-table bar --dest-table Bar 2>> "$SEED_LOG"
+            fi
         fi
+        echo "✅ bar migration complete"
         
         # Clean up temp migration files
         if [ -d "temp_migration" ]; then
-            echo "🧹 Cleaning up temp migration files..."
-            rm -rf temp_migration/*
-            echo "✅ Temp files cleaned up"
+            log_message "Cleaning up temp migration files"
+            rm -rf temp_migration/* >> "$SEED_LOG" 2>&1
         fi
         
         cd "$PROJECT_ROOT"
-        echo "✅ analytical-base migration completed"
+        echo "✅ analytical-base migrated"
+        log_message "analytical-base migration completed successfully"
     else
         echo "⚠️  analytical-base is not running, skipping migration"
+        log_message "analytical-base is not running, skipping migration"
     fi
-    echo ""
     
     # 3. Start retrieval-base migration in BACKGROUND (slow process)
-    echo "🔍 Starting retrieval-base migration in background..."
+    echo "🔍 Starting retrieval-base migration..."
+    log_message "Starting retrieval-base migration in background"
     if is_service_running "retrieval-base"; then
-        echo "✅ retrieval-base is running, starting background data migration..."
+        log_message "retrieval-base is running, starting background data migration"
         
         # Create background migration script
         cat > "$PROJECT_ROOT/temp_es_migration.sh" << 'EOF'
@@ -454,51 +571,32 @@ EOF
         nohup "$PROJECT_ROOT/temp_es_migration.sh" "$CLEAR_DATA" > /dev/null 2>&1 &
         ES_PID=$!
         
-        echo "✅ Elasticsearch migration started in background (PID: $ES_PID)"
-        echo ""
-        echo "⚠️  IMPORTANT: Elasticsearch migration will take 15-30 minutes to complete!"
-        echo "📋 Monitor progress in real-time:"
-        echo "   tail -f $PROJECT_ROOT/elasticsearch_migration.log"
-        echo ""
-        echo "💡 The migration runs independently - you can:"
-        echo "   • Close this terminal (migration continues)"
-        echo "   • Use other services immediately (transactional-base, analytical-base)"
-        echo "   • Check progress anytime with the tail command above"
+        echo "✅ retrieval-base migration started (PID: $ES_PID)"
+        log_message "Elasticsearch migration started in background (PID: $ES_PID)"
         
     else
         echo "⚠️  retrieval-base is not running, skipping migration"
+        log_message "retrieval-base is not running, skipping migration"
     fi
-    echo ""
     
-    echo "🎉 Data seeding completed! Core migrations finished, Elasticsearch running in background."
+    # Step 4: Restart workflows to resume real-time synchronization
+    restart_workflows
+    
     echo ""
-    echo "=========================================="
-    echo "                SUMMARY"
-    echo "=========================================="
-    echo "✅ COMPLETED (ready to use):"
-    echo "   • transactional-base: Seeded with $FOO_ROWS foo and $BAR_ROWS bar records"
-    if [ "$CLEAR_DATA" = "true" ]; then
-        echo "   • Data cleared before seeding (tables dropped, schema recreated)"
-    fi
-    echo "   • analytical-base: Migrated data to ClickHouse"
+    echo "🎉 Data seeding completed!"
+    log_message "=== Data Seeding Completed Successfully ==="
     echo ""
-    echo "🔄 IN PROGRESS (background process):"
-    echo "   • retrieval-base: Elasticsearch migration (15-30 minutes remaining)"
+    echo "✅ COMPLETED:"
+    echo "   📊 transactional-base: $FOO_ROWS foo, $BAR_ROWS bar records"
+    echo "   📈 analytical-base: Data migrated to ClickHouse"
+    echo "   🔄 workflows: Restarted for real-time sync"
     echo ""
-    echo "=========================================="
-    echo "           BACKGROUND MIGRATION"
-    echo "=========================================="
-    echo "⏱️  Elasticsearch migration is running in the background and will take 15-30 minutes."
-    echo "🔍 Monitor progress in real-time:"
+    echo "🔄 BACKGROUND: retrieval-base → Elasticsearch (15-30 min)"
+    echo ""
+    echo "📋 Monitor Elasticsearch migration:"
     echo "   tail -f $PROJECT_ROOT/elasticsearch_migration.log"
     echo ""
-    echo "✅ Check if still running:"
-    echo "   ps aux | grep migrate-from-postgres-to-elasticsearch"
-    echo ""
-    echo "💡 You can safely:"
-    echo "   • Close this terminal (background process continues)"
-    echo "   • Start using transactional-base and analytical-base immediately"
-    echo "   • Come back later to check Elasticsearch progress"
+    echo "📄 Detailed logs: $SEED_LOG"
     echo ""
 }
 
@@ -515,12 +613,11 @@ echo "  Area Code Data Seeding"
 echo "=========================================="
 echo ""
 
-# Ensure all scripts are executable first
-ensure_scripts_executable
-echo ""
-
-echo "This will seed sample data across all services."
-echo "The process involves multiple databases and may take time."
+echo "📋 Process: workflows → transactional → analytical → retrieval → workflows"
+echo "📄 Detailed logs: $SEED_LOG"
+if [ "$VERBOSE_MODE" != "true" ]; then
+    echo "💡 Use --verbose for full console output"
+fi
 echo ""
 
 seed_all_data "$@"
@@ -528,11 +625,12 @@ seed_all_data "$@"
 # Capture the exit code
 EXIT_CODE=$?
 
-echo ""
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "✅ Data seeding process completed successfully!"
+    echo "✅ Seeding completed successfully!"
+    log_message "=== Seeding process completed successfully ==="
 else
-    echo "❌ Data seeding failed with exit code: $EXIT_CODE"
+    echo "❌ Seeding failed with exit code: $EXIT_CODE"
+    log_message "ERROR: Seeding process failed with exit code: $EXIT_CODE"
 fi
 
 exit $EXIT_CODE 

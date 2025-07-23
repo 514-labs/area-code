@@ -1,0 +1,13 @@
+# PostgreSQL data files (auto-generated, can be huge)
+volumes/db/data/
+
+# Environment files (may contain secrets)
+.env
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db 

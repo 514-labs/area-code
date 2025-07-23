@@ -23,22 +23,15 @@ pnpm add @workspace/models
 ### Import specific models
 
 ```typescript
-import { Foo, CreateFoo } from '@workspace/models/foo';
-import { Bar, CreateBar } from '@workspace/models/bar';
-import { FooThingEvent, createFooThingEvent } from '@workspace/models/events';
+import { Foo, CreateFoo } from "@workspace/models/foo";
+import { Bar, CreateBar } from "@workspace/models/bar";
+import { Foo, CreateFoo } from "@workspace/models";
 ```
 
 ### Import everything
 
 ```typescript
-import { 
-  Foo, 
-  Bar, 
-  FooThingEvent, 
-  BarThingEvent,
-  createFooThingEvent,
-  createBarThingEvent 
-} from '@workspace/models';
+import { Foo, Bar } from "@workspace/models";
 ```
 
 ## Models
@@ -143,10 +136,10 @@ All events extend the base event interface:
 
 ```typescript
 interface BaseEvent {
-  id: string;          // UUID
-  type: string;        // Event type
-  timestamp: Date;     // When the event occurred
-  source: string;      // Event source
+  id: string; // UUID
+  type: string; // Event type
+  timestamp: Date; // When the event occurred
+  source: string; // Event source
   correlationId?: string; // Optional correlation ID
   metadata?: Record<string, unknown>; // Optional metadata
 }
@@ -165,7 +158,7 @@ interface FooThingEvent extends BaseEvent {
     previousData?: any;
     currentData?: any;
     changes?: string[];
-  }
+  };
 }
 ```
 
@@ -184,7 +177,7 @@ interface BarThingEvent extends BaseEvent {
     currentData?: any;
     changes?: string[];
     value?: number;
-  }
+  };
 }
 ```
 
@@ -193,19 +186,21 @@ interface BarThingEvent extends BaseEvent {
 Use the factory functions for easier event creation:
 
 ```typescript
-import { createFooThingEvent, createBarThingEvent } from '@workspace/models';
+import { createFooThingEvent, createBarThingEvent } from "@workspace/models";
 
 const fooEvent = createFooThingEvent({
   fooId: "123e4567-e89b-12d3-a456-426614174000",
   action: "created",
-  currentData: { /* foo data */ }
+  currentData: {
+    /* foo data */
+  },
 });
 
 const barEvent = createBarThingEvent({
   barId: "123e4567-e89b-12d3-a456-426614174001",
   fooId: "123e4567-e89b-12d3-a456-426614174000",
   action: "updated",
-  value: 42
+  value: 42,
 });
 ```
 
@@ -214,19 +209,19 @@ const barEvent = createBarThingEvent({
 All models are plain TypeScript interfaces providing compile-time type safety:
 
 ```typescript
-import { Foo, CreateFoo } from '@workspace/models';
+import { Foo, CreateFoo } from "@workspace/models";
 
 // Type-safe foo creation
 const newFoo: CreateFoo = {
   name: "Example Foo",
   description: "This is an example",
-  priority: 5
+  priority: 5,
 };
 
 // Type-safe foo usage
 const processFoo = (foo: Foo) => {
   console.log(foo.name); // TypeScript knows this is a string
-  console.log(foo.id);   // TypeScript knows this is a string
+  console.log(foo.id); // TypeScript knows this is a string
 };
 ```
 
@@ -235,10 +230,10 @@ const processFoo = (foo: Foo) => {
 Event type guards are provided for runtime type checking:
 
 ```typescript
-import { isFooThingEvent, isBarThingEvent } from '@workspace/models';
+import { isFooThingEvent, isBarThingEvent } from "@workspace/models";
 
 if (isFooThingEvent(event)) {
   // TypeScript now knows this is a FooThingEvent
   console.log(event.params.fooId);
 }
-``` 
+```

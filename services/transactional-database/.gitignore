@@ -1,0 +1,16 @@
+# PostgreSQL data files (auto-generated, can be huge)
+prod/volumes/db/data/
+supabase/.branches/
+supabase/.temp/
+
+# Environment files (may contain secrets)
+.env
+prod/.env
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db 

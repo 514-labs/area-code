@@ -7,6 +7,9 @@ dist-ssr
 *.local
 .env
 .cache
+
+# Vite cache files
+vite.config.*.timestamp-*.mjs
 server/dist
 public/dist
 .cursor/
@@ -19,6 +22,7 @@ elasticsearch_migration.log
 
 # Development logs
 dev-*.log
+nohup.out
 
 # Moose temporary directories
 .moose/

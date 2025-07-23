@@ -99,7 +99,7 @@ main() {
     
     # Step 0: Cleanup existing workflows
     print_step "Step 0: Cleaning up existing workflows"
-    cleanup_existing_workflows || exit 1
+    cleanup_existing_workflows
     echo ""
     
     # Step 1: Run setup:replication from transactional-base

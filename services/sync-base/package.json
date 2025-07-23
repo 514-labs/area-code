@@ -5,10 +5,10 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "setup": "../../scripts/dev-setup.sh --service=sync-base",
-    "setup:force": "../../scripts/dev-setup.sh --service=sync-base --force",
+    "dev:ufa": "moose-cli dev",
+    "dev:clean": "moose-cli clean",
     "dev:workflow": "moose-cli workflow run supabase-listener",
-    "shutdown": "../../scripts/dev-shutdown.sh sync-base"
+    "dev:workflow:stop": "moose-cli workflow terminate supabase-listener"
   },
   "dependencies": {
     "axios": "^1.7.7",

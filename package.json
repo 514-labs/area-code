@@ -8,23 +8,12 @@
     "services/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --filter vite-web-base --filter @workspace/transactional-base --filter @workspace/retrieval-base --filter sync-base",
-    "dev:all": "npm run dev",
-    "dev:web": "turbo run dev --filter vite-web-base",
-    "dev:services": "turbo run dev --filter @workspace/transactional-base --filter @workspace/retrieval-base --filter sync-base",
+    "dev": "turbo run dev:ufa --ui=tui",
     "build": "turbo run build",
     "clean": "turbo run clean",
-    "dev:turbo": "turbo",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "dev:setup": "chmod +x ./scripts/dev-setup.sh && ./scripts/dev-setup.sh",
-    "dev:setup:force": "chmod +x ./scripts/dev-setup.sh && ./scripts/dev-setup.sh --force",
-    "dev:start": "./scripts/dev-start.sh",
+    "dev:clean": "pnpm --filter @workspace/transactional-database dev:clean && pnpm --filter @workspace/retrieval-base dev:clean && pnpm --filter sync-base dev:clean",
     "dev:workflow": "./scripts/dev-workflow.sh",
-    "dev:shutdown": "./scripts/dev-shutdown.sh",
-    "dev:seed": "./scripts/dev-seed.sh",
-    "dev:status": "./scripts/dev-status.sh",
-    "dev:reset": "./scripts/dev-reset.sh",
-    "services:health": "./scripts/health-check.sh"
+    "dev:seed": "./scripts/dev-seed.sh"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",
