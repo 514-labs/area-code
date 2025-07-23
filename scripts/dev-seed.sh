@@ -29,9 +29,11 @@ show_help() {
     echo "  $0 --clear-data --foo-rows=1,000,000     # Clear data with specific counts"
     echo ""
     echo "Process:"
-    echo "  1. Seeds transactional-base (PostgreSQL) with foo/bar data"
-    echo "  2. Migrates data to analytical-base (ClickHouse) - Fast"
-    echo "  3. Migrates data to retrieval-base (Elasticsearch) - Background (15-30 min)"
+    echo "  1. Stop any running workflows"
+    echo "  2. Seeds transactional-base (PostgreSQL) with foo/bar data"
+    echo "  3. Migrates data to analytical-base (ClickHouse) - Fast"
+    echo "  4. Migrates data to retrieval-base (Elasticsearch) - Background (15-30 min)"
+    echo "  5. Restart workflows to resume real-time synchronization"
     echo ""
 }
 
@@ -111,9 +113,43 @@ is_service_running() {
     fi
 }
 
+# Function to cleanup existing workflows
+cleanup_existing_workflows() {
+    echo "🛑 Stopping existing workflows before seeding..."
+    cd "$PROJECT_ROOT/services/sync-base" || true
+    if command -v pnpm >/dev/null 2>&1; then
+        pnpm moose workflow terminate supabase-listener 2>/dev/null || true
+    fi
+    cd "$PROJECT_ROOT"
+    
+    # Give it a moment to properly terminate
+    sleep 2
+    echo "✅ Existing workflows stopped"
+}
+
+# Function to restart workflows after seeding
+restart_workflows() {
+    echo "🔄 Restarting workflows after seeding..."
+    cd "$PROJECT_ROOT/services/sync-base" || true
+    if command -v pnpm >/dev/null 2>&1; then
+        echo "Starting supabase-listener workflow..."
+        # Start the workflow in background to not block the script
+        nohup pnpm moose workflow run supabase-listener > /dev/null 2>&1 &
+        WORKFLOW_PID=$!
+        echo "✅ supabase-listener workflow started in background (PID: $WORKFLOW_PID)"
+    else
+        echo "⚠️  pnpm not found, skipping workflow restart"
+    fi
+    cd "$PROJECT_ROOT"
+}
+
 # Function to seed data across all services
 seed_all_data() {
     echo "🌱 Starting data seeding across all services..."
+    echo ""
+    
+    # Step 0: Stop any running workflows first
+    cleanup_existing_workflows
     echo ""
     
     # Check for command line flags
@@ -472,6 +508,7 @@ EOF
         echo "   • Data cleared before seeding (tables dropped, schema recreated)"
     fi
     echo "   • analytical-base: Migrated data to ClickHouse"
+    echo "   • workflows: Restarted for real-time synchronization"
     echo ""
     echo "🔄 IN PROGRESS (background process):"
     echo "   • retrieval-base: Elasticsearch migration (15-30 minutes remaining)"
@@ -490,6 +527,10 @@ EOF
     echo "   • Close this terminal (background process continues)"
     echo "   • Start using transactional-base and analytical-base immediately"
     echo "   • Come back later to check Elasticsearch progress"
+    echo ""
+    
+    # Step 4: Restart workflows to resume real-time synchronization
+    restart_workflows
     echo ""
 }
 
