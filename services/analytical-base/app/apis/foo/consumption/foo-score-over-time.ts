@@ -1,5 +1,5 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { FooPipeline } from "../../index";
+import { FooPipeline } from "../../../index";
 
 // Define query parameters interface
 interface ScoreOverTimeParams {

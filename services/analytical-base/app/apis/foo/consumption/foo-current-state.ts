@@ -17,7 +17,7 @@ interface FooCurrentStateRecord {
   priority: number;
   is_active: boolean;
   metadata: string; // JSON stored as string after toString conversion
-  tags: string;     // Array stored as string after toString conversion  
+  tags: string; // Array stored as string after toString conversion
   score: number;
   large_text: string;
   created_at: string; // DateTime stored as string
@@ -36,7 +36,10 @@ interface FooCurrentStateResponse {
 }
 
 // Main consumption API for current state foo data
-export const fooCurrentStateApi = new ConsumptionApi<QueryParams, FooCurrentStateResponse>(
+export const fooCurrentStateApi = new ConsumptionApi<
+  QueryParams,
+  FooCurrentStateResponse
+>(
   "foo-current-state",
   async (
     {
@@ -111,4 +114,3 @@ export const fooCurrentStateApi = new ConsumptionApi<QueryParams, FooCurrentStat
     };
   }
 );
-
