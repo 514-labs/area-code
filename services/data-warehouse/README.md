@@ -23,7 +23,7 @@ A high-performance data warehouse service built with **Moose** for real-time dat
    This will:
    - Install all dependencies
    - Start the data warehouse service (moose app)
-   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
+   - Start the data warehouse frontend (streamlit in apps/dw-frontend) and open it in your browser
 
 2. **Other Commands**:
    ```bash
