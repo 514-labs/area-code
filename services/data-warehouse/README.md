@@ -12,7 +12,7 @@ A high-performance data warehouse service built with **Moose** for real-time dat
 
 ## Quick Start
 
-(If you haven't already, navigate here `cd services/data-warehouse`)
+(If you haven't already, navigate here `cd services/data-warehouse`, and make sure Docker Desktop is running)
 
 1. **Full Setup** (recommended for first-time users):
    ```bash
