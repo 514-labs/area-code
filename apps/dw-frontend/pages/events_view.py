@@ -34,20 +34,6 @@ def show():
     # Fetch events data using new structured API
     if st.session_state.get("refresh_events", False):
         st.session_state["refresh_events"] = False
-    
-    # Add filtering controls
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        event_filter = st.selectbox("Filter by Event Type", ["All", "pageview", "signup", "click", "purchase", "login"])
-    with col2:
-        project_filter = st.selectbox("Filter by Project", ["All", "proj_web", "proj_mobile", "proj_api", "proj_admin"])
-    
-    # Fetch filtered data
-    df = fetch_events_data(
-        event_name=event_filter if event_filter != "All" else None,
-        project_id=project_filter if project_filter != "All" else None,
-        limit=500
-    )
 
     # Use analytics data for event counts
     if analytics and "event_counts" in analytics:
@@ -58,19 +44,6 @@ def show():
                 event_counts[event_name] = count
             else:
                 event_counts["other"] += count
-    
-    # Prepare display data
-    display_df = None
-    if not df.empty:
-        # Select and rename columns for better display
-        display_columns = ["event_name", "timestamp", "distinct_id", "session_id", 
-                          "project_id", "ip_address"]
-        if "transform_timestamp" in df.columns:
-            display_columns.append("transform_timestamp")
-            
-        display_df = df[display_columns].copy()
-        display_df.columns = ["Event Name", "Timestamp", "User ID", "Session ID", 
-                             "Project ID", "IP Address"] + (["Processed On"] if "transform_timestamp" in df.columns else [])
 
     # Metric cards
     cols = st.columns(len(event_counts))
@@ -97,6 +70,34 @@ def show():
             st.metric("Total Events (24h)", user_metrics.get("total_events", 0))
     
     st.subheader("Events Table")
+    
+    # Add filtering controls just above the table
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        event_filter = st.selectbox("Filter by Event Type", ["All", "pageview", "signup", "click", "purchase", "login"])
+    with col2:
+        project_filter = st.selectbox("Filter by Project", ["All", "proj_web", "proj_mobile", "proj_api", "proj_admin"])
+    
+    # Fetch filtered data
+    df = fetch_events_data(
+        event_name=event_filter if event_filter != "All" else None,
+        project_id=project_filter if project_filter != "All" else None,
+        limit=500
+    )
+    
+    # Prepare display data
+    display_df = None
+    if not df.empty:
+        # Select and rename columns for better display
+        display_columns = ["event_name", "timestamp", "distinct_id", "session_id", 
+                          "project_id", "ip_address"]
+        if "transform_timestamp" in df.columns:
+            display_columns.append("transform_timestamp")
+            
+        display_df = df[display_columns].copy()
+        display_df.columns = ["Event Name", "Timestamp", "User ID", "Session ID", 
+                             "Project ID", "IP Address"] + (["Processed On"] if "transform_timestamp" in df.columns else [])
+
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)
         

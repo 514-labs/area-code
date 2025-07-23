@@ -8,8 +8,8 @@ import streamlit_shadcn_ui as ui
 
 from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
-def normalize_for_display(blob_df, log_df):
-    """Convert blob and log data to a unified display format for 'All' view"""
+def normalize_for_display(blob_df, log_df, events_df=None):
+    """Convert blob, log, and events data to a unified display format for 'All' view"""
     combined_rows = []
 
     # Process blob data
@@ -35,6 +35,19 @@ def normalize_for_display(blob_df, log_df):
                 "Details": row["message"][:100] + "..." if len(row["message"]) > 100 else row["message"],
                 "Info": row.get("source", "Unknown"),
                 "Metadata": f"Trace: {row.get('trace_id', 'N/A')}",
+                "timestamp": row["transform_timestamp"] if "transform_timestamp" in row else row.get("timestamp", "")
+            })
+
+    # Process events data
+    if events_df is not None and not events_df.empty:
+        for _, row in events_df.iterrows():
+            combined_rows.append({
+                "ID": row.get("id", "N/A"),
+                "Type": "Event",
+                "Title": row.get("event_name", "Unknown"),
+                "Details": f"User: {row.get('distinct_id', 'N/A')} | Session: {row.get('session_id', 'N/A')}",
+                "Info": row.get("project_id", "Unknown"),
+                "Metadata": f"IP: {row.get('ip_address', 'N/A')}",
                 "timestamp": row["transform_timestamp"] if "transform_timestamp" in row else row.get("timestamp", "")
             })
 
@@ -80,28 +93,32 @@ def fetch_log_data(tag="All"):
         st.error(f"Failed to fetch log data from API: {e}")
         return pd.DataFrame()
 
+def fetch_events_for_analytics(limit=1000):
+    """Fetch events data specifically for analytics purposes"""
+    return fetch_events_data(limit=limit)
+
 def fetch_data(tag):
     """Fetch combined data based on tag filter - backward compatibility function"""
     if tag == "Blob":
         return fetch_blob_data(tag)
     elif tag == "Logs":
         return fetch_log_data(tag)
+    elif tag == "Events":
+        return fetch_events_for_analytics()
     elif tag == "All":
-        # Get both types of data and create unified view
+        # Get all three types of data and create unified view
         blob_df = fetch_blob_data()
         log_df = fetch_log_data()
-        return normalize_for_display(blob_df, log_df)
+        events_df = fetch_events_for_analytics()
+        return normalize_for_display(blob_df, log_df, events_df)
     else:
-        # For any other tag, try both endpoints and filter
+        # For any other tag, try all endpoints and filter
         blob_df = fetch_blob_data(tag)
         log_df = fetch_log_data(tag)
+        events_df = fetch_events_for_analytics()
 
-        if not blob_df.empty and not log_df.empty:
-            return normalize_for_display(blob_df, log_df)
-        elif not blob_df.empty:
-            return blob_df
-        elif not log_df.empty:
-            return log_df
+        if not blob_df.empty or not log_df.empty or not events_df.empty:
+            return normalize_for_display(blob_df, log_df, events_df)
         else:
             return pd.DataFrame()
 
@@ -147,21 +164,68 @@ def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=
         return pd.DataFrame()
 
 def fetch_event_analytics(hours=24):
-    """Fetch event analytics for dashboard - API removed, returning empty data"""
-    # Note: The getEventAnalytics API was removed. Returning empty structure to prevent errors.
-    return {
-        "event_counts": [
-            {"event_name": "pageview", "count": 0},
-            {"event_name": "signup", "count": 0},
-            {"event_name": "click", "count": 0},
-            {"event_name": "purchase", "count": 0}
-        ],
-        "user_metrics": {
-            "unique_users": 0,
-            "unique_sessions": 0,
-            "total_events": 0
+    """Fetch event analytics for dashboard by calculating from actual events data"""
+    try:
+        # Fetch recent events data for analytics calculation
+        df = fetch_events_data(limit=10000)  # Get more data for better analytics
+        
+        if df.empty:
+            # Return empty structure if no data
+            return {
+                "event_counts": [
+                    {"event_name": "pageview", "count": 0},
+                    {"event_name": "signup", "count": 0},
+                    {"event_name": "click", "count": 0},
+                    {"event_name": "purchase", "count": 0}
+                ],
+                "user_metrics": {
+                    "unique_users": 0,
+                    "unique_sessions": 0,
+                    "total_events": 0
+                }
+            }
+        
+        # Calculate event counts by event_name
+        event_counts_dict = df['event_name'].value_counts().to_dict()
+        
+        # Create event_counts array in expected format
+        known_events = ["pageview", "signup", "click", "purchase"]
+        event_counts = []
+        
+        for event_name in known_events:
+            count = event_counts_dict.get(event_name, 0)
+            event_counts.append({"event_name": event_name, "count": count})
+        
+        # Calculate user metrics
+        unique_users = df['distinct_id'].nunique() if 'distinct_id' in df.columns else 0
+        unique_sessions = df['session_id'].nunique() if 'session_id' in df.columns else 0
+        total_events = len(df)
+        
+        return {
+            "event_counts": event_counts,
+            "user_metrics": {
+                "unique_users": unique_users,
+                "unique_sessions": unique_sessions,
+                "total_events": total_events
+            }
         }
-    }
+        
+    except Exception as e:
+        st.error(f"Failed to calculate event analytics: {e}")
+        # Return empty structure on error
+        return {
+            "event_counts": [
+                {"event_name": "pageview", "count": 0},
+                {"event_name": "signup", "count": 0},
+                {"event_name": "click", "count": 0},
+                {"event_name": "purchase", "count": 0}
+            ],
+            "user_metrics": {
+                "unique_users": 0,
+                "unique_sessions": 0,
+                "total_events": 0
+            }
+        }
 
 
 
