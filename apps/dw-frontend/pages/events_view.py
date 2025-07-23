@@ -109,13 +109,14 @@ def show():
         # Data table
         st.divider()
         st.subheader("Daily Breakdown")
-        display_df = pageviews_df.copy()
-        display_df['view_date'] = display_df['view_date'].dt.strftime('%Y-%m-%d')
-        display_df.columns = ['Date', 'Total Page Views', 'Unique Visitors']
-        st.dataframe(display_df, use_container_width=True)
         
         # Educational note
         st.info("**Materialized View Demo**: This data is pre-aggregated using Moose's materialized views with AggregatingMergeTree engine. The aggregation updates automatically as new pageview events are ingested, providing fast query performance.")
+
+        display_df = pageviews_df.copy()
+        display_df['view_date'] = display_df['view_date'].dt.strftime('%Y-%m-%d')
+        display_df.columns = ['Date', 'Total Page Views', 'Unique Visitors']
+        st.dataframe(display_df, use_container_width=True)        
         
     else:
         st.info("No daily page views data available yet. Generate some pageview events using the Extract button to see this materialized view in action!")
