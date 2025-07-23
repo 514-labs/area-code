@@ -14,6 +14,8 @@ A high-performance data warehouse service built with **Moose** for real-time dat
 
 ### Quick Start
 
+(If you haven't already, navigate here `cd services/data-warehouse`)
+
 1. **Full Setup** (recommended for first-time users):
    ```bash
    ./setup.sh setup
