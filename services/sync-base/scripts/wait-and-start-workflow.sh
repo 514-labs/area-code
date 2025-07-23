@@ -31,7 +31,7 @@ wait_for_moose() {
 # Wait for moose to be ready, then start workflow
 if wait_for_moose; then
     echo "🔄 Starting supabase-listener workflow..."
-    moose-cli workflow run supabase-listener
+    pnpm dev:workflow:start
 else
     echo "❌ Failed to connect to moose dev server"
     exit 1

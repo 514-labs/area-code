@@ -8,7 +8,10 @@
     "dev:ufa": "moose-cli dev",
     "dev:clean": "moose-cli clean",
     "dev:workflow": "./scripts/wait-and-start-workflow.sh",
-    "dev:workflow:stop": "moose-cli workflow terminate supabase-listener"
+    "dev:workflow:stop": "moose-cli workflow terminate supabase-listener && cd ../transactional-database && pnpm replication:stop",
+    "dev:workflow:start": "cd ../transactional-database && pnpm setup:replication && cd ../sync-base && moose-cli workflow run supabase-listener",
+    "dev:workflow:status": "moose-cli workflow status supabase-listener",
+    "dev:workflow:list": "moose-cli workflow list"
   },
   "dependencies": {
     "axios": "^1.7.7",

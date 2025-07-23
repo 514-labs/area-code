@@ -23,6 +23,7 @@
     "dev:clean": "pnpm dev:stop",
     "setup:replication": "pnpm tsx scripts/setup-replication.ts",
     "setup:replication:status": "pnpm tsx scripts/setup-replication.ts --status",
+    "replication:stop": "pnpm tsx scripts/teardown-replication.ts",
     "test:realtime": "pnpm tsx tests/test-realtime.ts",
     "test:realtime:simple": "pnpm tsx tests/test-simple-realtime.ts",
     "test:realtime:postgres": "pnpm tsx tests/test-realtime-postgres-changes.ts"
