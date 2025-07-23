@@ -5,8 +5,7 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "setup": "../../scripts/dev-setup.sh --service=analytical-base",
-    "shutdown": "../../scripts/dev-shutdown.sh analytical-base"
+    "dev:ufa": "./scripts/ufa-start-sequence.sh"
   },
   "dependencies": {
     "axios": "^1.7.7",

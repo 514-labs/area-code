@@ -143,3 +143,19 @@ const start = async () => {
 };
 
 start();
+
+// Graceful shutdown handling
+const gracefulShutdown = async (signal: string) => {
+  fastify.log.info(`Received ${signal}, shutting down gracefully...`);
+  try {
+    await fastify.close();
+    fastify.log.info("Server closed successfully");
+    process.exit(0);
+  } catch (err) {
+    fastify.log.error("Error during shutdown:", err);
+    process.exit(1);
+  }
+};
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));

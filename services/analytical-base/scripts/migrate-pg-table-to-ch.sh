@@ -16,6 +16,27 @@ CH_USER=${CH_USER:-panda}
 CH_PASSWORD=${CH_PASSWORD:-pandapass}
 CH_DB=${CH_DB:-local}
 
+# Detect which PostgreSQL container to use (Supabase CLI vs Production Docker)
+detect_postgres_container() {
+    # Check for Supabase CLI container first (more specific)
+    if docker ps --format "{{.Names}}" | grep -q "supabase_db_.*"; then
+        docker ps --format "{{.Names}}" | grep "supabase_db_.*" | head -1
+    # Check for production Docker container
+    elif docker ps --format "{{.Names}}" | grep -q "supabase-db"; then
+        echo "supabase-db"
+    else
+        echo ""
+    fi
+}
+
+# Set the PostgreSQL container name
+PG_CONTAINER=$(detect_postgres_container)
+if [ -z "$PG_CONTAINER" ]; then
+    echo "❌ No PostgreSQL container found. Ensure either Supabase CLI or production Docker setup is running."
+    exit 1
+fi
+echo "🐳 Using PostgreSQL container: $PG_CONTAINER"
+
 # Batch size for processing large datasets
 BATCH_SIZE=500000
 
@@ -108,7 +129,7 @@ run_postgres_query() {
     local query="$1"
     local output_file="$2"
     
-    if ! docker exec -i supabase-db psql -U "$PG_USER" -d "$PG_DB" -t -A -F$'\t' -c "$query" > "$output_file"; then
+    if ! docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -F$'\t' -c "$query" > "$output_file"; then
         echo "❌ PostgreSQL query failed: $query"
         return 1
     fi
@@ -120,7 +141,7 @@ run_postgres_query_direct() {
     local query="$1"
     local result
     
-    if ! result=$(docker exec -i supabase-db psql -U "$PG_USER" -d "$PG_DB" -t -A -c "$query" 2>&1); then
+    if ! result=$(docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -c "$query" 2>&1); then
         echo "❌ PostgreSQL query failed: $query" >&2
         echo "   Error: $result" >&2
         return 1
@@ -185,7 +206,7 @@ import_to_clickhouse() {
 
 # Test PostgreSQL connection
 echo "Testing PostgreSQL connection..."
-if ! docker exec supabase-db pg_isready -h localhost -p 5432 -U "$PG_USER" > /dev/null 2>&1; then
+if ! docker exec "$PG_CONTAINER" pg_isready -h localhost -p 5432 -U "$PG_USER" > /dev/null 2>&1; then
     echo "❌ PostgreSQL connection failed"
     exit 1
 fi

@@ -38,48 +38,36 @@ This service provides a Moose workflow for real-time synchronization with the tr
 ## Overview
 
 The sync-base service implements a long-running Moose workflow that listens to changes in the transactional-base database tables:
+
 - `foo` table
-- `bar` table  
+- `bar` table
 - `foo_bar` junction table
 
-## Environment Setup
+## Zero Configuration Setup
 
-**Important**: This workflow uses environment variables for configuration, not input parameters.
+**NEW**: This service now **automatically connects** to Supabase CLI without any configuration needed!
 
-Create a `.env` file in the sync-base directory with the following configuration:
+### 🚀 **Development Mode (Default)**
 
-```bash
-# Copy these values from your transactional-base service's .env file
+- **Automatic**: Uses Supabase CLI by default
+- **Zero config**: No `.env` file needed
+- **Smart detection**: Auto-detects CLI vs production mode
+- **Same pattern**: Works like transactional-base service
 
-# Supabase Configuration for Sync Service
-SUPABASE_PUBLIC_URL=http://localhost:8000
+### 🏭 **Production Mode**
 
-# CRITICAL: Copy this from transactional-base/.env
-ANON_KEY=your_actual_anon_key_from_transactional_base
-
-# Optional: Service Role Key (copy from transactional-base/.env)
-SERVICE_ROLE_KEY=your_service_role_key_here
-
-# Database Schema (usually 'public')
-DB_SCHEMA=public
-
-# Realtime WebSocket URL
-REALTIME_URL=ws://localhost:8000/realtime/v1
-```
-
-### Getting the Keys
-
-1. **ANON_KEY**: Copy the exact value from `services/transactional-base/.env`
-2. **SERVICE_ROLE_KEY**: Copy the exact value from `services/transactional-base/.env`  
-3. **SUPABASE_PUBLIC_URL**: Should match your transactional-base service URL
+- **Explicit**: Only when `NODE_ENV=production`
+- **Environment variables**: Loads from `../transactional-database/prod/.env`
+- **Fallback**: Optional local `.env` for overrides
 
 ## Running the Workflow
 
 ### Prerequisites
 
-1. Ensure the transactional-base service is running
-2. Database tables must be set up with realtime enabled
-3. Environment variables must be configured in `.env` file
+1. **transactional-base service** must be running (provides the database)
+2. **Supabase CLI** database running (via transactional-database service)
+
+**No environment setup needed!** The service automatically connects to the same Supabase CLI instance that transactional-base uses.
 
 ### Start the Workflow
 
@@ -87,53 +75,90 @@ REALTIME_URL=ws://localhost:8000/realtime/v1
 # Start the Moose development server
 pnpm dev
 
-# In another terminal, run the workflow (NO INPUT NEEDED)
+# In another terminal, run the workflow (NO CONFIGURATION NEEDED)
 moose workflow run supabase-listener
 ```
 
-**Note**: The workflow now reads configuration from environment variables automatically. No input parameters are required.
+**Note**: The workflow automatically detects and connects to Supabase CLI. No input parameters or environment variables required for development.
 
 ### Testing the Workflow
 
 Once running, the workflow will listen for changes on the database tables. You can test by:
 
-1. Creating records in the transactional-base service
-2. Updating existing records
-3. Deleting records
+1. **Creating records** in the transactional-base service:
+
+   ```bash
+   curl -X POST http://localhost:3000/api/foo \
+     -H "Content-Type: application/json" \
+     -d '{"name": "test foo", "score": 42}'
+   ```
+
+2. **Updating existing records** through the API
+3. **Deleting records** through the API
 
 The workflow will log all changes and execute business logic handlers.
 
-## Workflow Features
+## Environment Detection
 
-- **Environment-based configuration**: All settings from .env file
-- **Long-running task**: Runs indefinitely until manually stopped
-- **Real-time listening**: Responds to database changes immediately
-- **Graceful shutdown**: Properly cleans up subscriptions
-- **Business logic handlers**: Separate handlers for each table
-- **Comprehensive logging**: Detailed event logging with timestamps
-- **No input required**: All configuration from environment variables
+The service uses the same auto-detection logic as transactional-base:
 
-## Customization
+```typescript
+// Automatically detects mode
+const isSupabaseCLI =
+  process.env.SUPABASE_CLI === "true" ||
+  process.env.NODE_ENV === "development" ||
+  process.env.NODE_ENV !== "production";
+```
 
-Add your sync logic in the handler functions:
-- `handleFooChange()` - Process foo table changes
-- `handleBarChange()` - Process bar table changes  
-- `handleFooBarChange()` - Process foo_bar junction table changes
+### CLI Mode (Default)
+
+- **URL**: `http://localhost:8000`
+- **Auth**: Default CLI anon key (built-in)
+- **Schema**: `public`
+- **Connection**: Automatic
+
+### Production Mode
+
+- **URL**: From `SUPABASE_PUBLIC_URL`
+- **Auth**: From `SERVICE_ROLE_KEY` or `ANON_KEY`
+- **Schema**: From `DB_SCHEMA`
+- **Connection**: Environment-configured
 
 ## Architecture
 
 The workflow uses:
-- **Environment Variables**: For all configuration (no runtime input)
+
+- **Auto-detection**: Environment-based configuration (no manual setup)
+- **Connection module**: Centralized Supabase client management
 - **Moose Workflows**: For task orchestration and lifecycle management
 - **Supabase Realtime**: For real-time database change notifications
 - **PostgreSQL Change Streams**: For capturing database events
 - **WebSocket connections**: For real-time communication
 
+## Workflow Features
+
+- **Zero configuration**: Automatically connects to Supabase CLI
+- **Long-running task**: Runs indefinitely until manually stopped
+- **Real-time listening**: Responds to database changes immediately
+- **Graceful shutdown**: Properly cleans up subscriptions
+- **Business logic handlers**: Separate handlers for each table
+- **Comprehensive logging**: Detailed event logging with timestamps
+- **Smart environment detection**: CLI vs production mode
+
+## Customization
+
+Add your sync logic in the handler functions:
+
+- `handleFooChange()` - Process foo table changes
+- `handleBarChange()` - Process bar table changes
+- `handleFooBarChange()` - Process foo_bar junction table changes
+
 ## Monitoring
 
 The workflow provides detailed logging for:
-- Environment variable validation
-- Connection status
+
+- Environment detection (CLI vs Production)
+- Connection status and configuration
 - Subscription events
 - Database changes
 - Business logic execution
@@ -141,19 +166,49 @@ The workflow provides detailed logging for:
 
 ## Troubleshooting
 
-Common issues:
-1. **"ANON_KEY environment variable is empty"**: Copy the exact ANON_KEY from transactional-base/.env
-2. **Connection errors**: Check SUPABASE_PUBLIC_URL and network connectivity
-3. **Authentication errors**: Verify ANON_KEY is correct and matches transactional-base
-4. **No events received**: Ensure realtime is enabled on database tables
-5. **Subscription failures**: Check database permissions and RLS policies
+### Common Issues
 
-## Environment Variable Reference
+1. **"Connection failed"**:
+   - Ensure transactional-base service is running
+   - Check that Supabase CLI is started (via transactional-database)
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SUPABASE_PUBLIC_URL` | Yes | URL of your transactional-base service |
-| `ANON_KEY` | Yes | Supabase anonymous key from transactional-base |
-| `DB_SCHEMA` | Yes | Database schema (usually 'public') |
-| `SERVICE_ROLE_KEY` | Optional | Service role key for admin operations |
-| `REALTIME_URL` | Optional | WebSocket URL for realtime connections |
+2. **"No events received"**:
+   - Verify transactional-base API is working
+   - Check that realtime is enabled on database tables
+   - Ensure database changes are happening through the API
+
+3. **"Authentication errors"**:
+   - Service auto-uses CLI default keys in development
+   - For production, ensure environment variables are set
+
+### Service Dependencies
+
+```
+sync-base → transactional-base → transactional-database (Supabase CLI)
+```
+
+All services in the chain must be running for sync-base to receive events.
+
+## Production Configuration (Optional)
+
+For production deployment, create a `.env` file:
+
+```bash
+# Production Environment Configuration
+NODE_ENV=production
+SUPABASE_PUBLIC_URL=your-production-url
+SERVICE_ROLE_KEY=your-service-role-key
+DB_SCHEMA=public
+```
+
+**Development requires no configuration** - everything works automatically!
+
+## Migration from Previous Version
+
+If you have an existing `.env` file from the previous setup, you can:
+
+- **Keep it**: The service will still use it if present
+- **Remove it**: The service works without it in CLI mode
+- **No changes needed**: Existing workflows continue to work
+
+The new version is fully backward compatible while providing zero-config development experience.

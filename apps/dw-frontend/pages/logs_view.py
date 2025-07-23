@@ -4,11 +4,64 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, render_workflows_table
+from utils.api_functions import fetch_log_data, trigger_extract, render_dlq_controls, render_workflows_table
 from utils.constants import CONSUMPTION_API_BASE
 
+def truncate_message(message, max_length=100):
+    """Truncate long messages for table display"""
+    message_str = str(message)
+    return message_str[:max_length] + "..." if len(message_str) > max_length else message_str
+
+def format_timestamp(timestamp):
+    """Format timestamp for better readability"""
+    try:
+        return pd.to_datetime(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+    except:
+        return str(timestamp)
+
+def prepare_log_display_data(df):
+    """Transform log data for display with clean configuration"""
+    if df.empty:
+        return None
+
+    # Column transformations configuration
+    transformations = {
+        "Message Preview": ("message", truncate_message),
+        "Log Timestamp": ("timestamp", format_timestamp),
+    }
+
+    # Column display mapping
+    display_columns = {
+        "id": "ID",
+        "level": "Level",
+        "source": "Source",
+        "trace_id": "Trace ID"
+    }
+
+    display_df = df.copy()
+
+    # Apply transformations
+    for display_name, (source_col, transform_func) in transformations.items():
+        if source_col in display_df.columns:
+            display_df[display_name] = display_df[source_col].apply(transform_func)
+
+    # Build final column list
+    final_columns = []
+    for source_col, display_name in display_columns.items():
+        if source_col in display_df.columns:
+            final_columns.append(display_name)
+
+    # Add computed columns that exist
+    for computed_col in transformations.keys():
+        if computed_col in display_df.columns:
+            final_columns.append(computed_col)
+
+    # Rename and select
+    display_df = display_df.rename(columns=display_columns)
+    return display_df[final_columns]
+
 def show():
-    level_counts = {"INFO": 0, "DEBUG": 0, "ERROR": 0}
+    level_counts = {"INFO": 0, "DEBUG": 0, "WARN": 0, "ERROR": 0}
 
     col1, col2 = st.columns([5, 1])
     with col1:
@@ -26,28 +79,26 @@ def show():
                 st.session_state["refresh_logs"] = True
                 st.rerun()
 
-    df = handle_refresh_and_fetch(
-        "refresh_logs",
-        "Logs",
-        trigger_func=lambda: trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs"),
-        trigger_label="Logs",
-        button_label=None  # We'll use ShadCN button below
-    )
+    # Fetch log data directly
+    if "refresh_logs" not in st.session_state:
+        st.session_state["refresh_logs"] = False
 
-    # Parse logs and count levels if data exists
-    if not df.empty:
-        log_col = df.columns[-1]
-        parsed_logs = df[log_col].str.split("|", n=2, expand=True)
-        parsed_logs.columns = ["Level", "Timestamp", "Message"]
-        if "Processed On" in df.columns:
-            parsed_logs.insert(1, "Processed On", df["Processed On"])
+    if st.session_state.get("refresh_logs", False):
+        df = fetch_log_data()
+        st.session_state["refresh_logs"] = False
+    else:
+        df = fetch_log_data()
 
-        # Update counts with actual data
-        actual_counts = parsed_logs["Level"].value_counts().to_dict()
+    # Update level counts
+    if not df.empty and "level" in df.columns:
+        actual_counts = df["level"].value_counts().to_dict()
         for level, count in actual_counts.items():
             level_upper = level.upper().strip()
             if level_upper in level_counts:
                 level_counts[level_upper] = count
+
+    # Transform data for display
+    display_df = prepare_log_display_data(df)
 
     # Metric cards
     cols = st.columns(len(level_counts))
@@ -62,9 +113,9 @@ def show():
     # Show workflow runs
     render_workflows_table("logs-workflow", "Logs")
 
-    st.subheader("Logs Items Table")
-    if not df.empty:
-        st.dataframe(parsed_logs, use_container_width=True)
+    st.subheader("Logs Table")
+    if display_df is not None and not display_df.empty:
+        st.dataframe(display_df, use_container_width=True)
     else:
         st.write("No logs data available.")
     

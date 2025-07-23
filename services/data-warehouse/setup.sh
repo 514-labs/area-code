@@ -357,15 +357,15 @@ check_prerequisites() {
 
     # Commented out because this is not needed for now
     # Check if transactional-base service is accessible
-    # local transactional_env_path="../transactional-base/.env"
-    # if [ ! -f "$transactional_env_path" ]; then
-    #     print_error "transactional-base/.env not found at: $transactional_env_path"
-    #     print_error "The data-warehouse service REQUIRES transactional-base configuration"
-    #     print_error "Please run 'pnpm dev:setup --service=transactional-base' first"
-    #     exit 1
-    # else
-    #     print_success "Found transactional-base/.env - will copy configuration values"
-    # fi
+    local transactional_env_path="../transactional-base/.env"
+    if [ ! -f "$transactional_env_path" ]; then
+        print_error "transactional-base/.env not found at: $transactional_env_path"
+        print_error "The data-warehouse service REQUIRES transactional-base configuration"
+        print_error "Please start transactional-base service first with 'pnpm dev:start --service=transactional-base'"
+        exit 1
+    else
+        print_success "Found transactional-base/.env - will copy configuration values"
+    fi
 }
 
 print_python_install_instructions() {

@@ -6,47 +6,78 @@ from typing import Optional, Dict, Any, List
 
 # These defines our data models for ingest pipelines.
 # Connector workflows extracts data and into these pipelines.
-# This currently uses Foo & Bar as examples, and it structures connector data accordingly,
-# but we highly recommend specific data models for your various sources.
 # For more information on data models, see: https://docs.fiveonefour.com/moose/building/data-modeling.
 
-class FooStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING = "pending"
-    ARCHIVED = "archived"
+class LogLevel(str, Enum):
+    INFO = "INFO"
+    DEBUG = "DEBUG"
+    ERROR = "ERROR"
+    WARN = "WARN"
 
-class Foo(BaseModel):
+# Source models - raw data from connectors
+class BlobSource(BaseModel):
     id: Key[str]
-    name: str
-    description: Optional[str]
-    status: FooStatus
-    priority: int
-    is_active: bool
-    tags: List[str]
-    score: float
-    large_text: str
+    bucket_name: str
+    file_path: str
+    file_name: str
+    file_size: int
+    permissions: List[str]
+    content_type: Optional[str]
+    ingested_at: str
 
-class Bar(BaseModel):
+class LogSource(BaseModel):
     id: Key[str]
-    name: str
-    description: Optional[str]
-    status: FooStatus
-    priority: int
-    is_active: bool
-    tags: List[str]
-    score: float
-    large_text: str
+    timestamp: str
+    level: LogLevel
+    message: str
+    source: Optional[str]  # service/component name
+    trace_id: Optional[str]
+
+# Final models - processed data with transformations
+class Blob(BaseModel):
+    id: Key[str]
+    bucket_name: str
+    file_path: str
+    file_name: str
+    file_size: int
+    permissions: List[str]
+    content_type: Optional[str]
+    ingested_at: str
     transform_timestamp: str
 
-fooModel = IngestPipeline[Foo]("Foo", IngestPipelineConfig(
+class Log(BaseModel):
+    id: Key[str]
+    timestamp: str
+    level: LogLevel
+    message: str
+    source: Optional[str]  # service/component name
+    trace_id: Optional[str]
+    transform_timestamp: str
+
+# Source ingest pipelines
+blobSourceModel = IngestPipeline[BlobSource]("BlobSource", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=False,
+    dead_letter_queue=True
+))
+
+logSourceModel = IngestPipeline[LogSource]("LogSource", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=False,
+    dead_letter_queue=True
+))
+
+# Final processed pipelines
+blobModel = IngestPipeline[Blob]("Blob", IngestPipelineConfig(
     ingest=True,
     stream=True,
     table=True,
     dead_letter_queue=True
 ))
 
-barModel = IngestPipeline[Bar]("Bar", IngestPipelineConfig(
+logModel = IngestPipeline[Log]("Log", IngestPipelineConfig(
     ingest=True,
     stream=True,
     table=True,

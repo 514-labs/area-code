@@ -65,7 +65,7 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const query = searchQuerySchema.parse(request.query);
 
       const filters: Record<string, any> = {};
@@ -134,7 +134,7 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const query = searchQuerySchema.parse(request.query);
 
       const filters: Record<string, any> = {};
@@ -187,7 +187,7 @@ export const searchRoutes: FastifyPluginAsync = async (fastify) => {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const query = searchQuerySchema.parse(request.query);
 
       const fooFilters: Record<string, any> = {};
