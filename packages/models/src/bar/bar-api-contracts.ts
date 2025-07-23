@@ -1,4 +1,4 @@
-import { Bar, BarWithCDC } from "./bar";
+import { Bar, BarWithCDC, BarWithFoo } from "./bar";
 
 export type GetBarsParams = {
   limit?: number;
@@ -8,13 +8,14 @@ export type GetBarsParams = {
 };
 
 export type GetBarsResponse = {
-  data: Bar[];
+  data: BarWithFoo[];
   pagination: {
     limit: number;
     offset: number;
     total: number;
     hasMore: boolean;
   };
+  queryTime: number;
 };
 
 export type GetBarsWithCDCParams = Omit<GetBarsParams, "sortBy"> & {

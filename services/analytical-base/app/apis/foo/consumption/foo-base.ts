@@ -3,14 +3,14 @@ import {
   Foo,
   FooWithCDCForConsumption,
   GetFoosWithCDCParams,
-  GetFoosWithCDCResponse,
+  GetFoosWithCDCForConsumptionResponse,
 } from "@workspace/models/foo";
 import { FooPipeline } from "../../../index";
 
 // Consumption API following Moose documentation pattern
 export const fooConsumptionApi = new ConsumptionApi<
   GetFoosWithCDCParams,
-  GetFoosWithCDCResponse
+  GetFoosWithCDCForConsumptionResponse
 >(
   "foo",
   async (

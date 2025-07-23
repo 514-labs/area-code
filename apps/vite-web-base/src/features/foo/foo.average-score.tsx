@@ -7,16 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-
 import { Button } from "@workspace/ui/components/button";
 import { IconCalculator, IconClock, IconRefresh } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
-
-interface AverageScoreResponse {
-  averageScore: number;
-  queryTime: number;
-  count: number;
-}
+import { GetFoosAverageScoreResponse } from "@workspace/models/foo";
 
 interface FooAverageScoreProps {
   apiEndpoint: string;
@@ -26,7 +20,7 @@ interface FooAverageScoreProps {
 // API function to fetch average score
 const fetchAverageScore = async (
   apiEndpoint: string
-): Promise<AverageScoreResponse> => {
+): Promise<GetFoosAverageScoreResponse> => {
   const response = await fetch(apiEndpoint);
   if (!response.ok) throw new Error("Failed to fetch average score");
   return response.json();

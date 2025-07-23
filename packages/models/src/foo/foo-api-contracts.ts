@@ -28,6 +28,13 @@ export type FooWithCDCForConsumption = Omit<FooWithCDC, "status"> & {
 };
 
 export type GetFoosWithCDCResponse = Omit<GetFoosResponse, "data"> & {
+  data: FooWithCDC[];
+};
+
+export type GetFoosWithCDCForConsumptionResponse = Omit<
+  GetFoosResponse,
+  "data"
+> & {
   data: FooWithCDCForConsumption[];
 };
 

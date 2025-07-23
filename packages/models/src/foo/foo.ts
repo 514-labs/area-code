@@ -26,3 +26,21 @@ export interface Foo {
 
 // Foo with CDC metadata for analytical pipelines
 export type FooWithCDC = Foo & CDC;
+
+// Interface for creating new foo (omit generated/auto fields)
+export interface CreateFoo extends Pick<Foo, "name"> {
+  description?: string | null;
+  status?: FooStatus;
+  priority?: number;
+  is_active?: boolean;
+  metadata?: Record<string, any>;
+  tags?: string[];
+  score?: number;
+  large_text?: string;
+}
+
+// Interface for updating foo (all fields optional except id)
+export interface UpdateFoo extends Partial<Omit<Foo, "id" | "created_at">> {
+  id: string;
+  updated_at?: Date;
+}

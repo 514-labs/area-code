@@ -26,7 +26,11 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { FooStatus, FooWithCDC } from "@workspace/models";
+import {
+  FooStatus,
+  FooWithCDC,
+  GetFoosWithCDCResponse,
+} from "@workspace/models/foo";
 import { getAnalyticalConsumptionApiBase } from "@/env-vars";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -89,24 +93,13 @@ const SortableHeader = ({
   );
 };
 
-interface FooResponse {
-  data: FooWithCDC[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-  queryTime: number;
-}
-
 const fetchFoos = async (
   endpoint: string,
   limit: number,
   offset: number,
   sortBy?: string,
   sortOrder?: string
-): Promise<FooResponse> => {
+): Promise<GetFoosWithCDCResponse> => {
   const params = new URLSearchParams({
     limit: limit.toString(),
     offset: offset.toString(),

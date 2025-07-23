@@ -45,7 +45,7 @@ export const barConsumptionApi = new ConsumptionApi<
              cdc_operation,
              cdc_timestamp
       FROM ${BarPipeline.table!}
-      ORDER BY ${sortBy === "cdc_operation" || sortBy === "cdc_timestamp" ? sql([sortBy]) : BarPipeline.columns[sortBy as keyof Bar]!} ${upperSortOrder}
+      ORDER BY ${sortBy === "cdc_operation" || sortBy === "cdc_timestamp" ? sql([sortBy]) : BarPipeline.columns[sortBy as keyof BarWithCDC]!} ${upperSortOrder}
       LIMIT ${limit}
       OFFSET ${offset}
     `;

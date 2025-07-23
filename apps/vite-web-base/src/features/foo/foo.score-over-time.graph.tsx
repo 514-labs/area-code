@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useQuery } from "@tanstack/react-query";
-
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import {
   Card,
@@ -32,26 +31,15 @@ import {
 } from "@workspace/ui/components/toggle-group";
 import { IconLoader } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
+import { GetFoosScoreOverTimeResponse } from "@workspace/models/foo";
 
 export const description = "An interactive score over time chart";
-
-// Chart Data Types
-interface ChartDataPoint {
-  date: string;
-  averageScore: number;
-  totalCount: number;
-}
-
-interface ChartDataResponse {
-  data: ChartDataPoint[];
-  queryTime?: number;
-}
 
 // API Functions
 const fetchChartData = async (
   fetchApiEndpoint: string,
   days: number = 90
-): Promise<ChartDataResponse> => {
+): Promise<GetFoosScoreOverTimeResponse> => {
   const params = new URLSearchParams({
     days: days.toString(),
   });

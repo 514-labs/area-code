@@ -26,13 +26,7 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { Bar as BaseBar } from "@workspace/models";
 import { getTransactionApiBase } from "@/env-vars";
-
-interface Bar extends BaseBar {
-  foo?: Foo;
-}
-
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -83,24 +77,7 @@ import {
 } from "@workspace/ui/components/table";
 import { format } from "date-fns";
 import { NumericFormat } from "react-number-format";
-
-interface Foo {
-  id: string;
-  name: string;
-  description: string | null;
-  status: string;
-}
-
-interface BarResponse {
-  data: Bar[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-  queryTime: number;
-}
+import { Bar, BarWithFoo, GetBarsResponse } from "@workspace/models/bar";
 
 // API Functions
 const fetchBars = async (
@@ -109,7 +86,7 @@ const fetchBars = async (
   offset: number = 0,
   sortBy?: string,
   sortOrder?: "asc" | "desc"
-): Promise<BarResponse> => {
+): Promise<GetBarsResponse> => {
   const params = new URLSearchParams({
     limit: limit.toString(),
     offset: offset.toString(),
@@ -131,7 +108,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: Column<Bar, unknown>;
+  column: Column<BarWithFoo, unknown>;
   children: React.ReactNode;
   className?: string;
 }) => {
@@ -162,7 +139,7 @@ const SortableHeader = ({
   );
 };
 
-const columns: ColumnDef<Bar>[] = [
+const columns: ColumnDef<BarWithFoo>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -335,7 +312,7 @@ export default function BarTransactionalDataTable({
   const serverPagination = barResponse?.pagination;
 
   // Create actions column if editApiEndpoint is provided
-  const actionsColumn: ColumnDef<Bar> = {
+  const actionsColumn: ColumnDef<BarWithFoo> = {
     id: "actions",
     cell: ({ row }) => {
       const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
