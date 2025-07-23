@@ -1,9 +1,5 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
 import { FooPipeline } from "../index";
-import { fooConsumptionApi } from "./foo/base-foo";
-
-// Re-export for backward compatibility
-export { fooConsumptionApi };
 
 // Interface for average score response
 interface AverageScoreResponse {
