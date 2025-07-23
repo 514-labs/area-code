@@ -4,8 +4,8 @@
   "scripts": {
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
-    "dev": "moose-cli dev",
-    "dev:ufa": "moose-cli dev",
+    "dev": "./scripts/dev-with-workflow.sh",
+    "dev:ufa": "./scripts/dev-with-workflow.sh",
     "dev:clean": "moose-cli clean",
     "dev:workflow": "moose-cli workflow run supabase-listener",
     "dev:workflow:stop": "moose-cli workflow terminate supabase-listener"
