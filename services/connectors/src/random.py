@@ -6,7 +6,13 @@ import random
 import string
 import uuid
 
-class FooStatus(str, Enum):
+class BlobStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+    ARCHIVED = "archived"
+
+class LogStatus(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     PENDING = "pending"
@@ -16,23 +22,36 @@ class DataSourceType(str, Enum):
     Blob = "blob"
     Logs = "logs"
 
-class Foo(BaseModel):
+# Source models - raw data from connectors (no transform_timestamp)
+class BlobSource(BaseModel):
     id: str
     name: str
     description: Optional[str]
-    status: FooStatus
+    status: BlobStatus
     priority: int
     is_active: bool
     tags: List[str]
     score: float
     large_text: str
-    # created_at: datetime
-    # updated_at: datetime
+
+class LogSource(BaseModel):
+    id: str
+    name: str
+    description: Optional[str]
+    status: LogStatus
+    priority: int
+    is_active: bool
+    tags: List[str]
+    score: float
+    large_text: str
 
 def random_string(length: int) -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
-def random_enum(enum_class: type[FooStatus]) -> FooStatus:
+def random_blob_enum(enum_class: type[BlobStatus]) -> BlobStatus:
+    return random.choice(list(enum_class))
+
+def random_log_enum(enum_class: type[LogStatus]) -> LogStatus:
     return random.choice(list(enum_class))
 
 def random_date() -> datetime:
@@ -118,8 +137,6 @@ FILE_NAMES = [
 
 BLOB_PERMISSIONS = ["READ", "WRITE", "DELETE", "LIST"]
 
-import os
-
 def generate_blob_log_line() -> str:
     bucket = random.choice(BUCKET_NAMES)
     file = random.choice(FILE_NAMES)
@@ -134,29 +151,35 @@ def generate_blob_log_line() -> str:
     file_size = random.randint(256, 10 * 1024 * 1024)  # 256 bytes to 10 MB
     return f"{timestamp} | {blob_path} | {permissions} | {file_size} bytes"
 
-def random_foo(source_type: DataSourceType) -> Foo:
+# Generate source models (for connectors)
+def random_blob_source() -> BlobSource:
     base_tags = [random_string(4) for _ in range(random.randint(1, 3))]
+    tags = base_tags + ["Blob"]
 
-    if source_type == DataSourceType.Blob:
-        tags = base_tags + ["Blob"]
-        large_text = generate_blob_log_line()
-    elif source_type == DataSourceType.Logs:
-        tags = base_tags + ["Logs"]
-        large_text = generate_log_line()
-    else:
-        tags = base_tags
-        large_text = random_string(100)
-
-    return Foo(
+    return BlobSource(
         id=str(uuid.uuid4()),
         name=random_string(8),
         description=random_string(20) if random.random() > 0.5 else None,
-        status=random_enum(FooStatus),
+        status=random_blob_enum(BlobStatus),
         priority=random.randint(0, 9),
         is_active=random.random() > 0.5,
         tags=tags,
         score=round(random.random() * 100, 2),
-        large_text=large_text,
-        # created_at=random_date(),
-        # updated_at=random_date()
+        large_text=generate_blob_log_line(),
+    )
+
+def random_log_source() -> LogSource:
+    base_tags = [random_string(4) for _ in range(random.randint(1, 3))]
+    tags = base_tags + ["Logs"]
+
+    return LogSource(
+        id=str(uuid.uuid4()),
+        name=random_string(8),
+        description=random_string(20) if random.random() > 0.5 else None,
+        status=random_log_enum(LogStatus),
+        priority=random.randint(0, 9),
+        is_active=random.random() > 0.5,
+        tags=tags,
+        score=round(random.random() * 100, 2),
+        large_text=generate_log_line(),
     )

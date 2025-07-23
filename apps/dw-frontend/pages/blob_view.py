@@ -83,7 +83,7 @@ def show():
 
         # Status line showing count of retrieved items and offset tracking
         item_count = len(st.session_state[dlq_messages_key])
-        highest_offset_key = "dlq_highest_offset_extract-s3"
+        highest_offset_key = "dlq_highest_offset_extract-blob"
         current_highest_offset = st.session_state.get(highest_offset_key, -1)
         st.info(f"📊 Retrieved {item_count} new DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter (showing messages after offset {current_highest_offset})")
         

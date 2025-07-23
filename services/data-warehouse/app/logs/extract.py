@@ -1,4 +1,4 @@
-from app.ingest.models import Foo
+from app.ingest.models import LogSource
 from app.utils.simulator import simulate_failures
 from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.logs_connector import LogsConnectorConfig
@@ -24,7 +24,7 @@ def run_task(input: LogsExtractParams) -> None:
     cli_log(CliLogData(action="LogsWorkflow", message="Running Logs task...", message_type="Info"))
 
     # Create a connector to extract data from Logs
-    connector = ConnectorFactory[Foo].create(
+    connector = ConnectorFactory[LogSource].create(
         ConnectorType.Logs,
         LogsConnectorConfig(batch_size=input.batch_size)
     )
@@ -50,7 +50,7 @@ def run_task(input: LogsExtractParams) -> None:
     
     try:
         response = requests.post(
-            "http://localhost:4200/ingest/Foo",
+            "http://localhost:4200/ingest/LogSource",
             json=data_dicts,
             headers={"Content-Type": "application/json"}
         )
