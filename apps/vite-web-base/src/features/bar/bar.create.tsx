@@ -30,7 +30,6 @@ interface Foo {
   status: string;
 }
 
-// API functions
 const createBar = async (data: CreateBar): Promise<Bar> => {
   const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/bar`, {
@@ -171,7 +170,10 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
               step="0.01"
               value={formData.value}
               onChange={(e) =>
-                setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })
+                setFormData({
+                  ...formData,
+                  value: parseFloat(e.target.value) || 0,
+                })
               }
               required
             />
@@ -212,7 +214,11 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
 
           {/* Submit Buttons */}
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !formData.foo_id}>

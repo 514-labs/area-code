@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -23,20 +22,38 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { BarWithCDC } from "@workspace/models";
+import { BarWithCDC, GetBarsWithCDCResponse } from "@workspace/models/bar";
 import { getAnalyticalConsumptionApiBase } from "@/env-vars";
 import { format } from "date-fns";
 import { NumericFormat } from "react-number-format";
 import { createCDCColumns } from "../cdc/cdc-utils";
+import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
+import { Checkbox } from "@workspace/ui/components/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table";
+import { ReactNode, useState } from "react";
 
-// Add a sortable header component
 const SortableHeader = ({
   column,
   children,
   className,
 }: {
   column: Column<BarWithCDC, unknown>;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) => {
   if (!column.getCanSort()) {
@@ -66,43 +83,13 @@ const SortableHeader = ({
   );
 };
 
-import { Badge } from "@workspace/ui/components/badge";
-import { Button } from "@workspace/ui/components/button";
-import { Checkbox } from "@workspace/ui/components/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@workspace/ui/components/table";
-
-interface BarResponse {
-  data: BarWithCDC[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-  queryTime: number;
-}
-
 const fetchBars = async (
   endpoint: string,
   limit: number,
   offset: number,
   sortBy?: string,
   sortOrder?: string
-): Promise<BarResponse> => {
+): Promise<GetBarsWithCDCResponse> => {
   const params = new URLSearchParams({
     limit: limit.toString(),
     offset: offset.toString(),
@@ -233,15 +220,12 @@ export default function BarAnalyticalDataTable({
   disableCache?: boolean;
   selectableRows?: boolean;
 }) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [queryTime, setQueryTime] = React.useState<number>(0);
-  const [pagination, setPagination] = React.useState({
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [queryTime, setQueryTime] = useState<number>(0);
+  const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
   });

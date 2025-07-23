@@ -7,16 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-
 import { Button } from "@workspace/ui/components/button";
 import { IconChartBar, IconClock, IconRefresh } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
-
-interface AverageValueResponse {
-  averageValue: number;
-  queryTime: number;
-  count: number;
-}
+import { GetBarsAverageValueResponse } from "@workspace/models/bar";
 
 interface BarAverageValueProps {
   apiEndpoint: string;
@@ -26,7 +20,7 @@ interface BarAverageValueProps {
 // API function to fetch average value
 const fetchAverageValue = async (
   apiEndpoint: string
-): Promise<AverageValueResponse> => {
+): Promise<GetBarsAverageValueResponse> => {
   const response = await fetch(apiEndpoint);
   if (!response.ok) throw new Error("Failed to fetch average value");
   return response.json();

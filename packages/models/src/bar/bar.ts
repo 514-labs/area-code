@@ -1,4 +1,5 @@
-import { CDC } from "./cdc";
+import { CDC } from "../cdc";
+import { Foo } from "../foo";
 
 // Bar data model interfaces
 export interface Bar {
@@ -12,9 +13,12 @@ export interface Bar {
   updated_at: Date;
 }
 
-// Bar with CDC metadata for analytical pipelines
-export interface BarWithCDC extends Bar, CDC {}
+export type BarWithFoo = Bar & {
+  foo: Foo;
+};
 
+// Bar with CDC metadata for analytical pipelines
+export type BarWithCDC = Bar & CDC;
 
 // Interface for creating new bar (without generated fields)
 export interface CreateBar {
@@ -34,4 +38,4 @@ export interface UpdateBar {
   notes?: string | null;
   is_enabled?: boolean;
   updated_at?: Date;
-} 
+}

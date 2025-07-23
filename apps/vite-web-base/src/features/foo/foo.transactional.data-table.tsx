@@ -28,7 +28,7 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { Foo, FooStatus } from "@workspace/models";
+import { Foo, FooStatus, GetFoosResponse } from "@workspace/models/foo";
 import { getTransactionApiBase } from "@/env-vars";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
@@ -312,18 +312,6 @@ const columns: ColumnDef<Foo>[] = [
   },
 ];
 
-// API Response Types
-interface FooResponse {
-  data: Foo[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-  queryTime: number;
-}
-
 // API Functions
 const fetchFoos = async (
   fetchApiEndpoint: string,
@@ -331,7 +319,7 @@ const fetchFoos = async (
   offset: number = 0,
   sortBy?: string,
   sortOrder?: "asc" | "desc"
-): Promise<FooResponse> => {
+): Promise<GetFoosResponse> => {
   const params = new URLSearchParams({
     limit: limit.toString(),
     offset: offset.toString(),

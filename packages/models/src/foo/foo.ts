@@ -1,4 +1,4 @@
-import { CDC } from "./cdc";
+import { CDC } from "../cdc";
 
 // Status enum for PostgreSQL enum type
 export enum FooStatus {
@@ -25,9 +25,7 @@ export interface Foo {
 }
 
 // Foo with CDC metadata for analytical pipelines
-export interface FooWithCDC extends Foo, CDC {}
-
-
+export type FooWithCDC = Foo & CDC;
 
 // Interface for creating new foo (omit generated/auto fields)
 export interface CreateFoo extends Pick<Foo, "name"> {

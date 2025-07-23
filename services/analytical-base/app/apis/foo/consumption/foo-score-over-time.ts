@@ -1,34 +1,21 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { FooPipeline } from "../../index";
-
-// Define query parameters interface
-interface ScoreOverTimeParams {
-  days?: number; // Number of days to look back (default: 90)
-}
-
-// Interface for chart data point
-interface ChartDataPoint {
-  date: string;
-  averageScore: number;
-  totalCount: number;
-}
-
-// Interface for API response
-interface ChartDataResponse {
-  data: ChartDataPoint[];
-  queryTime?: number;
-}
+import { FooPipeline } from "../../../index";
+import {
+  FoosScoreOverTimeDataPoint,
+  GetFoosScoreOverTimeParams,
+  GetFoosScoreOverTimeResponse,
+} from "@workspace/models/foo";
 
 // Score over time consumption API
 export const scoreOverTimeApi = new ConsumptionApi<
-  ScoreOverTimeParams,
-  ChartDataResponse
+  GetFoosScoreOverTimeParams,
+  GetFoosScoreOverTimeResponse
 >(
   "foo-score-over-time",
   async (
-    { days = 90 }: ScoreOverTimeParams,
+    { days = 90 }: GetFoosScoreOverTimeParams,
     { client, sql }
-  ): Promise<ChartDataResponse> => {
+  ): Promise<GetFoosScoreOverTimeResponse> => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
@@ -69,7 +56,7 @@ export const scoreOverTimeApi = new ConsumptionApi<
     const queryTime = Date.now() - startTime;
 
     // Fill in missing dates with zero values
-    const filledData: ChartDataPoint[] = [];
+    const filledData: FoosScoreOverTimeDataPoint[] = [];
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {

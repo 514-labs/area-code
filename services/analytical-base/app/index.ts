@@ -26,7 +26,9 @@
 
 export * from "./pipelines/eventsPipeline";
 export * from "./views/foo";
-export * from "./apis/FooConsumptionApi";
-export * from "./apis/BarConsumptionApi";
-export * from "./apis/FooCurrentStateApi";
-export * from "./apis/foo/score-over-time";
+export * from "./apis/bar/consumption/bar-average-value";
+export * from "./apis/bar/consumption/bar-base";
+export * from "./apis/foo/consumption/foo-average-score";
+export * from "./apis/foo/consumption/foo-base";
+export * from "./apis/foo/consumption/foo-current-state";
+export * from "./apis/foo/consumption/foo-score-over-time";

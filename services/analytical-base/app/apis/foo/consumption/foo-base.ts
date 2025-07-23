@@ -1,34 +1,17 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { Foo, FooWithCDC } from "@workspace/models";
-import { FooPipeline } from "../../index";
-
-// Define query parameters interface
-interface QueryParams {
-  limit?: number;
-  offset?: number;
-  sortBy?: keyof Foo | "cdc_operation" | "cdc_timestamp";
-  sortOrder?: "ASC" | "DESC" | "asc" | "desc";
-}
-
-// Use FooWithCDC but replace enum with string for OpenAPI compatibility
-type FooForConsumption = Omit<FooWithCDC, "status"> & {
-  status: string;
-};
-
-// Interface for API response with pagination (matching transactional API)
-interface FooResponse {
-  data: FooForConsumption[];
-  pagination: {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  };
-  queryTime: number;
-}
+import {
+  Foo,
+  FooWithCDCForConsumption,
+  GetFoosWithCDCParams,
+  GetFoosWithCDCForConsumptionResponse,
+} from "@workspace/models/foo";
+import { FooPipeline } from "../../../index";
 
 // Consumption API following Moose documentation pattern
-export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
+export const fooConsumptionApi = new ConsumptionApi<
+  GetFoosWithCDCParams,
+  GetFoosWithCDCForConsumptionResponse
+>(
   "foo",
   async (
     {
@@ -36,7 +19,7 @@ export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
       offset = 0,
       sortBy = "cdc_timestamp",
       sortOrder = "DESC",
-    }: QueryParams,
+    }: GetFoosWithCDCParams,
     { client, sql }
   ) => {
     // Convert sortOrder to uppercase for consistency
@@ -69,8 +52,9 @@ export const fooConsumptionApi = new ConsumptionApi<QueryParams, FooResponse>(
       OFFSET ${offset}
     `;
 
-    const resultSet = await client.query.execute<FooForConsumption>(query);
-    const results = (await resultSet.json()) as FooForConsumption[];
+    const resultSet =
+      await client.query.execute<FooWithCDCForConsumption>(query);
+    const results = (await resultSet.json()) as FooWithCDCForConsumption[];
 
     const queryTime = Date.now() - startTime;
 
