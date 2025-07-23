@@ -4,15 +4,13 @@ A high-performance data warehouse service built with **Moose** for real-time dat
 
 ![dw-logo.png](dw-logo.png)
 
-## Run
-
-### Prerequisites
+## Prerequisites
 
 - Python 3.12+
 - Node.js 20+
 - Docker 2.23.1+
 
-### Quick Start
+## Quick Start
 
 (If you haven't already, navigate here `cd services/data-warehouse`)
 
@@ -25,16 +23,6 @@ A high-performance data warehouse service built with **Moose** for real-time dat
    - Start the data warehouse service (moose app)
    - Start the data warehouse frontend (streamlit in apps/dw-frontend) and open it in your browser
 
-2. **Other Commands**:
-   ```bash
-   ./setup.sh help
-   ```
-
-## Installing Aurora AI Support
-
-Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
-
-For setup instructions, see [Aurora docs](https://docs.fiveonefour.com/aurora).
 
 ## Presenter - walkthrough docs
 
@@ -65,3 +53,36 @@ services/data-warehouse/
 ├── requirements.txt            # Python dependencies
 └── setup.py                    # Package configuration
 ```
+
+
+## Other Commands:
+
+   ```bash
+   ./setup.sh help
+   ```
+
+   ```bash
+   ./setup.sh stop      # Stop service 
+   ```
+
+   ```bash
+   ./setup.sh start     # Start service (not required after initial setup)
+   ```
+
+     ```bash
+   ./setup.sh resetn    # Full reset 
+   ```
+
+   ```bash
+   ./setup.sh status    # Check status
+   ```
+
+   ```bash
+   ./setup.sh env:check
+   ```
+
+## Installing Aurora AI Support
+
+Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
+
+For setup instructions, see [Aurora docs](https://docs.fiveonefour.com/aurora).
