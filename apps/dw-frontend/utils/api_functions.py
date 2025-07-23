@@ -147,37 +147,23 @@ def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=
         return pd.DataFrame()
 
 def fetch_event_analytics(hours=24):
-    """Fetch event analytics for dashboard"""
-    api_url = f"{CONSUMPTION_API_BASE}/getEventAnalytics?hours={hours}"
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        st.error(f"Failed to fetch event analytics: {e}")
-        return {}
+    """Fetch event analytics for dashboard - API removed, returning empty data"""
+    # Note: The getEventAnalytics API was removed. Returning empty structure to prevent errors.
+    return {
+        "event_counts": [
+            {"event_name": "pageview", "count": 0},
+            {"event_name": "signup", "count": 0},
+            {"event_name": "click", "count": 0},
+            {"event_name": "purchase", "count": 0}
+        ],
+        "user_metrics": {
+            "unique_users": 0,
+            "unique_sessions": 0,
+            "total_events": 0
+        }
+    }
 
-def fetch_event_timeseries(days=7, granularity="hour"):
-    """Fetch event time series data for charts"""
-    api_url = f"{CONSUMPTION_API_BASE}/getEventTimeseries?days={days}&granularity={granularity}"
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        st.error(f"Failed to fetch event timeseries: {e}")
-        return {}
 
-def fetch_user_journey(distinct_id, limit=50):
-    """Fetch user journey data for behavior analysis"""
-    api_url = f"{CONSUMPTION_API_BASE}/getUserJourney?distinct_id={distinct_id}&limit={limit}"
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        st.error(f"Failed to fetch user journey: {e}")
-        return {}
 
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
