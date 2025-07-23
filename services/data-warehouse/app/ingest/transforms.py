@@ -11,37 +11,35 @@ from typing import Optional
 
 # Transform BlobSource to Blob, adding timestamp and handling failures
 def blob_source_to_blob(blob_source: BlobSource) -> Blob:
-    if "fail" in blob_source.tags:
-        raise ValueError(f"Transform failed for blob {blob_source.id}: Item marked as failed")
+    # Check for failure simulation
+    if blob_source.file_name.startswith("[DLQ]"):
+        raise ValueError(f"Transform failed for blob {blob_source.id}: File marked as failed")
 
     return Blob(
         id=blob_source.id,
-        name=blob_source.name,
-        description=blob_source.description,
-        status=blob_source.status,
-        priority=blob_source.priority,
-        is_active=blob_source.is_active,
-        tags=blob_source.tags,
-        score=blob_source.score,
-        large_text=blob_source.large_text,
+        bucket_name=blob_source.bucket_name,
+        file_path=blob_source.file_path,
+        file_name=blob_source.file_name,
+        file_size=blob_source.file_size,
+        permissions=blob_source.permissions,
+        content_type=blob_source.content_type,
+        ingested_at=blob_source.ingested_at,
         transform_timestamp=datetime.now().isoformat()
     )
 
 # Transform LogSource to Log, adding timestamp and handling failures
 def log_source_to_log(log_source: LogSource) -> Log:
-    if "fail" in log_source.tags:
-        raise ValueError(f"Transform failed for log {log_source.id}: Item marked as failed")
+    # Check for failure simulation
+    if log_source.message.startswith("[DLQ]"):
+        raise ValueError(f"Transform failed for log {log_source.id}: Log marked as failed")
 
     return Log(
         id=log_source.id,
-        name=log_source.name,
-        description=log_source.description,
-        status=log_source.status,
-        priority=log_source.priority,
-        is_active=log_source.is_active,
-        tags=log_source.tags,
-        score=log_source.score,
-        large_text=log_source.large_text,
+        timestamp=log_source.timestamp,
+        level=log_source.level,
+        message=log_source.message,
+        source=log_source.source,
+        trace_id=log_source.trace_id,
         transform_timestamp=datetime.now().isoformat()
     )
 
@@ -67,19 +65,20 @@ def invalid_blob_source_to_blob(dead_letter: DeadLetterModel[BlobSource]) -> Opt
     try:
         original_blob_source = dead_letter.as_typed()
 
-        if "Item marked as failed" in dead_letter.error_message and "fail" in original_blob_source.tags:
-            original_blob_source.tags.remove("fail")
+        # Fix the failure condition - change [DLQ] to [RECOVERED]
+        corrected_file_name = original_blob_source.file_name
+        if corrected_file_name.startswith("[DLQ]"):
+            corrected_file_name = corrected_file_name.replace("[DLQ]", "[RECOVERED]", 1)
 
         return Blob(
             id=original_blob_source.id,
-            name=original_blob_source.name,
-            description=original_blob_source.description,
-            status=original_blob_source.status,
-            priority=original_blob_source.priority,
-            is_active=original_blob_source.is_active,
-            tags=original_blob_source.tags,
-            score=original_blob_source.score,
-            large_text=original_blob_source.large_text,
+            bucket_name=original_blob_source.bucket_name,
+            file_path=original_blob_source.file_path,
+            file_name=corrected_file_name,
+            file_size=original_blob_source.file_size,
+            permissions=original_blob_source.permissions,
+            content_type=original_blob_source.content_type,
+            ingested_at=original_blob_source.ingested_at,
             transform_timestamp=datetime.now().isoformat()
         )
     except Exception as error:
@@ -91,19 +90,18 @@ def invalid_log_source_to_log(dead_letter: DeadLetterModel[LogSource]) -> Option
     try:
         original_log_source = dead_letter.as_typed()
 
-        if "Item marked as failed" in dead_letter.error_message and "fail" in original_log_source.tags:
-            original_log_source.tags.remove("fail")
+        # Fix the failure condition - change [DLQ] to [RECOVERED]
+        corrected_message = original_log_source.message
+        if corrected_message.startswith("[DLQ]"):
+            corrected_message = corrected_message.replace("[DLQ]", "[RECOVERED]", 1)
 
         return Log(
             id=original_log_source.id,
-            name=original_log_source.name,
-            description=original_log_source.description,
-            status=original_log_source.status,
-            priority=original_log_source.priority,
-            is_active=original_log_source.is_active,
-            tags=original_log_source.tags,
-            score=original_log_source.score,
-            large_text=original_log_source.large_text,
+            timestamp=original_log_source.timestamp,
+            level=original_log_source.level,
+            message=corrected_message,
+            source=original_log_source.source,
+            trace_id=original_log_source.trace_id,
             transform_timestamp=datetime.now().isoformat()
         )
     except Exception as error:

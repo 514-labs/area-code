@@ -8,7 +8,7 @@ from utils.api_functions import fetch_data, trigger_extract
 from utils.constants import CONSUMPTION_API_BASE
 
 def show():
-    connector_counts = {"Blob": 0, "Logs": 0}
+    connector_counts = {"Blob": 0, "Log": 0}
 
     col1, col2 = st.columns([5, 1])
     with col1:
@@ -25,25 +25,17 @@ def show():
                     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
                     time.sleep(2)
 
-    # Fetch all data (no tag filter)
+    # Fetch all data (no tag filter) - this will return the unified normalized view
     df = fetch_data("All")
 
     if not df.empty:
         # --- Blob vs Logs breakdown ---
-        def detect_source(tags):
-            if isinstance(tags, list):
-                if any("blob" in t.lower() for t in tags):
-                    return "Blob"
-                if any("logs" in t.lower() for t in tags):
-                    return "Logs"
-            return "Other"
-        
-        df["Source"] = df["tags"].apply(detect_source)
-        actual_counts = df["Source"].value_counts().to_dict()
-        
-        # Update counts with actual data
-        for connector, count in actual_counts.items():
-            if connector in connector_counts:
+        # With the new unified view, we can directly use the Type column
+        if "Type" in df.columns:
+            actual_counts = df["Type"].value_counts().to_dict()
+
+            # Update counts with actual data
+            for connector, count in actual_counts.items():
                 connector_counts[connector] = count
     else:
         st.session_state["extract_status_msg"] = "No data available for analytics."
@@ -56,18 +48,15 @@ def show():
             ui.metric_card(
                 title=connector,
                 content=str(count),
-                description=f"Total entities from {connector} connector"
+                description=f"Total entities from {connector.lower()} connector",
+                key=f"analytics_metric_{connector.lower()}"
             )
-        
-    # --- Items per minute chart ---
-    if not df.empty and "Processed On" in df.columns:
-        df["Processed On (minute)"] = pd.to_datetime(df["Processed On"], errors="coerce").dt.floor("min")
-        per_min = df.groupby(["Processed On (minute)", "Source"]).size().reset_index(name="Count")
-        per_min_pivot = per_min.pivot(index="Processed On (minute)", columns="Source", values="Count").fillna(0)
-        per_min_pivot = per_min_pivot.sort_index()
-        
-        st.subheader("Total Items Per Minute by Connector")
-        st.bar_chart(per_min_pivot)
+
+    # Data summary table
+    st.subheader("Recent Data Summary")
+    if not df.empty:
+        # Show a sample of recent data
+        recent_data = df.head(10)
+        st.dataframe(recent_data, use_container_width=True)
     else:
-        st.subheader("Total Items Per Minute by Connector")
-        st.write("No data available for per-minute chart.")
+        st.write("No recent data available.")

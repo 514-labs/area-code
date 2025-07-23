@@ -8,6 +8,44 @@ import streamlit_shadcn_ui as ui
 
 from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
+def normalize_for_display(blob_df, log_df):
+    """Convert blob and log data to a unified display format for 'All' view"""
+    combined_rows = []
+
+    # Process blob data
+    if not blob_df.empty:
+        for _, row in blob_df.iterrows():
+            combined_rows.append({
+                "ID": row["id"],
+                "Type": "Blob",
+                "Title": row["file_name"],
+                "Details": f"{row['bucket_name']}{row['file_path']}{row['file_name']}",
+                "Info": f"{row['file_size']:,} bytes",
+                "Metadata": f"Permissions: {', '.join(row['permissions'])}",
+                "timestamp": row["transform_timestamp"] if "transform_timestamp" in row else row.get("ingested_at", "")
+            })
+
+    # Process log data
+    if not log_df.empty:
+        for _, row in log_df.iterrows():
+            combined_rows.append({
+                "ID": row["id"],
+                "Type": "Log",
+                "Title": row["level"],
+                "Details": row["message"][:100] + "..." if len(row["message"]) > 100 else row["message"],
+                "Info": row.get("source", "Unknown"),
+                "Metadata": f"Trace: {row.get('trace_id', 'N/A')}",
+                "timestamp": row["transform_timestamp"] if "transform_timestamp" in row else row.get("timestamp", "")
+            })
+
+    # Create unified DataFrame
+    if combined_rows:
+        df = pd.DataFrame(combined_rows)
+        df = df[["ID", "Type", "Title", "Details", "Info", "Metadata"]]
+        return df
+    else:
+        return pd.DataFrame()
+
 def fetch_blob_data(tag="All"):
     """Fetch blob data from the getBlobs API"""
     api_url = f"{CONSUMPTION_API_BASE}/getBlobs"
@@ -20,12 +58,6 @@ def fetch_blob_data(tag="All"):
         data = response.json()
         items = data.get("items", [])
         df = pd.DataFrame(items)
-        if not df.empty and "transform_timestamp" in df.columns:
-            df["Processed On"] = pd.to_datetime(df["transform_timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
-            cols = list(df.columns)
-            cols.insert(1, cols.pop(cols.index("Processed On")))
-            df = df[cols]
-            df = df.drop(columns=["transform_timestamp"])
         return df
     except Exception as e:
         st.error(f"Failed to fetch blob data from API: {e}")
@@ -43,12 +75,6 @@ def fetch_log_data(tag="All"):
         data = response.json()
         items = data.get("items", [])
         df = pd.DataFrame(items)
-        if not df.empty and "transform_timestamp" in df.columns:
-            df["Processed On"] = pd.to_datetime(df["transform_timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
-            cols = list(df.columns)
-            cols.insert(1, cols.pop(cols.index("Processed On")))
-            df = df[cols]
-            df = df.drop(columns=["transform_timestamp"])
         return df
     except Exception as e:
         st.error(f"Failed to fetch log data from API: {e}")
@@ -61,25 +87,17 @@ def fetch_data(tag):
     elif tag == "Logs":
         return fetch_log_data(tag)
     elif tag == "All":
-        # Combine both blob and log data
+        # Get both types of data and create unified view
         blob_df = fetch_blob_data()
         log_df = fetch_log_data()
-
-        if not blob_df.empty and not log_df.empty:
-            return pd.concat([blob_df, log_df], ignore_index=True)
-        elif not blob_df.empty:
-            return blob_df
-        elif not log_df.empty:
-            return log_df
-        else:
-            return pd.DataFrame()
+        return normalize_for_display(blob_df, log_df)
     else:
         # For any other tag, try both endpoints and filter
         blob_df = fetch_blob_data(tag)
         log_df = fetch_log_data(tag)
 
         if not blob_df.empty and not log_df.empty:
-            return pd.concat([blob_df, log_df], ignore_index=True)
+            return normalize_for_display(blob_df, log_df)
         elif not blob_df.empty:
             return blob_df
         elif not log_df.empty:
@@ -236,14 +254,17 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                         # Parse the stringified JSON message
                                         parsed_message = json.loads(item["message"])
                                         
-                                        # Check if we should filter by tags
-                                        if filter_tag:
-                                            original_record = parsed_message.get("original_record", {})
-                                            tags = original_record.get("tags", [])
-                                            
-                                            # Only include messages that have the matching tag
-                                            if not any(filter_tag.lower() in str(tag).lower() for tag in tags):
-                                                continue
+                                        # For new structured data, filter based on model type
+                                        original_record = parsed_message.get("original_record", {})
+
+                                        # Check if this is the type we want to filter for
+                                        is_blob = "bucket_name" in original_record
+                                        is_log = "level" in original_record
+
+                                        if filter_tag == "Blob" and not is_blob:
+                                            continue
+                                        elif filter_tag == "Logs" and not is_log:
+                                            continue
                                         
                                         filtered_messages.append((i, item, parsed_message))
 
@@ -261,19 +282,30 @@ def render_dlq_controls(endpoint_path, refresh_key):
                                     # Extract key information for table
                                     original_record = parsed_message.get("original_record", {})
                                     
-                                    row = {
-                                        "#": display_idx + 1,
-                                        "Partition": item.get('partition', 'N/A'),
-                                        "Offset": item.get('offset', 'N/A'),
-                                        "Error Message": parsed_message.get("error_message", "Unknown error"),
-                                        "Error Type": parsed_message.get("error_type", "Unknown"),
-                                        "Failed At": parsed_message.get("failed_at", "Unknown"),
-                                        "Record ID": original_record.get("id", "Unknown"),
-                                        "Record Name": original_record.get("name", "Unknown"),
-                                        "Status": original_record.get("status", "Unknown"),
-                                        "Tags": ", ".join(original_record.get("tags", [])) if original_record.get("tags") else "None",
-                                        "Score": original_record.get("score", "Unknown")
-                                    }
+                                    # Different display based on type
+                                    if "bucket_name" in original_record:  # Blob
+                                        row = {
+                                            "Partition": item.get('partition', 'N/A'),
+                                            "Offset": item.get('offset', 'N/A'),
+                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                            "Record ID": original_record.get("id", "Unknown"),
+                                            "File Name": original_record.get("file_name", "Unknown"),
+                                            "Bucket": original_record.get("bucket_name", "Unknown"),
+                                            "File Size": original_record.get("file_size", "Unknown")
+                                        }
+                                    else:  # Log
+                                        row = {
+                                            "Partition": item.get('partition', 'N/A'),
+                                            "Offset": item.get('offset', 'N/A'),
+                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                            "Record ID": original_record.get("id", "Unknown"),
+                                            "Level": original_record.get("level", "Unknown"),
+                                            "Source": original_record.get("source", "Unknown"),
+                                            "Message": (original_record.get("message", "Unknown")[:50] + "...") if len(original_record.get("message", "")) > 50 else original_record.get("message", "Unknown")
+                                        }
+
                                     table_data.append(row)
                                     raw_json_data.append(parsed_message)
 
