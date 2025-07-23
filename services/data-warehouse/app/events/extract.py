@@ -1,4 +1,4 @@
-from app.ingest.models import Foo
+from app.ingest.models import EventSource
 from app.utils.simulator import simulate_failures
 from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.events_connector import EventsConnectorConfig
@@ -24,7 +24,7 @@ def run_task(input: EventsExtractParams) -> None:
     cli_log(CliLogData(action="EventsWorkflow", message="Running Events task...", message_type="Info"))
 
     # Create a connector to extract data from Events
-    connector = ConnectorFactory[Foo].create(
+    connector = ConnectorFactory.create(
         ConnectorType.Events,
         EventsConnectorConfig(batch_size=input.batch_size)
     )
@@ -46,12 +46,11 @@ def run_task(input: EventsExtractParams) -> None:
             message_type="Info"
         ))
 
-    data_dicts = [item.model_dump() for item in data]
-    
+    # Convert dict data to JSON for posting
     try:
         response = requests.post(
-            "http://localhost:4200/ingest/Foo",
-            json=data_dicts,
+            "http://localhost:4200/ingest/EventSource",
+            json=data,
             headers={"Content-Type": "application/json"}
         )
         response.raise_for_status()

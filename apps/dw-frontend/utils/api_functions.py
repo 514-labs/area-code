@@ -124,6 +124,61 @@ def trigger_all_extracts():
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
 
+def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=100):
+    """Fetch events data with filtering options"""
+    params = {"limit": limit}
+    if event_name:
+        params["event_name"] = event_name  
+    if project_id:
+        params["project_id"] = project_id
+    if distinct_id:
+        params["distinct_id"] = distinct_id
+        
+    query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+    api_url = f"{CONSUMPTION_API_BASE}/getEvents?{query_string}"
+    
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        data = response.json()
+        return pd.DataFrame(data.get("items", []))
+    except Exception as e:
+        st.error(f"Failed to fetch events data: {e}")
+        return pd.DataFrame()
+
+def fetch_event_analytics(hours=24):
+    """Fetch event analytics for dashboard"""
+    api_url = f"{CONSUMPTION_API_BASE}/getEventAnalytics?hours={hours}"
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        st.error(f"Failed to fetch event analytics: {e}")
+        return {}
+
+def fetch_event_timeseries(days=7, granularity="hour"):
+    """Fetch event time series data for charts"""
+    api_url = f"{CONSUMPTION_API_BASE}/getEventTimeseries?days={days}&granularity={granularity}"
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        st.error(f"Failed to fetch event timeseries: {e}")
+        return {}
+
+def fetch_user_journey(distinct_id, limit=50):
+    """Fetch user journey data for behavior analysis"""
+    api_url = f"{CONSUMPTION_API_BASE}/getUserJourney?distinct_id={distinct_id}&limit={limit}"
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        st.error(f"Failed to fetch user journey: {e}")
+        return {}
+
 def handle_refresh_and_fetch(refresh_key, tag, trigger_func=None, trigger_label=None, button_label=None):
     if refresh_key not in st.session_state:
         st.session_state[refresh_key] = False

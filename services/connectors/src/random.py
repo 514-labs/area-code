@@ -278,6 +278,10 @@ def random_event_source():
     
     ingested_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     
+    # Serialize properties as JSON string for ClickHouse compatibility
+    import json
+    properties_json = json.dumps(properties)
+    
     return {
         "id": str(uuid.uuid4()),
         "event_name": event_name,
@@ -285,7 +289,7 @@ def random_event_source():
         "distinct_id": distinct_id,
         "session_id": session_id,
         "project_id": project_id,
-        "properties": properties,
+        "properties": properties_json,
         "ip_address": ip_address,
         "user_agent": user_agent,
         "ingested_at": ingested_at

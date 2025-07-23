@@ -14,6 +14,29 @@ class LogLevel(str, Enum):
     ERROR = "ERROR"
     WARN = "WARN"
 
+class EventType(str, Enum):
+    PAGEVIEW = "pageview"
+    SIGNUP = "signup"
+    LOGIN = "login"
+    LOGOUT = "logout"
+    CLICK = "click"
+    PURCHASE = "purchase"
+    ADD_TO_CART = "add_to_cart"
+    REMOVE_FROM_CART = "remove_from_cart"
+    CHECKOUT_STARTED = "checkout_started"
+    CHECKOUT_COMPLETED = "checkout_completed"
+    FORM_SUBMITTED = "form_submitted"
+    VIDEO_PLAYED = "video_played"
+    VIDEO_PAUSED = "video_paused"
+    SEARCH = "search"
+    SHARE = "share"
+    DOWNLOAD = "download"
+    FEATURE_USED = "feature_used"
+    EXPERIMENT_VIEWED = "experiment_viewed"
+    ERROR_OCCURRED = "error_occurred"
+    SESSION_STARTED = "session_started"
+    SESSION_ENDED = "session_ended"
+
 # Source models - raw data from connectors
 class BlobSource(BaseModel):
     id: Key[str]
@@ -32,6 +55,18 @@ class LogSource(BaseModel):
     message: str
     source: Optional[str]  # service/component name
     trace_id: Optional[str]
+
+class EventSource(BaseModel):
+    id: Key[str]
+    event_name: EventType
+    timestamp: str  # ISO8601 format
+    distinct_id: str  # User identifier (identified or anonymous)
+    session_id: Optional[str]
+    project_id: str
+    properties: Optional[str]  # JSON string for ClickHouse compatibility
+    ip_address: Optional[str]
+    user_agent: Optional[str]
+    ingested_at: str
 
 # Final models - processed data with transformations
 class Blob(BaseModel):
@@ -54,6 +89,19 @@ class Log(BaseModel):
     trace_id: Optional[str]
     transform_timestamp: str
 
+class Event(BaseModel):
+    id: Key[str]
+    event_name: EventType
+    timestamp: str  # ISO8601 format
+    distinct_id: str  # User identifier (identified or anonymous)
+    session_id: Optional[str]
+    project_id: str
+    properties: Optional[str]  # JSON string for ClickHouse compatibility
+    ip_address: Optional[str]
+    user_agent: Optional[str]
+    ingested_at: str
+    transform_timestamp: str
+
 # Source ingest pipelines
 blobSourceModel = IngestPipeline[BlobSource]("BlobSource", IngestPipelineConfig(
     ingest=True,
@@ -69,6 +117,13 @@ logSourceModel = IngestPipeline[LogSource]("LogSource", IngestPipelineConfig(
     dead_letter_queue=True
 ))
 
+eventSourceModel = IngestPipeline[EventSource]("EventSource", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=False,
+    dead_letter_queue=True
+))
+
 # Final processed pipelines
 blobModel = IngestPipeline[Blob]("Blob", IngestPipelineConfig(
     ingest=True,
@@ -78,6 +133,13 @@ blobModel = IngestPipeline[Blob]("Blob", IngestPipelineConfig(
 ))
 
 logModel = IngestPipeline[Log]("Log", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=True,
+    dead_letter_queue=True
+))
+
+eventModel = IngestPipeline[Event]("Event", IngestPipelineConfig(
     ingest=True,
     stream=True,
     table=True,

@@ -4,11 +4,16 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, render_workflows_table
+from utils.api_functions import (
+    fetch_events_data, fetch_event_analytics, trigger_extract, 
+    render_dlq_controls, render_workflows_table
+)
 from utils.constants import CONSUMPTION_API_BASE
 
 def show():
-    event_counts = {"pageview": 0, "signup": 0, "click": 0, "purchase": 0}
+    # Fetch analytics data for metrics
+    analytics = fetch_event_analytics(hours=24)
+    event_counts = {"pageview": 0, "signup": 0, "click": 0, "purchase": 0, "other": 0}
 
     col1, col2 = st.columns([5, 1])
     with col1:
@@ -26,36 +31,46 @@ def show():
                 st.session_state["refresh_events"] = True
                 st.rerun()
     
-    df = handle_refresh_and_fetch(
-        "refresh_events",
-        "Events",
-        trigger_func=lambda: trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events"),
-        trigger_label="Events",
-        button_label=None  # We'll use ShadCN button below
+    # Fetch events data using new structured API
+    if st.session_state.get("refresh_events", False):
+        st.session_state["refresh_events"] = False
+    
+    # Add filtering controls
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        event_filter = st.selectbox("Filter by Event Type", ["All", "pageview", "signup", "click", "purchase", "login"])
+    with col2:
+        project_filter = st.selectbox("Filter by Project", ["All", "proj_web", "proj_mobile", "proj_api", "proj_admin"])
+    
+    # Fetch filtered data
+    df = fetch_events_data(
+        event_name=event_filter if event_filter != "All" else None,
+        project_id=project_filter if project_filter != "All" else None,
+        limit=500
     )
 
-    # Parse Events data and extract event types
-    parsed = None
-    if not df.empty and "large_text" in df.columns:
-        parsed = df["large_text"].str.split("|", n=5, expand=True)
-        parsed.columns = ["Event Name", "Timestamp", "User ID", "Session ID", "Project ID", "Properties"]
-        parsed = parsed.apply(lambda col: col.str.strip())
-        if "Processed On" in df.columns:
-            parsed.insert(1, "Processed On", df["Processed On"])
-
-        event_names = parsed["Event Name"].fillna("")
-        actual_counts = event_names.value_counts().to_dict()
-
-        # Update counts with actual data, focusing on key event types
-        for event_name, count in actual_counts.items():
+    # Use analytics data for event counts
+    if analytics and "event_counts" in analytics:
+        for item in analytics["event_counts"]:
+            event_name = item["event_name"]
+            count = item["count"]
             if event_name in event_counts:
                 event_counts[event_name] = count
-        
-        # Add "other" category for events not in our main categories
-        other_count = sum(count for event_name, count in actual_counts.items() 
-                         if event_name not in event_counts)
-        if other_count > 0:
-            event_counts["other"] = other_count
+            else:
+                event_counts["other"] += count
+    
+    # Prepare display data
+    display_df = None
+    if not df.empty:
+        # Select and rename columns for better display
+        display_columns = ["event_name", "timestamp", "distinct_id", "session_id", 
+                          "project_id", "ip_address"]
+        if "transform_timestamp" in df.columns:
+            display_columns.append("transform_timestamp")
+            
+        display_df = df[display_columns].copy()
+        display_df.columns = ["Event Name", "Timestamp", "User ID", "Session ID", 
+                             "Project ID", "IP Address"] + (["Processed On"] if "transform_timestamp" in df.columns else [])
 
     # Metric cards
     cols = st.columns(len(event_counts))
@@ -70,9 +85,36 @@ def show():
     # Show workflow runs
     render_workflows_table("events-workflow", "Events")
 
-    st.subheader("Events Items Table")
-    if parsed is not None:
-        st.dataframe(parsed, use_container_width=True)
+    # Display user metrics if available
+    if analytics and "user_metrics" in analytics:
+        user_metrics = analytics["user_metrics"]
+        metric_cols = st.columns(3)
+        with metric_cols[0]:
+            st.metric("Unique Users (24h)", user_metrics.get("unique_users", 0))
+        with metric_cols[1]:
+            st.metric("Active Sessions (24h)", user_metrics.get("unique_sessions", 0))
+        with metric_cols[2]:
+            st.metric("Total Events (24h)", user_metrics.get("total_events", 0))
+    
+    st.subheader("Events Table")
+    if display_df is not None and not display_df.empty:
+        st.dataframe(display_df, use_container_width=True)
+        
+        # Add properties detail view
+        if not df.empty and "properties" in df.columns:
+            st.subheader("Event Properties")
+            selected_idx = st.selectbox("Select Event to View Properties", 
+                                      range(len(df)), 
+                                      format_func=lambda x: f"Event {x+1}: {df.iloc[x]['event_name']}")
+            if selected_idx is not None:
+                selected_event = df.iloc[selected_idx]
+                # Parse JSON string properties
+                try:
+                    import json
+                    properties = json.loads(selected_event["properties"]) if selected_event["properties"] else {}
+                    st.json(properties)
+                except (json.JSONDecodeError, TypeError):
+                    st.text(f"Properties: {selected_event['properties']}")
     else:
         st.write("No events data available.")
     
