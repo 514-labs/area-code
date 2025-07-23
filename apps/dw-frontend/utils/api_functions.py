@@ -176,7 +176,8 @@ def fetch_event_analytics(hours=24):
                     {"event_name": "pageview", "count": 0},
                     {"event_name": "signup", "count": 0},
                     {"event_name": "click", "count": 0},
-                    {"event_name": "purchase", "count": 0}
+                    {"event_name": "purchase", "count": 0},
+                    {"event_name": "other", "count": 0}
                 ],
                 "user_metrics": {
                     "unique_users": 0,
@@ -192,14 +193,21 @@ def fetch_event_analytics(hours=24):
         known_events = ["pageview", "signup", "click", "purchase"]
         event_counts = []
         
+        # Count known events
+        total_known_events = 0
         for event_name in known_events:
             count = event_counts_dict.get(event_name, 0)
+            total_known_events += count
             event_counts.append({"event_name": event_name, "count": count})
+        
+        # Calculate "other" events (any events not in the known_events list)
+        total_events = len(df)
+        other_count = total_events - total_known_events
+        event_counts.append({"event_name": "other", "count": other_count})
         
         # Calculate user metrics
         unique_users = df['distinct_id'].nunique() if 'distinct_id' in df.columns else 0
         unique_sessions = df['session_id'].nunique() if 'session_id' in df.columns else 0
-        total_events = len(df)
         
         return {
             "event_counts": event_counts,
@@ -218,7 +226,8 @@ def fetch_event_analytics(hours=24):
                 {"event_name": "pageview", "count": 0},
                 {"event_name": "signup", "count": 0},
                 {"event_name": "click", "count": 0},
-                {"event_name": "purchase", "count": 0}
+                {"event_name": "purchase", "count": 0},
+                {"event_name": "other", "count": 0}
             ],
             "user_metrics": {
                 "unique_users": 0,

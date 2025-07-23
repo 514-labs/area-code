@@ -57,7 +57,9 @@ def show():
 
     # Show workflow runs
     render_workflows_table("events-workflow", "Events")
-
+    
+    st.subheader("Events Table")
+    
     # Display user metrics if available
     if analytics and "user_metrics" in analytics:
         user_metrics = analytics["user_metrics"]
@@ -68,8 +70,6 @@ def show():
             st.metric("Active Sessions (24h)", user_metrics.get("unique_sessions", 0))
         with metric_cols[2]:
             st.metric("Total Events (24h)", user_metrics.get("total_events", 0))
-    
-    st.subheader("Events Table")
     
     # Add filtering controls just above the table
     col1, col2, col3 = st.columns(3)
@@ -100,22 +100,6 @@ def show():
 
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)
-        
-        # Add properties detail view
-        if not df.empty and "properties" in df.columns:
-            st.subheader("Event Properties")
-            selected_idx = st.selectbox("Select Event to View Properties", 
-                                      range(len(df)), 
-                                      format_func=lambda x: f"Event {x+1}: {df.iloc[x]['event_name']}")
-            if selected_idx is not None:
-                selected_event = df.iloc[selected_idx]
-                # Parse JSON string properties
-                try:
-                    import json
-                    properties = json.loads(selected_event["properties"]) if selected_event["properties"] else {}
-                    st.json(properties)
-                except (json.JSONDecodeError, TypeError):
-                    st.text(f"Properties: {selected_event['properties']}")
     else:
         st.write("No events data available.")
     
