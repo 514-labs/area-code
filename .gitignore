@@ -16,6 +16,7 @@ public/dist
 
 # Temporary migration files and directories
 temp_migration/
+temp_migration_*/
 temp_*.sh
 temp_*.json
 elasticsearch_migration.log
