@@ -9,7 +9,7 @@ def simulate_failures(data: List[T], fail_percentage: int) -> int:
     Simulate failures by adding "[DLQ]" prefix to trigger transform failures.
 
     Args:
-        data: List of Pydantic models (BlobSource, LogSource)
+        data: List of Pydantic models (BlobSource, LogSource, EventSource)
         fail_percentage: Percentage of items to mark as failed (0-100)
 
     Returns:
@@ -36,5 +36,10 @@ def simulate_failures(data: List[T], fail_percentage: int) -> int:
         elif hasattr(item, 'message') and hasattr(item, 'level'):
             if not item.message.startswith("[DLQ]"):
                 item.message = f"[DLQ]{item.message}"
+
+        # Handle EventSource models (using distinct_id as the failure marker)
+        elif hasattr(item, 'distinct_id') and hasattr(item, 'event_name'):
+            if not item.distinct_id.startswith("[DLQ]"):
+                item.distinct_id = f"[DLQ]{item.distinct_id}"
 
     return len(items_to_fail)

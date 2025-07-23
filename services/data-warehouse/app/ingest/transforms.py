@@ -1,6 +1,6 @@
 from app.ingest.models import (
-    blobSourceModel, logSourceModel, blobModel, logModel,
-    BlobSource, LogSource, Blob, Log
+    blobSourceModel, logSourceModel, eventSourceModel, blobModel, logModel, eventModel,
+    BlobSource, LogSource, EventSource, Blob, Log, Event
 )
 from moose_lib import DeadLetterModel, TransformConfig
 from datetime import datetime
@@ -43,6 +43,25 @@ def log_source_to_log(log_source: LogSource) -> Log:
         transform_timestamp=datetime.now().isoformat()
     )
 
+# Transform EventSource to Event, adding timestamp and handling failures
+def event_source_to_event(event_source: EventSource) -> Event:
+    # Check for failure simulation (events with [DLQ] in distinct_id)
+    if event_source.distinct_id.startswith("[DLQ]"):
+        raise ValueError(f"Transform failed for event {event_source.id}: Event marked as failed")
+
+    return Event(
+        id=event_source.id,
+        event_name=event_source.event_name,
+        timestamp=event_source.timestamp,
+        distinct_id=event_source.distinct_id,
+        session_id=event_source.session_id,
+        project_id=event_source.project_id,
+        properties=event_source.properties,
+        ip_address=event_source.ip_address,
+        user_agent=event_source.user_agent,
+        transform_timestamp=datetime.now().isoformat()
+    )
+
 # Set up the transformations
 blobSourceModel.get_stream().add_transform(
     destination=blobModel.get_stream(),
@@ -57,6 +76,14 @@ logSourceModel.get_stream().add_transform(
     transformation=log_source_to_log,
     config=TransformConfig(
         dead_letter_queue=logSourceModel.get_dead_letter_queue()
+    )
+)
+
+eventSourceModel.get_stream().add_transform(
+    destination=eventModel.get_stream(),
+    transformation=event_source_to_event,
+    config=TransformConfig(
+        dead_letter_queue=eventSourceModel.get_dead_letter_queue()
     )
 )
 
@@ -108,6 +135,33 @@ def invalid_log_source_to_log(dead_letter: DeadLetterModel[LogSource]) -> Option
         print(f"Log recovery failed: {error}")
         return None
 
+# Dead letter queue recovery for EventSource
+def invalid_event_source_to_event(dead_letter: DeadLetterModel[EventSource]) -> Optional[Event]:
+    try:
+        original_event_source = dead_letter.as_typed()
+
+        # Fix the failure condition - change [DLQ] to [RECOVERED]
+        corrected_distinct_id = original_event_source.distinct_id
+        if corrected_distinct_id.startswith("[DLQ]"):
+            corrected_distinct_id = corrected_distinct_id.replace("[DLQ]", "[RECOVERED]", 1)
+
+        return Event(
+            id=original_event_source.id,
+            event_name=original_event_source.event_name,
+            timestamp=original_event_source.timestamp,
+            distinct_id=corrected_distinct_id,
+            session_id=original_event_source.session_id,
+            project_id=original_event_source.project_id,
+            properties=original_event_source.properties,
+            ip_address=original_event_source.ip_address,
+            user_agent=original_event_source.user_agent,
+            ingested_at=original_event_source.ingested_at,
+            transform_timestamp=datetime.now().isoformat()
+        )
+    except Exception as error:
+        print(f"Event recovery failed: {error}")
+        return None
+
 # Set up dead letter queue transforms
 blobSourceModel.get_dead_letter_queue().add_transform(
     destination=blobModel.get_stream(),
@@ -117,4 +171,9 @@ blobSourceModel.get_dead_letter_queue().add_transform(
 logSourceModel.get_dead_letter_queue().add_transform(
     destination=logModel.get_stream(),
     transformation=invalid_log_source_to_log,
+)
+
+eventSourceModel.get_dead_letter_queue().add_transform(
+    destination=eventModel.get_stream(),
+    transformation=invalid_event_source_to_event,
 )

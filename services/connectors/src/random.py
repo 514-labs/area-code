@@ -5,6 +5,7 @@ from enum import Enum
 import random
 import string
 import uuid
+import json
 
 class LogLevel(str, Enum):
     INFO = "INFO"
@@ -15,6 +16,7 @@ class LogLevel(str, Enum):
 class DataSourceType(str, Enum):
     Blob = "blob"
     Logs = "logs"
+    Events = "events"
 
 class BlobSource(BaseModel):
     id: str
@@ -33,6 +35,17 @@ class LogSource(BaseModel):
     message: str
     source: Optional[str]
     trace_id: Optional[str]
+
+class EventSource(BaseModel):
+    id: str
+    event_name: str
+    timestamp: str
+    distinct_id: str
+    session_id: Optional[str]
+    project_id: str
+    properties: Optional[str]
+    ip_address: Optional[str]
+    user_agent: Optional[str]
 
 def random_string(length: int) -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
@@ -79,7 +92,6 @@ LOG_SOURCES = [
 ]
 
 # Realistic trace IDs that simulate distributed tracing
-# These represent ongoing transactions/requests that span multiple services
 ACTIVE_TRACE_IDS = [
     "req_a1b2c3d4",    # User login flow
     "req_e5f6g7h8",    # Payment processing
@@ -207,4 +219,86 @@ def random_log_source() -> LogSource:
         message=message,
         source=source,
         trace_id=trace_id
+    )
+
+def random_event_source() -> EventSource:
+    """Generate a structured EventSource object following PostHog model"""
+    event_names = [
+        "pageview", "signup", "login", "logout", "click", "purchase", "add_to_cart", 
+        "remove_from_cart", "checkout_started", "checkout_completed", "form_submitted",
+        "video_played", "video_paused", "search", "share", "download", "feature_used",
+        "experiment_viewed", "error_occurred", "session_started", "session_ended"
+    ]
+    
+    browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"]
+    referrers = [
+        "https://google.com/search", "https://facebook.com", "https://twitter.com",
+        "https://linkedin.com", "https://github.com", "direct", "email_campaign",
+        "https://reddit.com", "https://stackoverflow.com", "organic_search"
+    ]
+    
+    signup_methods = ["email", "google_oauth", "github_oauth", "facebook_oauth", "manual"]
+    devices = ["desktop", "mobile", "tablet"]
+    operating_systems = ["Windows", "macOS", "Linux", "iOS", "Android"]
+    
+    event_name = random.choice(event_names)
+    timestamp = datetime.now().isoformat()
+    
+    # Generate user IDs (mix of identified and anonymous)
+    if random.random() > 0.3:  # 70% identified users
+        distinct_id = f"user_{random.randint(1000, 9999)}"
+    else:  # 30% anonymous
+        distinct_id = str(uuid.uuid4())
+    
+    session_id = str(uuid.uuid4())
+    project_id = f"proj_{random.choice(['web', 'mobile', 'api', 'admin'])}"
+    
+    # Generate realistic properties based on event type
+    properties = {
+        "browser": random.choice(browsers),
+        "device_type": random.choice(devices),
+        "os": random.choice(operating_systems),
+        "referrer": random.choice(referrers)
+    }
+    
+    # Add event-specific properties
+    if event_name == "signup":
+        properties["signup_method"] = random.choice(signup_methods)
+    elif event_name == "purchase":
+        properties["amount"] = round(random.uniform(10.0, 500.0), 2)
+        properties["currency"] = "USD"
+        properties["product_count"] = random.randint(1, 5)
+    elif event_name == "pageview":
+        pages = ["/home", "/about", "/products", "/pricing", "/contact", "/blog", "/docs"]
+        properties["page"] = random.choice(pages)
+        properties["page_title"] = f"Page {properties['page'].replace('/', '').title()}"
+    elif event_name == "click":
+        properties["element_type"] = random.choice(["button", "link", "image", "form"])
+        properties["element_text"] = random.choice(["Get Started", "Learn More", "Sign Up", "Download"])
+    
+    # Generate IP address and user agent
+    ip_address = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
+    
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15",
+        "Mozilla/5.0 (Android 11; Mobile; rv:68.0) Gecko/68.0 Firefox/88.0"
+    ]
+    user_agent = random.choice(user_agents)
+    
+    # Serialize properties as JSON string for ClickHouse compatibility
+    properties_json = json.dumps(properties)
+    
+    return EventSource(
+        id=str(uuid.uuid4()),
+        event_name=event_name,
+        timestamp=timestamp,
+        distinct_id=distinct_id,
+        session_id=session_id,
+        project_id=project_id,
+        properties=properties_json,
+        ip_address=ip_address,
+        user_agent=user_agent
     )

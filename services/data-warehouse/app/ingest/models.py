@@ -33,6 +33,17 @@ class LogSource(BaseModel):
     source: Optional[str]  # service/component name
     trace_id: Optional[str]
 
+class EventSource(BaseModel):
+    id: Key[str]
+    event_name: str
+    timestamp: str
+    distinct_id: str
+    session_id: Optional[str]
+    project_id: str
+    properties: Optional[str]
+    ip_address: Optional[str]
+    user_agent: Optional[str]
+
 # Final models - processed data with transformations
 class Blob(BaseModel):
     id: Key[str]
@@ -54,6 +65,18 @@ class Log(BaseModel):
     trace_id: Optional[str]
     transform_timestamp: str
 
+class Event(BaseModel):
+    id: Key[str]
+    event_name: str
+    timestamp: str
+    distinct_id: str
+    session_id: Optional[str]
+    project_id: str
+    properties: Optional[str]
+    ip_address: Optional[str]
+    user_agent: Optional[str]
+    transform_timestamp: str
+
 # Source ingest pipelines
 blobSourceModel = IngestPipeline[BlobSource]("BlobSource", IngestPipelineConfig(
     ingest=True,
@@ -69,6 +92,13 @@ logSourceModel = IngestPipeline[LogSource]("LogSource", IngestPipelineConfig(
     dead_letter_queue=True
 ))
 
+eventSourceModel = IngestPipeline[EventSource]("EventSource", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=False,
+    dead_letter_queue=True
+))
+
 # Final processed pipelines
 blobModel = IngestPipeline[Blob]("Blob", IngestPipelineConfig(
     ingest=True,
@@ -78,6 +108,13 @@ blobModel = IngestPipeline[Blob]("Blob", IngestPipelineConfig(
 ))
 
 logModel = IngestPipeline[Log]("Log", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=True,
+    dead_letter_queue=True
+))
+
+eventModel = IngestPipeline[Event]("Event", IngestPipelineConfig(
     ingest=True,
     stream=True,
     table=True,
