@@ -6,10 +6,10 @@ T = TypeVar('T', bound=BaseModel)
 
 def simulate_failures(data: List[T], fail_percentage: int) -> int:
     """
-    Simulate failures by adding "fail" tag to a percentage of items in the data array.
+    Simulate failures by adding "[DLQ]" prefix to trigger transform failures.
 
     Args:
-        data: List of Pydantic models that have a 'tags' field
+        data: List of Pydantic models (BlobSource, LogSource)
         fail_percentage: Percentage of items to mark as failed (0-100)
 
     Returns:
@@ -27,8 +27,14 @@ def simulate_failures(data: List[T], fail_percentage: int) -> int:
     items_to_fail = random.sample(data, min(num_to_fail, len(data)))
 
     for item in items_to_fail:
-        # Add "fail" tag if not already present
-        if hasattr(item, 'tags') and "fail" not in item.tags:
-            item.tags.append("fail")
+        # Handle BlobSource models
+        if hasattr(item, 'file_name') and hasattr(item, 'bucket_name'):
+            if not item.file_name.startswith("[DLQ]"):
+                item.file_name = f"[DLQ]{item.file_name}"
+
+        # Handle LogSource models
+        elif hasattr(item, 'message') and hasattr(item, 'level'):
+            if not item.message.startswith("[DLQ]"):
+                item.message = f"[DLQ]{item.message}"
 
     return len(items_to_fail)

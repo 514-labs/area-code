@@ -6,46 +6,112 @@ import random
 import string
 import uuid
 
-class FooStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING = "pending"
-    ARCHIVED = "archived"
+class LogLevel(str, Enum):
+    INFO = "INFO"
+    DEBUG = "DEBUG"
+    ERROR = "ERROR"
+    WARN = "WARN"
 
 class DataSourceType(str, Enum):
     Blob = "blob"
     Logs = "logs"
 
-class Foo(BaseModel):
+class BlobSource(BaseModel):
     id: str
-    name: str
-    description: Optional[str]
-    status: FooStatus
-    priority: int
-    is_active: bool
-    tags: List[str]
-    score: float
-    large_text: str
-    # created_at: datetime
-    # updated_at: datetime
+    bucket_name: str
+    file_path: str
+    file_name: str
+    file_size: int
+    permissions: List[str]
+    content_type: Optional[str]
+    ingested_at: str
+
+class LogSource(BaseModel):
+    id: str
+    timestamp: str
+    level: LogLevel
+    message: str
+    source: Optional[str]
+    trace_id: Optional[str]
 
 def random_string(length: int) -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
-def random_enum(enum_class: type[FooStatus]) -> FooStatus:
-    return random.choice(list(enum_class))
+def random_log_level() -> LogLevel:
+    return random.choice(list(LogLevel))
 
 def random_date() -> datetime:
     seconds_ago = random.randint(0, 1000000000)
     return datetime.now() - timedelta(seconds=seconds_ago)
 
-def generate_log_line() -> str:
-    """Generate a structured log line in the format [LOG_LEVEL] | timestamp | message"""
-    log_levels = ["INFO", "DEBUG", "ERROR"]
-    log_level = random.choice(log_levels)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+# --- Blob simulation arrays ---
+BUCKET_NAMES = [
+    "data-archive-2024", "user-uploads-prod", "logs-bucket-main", "backup-jan2024", "media-assets-eu",
+    "project-x-files", "customer-data", "analytics-results", "temp-storage", "archive-2023",
+    "prod-photos", "staging-logs", "dev-bucket-01", "ml-training-data", "iot-sensor-dumps",
+    "web-assets", "cdn-cache", "user-profile-pics", "audit-logs", "financial-reports",
+    "marketing-campaigns", "legal-docs", "compliance-archive", "partner-uploads", "team-shared",
+    "research-data", "test-bucket", "video-uploads", "audio-files", "backup-2022",
+    "raw-data-ingest", "processed-data", "exported-csvs", "import-batch", "client-exports",
+    "internal-reports", "external-shares", "event-logs", "sensor-logs", "public-assets",
+    "private-assets", "user-generated", "system-backups", "release-artifacts", "build-cache",
+    "feature-flags", "beta-uploads", "legacy-data", "onboarding-files", "support-tickets"
+]
 
-    # Different message pools for each log level
+FILE_NAMES = [
+    "report_2024-06-01.csv", "image_1234.png", "backup_20240601.zip", "audio_20240601.mp3", "video_20240601.mp4",
+    "document_20240601.pdf", "data_20240601.json", "log_20240601.txt", "presentation_20240601.pptx", "spreadsheet_20240601.xlsx",
+    "invoice_20240601.pdf", "contract_20240601.docx", "notes_20240601.md", "diagram_20240601.svg", "archive_20240601.tar.gz",
+    "user_5678_profile.jpg", "avatar_4321.png", "resume_20240601.doc", "summary_20240601.txt", "draft_20240601.rtf",
+    "config_20240601.yaml", "settings_20240601.ini", "db_dump_20240601.sql", "export_20240601.csv", "import_20240601.csv",
+    "photo_20240601.jpeg", "screenshot_20240601.png", "icon_20240601.ico", "font_20240601.ttf", "readme_20240601.md",
+    "changelog_20240601.txt", "release_20240601.zip", "patch_20240601.diff", "sample_20240601.csv", "test_20240601.json",
+    "input_20240601.txt", "output_20240601.txt", "error_20240601.log", "trace_20240601.log", "metrics_20240601.csv",
+    "profile_20240601.json", "avatar_20240601.jpg", "banner_20240601.png", "cover_20240601.jpg", "slide_20240601.ppt",
+    "form_20240601.pdf", "statement_20240601.pdf", "bill_20240601.pdf", "ticket_20240601.pdf", "evidence_20240601.png"
+]
+
+BLOB_PERMISSIONS = ["READ", "WRITE", "DELETE", "LIST"]
+
+LOG_SOURCES = [
+    "auth-service", "user-service", "payment-service", "api-gateway", "database", 
+    "cache-service", "notification-service", "analytics", "monitoring", "scheduler"
+]
+
+# Realistic trace IDs that simulate distributed tracing
+# These represent ongoing transactions/requests that span multiple services
+ACTIVE_TRACE_IDS = [
+    "req_a1b2c3d4",    # User login flow
+    "req_e5f6g7h8",    # Payment processing
+    "req_i9j0k1l2",    # File upload
+    "req_m3n4o5p6",    # Data sync operation
+    "req_q7r8s9t0",    # Analytics batch job
+    "req_u1v2w3x4",    # User registration
+    "req_y5z6a7b8",    # API authentication
+    "req_c9d0e1f2"     # Background cleanup
+]
+
+def get_content_type(file_name: str) -> Optional[str]:
+    """Determine content type based on file extension"""
+    extension = file_name.split('.')[-1].lower() if '.' in file_name else ''
+    content_types = {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'csv': 'text/csv',
+        'json': 'application/json',
+        'txt': 'text/plain',
+        'zip': 'application/zip',
+        'mp3': 'audio/mpeg',
+        'mp4': 'video/mp4',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+    return content_types.get(extension)
+
+def generate_log_message(level: LogLevel) -> str:
+    """Generate realistic log messages based on level"""
     info_messages = [
         "Application started successfully",
         "User session created",
@@ -79,84 +145,66 @@ def generate_log_line() -> str:
         "File not found: /path/to/config.yaml"
     ]
 
-    # Select message based on log level
-    if log_level == "INFO":
-        message = random.choice(info_messages)
-    elif log_level == "DEBUG":
-        message = random.choice(debug_messages)
-    else:  # ERROR
-        message = random.choice(error_messages)
+    warn_messages = [
+        "Deprecated API endpoint called",
+        "Rate limit approaching for user",
+        "Disk space running low",
+        "SSL certificate expires soon",
+        "High memory usage detected",
+        "Slow query detected",
+        "Failed login attempt",
+        "Configuration value not set, using default"
+    ]
 
-    return f"{log_level} | {timestamp} | {message}"
+    if level == LogLevel.INFO:
+        return random.choice(info_messages)
+    elif level == LogLevel.DEBUG:
+        return random.choice(debug_messages)
+    elif level == LogLevel.ERROR:
+        return random.choice(error_messages)
+    else:
+        return random.choice(warn_messages)
 
-# --- Blob simulation arrays ---
-BUCKET_NAMES = [
-    "data-archive-2024", "user-uploads-prod", "logs-bucket-main", "backup-jan2024", "media-assets-eu",
-    "project-x-files", "customer-data", "analytics-results", "temp-storage", "archive-2023",
-    "prod-photos", "staging-logs", "dev-bucket-01", "ml-training-data", "iot-sensor-dumps",
-    "web-assets", "cdn-cache", "user-profile-pics", "audit-logs", "financial-reports",
-    "marketing-campaigns", "legal-docs", "compliance-archive", "partner-uploads", "team-shared",
-    "research-data", "test-bucket", "video-uploads", "audio-files", "backup-2022",
-    "raw-data-ingest", "processed-data", "exported-csvs", "import-batch", "client-exports",
-    "internal-reports", "external-shares", "event-logs", "sensor-logs", "public-assets",
-    "private-assets", "user-generated", "system-backups", "release-artifacts", "build-cache",
-    "feature-flags", "beta-uploads", "legacy-data", "onboarding-files", "support-tickets"
-]
-
-FILE_NAMES = [
-    "report_2024-06-01.csv", "image_1234.png", "backup_20240601.zip", "audio_20240601.mp3", "video_20240601.mp4",
-    "document_20240601.pdf", "data_20240601.json", "log_20240601.txt", "presentation_20240601.pptx", "spreadsheet_20240601.xlsx",
-    "invoice_20240601.pdf", "contract_20240601.docx", "notes_20240601.md", "diagram_20240601.svg", "archive_20240601.tar.gz",
-    "user_5678_profile.jpg", "avatar_4321.png", "resume_20240601.doc", "summary_20240601.txt", "draft_20240601.rtf",
-    "config_20240601.yaml", "settings_20240601.ini", "db_dump_20240601.sql", "export_20240601.csv", "import_20240601.csv",
-    "photo_20240601.jpeg", "screenshot_20240601.png", "icon_20240601.ico", "font_20240601.ttf", "readme_20240601.md",
-    "changelog_20240601.txt", "release_20240601.zip", "patch_20240601.diff", "sample_20240601.csv", "test_20240601.json",
-    "input_20240601.txt", "output_20240601.txt", "error_20240601.log", "trace_20240601.log", "metrics_20240601.csv",
-    "profile_20240601.json", "avatar_20240601.jpg", "banner_20240601.png", "cover_20240601.jpg", "slide_20240601.ppt",
-    "form_20240601.pdf", "statement_20240601.pdf", "bill_20240601.pdf", "ticket_20240601.pdf", "evidence_20240601.png"
-]
-
-BLOB_PERMISSIONS = ["READ", "WRITE", "DELETE", "LIST"]
-
-import os
-
-def generate_blob_log_line() -> str:
+def random_blob_source() -> BlobSource:
     bucket = random.choice(BUCKET_NAMES)
-    file = random.choice(FILE_NAMES)
-    # Simulate a path depth of 1-3 folders
+    file_name = random.choice(FILE_NAMES)
+
+    # Generate a realistic file path
     path_depth = random.randint(1, 3)
     folders = [random_string(random.randint(3, 8)) for _ in range(path_depth)]
-    blob_path = f"blob://{bucket}/{'/'.join(folders)}/{file}"
-    # Pick 1-4 unique permissions, comma separated
+    file_path = "/" + "/".join(folders) + "/"
+
+    # Pick 1-4 unique permissions
     num_permissions = random.randint(1, len(BLOB_PERMISSIONS))
-    permissions = ", ".join(random.sample(BLOB_PERMISSIONS, num_permissions))
-    timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    permissions = random.sample(BLOB_PERMISSIONS, num_permissions)
+
     file_size = random.randint(256, 10 * 1024 * 1024)  # 256 bytes to 10 MB
-    return f"{timestamp} | {blob_path} | {permissions} | {file_size} bytes"
 
-def random_foo(source_type: DataSourceType) -> Foo:
-    base_tags = [random_string(4) for _ in range(random.randint(1, 3))]
-
-    if source_type == DataSourceType.Blob:
-        tags = base_tags + ["Blob"]
-        large_text = generate_blob_log_line()
-    elif source_type == DataSourceType.Logs:
-        tags = base_tags + ["Logs"]
-        large_text = generate_log_line()
-    else:
-        tags = base_tags
-        large_text = random_string(100)
-
-    return Foo(
+    return BlobSource(
         id=str(uuid.uuid4()),
-        name=random_string(8),
-        description=random_string(20) if random.random() > 0.5 else None,
-        status=random_enum(FooStatus),
-        priority=random.randint(0, 9),
-        is_active=random.random() > 0.5,
-        tags=tags,
-        score=round(random.random() * 100, 2),
-        large_text=large_text,
-        # created_at=random_date(),
-        # updated_at=random_date()
+        bucket_name=bucket,
+        file_path=file_path,
+        file_name=file_name,
+        file_size=file_size,
+        permissions=permissions,
+        content_type=get_content_type(file_name),
+        ingested_at=datetime.now().isoformat()
+    )
+
+def random_log_source() -> LogSource:
+    level = random_log_level()
+    message = generate_log_message(level)
+    source = random.choice(LOG_SOURCES)
+
+    # Generate realistic trace_id that groups related logs together
+    # 70% chance to have a trace_id from active traces (simulating distributed operations)
+    trace_id = random.choice(ACTIVE_TRACE_IDS) if random.random() > 0.3 else None
+
+    return LogSource(
+        id=str(uuid.uuid4()),
+        timestamp=datetime.now().isoformat(),
+        level=level,
+        message=message,
+        source=source,
+        trace_id=trace_id
     )

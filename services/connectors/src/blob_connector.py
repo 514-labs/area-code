@@ -1,5 +1,5 @@
 from typing import List, TypeVar, Generic, Optional
-from .random import random_foo, DataSourceType
+from .random import random_blob_source, BlobSource
 
 T = TypeVar('T')
 
@@ -11,9 +11,9 @@ class BlobConnector(Generic[T]):
     def __init__(self, config: BlobConnectorConfig):
         self._batch_size = config.batch_size or 1000
 
-    def extract(self) -> List[T]:
+    def extract(self) -> List[BlobSource]:
         print("Extracting data from Blob")
-        data: List[T] = []
+        data: List[BlobSource] = []
         for i in range(self._batch_size):
-            data.append(random_foo(DataSourceType.Blob))
+            data.append(random_blob_source())
         return data

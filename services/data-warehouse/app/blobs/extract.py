@@ -1,4 +1,4 @@
-from app.ingest.models import Foo
+from app.ingest.models import BlobSource
 from app.utils.simulator import simulate_failures
 from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.blob_connector import BlobConnectorConfig
@@ -24,7 +24,7 @@ def run_task(input: BlobExtractParams) -> None:
     cli_log(CliLogData(action="BlobWorkflow", message="Running Blob task...", message_type="Info"))
 
     # Create a connector to extract data from Blob
-    connector = ConnectorFactory[Foo].create(
+    connector = ConnectorFactory[BlobSource].create(
         ConnectorType.Blob,
         BlobConnectorConfig(batch_size=input.batch_size)
     )
@@ -50,7 +50,7 @@ def run_task(input: BlobExtractParams) -> None:
     
     try:
         response = requests.post(
-            "http://localhost:4200/ingest/Foo",
+            "http://localhost:4200/ingest/BlobSource",
             json=data_dicts,
             headers={"Content-Type": "application/json"}
         )

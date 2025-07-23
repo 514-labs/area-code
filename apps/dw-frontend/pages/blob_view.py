@@ -4,8 +4,69 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 
 # Import shared functions
-from utils.api_functions import fetch_data, trigger_extract, handle_refresh_and_fetch, render_dlq_controls, render_workflows_table
+from utils.api_functions import fetch_blob_data, trigger_extract, render_dlq_controls, render_workflows_table
 from utils.constants import CONSUMPTION_API_BASE
+
+def format_file_size(size_bytes):
+    """Format file size in human readable format"""
+    if size_bytes < 1024:
+        return f"{size_bytes:,} bytes"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes/1024:.1f} KB"
+    else:
+        return f"{size_bytes/(1024*1024):.1f} MB"
+
+def format_permissions(permissions):
+    """Format permissions list as comma-separated string"""
+    return ", ".join(permissions) if isinstance(permissions, list) else str(permissions)
+
+def prepare_blob_display_data(df):
+    """Transform blob data for display with clean configuration"""
+    if df.empty:
+        return None
+
+    # Column transformations configuration
+    transformations = {
+        # Format computed columns
+        "Size": ("file_size", format_file_size),
+        "Permissions": ("permissions", format_permissions),
+        "Full Path": ("file_path", lambda row: f"{row['bucket_name']}{row['file_path']}{row['file_name']}"
+                     if all(col in row for col in ['bucket_name', 'file_path', 'file_name']) else ""),
+    }
+
+    # Column display mapping
+    display_columns = {
+        "id": "ID",
+        "file_name": "File Name",
+        "bucket_name": "Bucket",
+        "content_type": "Content Type"
+    }
+
+    display_df = df.copy()
+
+    # Apply transformations
+    for display_name, (source_col, transform_func) in transformations.items():
+        if source_col in display_df.columns:
+            if display_name == "Full Path":
+                # Special case for multi-column transformation
+                display_df[display_name] = display_df.apply(transform_func, axis=1)
+            else:
+                display_df[display_name] = display_df[source_col].apply(transform_func)
+
+    # Select and rename columns
+    final_columns = []
+    for source_col, display_name in display_columns.items():
+        if source_col in display_df.columns:
+            final_columns.append(display_name)
+
+    # Add computed columns that exist
+    for computed_col in transformations.keys():
+        if computed_col in display_df.columns:
+            final_columns.append(computed_col)
+
+    # Rename and select
+    display_df = display_df.rename(columns=display_columns)
+    return display_df[final_columns]
 
 def show():
     file_type_counts = {"json": 0, "csv": 0, "txt": 0}
@@ -26,31 +87,26 @@ def show():
                 st.session_state["refresh_blob"] = True
                 st.rerun()
     
-    df = handle_refresh_and_fetch(
-        "refresh_blob",
-        "Blob",
-        trigger_func=lambda: trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob"),
-        trigger_label="Blob",
-        button_label=None  # We'll use ShadCN button below
-    )
+    # Fetch blob data directly
+    if "refresh_blob" not in st.session_state:
+        st.session_state["refresh_blob"] = False
 
-    # Parse Blob data and extract file types
-    parsed = None
-    if not df.empty and "large_text" in df.columns:
-        parsed = df["large_text"].str.split("|", n=3, expand=True)
-        parsed.columns = ["Ingested On", "Location", "Permissions", "Resource size"]
-        parsed = parsed.apply(lambda col: col.str.strip())
-        if "Processed On" in df.columns:
-            parsed.insert(1, "Processed On", df["Processed On"])
+    if st.session_state.get("refresh_blob", False):
+        df = fetch_blob_data()
+        st.session_state["refresh_blob"] = False
+    else:
+        df = fetch_blob_data()
 
-        locations = parsed["Location"].fillna("")
-        extensions = locations.str.extract(r'\.([a-zA-Z0-9]+)$')[0].fillna("no_ext")
+    # Update file type counts
+    if not df.empty and "file_name" in df.columns:
+        extensions = df["file_name"].str.extract(r'\.([a-zA-Z0-9]+)$')[0].fillna("no_ext")
         actual_counts = extensions.value_counts().to_dict()
+        for file_type in file_type_counts.keys():
+            if file_type in actual_counts:
+                file_type_counts[file_type] = actual_counts[file_type]
 
-        # Update counts with actual data
-        for file_type, count in actual_counts.items():
-            if file_type in file_type_counts:
-                file_type_counts[file_type] = count
+    # Transform data for display
+    display_df = prepare_blob_display_data(df)
 
     # Metric cards
     cols = st.columns(len(file_type_counts))
@@ -65,9 +121,9 @@ def show():
     # Show workflow runs
     render_workflows_table("blob-workflow", "Blob")
 
-    st.subheader("Blob Items Table")
-    if parsed is not None:
-        st.dataframe(parsed, use_container_width=True)
+    st.subheader("Blob Table")
+    if display_df is not None and not display_df.empty:
+        st.dataframe(display_df, use_container_width=True)
     else:
         st.write("No blob data available.")
     
@@ -83,7 +139,7 @@ def show():
 
         # Status line showing count of retrieved items and offset tracking
         item_count = len(st.session_state[dlq_messages_key])
-        highest_offset_key = "dlq_highest_offset_extract-s3"
+        highest_offset_key = "dlq_highest_offset_extract-blob"
         current_highest_offset = st.session_state.get(highest_offset_key, -1)
         st.info(f"📊 Retrieved {item_count} new DLQ message{'s' if item_count != 1 else ''} matching {filter_tag} filter (showing messages after offset {current_highest_offset})")
         
