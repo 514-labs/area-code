@@ -218,6 +218,36 @@ is_port_in_use() {
     fi
 }
 
+# Open URL in default browser (cross-platform)
+open_browser_url() {
+    local url=$1
+
+    print_status "Opening $url in your default browser..."
+
+    suggestion="please open $url manually"
+    error_message="Failed to open browser automatically, $suggestion"
+
+    # Detect operating system and use appropriate command
+    case "$(uname -s)" in
+        Darwin*)  # macOS
+            open "$url" 2>/dev/null || print_warning "$error_message"
+            ;;
+        Linux*)   # Linux
+            if command -v xdg-open >/dev/null 2>&1; then
+                xdg-open "$url" 2>/dev/null || print_warning "$error_message"
+            else
+                print_warning "xdg-open not available, $suggestion"
+            fi
+            ;;
+        CYGWIN*|MINGW*|MSYS*)  # Windows
+            start "$url" 2>/dev/null || print_warning "$error_message"
+            ;;
+        *)
+            print_warning "Unknown operating system, $suggestion"
+            ;;
+    esac
+}
+
 # Print instructions for finding and terminating processes using a port
 print_port_conflict_instructions() {
     local port=$1
@@ -768,7 +798,7 @@ start_data_warehouse_service() {
 
 start_dw_frontend_service() {
     if is_dw_frontend_running; then
-        print_warning "data warehouse dashbaord is already running (PID: $(get_dw_frontend_pid))"
+        print_warning "data warehouse dashboard is already running (PID: $(get_dw_frontend_pid))"
     else
         print_status "Starting the data warehouse dashboard..."
 
@@ -801,6 +831,9 @@ start_dw_frontend_service() {
                 print_status "The dashboard will be available at http://localhost:$DW_FRONTEND_PORT"
                 print_status "Dashboard PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
                 print_status "To stop the dashboard, run: $0 stop"
+                echo ""
+
+                open_browser_url "http://localhost:$DW_FRONTEND_PORT"
             else
                 print_error "data warehouse dashboard failed to start"
             fi
