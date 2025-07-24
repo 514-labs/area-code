@@ -1,7 +1,7 @@
 import streamlit as st
 
 # Import pages
-from pages import overview, blob_view, logs_view, events_view, analytics
+from pages import overview, blobs_view, logs_view, events_view, analytics
 from utils.status_handler import display_status_messages, cleanup_old_status_messages
 
 # Page config
@@ -48,10 +48,10 @@ def create_navigation():
     )
     
     blob_page = st.Page(
-        blob_view.show,
-        title="Blob",
+        blobs_view.show,
+        title="Blobs",
         icon="📦",
-        url_path="blob"
+        url_path="blobs"
     )
     
     logs_page = st.Page(
