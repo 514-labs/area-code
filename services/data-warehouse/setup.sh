@@ -240,7 +240,7 @@ open_browser_url() {
             fi
             ;;
         CYGWIN*|MINGW*|MSYS*)  # Windows
-            start "$url" 2>/dev/null || print_warning "$error_message"
+            cmd.exe /c start "" "$url" 2>/dev/null || print_warning "$error_message"
             ;;
         *)
             print_warning "Unknown operating system, $suggestion"
