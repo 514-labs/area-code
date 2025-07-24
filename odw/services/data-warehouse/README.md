@@ -101,7 +101,7 @@ odw/services/data-warehouse/
    ./setup.sh start     # Start service (not required after initial setup)
    ```
 
-     ```bash
+   ```bash
    ./setup.sh reset     # Full reset 
    ```
 
