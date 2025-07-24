@@ -5,6 +5,8 @@ import pandas as pd
 import random
 import json
 import streamlit_shadcn_ui as ui
+from datetime import datetime, timedelta
+from requests.exceptions import ConnectionError
 
 from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
@@ -59,7 +61,7 @@ def normalize_for_display(blob_df, log_df, events_df=None):
     else:
         return pd.DataFrame()
 
-def fetch_blob_data(tag="All"):
+def fetch_blob_data(tag="All", should_throw=False):
     """Fetch blob data from the getBlobs API"""
     api_url = f"{CONSUMPTION_API_BASE}/getBlobs"
     if tag and tag != "All":
@@ -73,10 +75,14 @@ def fetch_blob_data(tag="All"):
         df = pd.DataFrame(items)
         return df
     except Exception as e:
-        st.error(f"Failed to fetch blob data from API: {e}")
+        if should_throw:
+            raise e
+        else:
+            print(f"Blob API error: {e}")
+            st.toast("Error fetching blobs. Check terminal for details.")
         return pd.DataFrame()
 
-def fetch_log_data(tag="All"):
+def fetch_log_data(tag="All", should_throw=False):
     """Fetch log data from the getLogs API"""
     api_url = f"{CONSUMPTION_API_BASE}/getLogs"
     if tag and tag != "All":
@@ -90,12 +96,16 @@ def fetch_log_data(tag="All"):
         df = pd.DataFrame(items)
         return df
     except Exception as e:
-        st.error(f"Failed to fetch log data from API: {e}")
+        if should_throw:
+            raise e
+        else:
+            print(f"Log API error: {e}")
+            st.toast("Error fetching logs. Check terminal for details.")
         return pd.DataFrame()
 
-def fetch_events_for_analytics(limit=1000):
+def fetch_events_for_analytics(limit=1000, should_throw=False):
     """Fetch events data specifically for analytics purposes"""
-    return fetch_events_data(limit=limit)
+    return fetch_events_data(limit=limit, should_throw=should_throw)
 
 def fetch_data(tag):
     """Fetch combined data based on tag filter - backward compatibility function"""
@@ -105,21 +115,19 @@ def fetch_data(tag):
         return fetch_log_data(tag)
     elif tag == "Events":
         return fetch_events_for_analytics()
-    elif tag == "All":
-        # Get all three types of data and create unified view
-        blob_df = fetch_blob_data()
-        log_df = fetch_log_data()
-        events_df = fetch_events_for_analytics()
-        return normalize_for_display(blob_df, log_df, events_df)
     else:
-        # For any other tag, try all endpoints and filter
-        blob_df = fetch_blob_data(tag)
-        log_df = fetch_log_data(tag)
-        events_df = fetch_events_for_analytics()
-
-        if not blob_df.empty or not log_df.empty or not events_df.empty:
+        # Get all three types of data and create unified view
+        try:
+            blob_df = fetch_blob_data(tag, should_throw=True)
+            log_df = fetch_log_data(tag, should_throw=True)
+            events_df = fetch_events_for_analytics(should_throw=True)
             return normalize_for_display(blob_df, log_df, events_df)
-        else:
+        except Exception as e:
+            if is_data_warehouse_not_ready(e):
+                st.toast("Services may still be starting up. Try refreshing in a moment.")
+            else:
+                print(f"Error fetching data: {e}")
+                st.toast("Error fetching data. Check terminal for details.")
             return pd.DataFrame()
 
 def trigger_extract(api_url, label):
@@ -141,7 +149,7 @@ def trigger_all_extracts():
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
 
-def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=100):
+def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=100, should_throw=False):
     """Fetch events data with filtering options"""
     params = {"limit": limit}
     if event_name:
@@ -160,7 +168,11 @@ def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=
         data = response.json()
         return pd.DataFrame(data.get("items", []))
     except Exception as e:
-        st.error(f"Failed to fetch events data: {e}")
+        if should_throw:
+            raise e
+        else:
+            print(f"Events API error: {e}")
+            st.toast("Error fetching events. Check terminal for details.")
         return pd.DataFrame()
 
 def fetch_event_analytics(hours=24):
@@ -274,7 +286,8 @@ def render_dlq_controls(endpoint_path, refresh_key):
         refresh_key (str): The session state key for refreshing data after DLQ trigger
     """
     # DLQ section positioned below the table and to the left
-    st.markdown("**Dead Letter Queue Testing**")
+    st.divider()
+    st.markdown("#### Dead Letter Queue Testing")
     
     # Create columns to keep DLQ controls on the left side
     dlq_col, _ = st.columns([1, 2])
@@ -287,7 +300,6 @@ def render_dlq_controls(endpoint_path, refresh_key):
         batch_size = st.number_input(
             "Batch size", 
             min_value=1, 
-            max_value=1000, 
             value=10, 
             step=1,
             key=f"dlq_batch_size_{endpoint_path}"
@@ -308,173 +320,173 @@ def render_dlq_controls(endpoint_path, refresh_key):
         with btn_col1:
             if ui.button(text="Trigger DLQ", key=f"trigger_dlq_btn_{endpoint_path}"):
                 # Validate inputs
-                if batch_size < 1 or batch_size > 1000:
-                    st.error("Batch size must be between 1 and 1000")
+                if batch_size < 1 or batch_size > 10000:
+                    st.error("Batch size must be between 1 and 10000")
                 elif failure_percentage < 0 or failure_percentage > 100:
                     st.error("Failure percentage must be between 0 and 100")
                 else:
                     # Make the DLQ request
                     dlq_url = f"{CONSUMPTION_API_BASE}/{endpoint_path}?batch_size={batch_size}&fail_percentage={failure_percentage}"
-                try:
-                    with st.spinner(f"Triggering DLQ with batch size {batch_size} and {failure_percentage}% failure rate..."):
-                        response = requests.get(dlq_url)
-                        response.raise_for_status()
-                        st.session_state["extract_status_msg"] = f"DLQ triggered successfully with batch size {batch_size} and {failure_percentage}% failure rate."
-                        st.session_state["extract_status_type"] = "success"
-                        st.session_state["extract_status_time"] = time.time()
-                        time.sleep(2)  # Wait for initial processing
-                    
-                    # Fetch DLQ messages immediately after successful trigger
-                    with st.spinner("Fetching DLQ messages..."):
-                        time.sleep(3)
-                        # Use the appropriate DLQ topic name
-                        dlq_topic = get_dlq_topic_name(endpoint_path)
-                        dlq_messages_url = f"http://localhost:9999/topic/{dlq_topic}/messages?partition=0&offset=0&count=100&isAnyProto=false"
+                    try:
+                        with st.spinner(f"Triggering DLQ with batch size {batch_size} and {failure_percentage}% failure rate..."):
+                            response = requests.get(dlq_url)
+                            response.raise_for_status()
+                            st.session_state["extract_status_msg"] = f"DLQ triggered successfully with batch size {batch_size} and {failure_percentage}% failure rate."
+                            st.session_state["extract_status_type"] = "success"
+                            st.session_state["extract_status_time"] = time.time()
+                            time.sleep(2)  # Wait for initial processing
                         
-                        try:
-                            # Add JSON headers to request JSON response
-                            headers = {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            }
-                            dlq_response = requests.get(dlq_messages_url, headers=headers)
-                            dlq_response.raise_for_status()                            
-                            dlq_data = dlq_response.json()
-
-                            # Determine filter tag based on endpoint
-                            if "blob" in endpoint_path.lower():
-                                filter_tag = "Blob"
-                            elif "logs" in endpoint_path.lower():
-                                filter_tag = "Logs"
-                            elif "events" in endpoint_path.lower():
-                                filter_tag = "Events"
-                            else:
-                                filter_tag = None
-
-                            # Track the highest offset we've seen to avoid duplicates
-                            highest_offset_key = f"dlq_highest_offset_{endpoint_path}"
-                            current_highest_offset = st.session_state.get(highest_offset_key, -1)
-                            new_highest_offset = current_highest_offset
+                        # Fetch DLQ messages immediately after successful trigger
+                        with st.spinner("Fetching DLQ messages..."):
+                            time.sleep(3)
+                            # Use the appropriate DLQ topic name
+                            dlq_topic = get_dlq_topic_name(endpoint_path)
+                            dlq_messages_url = f"http://localhost:9999/topic/{dlq_topic}/messages?partition=0&offset=0&count=100&isAnyProto=false"
                             
-                            # Parse and filter messages
-                            filtered_messages = []
+                            try:
+                                # Add JSON headers to request JSON response
+                                headers = {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                }
+                                dlq_response = requests.get(dlq_messages_url, headers=headers)
+                                dlq_response.raise_for_status()                            
+                                dlq_data = dlq_response.json()
 
-                            for i, item in enumerate(dlq_data):
-                                if "message" in item and item["message"]:
-                                    # Only process messages with offset higher than our current highest
-                                    item_offset = item.get('offset', 0)
-                                    if item_offset <= current_highest_offset:
-                                        continue
-
-                                    # Track the new highest offset
-                                    new_highest_offset = max(new_highest_offset, item_offset)
-
-                                    try:
-                                        # Parse the stringified JSON message
-                                        parsed_message = json.loads(item["message"])
-                                        
-                                        # For new structured data, filter based on model type
-                                        original_record = parsed_message.get("original_record", {})
-
-                                        # Check if this is the type we want to filter for
-                                        is_blob = "bucket_name" in original_record
-                                        is_log = "level" in original_record
-                                        is_event = "event_name" in original_record
-
-                                        if filter_tag == "Blob" and not is_blob:
-                                            continue
-                                        elif filter_tag == "Logs" and not is_log:
-                                            continue
-                                        elif filter_tag == "Events" and not is_event:
-                                            continue
-                                        
-                                        filtered_messages.append((i, item, parsed_message))
-
-                                    except json.JSONDecodeError as e:
-                                        st.error(f"Failed to parse message {i+1}: {e}")
-                                        st.text(f"Raw message: {item['message']}")
-
-                            # Store filtered messages for display outside column
-                            if filtered_messages:
-                                # Create DataFrame from filtered messages
-                                table_data = []
-                                raw_json_data = []
-
-                                for display_idx, (original_idx, item, parsed_message) in enumerate(filtered_messages):
-                                    # Extract key information for table
-                                    original_record = parsed_message.get("original_record", {})
-                                    
-                                    # Different display based on type
-                                    if "bucket_name" in original_record:  # Blob
-                                        row = {
-                                            "Partition": item.get('partition', 'N/A'),
-                                            "Offset": item.get('offset', 'N/A'),
-                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
-                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
-                                            "Record ID": original_record.get("id", "Unknown"),
-                                            "File Name": original_record.get("file_name", "Unknown"),
-                                            "Bucket": original_record.get("bucket_name", "Unknown"),
-                                            "File Size": original_record.get("file_size", "Unknown")
-                                        }
-                                    elif "level" in original_record: # Log
-                                        row = {
-                                            "Partition": item.get('partition', 'N/A'),
-                                            "Offset": item.get('offset', 'N/A'),
-                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
-                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
-                                            "Record ID": original_record.get("id", "Unknown"),
-                                            "Level": original_record.get("level", "Unknown"),
-                                            "Source": original_record.get("source", "Unknown"),
-                                            "Message": (original_record.get("message", "Unknown")[:50] + "...") if len(original_record.get("message", "")) > 50 else original_record.get("message", "Unknown")
-                                        }
-                                    elif "event_name" in original_record: # Event
-                                        row = {
-                                            "Partition": item.get('partition', 'N/A'),
-                                            "Offset": item.get('offset', 'N/A'),
-                                            "Error Message": parsed_message.get("error_message", "Unknown error"),
-                                            "Failed At": parsed_message.get("failed_at", "Unknown"),
-                                            "Record ID": original_record.get("id", "Unknown"),
-                                            "Event Name": original_record.get("event_name", "Unknown"),
-                                            "Project ID": original_record.get("project_id", "Unknown"),
-                                            "Distinct ID": original_record.get("distinct_id", "Unknown")
-                                        }
-
-                                    table_data.append(row)
-                                    raw_json_data.append(parsed_message)
-
-                                # Store in session state for display outside the column
-                                st.session_state[dlq_messages_key] = table_data
-                                st.session_state[f"dlq_raw_messages_{endpoint_path}"] = raw_json_data
-
-                                # Update the highest offset tracking
-                                st.session_state[highest_offset_key] = new_highest_offset
-                            else:
-                                # No new messages matching the filter
-                                if filter_tag:
-                                    st.info(f"No new DLQ messages found matching {filter_tag} filter.")
+                                # Determine filter tag based on endpoint
+                                if "blob" in endpoint_path.lower():
+                                    filter_tag = "Blob"
+                                elif "logs" in endpoint_path.lower():
+                                    filter_tag = "Logs"
+                                elif "events" in endpoint_path.lower():
+                                    filter_tag = "Events"
                                 else:
-                                    st.info("No new DLQ messages found.")
-                                
-                                # Clear any existing messages for this endpoint
-                                if dlq_messages_key in st.session_state:
-                                    del st.session_state[dlq_messages_key]
+                                    filter_tag = None
 
-                        except json.JSONDecodeError as e:
-                            st.error(f"Failed to parse DLQ response as JSON: {e}")
-                            st.text(f"Response status: {dlq_response.status_code}")
-                            st.text(f"Response headers: {dict(dlq_response.headers)}")
-                            st.text(f"Response content: {dlq_response.text}")
-                    
-                    # Refresh the main items table after all DLQ processing is complete
-                    st.session_state[refresh_key] = True
-                    st.rerun()  # Force immediate page refresh to show updated data
-                except Exception as e:
-                    st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
-                    st.session_state["extract_status_type"] = "error"
-                    st.session_state["extract_status_time"] = time.time()
+                                # Track the highest offset we've seen to avoid duplicates
+                                highest_offset_key = f"dlq_highest_offset_{endpoint_path}"
+                                current_highest_offset = st.session_state.get(highest_offset_key, -1)
+                                new_highest_offset = current_highest_offset
+                                
+                                # Parse and filter messages
+                                filtered_messages = []
+
+                                for i, item in enumerate(dlq_data):
+                                    if "message" in item and item["message"]:
+                                        # Only process messages with offset higher than our current highest
+                                        item_offset = item.get('offset', 0)
+                                        if item_offset <= current_highest_offset:
+                                            continue
+
+                                        # Track the new highest offset
+                                        new_highest_offset = max(new_highest_offset, item_offset)
+
+                                        try:
+                                            # Parse the stringified JSON message
+                                            parsed_message = json.loads(item["message"])
+                                            
+                                            # For new structured data, filter based on model type
+                                            original_record = parsed_message.get("original_record", {})
+
+                                            # Check if this is the type we want to filter for
+                                            is_blob = "bucket_name" in original_record
+                                            is_log = "level" in original_record
+                                            is_event = "event_name" in original_record
+
+                                            if filter_tag == "Blob" and not is_blob:
+                                                continue
+                                            elif filter_tag == "Logs" and not is_log:
+                                                continue
+                                            elif filter_tag == "Events" and not is_event:
+                                                continue
+                                            
+                                            filtered_messages.append((i, item, parsed_message))
+
+                                        except json.JSONDecodeError as e:
+                                            st.error(f"Failed to parse message {i+1}: {e}")
+                                            st.text(f"Raw message: {item['message']}")
+
+                                # Store filtered messages for display outside column
+                                if filtered_messages:
+                                    # Create DataFrame from filtered messages
+                                    table_data = []
+                                    raw_json_data = []
+
+                                    for display_idx, (original_idx, item, parsed_message) in enumerate(filtered_messages):
+                                        # Extract key information for table
+                                        original_record = parsed_message.get("original_record", {})
+                                        
+                                        # Different display based on type
+                                        if "bucket_name" in original_record:  # Blob
+                                            row = {
+                                                "Partition": item.get('partition', 'N/A'),
+                                                "Offset": item.get('offset', 'N/A'),
+                                                "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                                "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                                "Record ID": original_record.get("id", "Unknown"),
+                                                "File Name": original_record.get("file_name", "Unknown"),
+                                                "Bucket": original_record.get("bucket_name", "Unknown"),
+                                                "File Size": original_record.get("file_size", "Unknown")
+                                            }
+                                        elif "level" in original_record: # Log
+                                            row = {
+                                                "Partition": item.get('partition', 'N/A'),
+                                                "Offset": item.get('offset', 'N/A'),
+                                                "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                                "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                                "Record ID": original_record.get("id", "Unknown"),
+                                                "Level": original_record.get("level", "Unknown"),
+                                                "Source": original_record.get("source", "Unknown"),
+                                                "Message": (original_record.get("message", "Unknown")[:50] + "...") if len(original_record.get("message", "")) > 50 else original_record.get("message", "Unknown")
+                                            }
+                                        elif "event_name" in original_record: # Event
+                                            row = {
+                                                "Partition": item.get('partition', 'N/A'),
+                                                "Offset": item.get('offset', 'N/A'),
+                                                "Error Message": parsed_message.get("error_message", "Unknown error"),
+                                                "Failed At": parsed_message.get("failed_at", "Unknown"),
+                                                "Record ID": original_record.get("id", "Unknown"),
+                                                "Event Name": original_record.get("event_name", "Unknown"),
+                                                "Project ID": original_record.get("project_id", "Unknown"),
+                                                "Distinct ID": original_record.get("distinct_id", "Unknown")
+                                            }
+
+                                        table_data.append(row)
+                                        raw_json_data.append(parsed_message)
+
+                                    # Store in session state for display outside the column
+                                    st.session_state[dlq_messages_key] = table_data
+                                    st.session_state[f"dlq_raw_messages_{endpoint_path}"] = raw_json_data
+
+                                    # Update the highest offset tracking
+                                    st.session_state[highest_offset_key] = new_highest_offset
+                                else:
+                                    # No new messages matching the filter
+                                    if filter_tag:
+                                        st.info(f"No new DLQ messages found matching {filter_tag} filter.")
+                                    else:
+                                        st.info("No new DLQ messages found.")
+                                    
+                                    # Clear any existing messages for this endpoint
+                                    if dlq_messages_key in st.session_state:
+                                        del st.session_state[dlq_messages_key]
+
+                            except json.JSONDecodeError as e:
+                                st.error(f"Failed to parse DLQ response as JSON: {e}")
+                                st.text(f"Response status: {dlq_response.status_code}")
+                                st.text(f"Response headers: {dict(dlq_response.headers)}")
+                                st.text(f"Response content: {dlq_response.text}")
+                        
+                        # Refresh the main items table after all DLQ processing is complete
+                        st.session_state[refresh_key] = True
+                        st.rerun()
+                    except Exception as e:
+                        st.session_state["extract_status_msg"] = f"Failed to trigger DLQ: {e}"
+                        st.session_state["extract_status_type"] = "error"
+                        st.session_state["extract_status_time"] = time.time()
         
         with btn_col2:
-            st.link_button("Explorer", "http://localhost:9999")
+            st.link_button("View Queues ↗", "http://localhost:9999")
 
 def fetch_workflows(name_prefix=None):
     """
@@ -537,6 +549,7 @@ def render_workflows_table(workflow_prefix, display_name):
     """
     workflows = fetch_workflows(workflow_prefix)
     if workflows:
+        st.divider()
         st.subheader(f"{display_name} Workflows")
         workflows_df = pd.DataFrame(workflows)
 
@@ -571,8 +584,51 @@ def render_workflows_table(workflow_prefix, display_name):
             "Temporal Link": st.column_config.LinkColumn(
                 "Details",
                 help="Open workflow history in Temporal UI",
-                display_text="View Details"
+                display_text="View Details ↗"
             )
         }
 
         st.dataframe(workflows_df, use_container_width=True, column_config=column_config)
+
+def fetch_daily_pageviews_data(days_back=14, limit=14):
+    """Fetch daily page views data from the materialized view API"""
+    try:
+        response = requests.get(
+            f"{CONSUMPTION_API_BASE}/getDailyPageViews",
+            params={
+                "days_back": days_back,
+                "limit": limit
+            },
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            items = data.get("items", [])
+            
+            if items:
+                # Convert to DataFrame for easy manipulation
+                df = pd.DataFrame(items)
+                # Convert view_date to datetime for proper sorting and display
+                df['view_date'] = pd.to_datetime(df['view_date'])
+                # Sort by date ascending for chronological display
+                df = df.sort_values('view_date')
+                return df
+            else:
+                return pd.DataFrame()
+        else:
+            st.error(f"Failed to fetch daily page views: {response.status_code}")
+            return pd.DataFrame()
+            
+    except requests.RequestException as e:
+        st.error(f"Error fetching daily page views: {str(e)}")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Unexpected error fetching daily page views: {str(e)}")
+        return pd.DataFrame()
+
+def is_data_warehouse_not_ready(error):
+    if isinstance(error, ConnectionError):
+        error_args = getattr(error, 'args', [])
+        return any("Connection refused" in str(arg) for arg in error_args)
+    return False

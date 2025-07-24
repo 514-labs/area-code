@@ -15,7 +15,8 @@ maxUploadSize = 200
 
 [client]
 showErrorDetails = "full"
-toolbarMode = "auto"
+# Hides developer options, like the Deploy advertisement
+toolbarMode = "viewer"
 
 [runner]
 magicEnabled = true

@@ -10,21 +10,15 @@ from utils.constants import CONSUMPTION_API_BASE
 def show():
     connector_counts = {"Blob": 0, "Log": 0, "Event": 0}
 
-    col1, col2 = st.columns([5, 1])
-    with col1:
-        st.markdown("<h2 style='margin: 0; line-height: 1;'>Connector Analytics Report</h2>", unsafe_allow_html=True)
-    with col2:
-        # Use empty space to push button to the right
-        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-        # Create three sub-columns to push the button to the right
-        _, _, button_col = st.columns([1, 1, 1])
-        with button_col:
-            if ui.button(text="Update", key="update_btn", size="sm"):
-                with st.spinner(""):
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
-                    time.sleep(2)
+    # Header with button underneath
+    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Connector Analytics Report</h2>", unsafe_allow_html=True)
+    
+    if ui.button(text="Refresh", key="update_btn", size="sm"):
+        with st.spinner(""):
+            trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
+            trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
+            trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
+            time.sleep(2)
 
     # Fetch all data (no tag filter) - this will return the unified normalized view
     df = fetch_data("All")
