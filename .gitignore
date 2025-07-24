@@ -9,10 +9,7 @@ dist-ssr
 .cache
 logs/
 
-# Vite cache files
-vite.config.*.timestamp-*.mjs
-server/dist
-public/dist
+
 .cursor/
 
 # Temporary migration files and directories

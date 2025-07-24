@@ -1,4 +1,7 @@
 packages:
-  - "apps/*"
-  - "services/*"
-  - "packages/*"
+  - "odw/apps/*"
+  - "odw/services/*"
+  - "odw/packages/*"
+  - "ufa/apps/*"
+  - "ufa/services/*"
+  - "ufa/packages/*"

@@ -10,16 +10,7 @@
       "outputs": ["dist/**"]
     },
     "lint": {},
-    "dev": {
-      "dependsOn": ["^build:styles"],
-      "cache": false,
-      "persistent": true
-    },
-    "dev:ufa": {
-      "cache": false,
-      "persistent": true
-    },
-    "dev:workflow": {
+    "ufa:dev": {
       "cache": false,
       "persistent": true
     }

@@ -1,5 +1,5 @@
 {
-  "name": "@workspace/transactional-base",
+  "name": "transactional-base",
   "version": "1.0.0",
   "description": "Transactional business logic API with Drizzle ORM",
   "main": "dist/index.js",
@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "./scripts/dev-startup.sh",
-    "dev:ufa": "./scripts/dev-startup.sh",
+    "ufa:dev": "./scripts/dev-startup.sh",
     "dev:server-only": "SUPABASE_CLI=true pnpm tsx watch src/server.ts",
     "dev:migrate": "SUPABASE_CLI=true pnpm run db:migrate",
     "start": "node dist/server.js",
