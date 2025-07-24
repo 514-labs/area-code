@@ -7,7 +7,7 @@ dist-ssr
 *.local
 .env
 .cache
-logs/
+./logs/
 
 
 .cursor/
