@@ -12,7 +12,7 @@
 
 ## Quick Start
 
-(If you haven't already, navigate here `cd services/data-warehouse`, and make sure Docker Desktop is running)
+(If you haven't already, navigate here `cd odw/services/data-warehouse`, and make sure Docker Desktop is running)
 
 **Full Setup** (recommended for first-time users):
    ```bash
@@ -53,7 +53,7 @@ The current state represents a **simplified but functional** implementation that
 
 - **Demonstrates Moose primitives**: The project showcases core Moose concepts including data models, ingestion pipelines, stream functions, materialized views, and consumption APIs.
 
-- **Keeps data models simple**: Uses only `foo` and `bar` data models to make the data flow easy to follow and understand. Moose makes it straightforward to create much richer and more complex data models as your use case requires.
+- **Keeps data models simple**: Uses representative data models to make the data flow easy to follow and understand. Moose makes it straightforward to create much richer and more complex data models as your use case requires.
 
 - **Provides a complete workflow**: From data ingestion through processing to consumption, giving developers a full picture of an operational data warehouse built with Moose.
 
@@ -71,13 +71,14 @@ See: [Presenter - walkthrough docs](./docs/README.md)
 ## Project Structure
 
 ```
-services/data-warehouse/
+odw/services/data-warehouse/
 ├── app/
 │   ├── apis/                   # REST API endpoints
 │   ├── logs/                   # Log extraction workflow
-│   ├── blobs/                  # Blob extracttion workflow
-│   ├── events/                 # Events extracttion workflow
+│   ├── blobs/                  # Blob extraction workflow
+│   ├── events/                 # Events extraction workflow
 │   ├── ingest/                 # Data models and transformations
+│   ├── views/                  # Materialized views
 │   └── main.py                 # Main application entry point
 ├── setup.sh                    # Setup and management script
 ├── moose.config.toml           # Moose configuration
