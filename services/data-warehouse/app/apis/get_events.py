@@ -8,7 +8,7 @@ class GetEventsResponse(BaseModel):
     total: int = 0
 
 class GetEventsQueryParams(BaseModel):
-    limit: Optional[int] = 100
+    limit: Optional[int] = None
     offset: Optional[int] = 0
     tag: Optional[str] = None
     event_name: Optional[str] = None
@@ -47,9 +47,17 @@ def get_events(client, params: GetEventsQueryParams):
         query += " AND distinct_id = {distinct_id}"
         query_params["distinct_id"] = params.distinct_id
     
-    query += " ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"
-    query_params["limit"] = params.limit
-    query_params["offset"] = params.offset
+    query += " ORDER BY timestamp DESC"
+    
+    # Only add LIMIT if specified
+    if params.limit is not None:
+        query += " LIMIT {limit}"
+        query_params["limit"] = params.limit
+    
+    # Only add OFFSET if limit is specified and offset > 0
+    if params.limit is not None and params.offset > 0:
+        query += " OFFSET {offset}"
+        query_params["offset"] = params.offset
     
     result = client.query.execute(query, query_params)
     
