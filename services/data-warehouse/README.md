@@ -101,7 +101,7 @@ services/data-warehouse/
    ```
 
      ```bash
-   ./setup.sh resetn    # Full reset 
+   ./setup.sh reset     # Full reset 
    ```
 
    ```bash
@@ -114,6 +114,6 @@ services/data-warehouse/
 
 ## Installing Aurora AI Support
 
-Aurora AI is an optional enhancement that extends your copilot's AI capabilities with and MCP with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
+Aurora AI is an optional enhancement that extends your copilot's AI capabilities and MCP with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintenance of data warehouse operations.
 
 For setup instructions, see [Aurora docs](https://docs.fiveonefour.com/aurora).
