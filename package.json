@@ -1,6 +1,6 @@
 {
   "name": "area-code",
-  "version": "0.3",
+  "version": "0.3.0",
   "private": true,
   "workspaces": [
     "ufa/apps/*",
