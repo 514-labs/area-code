@@ -9,7 +9,7 @@ font = "sans-serif"
 [server]
 port = 8501
 showEmailPrompt = false
-headless = false
+headless = true
 runOnSave = false
 maxUploadSize = 200
 

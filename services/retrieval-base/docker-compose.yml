@@ -11,7 +11,8 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-XX:UseSVE=0 -Xms512m -Xmx512m"
+      - "CLI_JAVA_OPTS=-XX:UseSVE=0"
     volumes:
       - ./volumes/elasticsearch/data:/usr/share/elasticsearch/data
     healthcheck:
@@ -42,4 +43,3 @@ services:
 volumes:
   elasticsearch_data:
     driver: local
-
