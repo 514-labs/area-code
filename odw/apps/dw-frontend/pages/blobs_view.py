@@ -111,11 +111,7 @@ def show():
                 key=f"blob_metric_{file_type}"
             )
 
-    # Show workflow runs
-    st.divider()
-    title_with_info_icon("Blob Workflows", "View the status and history of blob processing workflows", "blob_workflows_info")
-    render_workflows_table("blob-workflow", "Blob", show_title=False)
-
+    # Show blob table
     st.divider()
     title_with_info_icon("Blob Table", "Display all blob files with their metadata and properties", "blob_table_info")
     
@@ -123,6 +119,11 @@ def show():
         st.dataframe(display_df, use_container_width=True)
     else:
         st.write("No blob data available.")
+
+    # Show workflow runs
+    st.divider()
+    title_with_info_icon("Blob Workflows", "View the status and history of blob processing workflows", "blob_workflows_info")
+    render_workflows_table("blob-workflow", "Blob", show_title=False)
     
     # Use the reusable DLQ controls function
     render_dlq_controls("extract-blob", "refresh_blob", show_info_icon=True, info_tooltip="Test and manage dead letter queue messages for blob processing")
