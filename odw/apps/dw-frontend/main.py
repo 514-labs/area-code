@@ -171,7 +171,7 @@ def create_navigation():
     events_page = st.Page(
         events_view.show,
         title="Events",
-        icon="📈",
+        icon="📢",
         url_path="events"
     )
     
