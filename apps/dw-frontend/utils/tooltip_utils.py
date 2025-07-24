@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit_shadcn_ui as ui
+import html
 
 def icon_button_with_tooltip(icon, tooltip_text, key, size="sm", variant="ghost"):
     """
@@ -64,9 +65,9 @@ def title_with_info_icon(title_text, tooltip_text, key):
     # Use flexbox to place title and icon inline with minimal spacing
     st.markdown(
         f"<div style='display: flex; align-items: center; gap: 4px;'>"
-        f"<h3 style='margin: 0;'>{title_text}</h3>"
+        f"<h3 style='margin: 0;'>{html.escape(title_text)}</h3>"
         f"<button style='background: none; border: none; cursor: help; font-size: 16px; color: #0066cc; padding: 0; margin: 0;' "
-        f"title='{tooltip_text}'>ℹ️</button>"
+        f"title='{html.escape(tooltip_text)}'>ℹ️</button>"
         f"</div>",
         unsafe_allow_html=True
     )
@@ -166,7 +167,7 @@ def title_with_button(title_text, button_text, button_key, button_size="sm", but
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.markdown(f"<h2 style='margin: 0; margin-bottom: 0.5rem;'>{title_text}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='margin: 0; margin-bottom: 0.5rem;'>{html.escape(title_text)}</h2>", unsafe_allow_html=True)
     
     with col2:
         # Use CSS to right-align the button within the column
