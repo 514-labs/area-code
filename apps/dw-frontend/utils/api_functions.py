@@ -546,18 +546,20 @@ def format_workflow_status(status):
 
     return status_mapping.get(status, status)
 
-def render_workflows_table(workflow_prefix, display_name):
+def render_workflows_table(workflow_prefix, display_name, show_title=True):
     """
     Fetch and display workflows in a formatted table.
 
     Args:
         workflow_prefix (str): The prefix to filter workflows by
         display_name (str): The display name for the subheader
+        show_title (bool): Whether to show the title (default: True)
     """
     workflows = fetch_workflows(workflow_prefix)
     if workflows:
-        st.divider()
-        st.subheader(f"{display_name} Workflows")
+
+        if show_title:
+            st.subheader(f"{display_name} Workflows")
         workflows_df = pd.DataFrame(workflows)
 
         # Convert status enums to user-friendly text

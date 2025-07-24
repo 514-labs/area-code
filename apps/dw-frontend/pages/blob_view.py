@@ -112,8 +112,9 @@ def show():
             )
 
     # Show workflow runs
+    st.divider()
     title_with_info_icon("Blob Workflows", "View the status and history of blob processing workflows", "blob_workflows_info")
-    render_workflows_table("blob-workflow", "Blob")
+    render_workflows_table("blob-workflow", "Blob", show_title=False)
 
     st.divider()
     title_with_info_icon("Blob Table", "Display all blob files with their metadata and properties", "blob_table_info")

@@ -115,8 +115,9 @@ def show():
         st.info("No daily page views data available yet. Generate some pageview events using the Extract button to see this materialized view in action!")
 
     # Show workflow runs
+    st.divider()
     title_with_info_icon("Events Workflows", "View the status and history of events processing workflows", "events_workflows_info")
-    render_workflows_table("events-workflow", "Events")
+    render_workflows_table("events-workflow", "Events", show_title=False)
     
     st.divider()
     title_with_info_icon("Events Table", "Display all events with their metadata and properties", "events_table_info")
