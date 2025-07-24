@@ -102,11 +102,8 @@ def show():
     # Transform data for display
     display_df = prepare_blob_display_data(df)
 
-    # Calculate total blobs
-    total_blobs = len(df) if not df.empty else 0
-
-    # Metric cards (file types + total)
-    cols = st.columns(len(file_type_counts) + 1)
+    # Metric cards
+    cols = st.columns(len(file_type_counts))
     for idx, (file_type, count) in enumerate(file_type_counts.items()):
         with cols[idx]:
             ui.metric_card(
@@ -114,14 +111,6 @@ def show():
                 content=str(count),
                 key=f"blob_metric_{file_type}"
             )
-    
-    # Add total blobs metric card to the right
-    with cols[len(file_type_counts)]:
-        ui.metric_card(
-            title="TOTAL BLOBS",
-            content=str(total_blobs),
-            key="blob_metric_total"
-        )
 
     # Show workflow runs
     render_workflows_table("blob-workflow", "Blob")

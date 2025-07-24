@@ -289,7 +289,6 @@ def render_dlq_controls(endpoint_path, refresh_key):
         batch_size = st.number_input(
             "Batch size", 
             min_value=1, 
-            max_value=10000, 
             value=10, 
             step=1,
             key=f"dlq_batch_size_{endpoint_path}"
