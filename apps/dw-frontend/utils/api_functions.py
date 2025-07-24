@@ -277,17 +277,24 @@ def get_dlq_topic_name(endpoint_path):
         # Fallback to old name for backward compatibility
         return "FooDeadLetterQueue"
 
-def render_dlq_controls(endpoint_path, refresh_key):
+def render_dlq_controls(endpoint_path, refresh_key, show_info_icon=False, info_tooltip=""):
     """
     Renders DLQ testing controls with batch size and failure percentage inputs.
     
     Args:
         endpoint_path (str): The API endpoint path (e.g., "extract-blob", "extract-logs")
         refresh_key (str): The session state key for refreshing data after DLQ trigger
+        show_info_icon (bool): Whether to show an info icon next to the title
+        info_tooltip (str): Tooltip text for the info icon
     """
     # DLQ section positioned below the table and to the left
     st.divider()
-    st.markdown("#### Dead Letter Queue Testing")
+    
+    if show_info_icon:
+        from utils.tooltip_utils import title_with_info_icon
+        title_with_info_icon("Dead Letter Queue Testing", info_tooltip, f"dlq_info_{endpoint_path}")
+    else:
+        st.markdown("#### Dead Letter Queue Testing")
     
     # Create columns to keep DLQ controls on the left side
     dlq_col, _ = st.columns([1, 2])
@@ -539,18 +546,20 @@ def format_workflow_status(status):
 
     return status_mapping.get(status, status)
 
-def render_workflows_table(workflow_prefix, display_name):
+def render_workflows_table(workflow_prefix, display_name, show_title=True):
     """
     Fetch and display workflows in a formatted table.
 
     Args:
         workflow_prefix (str): The prefix to filter workflows by
         display_name (str): The display name for the subheader
+        show_title (bool): Whether to show the title (default: True)
     """
     workflows = fetch_workflows(workflow_prefix)
     if workflows:
-        st.divider()
-        st.subheader(f"{display_name} Workflows")
+
+        if show_title:
+            st.subheader(f"{display_name} Workflows")
         workflows_df = pd.DataFrame(workflows)
 
         # Convert status enums to user-friendly text

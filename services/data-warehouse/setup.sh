@@ -91,6 +91,8 @@ show_services() {
     echo "To use the created python virtual environment: source venv/bin/activate"
     echo "Service PID is tracked in: $DATA_WAREHOUSE_PID_FILE and $DW_FRONTEND_PID_FILE"
     echo ""
+    echo "View the dashboard on your browser at http://localhost:$DW_FRONTEND_PORT"
+    echo ""
 }
 
 # Function to get moose service PID
@@ -216,6 +218,22 @@ is_port_in_use() {
     else
         return 1  # Port is available
     fi
+}
+
+# Open URL in default browser
+open_browser_url() {
+    local url=$1
+
+    print_status "Opening $url in your default browser..."
+
+    case "$(uname -s)" in
+        Darwin*)  # macOS
+            open "$url" 2>/dev/null || print_warning "Failed to open browser automatically, please open $url manually"
+            ;;
+        *)
+            print_warning "Automatic browser opening only supported on macOS, please open $url manually"
+            ;;
+    esac
 }
 
 # Print instructions for finding and terminating processes using a port
@@ -768,7 +786,7 @@ start_data_warehouse_service() {
 
 start_dw_frontend_service() {
     if is_dw_frontend_running; then
-        print_warning "data warehouse dashbaord is already running (PID: $(get_dw_frontend_pid))"
+        print_warning "data warehouse dashboard is already running (PID: $(get_dw_frontend_pid))"
     else
         print_status "Starting the data warehouse dashboard..."
 
@@ -801,6 +819,9 @@ start_dw_frontend_service() {
                 print_status "The dashboard will be available at http://localhost:$DW_FRONTEND_PORT"
                 print_status "Dashboard PID: $DW_FRONTEND_PID (saved to $DW_FRONTEND_PID_FILE)"
                 print_status "To stop the dashboard, run: $0 stop"
+                echo ""
+
+                open_browser_url "http://localhost:$DW_FRONTEND_PORT"
             else
                 print_error "data warehouse dashboard failed to start"
             fi

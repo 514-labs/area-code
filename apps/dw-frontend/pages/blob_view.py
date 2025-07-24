@@ -6,6 +6,7 @@ import streamlit_shadcn_ui as ui
 # Import shared functions
 from utils.api_functions import fetch_blob_data, trigger_extract, render_dlq_controls, render_workflows_table
 from utils.constants import CONSUMPTION_API_BASE
+from utils.tooltip_utils import info_icon_with_tooltip, title_with_info_icon, title_with_button
 
 def format_file_size(size_bytes):
     """Format file size in human readable format"""
@@ -71,10 +72,8 @@ def prepare_blob_display_data(df):
 def show():
     file_type_counts = {"json": 0, "csv": 0, "txt": 0}
 
-    # Header with button underneath
-    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Blob View</h2>", unsafe_allow_html=True)
-    
-    if ui.button(text="Pull via connectors", key="trigger_blob_btn", size="sm"):
+    # Header with button inline
+    if title_with_button("Blob View", "Pull via connectors", "trigger_blob_btn", button_size="sm"):
         with st.spinner(""):
             trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
             time.sleep(2)
@@ -113,17 +112,20 @@ def show():
             )
 
     # Show workflow runs
-    render_workflows_table("blob-workflow", "Blob")
+    st.divider()
+    title_with_info_icon("Blob Workflows", "View the status and history of blob processing workflows", "blob_workflows_info")
+    render_workflows_table("blob-workflow", "Blob", show_title=False)
 
     st.divider()
-    st.subheader("Blob Table")
+    title_with_info_icon("Blob Table", "Display all blob files with their metadata and properties", "blob_table_info")
+    
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)
     else:
         st.write("No blob data available.")
     
     # Use the reusable DLQ controls function
-    render_dlq_controls("extract-blob", "refresh_blob")
+    render_dlq_controls("extract-blob", "refresh_blob", show_info_icon=True, info_tooltip="Test and manage dead letter queue messages for blob processing")
     
     # Always check for and display existing DLQ data
     dlq_messages_key = "dlq_messages_extract-blob"

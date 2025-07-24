@@ -4,6 +4,30 @@
 
 <a href="dw-logo.png"><img src="dw-logo.png" alt="Data Warehouse Logo" width="512"></a>
 
+## Prerequisites
+
+- Python 3.12+
+- Node.js 20+
+- Docker 2.23.1+
+
+## Quick Start
+
+(If you haven't already, navigate here `cd services/data-warehouse`, and make sure Docker Desktop is running)
+
+**Full Setup** (recommended for first-time users):
+   ```bash
+   ./setup.sh setup
+   ```
+   This will:
+   - Install all dependencies
+   - Start the data warehouse service (moose app)
+   - Start the data warehouse frontend (streamlit in apps/dw-frontend) and open it in your browser
+
+
+## Presenter - walkthrough docs
+
+[Presenter - walkthrough docs](./docs/README.md)
+
 ## Overview
 
 <a href="./docs/ODW-architecture.jpg"><img src="./docs/ODW-architecture.jpg" alt="Data Warehouse Architecture" width="800"></a>
@@ -61,134 +85,35 @@ services/data-warehouse/
 └── setup.py                    # Package configuration
 ```
 
-## Run
 
-### Prerequisites
+## Other Commands:
 
-- Python 3.12+
-- Node.js 20+
-- Docker 2.23.1+
-
-### Quick Start
-
-1. **Full Setup** (recommended for first-time users):
-   ```bash
-   ./setup.sh setup
-   ```
-   This will:
-   - Install all dependencies
-   - Start the data warehouse service (moose app)
-   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
-
-2. **Startup** (post setup):
-   ```bash
-   ./setup.sh start
-   ```
-   This will:
-   - Start the data warehouse service (moose app)
-   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
-
-3. **Other Commands**:
    ```bash
    ./setup.sh help
    ```
 
+   ```bash
+   ./setup.sh stop      # Stop service 
+   ```
+
+   ```bash
+   ./setup.sh start     # Start service (not required after initial setup)
+   ```
+
+     ```bash
+   ./setup.sh reset     # Full reset 
+   ```
+
+   ```bash
+   ./setup.sh status    # Check status
+   ```
+
+   ```bash
+   ./setup.sh env:check
+   ```
+
 ## Installing Aurora AI Support
 
-Aurora AI is an optional enhancement that extends Cursor's AI capabilities with specialized tools for Moose workflows, ClickHouse queries, and Redpanda integration. This provides intelligent assistance for the creation and maintance of data warehouse operations.
+Aurora AI is an optional enhancement that extends your copilot's AI capabilities an MCP with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintenance of data warehouse operations.
 
-### Prerequisites
-
-- An Anthropic API key (required for full functionality)
-- Cursor IDE installed
-- Access to the Area-Code repository
-
-### Installation Steps
-
-#### 1. Install Aurora
-
-Run the installation command from your terminal:
-
-```bash
-bash -i <(curl -fsSL https://fiveonefour.com/install.sh) aurora,moose
-```
-
-#### 2. Configure Aurora for Cursor
-
-Navigate to the Area-Code repository root and set up Aurora for Cursor:
-
-```bash
-aurora setup --mcp cursor-project
-```
-
-#### 3. Enable Required Tools
-
-Configure Aurora to use all available tools. Use the space bar to select all tools, then press Enter:
-
-```bash
-aurora config tools
-```
-
-You should see options like:
-- `moose-read-tools` - Enable Moose read tools for data inspection
-- `moose-write-tools` - Enable Moose write tools for full functionality (requires API key)
-- `remote-clickhouse-tools` - Enable Remote ClickHouse integration
-
-**Note**: Use space bar to select all tools, then press Enter to confirm.
-
-#### 4. Add Your API Key
-
-Configure your Anthropic API key (replace with your actual key):
-
-```bash
-aurora config keys sk-ant-api03-your-actual-api-key-here
-```
-
-#### 5. Launch Cursor
-
-Start Cursor from the Area-Code repository:
-
-```bash
-open -a cursor .
-```
-
-### Verification and Usage
-
-#### 1. Accept MCP Tool
-
-When prompted by Cursor to accept a newly detected MCP tool, click "Accept" or "Allow".
-
-#### 2. Verify Installation
-
-1. Open Cursor Settings (`Shift + Command + P`)
-2. Navigate to `Tools & Integrations`
-3. Confirm that "aurora MCP Tool" is activated
-
-#### 3. Test Aurora Integration
-
-1. Add the `data-warehouse` folder to a Cursor chat
-2. Try the following prompt: `Tell me about this moose project`
-3. Allow the `read_moose_project` MCP tool to run when prompted
-4. You should receive a description of the Moose workflow project
-
-#### 4. Explore Additional Features
-
-Try these example prompts to explore Aurora's capabilities:
-
-- `Read the contents of my ClickHouse database`
-- `Show me the current data pipeline status`
-- `Analyze the recent data ingestion patterns`
-
-### Benefits
-
-With Aurora AI enabled, you gain:
-
-- **Intelligent Moose Workflow Analysis**: Understand complex data pipelines
-- **ClickHouse Query Assistance**: Get help with database queries and optimization
-- **Redpanda Integration**: Monitor and manage streaming data
-- **Context-Aware Suggestions**: AI that understands your data warehouse architecture
-- **Automated Documentation**: Generate insights about your data processing workflows
-
-## Presenter - walkthrough docs
-
-[Presenter - walkthrough docs](./docs/README.md)
+For setup instructions, see [Aurora docs](https://docs.fiveonefour.com/aurora).
