@@ -107,7 +107,7 @@ def show():
     st.divider()
     title_with_info_icon("Logs Workflows", "View the status and history of logs processing workflows", "logs_workflows_info")
     render_workflows_table("logs-workflow", "Logs", show_title=False)
-
+    st.divider()
     title_with_info_icon("Logs Table", "Display all log entries with their metadata and properties", "logs_table_info")
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)
