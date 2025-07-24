@@ -277,17 +277,24 @@ def get_dlq_topic_name(endpoint_path):
         # Fallback to old name for backward compatibility
         return "FooDeadLetterQueue"
 
-def render_dlq_controls(endpoint_path, refresh_key):
+def render_dlq_controls(endpoint_path, refresh_key, show_info_icon=False, info_tooltip=""):
     """
     Renders DLQ testing controls with batch size and failure percentage inputs.
     
     Args:
         endpoint_path (str): The API endpoint path (e.g., "extract-blob", "extract-logs")
         refresh_key (str): The session state key for refreshing data after DLQ trigger
+        show_info_icon (bool): Whether to show an info icon next to the title
+        info_tooltip (str): Tooltip text for the info icon
     """
     # DLQ section positioned below the table and to the left
     st.divider()
-    st.markdown("#### Dead Letter Queue Testing")
+    
+    if show_info_icon:
+        from utils.tooltip_utils import title_with_info_icon
+        title_with_info_icon("Dead Letter Queue Testing", info_tooltip, f"dlq_info_{endpoint_path}")
+    else:
+        st.markdown("#### Dead Letter Queue Testing")
     
     # Create columns to keep DLQ controls on the left side
     dlq_col, _ = st.columns([1, 2])
