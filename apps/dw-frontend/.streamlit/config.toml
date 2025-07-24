@@ -16,6 +16,7 @@ maxUploadSize = 200
 [client]
 showErrorDetails = "full"
 toolbarMode = "auto"
+showDeployButton = false
 
 [runner]
 magicEnabled = true

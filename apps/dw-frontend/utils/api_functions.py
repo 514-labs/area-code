@@ -289,7 +289,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
         batch_size = st.number_input(
             "Batch size", 
             min_value=1, 
-            max_value=1000, 
+            max_value=10000, 
             value=10, 
             step=1,
             key=f"dlq_batch_size_{endpoint_path}"
@@ -310,8 +310,8 @@ def render_dlq_controls(endpoint_path, refresh_key):
         with btn_col1:
             if ui.button(text="Trigger DLQ", key=f"trigger_dlq_btn_{endpoint_path}"):
                 # Validate inputs
-                if batch_size < 1 or batch_size > 1000:
-                    st.error("Batch size must be between 1 and 1000")
+                if batch_size < 1 or batch_size > 10000:
+                    st.error("Batch size must be between 1 and 10000")
                 elif failure_percentage < 0 or failure_percentage > 100:
                     st.error("Failure percentage must be between 0 and 100")
                 else:
@@ -476,7 +476,7 @@ def render_dlq_controls(endpoint_path, refresh_key):
                     st.session_state["extract_status_time"] = time.time()
         
         with btn_col2:
-            st.link_button("Explorer", "http://localhost:9999")
+            st.link_button("View Queues ↗", "http://localhost:9999")
 
 def fetch_workflows(name_prefix=None):
     """
@@ -574,7 +574,7 @@ def render_workflows_table(workflow_prefix, display_name):
             "Temporal Link": st.column_config.LinkColumn(
                 "Details",
                 help="Open workflow history in Temporal UI",
-                display_text="View Details"
+                display_text="View Details ↗"
             )
         }
 

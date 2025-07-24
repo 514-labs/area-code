@@ -24,6 +24,11 @@ def set_sidebar_min_width():
             padding-left: 0.5rem;
             padding-right: 0.5rem;
         }
+        /* Hide the deploy button */
+        .stAppDeployButton,
+        [data-testid="stAppDeployButton"] {
+            display: none !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,

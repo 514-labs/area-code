@@ -8,20 +8,14 @@ import streamlit_shadcn_ui as ui
 from utils.api_functions import fetch_data, fetch_event_analytics, trigger_all_extracts, handle_refresh_and_fetch
 
 def show():
-    col1, col2 = st.columns([5, 1])
-    with col1:
-        st.markdown("<h2 style='margin: 0; line-height: 1;'>Overview</h2>", unsafe_allow_html=True)
-    with col2:
-        # Use empty space to push button to the right
-        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-        # Create three sub-columns to push the button to the right
-        _, _, button_col = st.columns([1, 1, 1])
-        with button_col:
-            if ui.button(text="Extract", key="trigger_extracts_btn", size="sm"):
-                with st.spinner(""):
-                    trigger_all_extracts()
-                    time.sleep(2)
-                st.session_state["refresh_data"] = True
+    # Header with button underneath
+    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Overview</h2>", unsafe_allow_html=True)
+    
+    if ui.button(text="Pull via connectors", key="trigger_extracts_btn", size="sm"):
+        with st.spinner(""):
+            trigger_all_extracts()
+            time.sleep(2)
+        st.session_state["refresh_data"] = True
     
     tags_options = ["All", "Blob", "Logs", "Events"]
     selected_tag = ui.select(options=tags_options, label="Filter by Tag", key="tag_select")
