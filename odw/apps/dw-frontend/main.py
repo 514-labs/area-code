@@ -39,11 +39,78 @@ def set_sidebar_min_width():
 # Apply sidebar styling
 set_sidebar_min_width()
 
-# Add CSS to hide permalink icons
+# Add CSS to hide permalink icons and style View Queues button
 st.markdown("""
 <style>
 [data-testid="stHeaderActionElements"] {
     display: none;
+}
+
+/* Comprehensive styling for View Queues button hover state */
+/* Target all possible Streamlit button variations */
+.stButton > button:hover,
+.stButton > a:hover,
+.stButton button:hover,
+.stButton a:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Specific targeting for secondary buttons */
+.stButton > button[kind="secondary"]:hover,
+.stButton > button[data-testid="baseButton-secondary"]:hover,
+.stButton > a[data-testid="baseButton-secondary"]:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Target link buttons specifically */
+.stButton a[href*="localhost:9999"]:hover,
+.stButton a[href*="9999"]:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Additional selectors for Streamlit's button structure */
+div[data-testid="stButton"] > button:hover,
+div[data-testid="stButton"] > a:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Target buttons with specific text content */
+.stButton button:contains("View Queues"):hover,
+.stButton a:contains("View Queues"):hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* More specific selectors for Streamlit link buttons */
+.stButton a[target="_blank"]:hover,
+.stButton a[rel="noopener"]:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Target all buttons in the DLQ section */
+.stButton:has(a[href*="9999"]) a:hover,
+.stButton:has(button:contains("View Queues")) button:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Universal button hover override */
+button:hover, a:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
 }
 </style>
 """, unsafe_allow_html=True)

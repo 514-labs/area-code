@@ -493,7 +493,43 @@ def render_dlq_controls(endpoint_path, refresh_key, show_info_icon=False, info_t
                         st.session_state["extract_status_time"] = time.time()
         
         with btn_col2:
-            st.link_button("View Queues ↗", "http://localhost:9999")
+            # Use custom HTML button with specific styling for View Queues
+            st.markdown("""
+            <style>
+            .view-queues-btn {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                background-color: #F5F5F5;
+                color: #000000 !important;
+                border: 1px solid #000000;
+                border-radius: 0.375rem;
+                text-decoration: none !important;
+                font-size: 0.875rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .view-queues-btn:hover {
+                background-color: #F5F5F5;
+                color: #000000 !important;
+                border-color: #000000;
+                text-decoration: none !important;
+            }
+            .view-queues-btn:visited {
+                color: #000000 !important;
+                text-decoration: none !important;
+            }
+            .view-queues-btn:active {
+                color: #000000 !important;
+                text-decoration: none !important;
+            }
+            .view-queues-btn:link {
+                color: #000000 !important;
+                text-decoration: none !important;
+            }
+            </style>
+            <a href="http://localhost:9999" target="_blank" class="view-queues-btn">View Queues ↗</a>
+            """, unsafe_allow_html=True)
 
 def fetch_workflows(name_prefix=None):
     """
