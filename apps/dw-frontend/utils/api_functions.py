@@ -6,6 +6,7 @@ import random
 import json
 import streamlit_shadcn_ui as ui
 from datetime import datetime, timedelta
+from requests.exceptions import ConnectionError
 
 from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
@@ -628,10 +629,7 @@ def fetch_daily_pageviews_data(days_back=14, limit=14):
         return pd.DataFrame()
 
 def is_data_warehouse_not_ready(error):
-    error_str = str(error)
-    return (
-        "HTTPConnectionPool" in error_str and
-        "Max retries exceeded" in error_str and
-        "NewConnectionError" in error_str and
-        "Connection refused" in error_str
-    )
+    if isinstance(error, ConnectionError):
+        error_args = getattr(error, 'args', [])
+        return any("Connection refused" in str(arg) for arg in error_args)
+    return False
