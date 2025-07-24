@@ -6,6 +6,7 @@ import streamlit_shadcn_ui as ui
 # Import shared functions
 from utils.api_functions import fetch_log_data, trigger_extract, render_dlq_controls, render_workflows_table
 from utils.constants import CONSUMPTION_API_BASE
+from utils.tooltip_utils import info_icon_with_tooltip, title_with_info_icon, title_with_button
 
 def truncate_message(message, max_length=100):
     """Truncate long messages for table display"""
@@ -63,10 +64,8 @@ def prepare_log_display_data(df):
 def show():
     level_counts = {"INFO": 0, "DEBUG": 0, "WARN": 0, "ERROR": 0}
 
-    # Header with button underneath
-    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Logs View</h2>", unsafe_allow_html=True)
-    
-    if ui.button(text="Pull via connectors", key="trigger_logs_btn", size="sm"):
+    # Header with button inline
+    if title_with_button("Logs View", "Pull via connectors", "trigger_logs_btn", button_size="sm"):
         with st.spinner(""):
             trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
             time.sleep(2)
@@ -105,17 +104,18 @@ def show():
             )
 
     # Show workflow runs
-    render_workflows_table("logs-workflow", "Logs")
-
     st.divider()
-    st.subheader("Logs Table")
+    title_with_info_icon("Logs Workflows", "View the status and history of logs processing workflows", "logs_workflows_info")
+    render_workflows_table("logs-workflow", "Logs", show_title=False)
+
+    title_with_info_icon("Logs Table", "Display all log entries with their metadata and properties", "logs_table_info")
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)
     else:
         st.write("No logs data available.")
     
     # Use the reusable DLQ controls function
-    render_dlq_controls("extract-logs", "refresh_logs")
+    render_dlq_controls("extract-logs", "refresh_logs", show_info_icon=True, info_tooltip="Test and manage dead letter queue messages for logs processing")
     
     # Always check for and display existing DLQ data
     dlq_messages_key = "dlq_messages_extract-logs"

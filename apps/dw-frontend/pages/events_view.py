@@ -9,16 +9,15 @@ from utils.api_functions import (
     render_dlq_controls, render_workflows_table, fetch_daily_pageviews_data
 )
 from utils.constants import CONSUMPTION_API_BASE
+from utils.tooltip_utils import info_icon_with_tooltip, title_with_info_icon, title_with_button
 
 def show():
     # Fetch analytics data for metrics
     analytics = fetch_event_analytics(hours=24)
     event_counts = {"pageview": 0, "signup": 0, "click": 0, "purchase": 0, "other": 0}
 
-    # Header with button underneath
-    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Events View</h2>", unsafe_allow_html=True)
-    
-    if ui.button(text="Pull via connectors", key="trigger_events_btn", size="sm"):
+    # Header with button inline
+    if title_with_button("Events View", "Pull via connectors", "trigger_events_btn", button_size="sm"):
         with st.spinner(""):
             trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
             time.sleep(2)
@@ -116,10 +115,12 @@ def show():
         st.info("No daily page views data available yet. Generate some pageview events using the Extract button to see this materialized view in action!")
 
     # Show workflow runs
-    render_workflows_table("events-workflow", "Events")
+    st.divider()
+    title_with_info_icon("Events Workflows", "View the status and history of events processing workflows", "events_workflows_info")
+    render_workflows_table("events-workflow", "Events", show_title=False)
     
     st.divider()
-    st.subheader("Events Table")
+    title_with_info_icon("Events Table", "Display all events with their metadata and properties", "events_table_info")
     
     # Add filtering controls just above the table
     col1, col2, col3 = st.columns(3)
@@ -155,7 +156,7 @@ def show():
     
 
     # Use the reusable DLQ controls function
-    render_dlq_controls("extract-events", "refresh_events")
+    render_dlq_controls("extract-events", "refresh_events", show_info_icon=True, info_tooltip="Test and manage dead letter queue messages for events processing")
     
     # Always check for and display existing DLQ data
     dlq_messages_key = "dlq_messages_extract-events"

@@ -6,12 +6,11 @@ import streamlit_shadcn_ui as ui
 
 # Import shared functions
 from utils.api_functions import fetch_data, fetch_event_analytics, trigger_all_extracts, handle_refresh_and_fetch
+from utils.tooltip_utils import title_with_button
 
 def show():
-    # Header with button underneath
-    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Overview</h2>", unsafe_allow_html=True)
-    
-    if ui.button(text="Pull via connectors", key="trigger_extracts_btn", size="sm"):
+    # Header with button inline
+    if title_with_button("Overview", "Pull via connectors", "trigger_extracts_btn", button_size="sm"):
         with st.spinner(""):
             trigger_all_extracts()
             time.sleep(2)

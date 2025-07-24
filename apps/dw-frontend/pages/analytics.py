@@ -6,14 +6,13 @@ import streamlit_shadcn_ui as ui
 # Import shared functions
 from utils.api_functions import fetch_data, trigger_extract
 from utils.constants import CONSUMPTION_API_BASE
+from utils.tooltip_utils import title_with_button
 
 def show():
     connector_counts = {"Blob": 0, "Log": 0, "Event": 0}
 
-    # Header with button underneath
-    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Connector Analytics Report</h2>", unsafe_allow_html=True)
-    
-    if ui.button(text="Refresh", key="update_btn", size="sm"):
+    # Header with button inline
+    if title_with_button("Connector Analytics Report", "Refresh", "update_btn", button_size="sm"):
         with st.spinner(""):
             trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
             trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
