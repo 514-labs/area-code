@@ -71,21 +71,15 @@ def prepare_blob_display_data(df):
 def show():
     file_type_counts = {"json": 0, "csv": 0, "txt": 0}
 
-    col1, col2 = st.columns([5, 1])
-    with col1:
-        st.markdown("<h2 style='margin: 0; line-height: 1;'>Blob View</h2>", unsafe_allow_html=True)
-    with col2:
-        # Use empty space to push button to the right
-        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-        # Create three sub-columns to push the button to the right
-        _, _, button_col = st.columns([1, 1, 1])
-        with button_col:
-            if ui.button(text="Extract", key="trigger_blob_btn", size="sm"):
-                with st.spinner(""):
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
-                    time.sleep(2)
-                st.session_state["refresh_blob"] = True
-                st.rerun()
+    # Header with button underneath
+    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Blob View</h2>", unsafe_allow_html=True)
+    
+    if ui.button(text="Pull via connectors", key="trigger_blob_btn", size="sm"):
+        with st.spinner(""):
+            trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
+            time.sleep(2)
+        st.session_state["refresh_blob"] = True
+        st.rerun()
     
     # Fetch blob data directly
     if "refresh_blob" not in st.session_state:

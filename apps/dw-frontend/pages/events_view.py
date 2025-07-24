@@ -15,21 +15,15 @@ def show():
     analytics = fetch_event_analytics(hours=24)
     event_counts = {"pageview": 0, "signup": 0, "click": 0, "purchase": 0, "other": 0}
 
-    col1, col2 = st.columns([5, 1])
-    with col1:
-        st.markdown("<h2 style='margin: 0; line-height: 1;'>Events View</h2>", unsafe_allow_html=True)
-    with col2:
-        # Use empty space to push button to the right
-        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-        # Create three sub-columns to push the button to the right
-        _, _, button_col = st.columns([1, 1, 1])
-        with button_col:
-            if ui.button(text="Extract", key="trigger_events_btn", size="sm"):
-                with st.spinner(""):
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
-                    time.sleep(2)
-                st.session_state["refresh_events"] = True
-                st.rerun()
+    # Header with button underneath
+    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Events View</h2>", unsafe_allow_html=True)
+    
+    if ui.button(text="Pull via connectors", key="trigger_events_btn", size="sm"):
+        with st.spinner(""):
+            trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
+            time.sleep(2)
+        st.session_state["refresh_events"] = True
+        st.rerun()
     
     # Fetch events data using new structured API
     if st.session_state.get("refresh_events", False):

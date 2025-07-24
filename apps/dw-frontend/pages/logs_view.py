@@ -63,21 +63,15 @@ def prepare_log_display_data(df):
 def show():
     level_counts = {"INFO": 0, "DEBUG": 0, "WARN": 0, "ERROR": 0}
 
-    col1, col2 = st.columns([5, 1])
-    with col1:
-        st.markdown("<h2 style='margin: 0; line-height: 1;'>Logs View</h2>", unsafe_allow_html=True)
-    with col2:
-        # Use empty space to push button to the right
-        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-        # Create three sub-columns to push the button to the right
-        _, _, button_col = st.columns([1, 1, 1])
-        with button_col:
-            if ui.button(text="Extract", key="trigger_logs_btn", size="sm"):
-                with st.spinner(""):
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
-                    time.sleep(2)
-                st.session_state["refresh_logs"] = True
-                st.rerun()
+    # Header with button underneath
+    st.markdown("<h2 style='margin: 0; margin-bottom: 0.5rem;'>Logs View</h2>", unsafe_allow_html=True)
+    
+    if ui.button(text="Pull via connectors", key="trigger_logs_btn", size="sm"):
+        with st.spinner(""):
+            trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
+            time.sleep(2)
+        st.session_state["refresh_logs"] = True
+        st.rerun()
 
     # Fetch log data directly
     if "refresh_logs" not in st.session_state:
