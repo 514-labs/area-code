@@ -112,6 +112,35 @@ button:hover, a:hover {
     color: #000000 !important;
     border-color: #000000 !important;
 }
+
+/* Number input control styling for DLQ section */
+/* Target the plus and minus buttons in number inputs */
+.stNumberInput > div > button:hover,
+.stNumberInput button:hover,
+[data-testid="stNumberInput"] > div > button:hover,
+[data-testid="stNumberInput"] button:hover {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+    border-color: #000000 !important;
+}
+
+/* More specific targeting for number input controls */
+.stNumberInput > div > div > button:hover,
+.stNumberInput > div > div > div > button:hover {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+    border-color: #000000 !important;
+}
+
+/* Target the increment/decrement buttons specifically */
+.stNumberInput button[aria-label*="increment"]:hover,
+.stNumberInput button[aria-label*="decrement"]:hover,
+.stNumberInput button[aria-label*="Increment"]:hover,
+.stNumberInput button[aria-label*="Decrement"]:hover {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+    border-color: #000000 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
