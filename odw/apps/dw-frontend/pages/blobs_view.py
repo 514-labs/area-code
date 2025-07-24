@@ -73,7 +73,7 @@ def show():
     file_type_counts = {"json": 0, "csv": 0, "txt": 0}
 
     # Header with button inline
-    if title_with_button("Blob View", "Pull via connectors", "trigger_blob_btn", button_size="sm"):
+    if title_with_button("Blobs View", "Pull via connectors", "trigger_blob_btn", button_size="sm"):
         with st.spinner(""):
             trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
             time.sleep(2)
