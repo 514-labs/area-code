@@ -6,6 +6,7 @@ import random
 import json
 import streamlit_shadcn_ui as ui
 from datetime import datetime, timedelta
+from requests.exceptions import ConnectionError
 
 from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
 
@@ -60,7 +61,7 @@ def normalize_for_display(blob_df, log_df, events_df=None):
     else:
         return pd.DataFrame()
 
-def fetch_blob_data(tag="All"):
+def fetch_blob_data(tag="All", should_throw=False):
     """Fetch blob data from the getBlobs API"""
     api_url = f"{CONSUMPTION_API_BASE}/getBlobs"
     if tag and tag != "All":
@@ -74,10 +75,14 @@ def fetch_blob_data(tag="All"):
         df = pd.DataFrame(items)
         return df
     except Exception as e:
-        st.error(f"Failed to fetch blob data from API: {e}")
+        if should_throw:
+            raise e
+        else:
+            print(f"Blob API error: {e}")
+            st.toast("Error fetching blobs. Check terminal for details.")
         return pd.DataFrame()
 
-def fetch_log_data(tag="All"):
+def fetch_log_data(tag="All", should_throw=False):
     """Fetch log data from the getLogs API"""
     api_url = f"{CONSUMPTION_API_BASE}/getLogs"
     if tag and tag != "All":
@@ -91,12 +96,16 @@ def fetch_log_data(tag="All"):
         df = pd.DataFrame(items)
         return df
     except Exception as e:
-        st.error(f"Failed to fetch log data from API: {e}")
+        if should_throw:
+            raise e
+        else:
+            print(f"Log API error: {e}")
+            st.toast("Error fetching logs. Check terminal for details.")
         return pd.DataFrame()
 
-def fetch_events_for_analytics(limit=1000):
+def fetch_events_for_analytics(limit=1000, should_throw=False):
     """Fetch events data specifically for analytics purposes"""
-    return fetch_events_data(limit=limit)
+    return fetch_events_data(limit=limit, should_throw=should_throw)
 
 def fetch_data(tag):
     """Fetch combined data based on tag filter - backward compatibility function"""
@@ -106,21 +115,19 @@ def fetch_data(tag):
         return fetch_log_data(tag)
     elif tag == "Events":
         return fetch_events_for_analytics()
-    elif tag == "All":
-        # Get all three types of data and create unified view
-        blob_df = fetch_blob_data()
-        log_df = fetch_log_data()
-        events_df = fetch_events_for_analytics()
-        return normalize_for_display(blob_df, log_df, events_df)
     else:
-        # For any other tag, try all endpoints and filter
-        blob_df = fetch_blob_data(tag)
-        log_df = fetch_log_data(tag)
-        events_df = fetch_events_for_analytics()
-
-        if not blob_df.empty or not log_df.empty or not events_df.empty:
+        # Get all three types of data and create unified view
+        try:
+            blob_df = fetch_blob_data(tag, should_throw=True)
+            log_df = fetch_log_data(tag, should_throw=True)
+            events_df = fetch_events_for_analytics(should_throw=True)
             return normalize_for_display(blob_df, log_df, events_df)
-        else:
+        except Exception as e:
+            if is_data_warehouse_not_ready(e):
+                st.toast("Services may still be starting up. Try refreshing in a moment.")
+            else:
+                print(f"Error fetching data: {e}")
+                st.toast("Error fetching data. Check terminal for details.")
             return pd.DataFrame()
 
 def trigger_extract(api_url, label):
@@ -142,7 +149,7 @@ def trigger_all_extracts():
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-logs", "Logs")
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-events", "Events")
 
-def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=100):
+def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=100, should_throw=False):
     """Fetch events data with filtering options"""
     params = {"limit": limit}
     if event_name:
@@ -161,7 +168,11 @@ def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=
         data = response.json()
         return pd.DataFrame(data.get("items", []))
     except Exception as e:
-        st.error(f"Failed to fetch events data: {e}")
+        if should_throw:
+            raise e
+        else:
+            print(f"Events API error: {e}")
+            st.toast("Error fetching events. Check terminal for details.")
         return pd.DataFrame()
 
 def fetch_event_analytics(hours=24):
@@ -616,3 +627,9 @@ def fetch_daily_pageviews_data(days_back=14, limit=14):
     except Exception as e:
         st.error(f"Unexpected error fetching daily page views: {str(e)}")
         return pd.DataFrame()
+
+def is_data_warehouse_not_ready(error):
+    if isinstance(error, ConnectionError):
+        error_args = getattr(error, 'args', [])
+        return any("Connection refused" in str(arg) for arg in error_args)
+    return False
