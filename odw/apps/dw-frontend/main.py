@@ -8,7 +8,8 @@ from utils.status_handler import display_status_messages, cleanup_old_status_mes
 st.set_page_config(
     page_title="Data Warehouse Front-end",
     page_icon="🚀",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 def set_sidebar_min_width():
@@ -29,6 +30,7 @@ def set_sidebar_min_width():
         [data-testid="stAppDeployButton"] {
             display: none !important;
         }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -36,6 +38,15 @@ def set_sidebar_min_width():
 
 # Apply sidebar styling
 set_sidebar_min_width()
+
+# Add CSS to hide permalink icons
+st.markdown("""
+<style>
+[data-testid="stHeaderActionElements"] {
+    display: none;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # Define navigation pages
 def create_navigation():
