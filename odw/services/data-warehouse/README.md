@@ -75,8 +75,8 @@ odw/services/data-warehouse/
 ├── app/
 │   ├── apis/                   # REST API endpoints
 │   ├── logs/                   # Log extraction workflow
-│   ├── blobs/                  # Blob extracttion workflow
-│   ├── events/                 # Events extracttion workflow
+│   ├── blobs/                  # Blob extraction workflow
+│   ├── events/                 # Events extraction workflow
 │   ├── ingest/                 # Data models and transformations
 │   ├── views/                  # Materialized views
 │   └── main.py                 # Main application entry point
