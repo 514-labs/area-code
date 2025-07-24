@@ -1,18 +1,21 @@
 {
-  "name": "with-vite",
-  "version": "0.0.0",
+  "name": "area-code",
+  "version": "0.3.0",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*",
-    "services/*"
+    "ufa/apps/*",
+    "ufa/packages/*",
+    "ufa/services/*",
+    "odw/apps/*",
+    "odw/packages/*",
+    "odw/services/*"
   ],
   "scripts": {
-    "dev": "turbo run dev:ufa --ui=tui",
+    "ufa:dev": "turbo run ufa:dev --ui=tui",
+    "ufa:dev:clean": "pnpm --filter transactional-database ufa:dev:clean && pnpm --filter retrieval-base ufa:dev:clean && pnpm --filter sync-base ufa:dev:clean",
+    "ufa:dev:seed": "./ufa/scripts/dev-seed.sh",
     "build": "turbo run build",
-    "clean": "turbo run clean",
-    "dev:clean": "pnpm --filter @workspace/transactional-database dev:clean && pnpm --filter @workspace/retrieval-base dev:clean && pnpm --filter sync-base dev:clean",
-    "dev:seed": "./scripts/dev-seed.sh"
+    "clean": "turbo run clean"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",

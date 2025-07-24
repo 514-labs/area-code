@@ -1,13 +1,13 @@
 {
-  "name": "@workspace/retrieval-base",
+  "name": "retrieval-base",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
-    "dev:ufa": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
+    "ufa:dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
     "dev:server-only": "SKIP_ES_WAIT=true PORT=8083 tsx watch src/server.ts",
-    "dev:clean": "pnpm es:stop",
+    "ufa:dev:clean": "pnpm es:stop",
     "build": "tsc",
     "lint": "eslint src/",
     "es:start": "docker compose up -d && ./scripts/es-wait.sh && pnpm es:init-indices",

@@ -1,5 +1,5 @@
 {
-  "name": "@workspace/transactional-database",
+  "name": "transactional-database",
   "version": "1.0.0",
   "description": "Self-hosted Supabase database infrastructure for transactional workloads",
   "type": "module",
@@ -20,7 +20,7 @@
     "dev:status": "pnpm supabase status",
     "dev:logs": "pnpm supabase logs",
     "dev:studio": "pnpm supabase studio",
-    "dev:clean": "pnpm dev:stop",
+    "ufa:dev:clean": "pnpm dev:stop",
     "setup:replication": "pnpm tsx scripts/setup-replication.ts",
     "setup:replication:status": "pnpm tsx scripts/setup-replication.ts --status",
     "replication:stop": "pnpm tsx scripts/teardown-replication.ts",

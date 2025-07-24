@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --clearScreen false",
-    "dev:ufa": "vite --clearScreen false",
+    "ufa:dev": "vite --clearScreen false",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.ts\""

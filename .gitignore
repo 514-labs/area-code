@@ -7,12 +7,9 @@ dist-ssr
 *.local
 .env
 .cache
-logs/
+./logs/
 
-# Vite cache files
-vite.config.*.timestamp-*.mjs
-server/dist
-public/dist
+
 .cursor/
 
 # Temporary migration files and directories
