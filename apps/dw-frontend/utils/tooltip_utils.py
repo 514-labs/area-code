@@ -132,10 +132,38 @@ def title_with_button(title_text, button_text, button_key, button_size="sm", but
     Returns:
         bool: True if button was clicked, False otherwise
     """
-    import streamlit_shadcn_ui as ui
+    # Add custom CSS to style Streamlit buttons like ShadCN
+    st.markdown("""
+        <style>
+        /* Style Streamlit buttons to look like ShadCN buttons */
+        .stButton > button {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: none !important;
+            border-radius: 6px !important;
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            height: 32px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background-color 0.2s !important;
+            cursor: pointer !important;
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            min-width: fit-content !important;
+            float: right !important;
+            margin-left: auto !important;
+        }
+        .stButton > button:hover {
+            background-color: #333333 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     
     # Use columns to create a balanced layout with title on left and button on right
-    col1, col2 = st.columns([9, 1])
+    col1, col2 = st.columns([1, 1])
     
     with col1:
         st.markdown(f"<h2 style='margin: 0; margin-bottom: 0.5rem;'>{title_text}</h2>", unsafe_allow_html=True)
@@ -143,16 +171,15 @@ def title_with_button(title_text, button_text, button_key, button_size="sm", but
     with col2:
         # Use CSS to right-align the button within the column
         st.markdown(
-            f"<div style='text-align: right; width: 100%;'>",
+            f"<div style='text-align: right; width: 100%; margin-right: 20px;'>",
             unsafe_allow_html=True
         )
         
-        # Use a narrower column to force text wrapping in the native button
-        result = ui.button(
-            text=button_text,
+        # Use native Streamlit button with ShadCN-like styling
+        result = st.button(
+            label=button_text,
             key=button_key,
-            size=button_size,
-            variant=button_variant,
+            help="",
             use_container_width=False
         )
         
