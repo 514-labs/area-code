@@ -74,7 +74,11 @@ def fetch_blob_data(tag="All"):
         df = pd.DataFrame(items)
         return df
     except Exception as e:
-        st.error(f"Failed to fetch blob data from API: {e}")
+        if is_data_warehouse_not_ready(e):
+            st.toast("Services may still be starting up. Try refreshing in a moment.")
+        else:
+            print(f"Blob API error: {e}")
+            st.toast("Error fetching blobs. Check terminal for details.")
         return pd.DataFrame()
 
 def fetch_log_data(tag="All"):
@@ -91,7 +95,11 @@ def fetch_log_data(tag="All"):
         df = pd.DataFrame(items)
         return df
     except Exception as e:
-        st.error(f"Failed to fetch log data from API: {e}")
+        if is_data_warehouse_not_ready(e):
+            st.toast("Services may still be starting up. Try refreshing in a moment.")
+        else:
+            print(f"Log API error: {e}")
+            st.toast("Error fetching logs. Check terminal for details.")
         return pd.DataFrame()
 
 def fetch_events_for_analytics(limit=1000):
@@ -161,7 +169,11 @@ def fetch_events_data(event_name=None, project_id=None, distinct_id=None, limit=
         data = response.json()
         return pd.DataFrame(data.get("items", []))
     except Exception as e:
-        st.error(f"Failed to fetch events data: {e}")
+        if is_data_warehouse_not_ready(e):
+            st.toast("Services may still be starting up. Try refreshing in a moment.")
+        else:
+            print(f"Events API error: {e}")
+            st.toast("Error fetching events. Check terminal for details.")
         return pd.DataFrame()
 
 def fetch_event_analytics(hours=24):
@@ -616,3 +628,12 @@ def fetch_daily_pageviews_data(days_back=14, limit=14):
     except Exception as e:
         st.error(f"Unexpected error fetching daily page views: {str(e)}")
         return pd.DataFrame()
+
+def is_data_warehouse_not_ready(error):
+    error_str = str(error)
+    return (
+        "HTTPConnectionPool" in error_str and
+        "Max retries exceeded" in error_str and
+        "NewConnectionError" in error_str and
+        "Connection refused" in error_str
+    )
