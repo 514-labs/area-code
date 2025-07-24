@@ -91,6 +91,8 @@ show_services() {
     echo "To use the created python virtual environment: source venv/bin/activate"
     echo "Service PID is tracked in: $DATA_WAREHOUSE_PID_FILE and $DW_FRONTEND_PID_FILE"
     echo ""
+    echo "View the dashboard on your browser at http://localhost:$DW_FRONTEND_PORT"
+    echo ""
 }
 
 # Function to get moose service PID
@@ -218,32 +220,18 @@ is_port_in_use() {
     fi
 }
 
-# Open URL in default browser (cross-platform)
+# Open URL in default browser
 open_browser_url() {
     local url=$1
 
     print_status "Opening $url in your default browser..."
 
-    suggestion="please open $url manually"
-    error_message="Failed to open browser automatically, $suggestion"
-
-    # Detect operating system and use appropriate command
     case "$(uname -s)" in
         Darwin*)  # macOS
-            open "$url" 2>/dev/null || print_warning "$error_message"
-            ;;
-        Linux*)   # Linux
-            if command -v xdg-open >/dev/null 2>&1; then
-                xdg-open "$url" 2>/dev/null || print_warning "$error_message"
-            else
-                print_warning "xdg-open not available, $suggestion"
-            fi
-            ;;
-        CYGWIN*|MINGW*|MSYS*)  # Windows
-            cmd.exe /c start "" "$url" 2>/dev/null || print_warning "$error_message"
+            open "$url" 2>/dev/null || print_warning "Failed to open browser automatically, please open $url manually"
             ;;
         *)
-            print_warning "Unknown operating system, $suggestion"
+            print_warning "Automatic browser opening only supported on macOS, please open $url manually"
             ;;
     esac
 }
