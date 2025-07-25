@@ -1,6 +1,6 @@
 <img width="1074" height="120" alt="Area Code starter repo powered by Moose — Automated setup with Turborepo" src="https://github.com/user-attachments/assets/a860328a-cb75-41a2-ade4-b9a0624918e0" />
 
-# Starter Application
+# User-Facing Analytics Starter Application
 
 Area Code is a starter repo with all the necessary building blocks for a production ready repository that can be used to build multi-modal applications.
 
@@ -21,6 +21,8 @@ pnpm ufa:dev:seed
 # 4. Open front-end
 http://localhost:5173/
 ```
+
+### Commands
 
 ```bash
 # Clean
