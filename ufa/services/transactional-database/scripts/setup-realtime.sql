@@ -1,6 +1,6 @@
 -- Comprehensive setup script for enabling PostgreSQL realtime changes
 -- This script follows the Supabase documentation for setting up realtime
--- Includes support for foo, bar for sync-service service
+-- Includes support for foo, bar tables for sync-service
 -- Run this script after setting up your database tables
 
 -- Enable Row Level Security for all tables
