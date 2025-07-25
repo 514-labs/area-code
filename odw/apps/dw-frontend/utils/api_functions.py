@@ -556,10 +556,11 @@ def render_workflows_table(workflow_prefix, display_name, show_title=True):
         show_title (bool): Whether to show the title (default: True)
     """
     workflows = fetch_workflows(workflow_prefix)
+    
+    if show_title:
+        st.subheader(f"{display_name} Workflows")
+    
     if workflows:
-
-        if show_title:
-            st.subheader(f"{display_name} Workflows")
         workflows_df = pd.DataFrame(workflows)
 
         # Convert status enums to user-friendly text
@@ -598,6 +599,8 @@ def render_workflows_table(workflow_prefix, display_name, show_title=True):
         }
 
         st.dataframe(workflows_df, use_container_width=True, column_config=column_config)
+    else:
+        st.write("No workflows available.")
 
 def fetch_daily_pageviews_data(days_back=14, limit=14):
     """Fetch daily page views data from the materialized view API"""
