@@ -5,6 +5,10 @@
 
 set -e  # Exit on any error
 
+# Ensure script runs in the right directory regardless of where it's called from
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
