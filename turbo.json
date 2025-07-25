@@ -13,6 +13,14 @@
     "ufa:dev": {
       "cache": false,
       "persistent": true
+    },
+    "ufa:dev:clean": {
+      "cache": false,
+      "persistent": true
+    },
+    "ufa:dev:seed": {
+      "cache": false,
+      "persistent": true
     }
   }
 }
