@@ -8,7 +8,6 @@ The application enables self-service analytics, real-time data exploration, oper
 
 Key features include one-click data extraction from multiple sources (blob storage, application logs, user events), automated data processing with real-time status updates, centralized data management through a unified interface, and interactive dashboards for business insights.
 
-
 > For a detailed overview of the frontend application's architecture and business value, see: [Data Warehouse Frontend Application Overview](./web-front-end.md)
 
 In this walkthrough document, we'll step through each frontend page. Keep in mind that all pages are implemented using the following Moose framework features:
@@ -20,31 +19,29 @@ In this walkthrough document, we'll step through each frontend page. Keep in min
 - **Workflow**: Temporal-powered workflows for pull-based data extraction with failure simulation
 - **Dead Letter Queue**: Automatic error handling with DLQ recovery transforms
 
+## Landing Page
 
-## Landing page
-
-When the Data Warehouse web front-end launches, users see the Connector Analytics page displaying three data sources: Blob, Log, and Event. Initially empty, clicking "Refresh" triggers Moose workflows that extract data via connectors, process it through real-time streams with transformations, and store it in ClickHouse tables. The page then displays unified metrics and recent data from all three sources.
+When the Data Warehouse frontend launches, users see the Connector Analytics page displaying three data sources: Blob, Log, and Event. Initially empty, clicking "Refresh" triggers Moose workflows that extract data via connectors, process it through real-time streams with transformations, and store it in ClickHouse tables. The page then displays unified metrics and recent data from all three sources.
 
 ![landing page](./dw-images/dw-landing.png)
-
-When you first launch the front-end you won't see any data.  however, after pressing the "Refresh" button a request is sent to the Data Warehouse backend which uses the data connectors to fetch data.
 
 ![landing page populated](./dw-images/dw-landing-2.png)
 
 The Connector Analytics Report provides a unified dashboard view of all data sources. Three metric cards display real-time counts for Blob, Log, and Event connectors. The "Recent Data Summary" table shows the latest 10 records across all sources with key details like file names, sizes, and permissions for blobs. Users can trigger fresh data extraction by clicking the "Refresh" button, which populates the dashboard with current metrics and recent data from the warehouse.
 
-## Front-end navigation
+## Navigation
 
-During this tour we'll step through the front-end pages using the navigation panel shown on the left of the screen.
-
-Under the "Connectors" section we have links for All, Blobs, Logs and Events.  All shows overview data for all of the connections and individual connector pages show specific information for a connector.
+Under the "Connectors" section we have links for All, Blobs, Logs and Events. All shows overview data for all connections and individual connector pages show specific information for each connector.
 
 ![navbar](./dw-images/navbar.png)
 
-## Connectors
+## Connector Pages
 
-### All page
+### What Are Connectors?
+
 Connectors are mock data generators that simulate real-world data sources (blob storage, application logs, user events) for the data warehouse. They use a factory pattern to create domain-specific extractors that generate structured test data. In the data warehouse, Moose workflows use these connectors to extract data, which then flows through ingest pipelines for real-time processing and storage. Each connector produces Pydantic models that match the source data schemas, enabling type-safe data flow from extraction through transformation to final storage.
+
+### All Page
 
 The `All` connectors page displays a unified dashboard showing combined data from all three connectors. It features metric cards displaying real-time counts for Blob, Log, and Event data sources, plus a "Recent Data Summary" table showing the latest 10 records across all sources. Users can trigger fresh data extraction for all connectors simultaneously using the "Refresh" button, which populates the dashboard with current metrics and recent data from the warehouse.
 
@@ -52,57 +49,69 @@ The `All` connectors page displays a unified dashboard showing combined data fro
 
 The top filter dropdown allows users to filter the view by specific connector types: "All", "Blob", "Logs", or "Events". When "Events" is selected, additional event analytics metrics are displayed showing unique users, active sessions, and total events over the past 24 hours. The filter dynamically updates the data table to show only records from the selected connector type.
 
-### Blobs page
+### Individual Connector Pages
+
+Each connector page (Blobs, Logs, Events) follows a similar structure with four main sections:
+
+1. **Summary Cards**: Metric cards displaying counts by relevant categories (file types for blobs, log levels for logs, event types for events). Each page has a "Pull via connectors" button that triggers the respective workflow.
+
+2. **Data Table**: A comprehensive table showing individual records with formatted columns and relevant metadata for each data type.
+
+3. **Workflows**: Shows recent workflow execution history with Run ID, Status, Start Time, Duration, and clickable "View Details" links that open the Temporal UI.
+
+4. **Dead Letter Queue Testing**: Interactive controls for testing the DLQ system (covered in detail below).
+
+**Behind the Scenes**: All pages use Moose's ConsumptionApi to query ClickHouse tables with built-in SQL injection protection through parameter binding. Workflow sections tap into MooseClient.workflows to show real-time Temporal execution history. The Events page additionally demonstrates MaterializedView capabilities with AggregatingMergeTree engine for pre-aggregated data.
+
+#### Blobs Page
 
 ![blob page 1](./dw-images/blob-page-1.png)
 
-The Blobs page provides a detailed view of blob storage data with four main sections:
+The Blobs page shows file type counts (JSON, CSV, TXT) and displays individual blob records with columns for ID, File Name, Bucket, Content Type, Size (formatted in human-readable bytes/KB/MB), Permissions, and Full Path. The table displays various file types including PDFs, MP3s, TXT files, PNGs, and DOCs with their associated metadata.
 
-1. **Summary Cards**: Three metric cards display counts by file type (JSON, CSV, TXT) extracted from blob file names. The "Pull via connectors" button triggers the blob workflow to extract fresh data from the blob connector.
-
-2. **Blob Table**: A comprehensive table showing individual blob records with columns for ID, File Name, Bucket, Content Type, Size (formatted in human-readable bytes/KB/MB), Permissions (formatted as comma-separated list), and Full Path (constructed from bucket, path, and filename). The table displays various file types including PDFs, MP3s, TXT files, PNGs, and DOCs with their associated metadata.
-
-3. **Blob Workflows**: Shows recent workflow execution history for blob processing, including Run ID, Status (Completed/Failed), Start Time, Duration, and clickable "View Details" links that open the Temporal UI for detailed workflow inspection.
-
-4. **Dead Letter Queue Testing**: Interactive controls for testing the DLQ system with configurable batch size and failure percentage inputs. The "Trigger DLQ" button simulates failures during blob processing, while "View Queues" opens the Redpanda UI. When DLQ messages are retrieved, they display in a filtered table showing partition, offset, error details, and record information. Users can select individual messages to view their complete JSON payload for debugging and recovery analysis.
-
-We'll revist the DLQ testing section later in this walkthrough as it's common to all connector pages.
-
-**Behind the Scenes**: The Summary Cards pull data through Moose's ConsumptionApi, which automatically queries the underlying ClickHouse tables. The Blob Table gets its data from the OlapTable via ConsumptionApi with built-in SQL injection protection through parameter binding. The Blob Workflows section taps into MooseClient.workflows to show real-time Temporal execution history. And the Dead Letter Queue Testing leverages Moose's DLQ transforms and recovery mechanisms, using DeadLetterModel to handle failed records and enable message recovery.
-
-### Logs page
+#### Logs Page
 
 ![logs page](./dw-images/logs.png)
 
-The Logs page provides a detailed view of application log data with four main sections:
+The Logs page shows log level counts (INFO, DEBUG, WARN, ERROR) and displays individual log records with columns for ID, Level, Source, Trace ID, Message Preview (truncated for readability), and Log Timestamp (formatted for better display).
 
-1. **Summary Cards**: Four metric cards display counts by log level (INFO, DEBUG, WARN, ERROR) extracted from log entries. The "Pull via connectors" button triggers the logs workflow to extract fresh data from the logs connector.
-
-2. **Logs Table**: A comprehensive table showing individual log records with columns for ID, Level, Source, Trace ID, Message Preview (truncated for readability), and Log Timestamp (formatted for better display). The table displays various log levels and sources with their associated metadata.
-
-3. **Logs Workflows**: Shows recent workflow execution history for logs processing, including Run ID, Status (Completed/Failed), Start Time, Duration, and clickable "View Details" links that open the Temporal UI for detailed workflow inspection.
-
-4. **Dead Letter Queue Testing**: Interactive controls for testing the DLQ system with configurable batch size and failure percentage inputs. The "Trigger DLQ" button simulates failures during logs processing, while "View Queues" opens the Redpanda UI. When DLQ messages are retrieved, they display in a filtered table showing partition, offset, error details, and record information. Users can select individual messages to view their complete JSON payload for debugging and recovery analysis.
-
-**Behind the Scenes**: The Summary Cards pull data through Moose's ConsumptionApi, which automatically queries the underlying ClickHouse tables. The Logs Table gets its data from the OlapTable via ConsumptionApi with built-in SQL injection protection through parameter binding. The Logs Workflows section taps into MooseClient.workflows to show real-time Temporal execution history. And the Dead Letter Queue Testing leverages Moose's DLQ transforms and recovery mechanisms, using DeadLetterModel to handle failed records and enable message recovery.
-
-### Events page
+#### Events Page
 
 ![events page](./dw-images/events.png)
 
-The Events page provides a comprehensive view of user event data with five main sections:
+The Events page shows event type counts (Pageview, Signup, Click, Purchase, Other) and includes a unique **Daily Page Views Trend** section demonstrating Moose's materialized view capabilities. This section shows aggregated page view data with metric cards (Today's Page Views, Today's Unique Visitors, Change from Yesterday), a line chart displaying page views over time, and a daily breakdown table using AggregatingMergeTree engine.
 
-1. **Summary Cards**: Five metric cards display counts by event type (Pageview, Signup, Click, Purchase, Other) calculated from event analytics. The "Pull via connectors" button triggers the events workflow to extract fresh data from the events connector.
+The Events Table includes filtering controls for Event Type and Project, displaying columns for Event Name, Timestamp, User ID, Session ID, Project ID, IP Address, and Processed On timestamp.
 
-2. **Daily Page Views Trend**: A materialized view section showing aggregated page view data with three metric cards (Today's Page Views, Today's Unique Visitors, Change from Yesterday), a line chart displaying page views over time, and a daily breakdown table. This demonstrates Moose's materialized view capabilities with AggregatingMergeTree engine.
+## Dead Letter Queue Testing
 
-3. **Events Table**: A comprehensive table showing individual event records with filtering controls for Event Type and Project. The table displays columns for Event Name, Timestamp, User ID, Session ID, Project ID, IP Address, and Processed On timestamp.
+All connector pages include a Dead Letter Queue Testing section that provides interactive controls for testing the DLQ system. This section includes:
 
-4. **Events Workflows**: Shows recent workflow execution history for events processing, including Run ID, Status (Completed/Failed), Start Time, Duration, and clickable "View Details" links that open the Temporal UI for detailed workflow inspection.
+- **Batch Size Input**: Configurable number of records to process (default: 10)
+- **Failure Percentage Input**: Configurable failure rate (default: 20%)
+- **Trigger DLQ Button**: Simulates failures during processing
+- **View Queues Button**: Opens the Redpanda UI for queue inspection
 
-5. **Dead Letter Queue Testing**: Interactive controls for testing the DLQ system with configurable batch size and failure percentage inputs. The "Trigger DLQ" button simulates failures during events processing, while "View Queues" opens the Redpanda UI. When DLQ messages are retrieved, they display in a filtered table showing partition, offset, error details, and record information. Users can select individual messages to view their complete JSON payload for debugging and recovery analysis.
+When DLQ messages are retrieved, they display in a filtered table showing partition, offset, error details, and record information. Users can select individual messages to view their complete JSON payload for debugging and recovery analysis.
 
-**Behind the Scenes**: The Summary Cards pull data through Moose's ConsumptionApi with event analytics calculations. The Daily Page Views Trend uses MaterializedView with AggregatingMergeTree engine for pre-aggregated data. The Events Table gets its data from the OlapTable via ConsumptionApi with filtering capabilities. The Events Workflows section taps into MooseClient.workflows to show real-time Temporal execution history. And the Dead Letter Queue Testing leverages Moose's DLQ transforms and recovery mechanisms, using DeadLetterModel to handle failed records and enable message recovery.
+![dlq](./dw-images/dlq.png)
 
-### Dead Letter Queue Testing
+The screenshot shows the DLQ testing interface in action. A green notification confirms successful DLQ triggering with batch size 10 and 20% failure rate. The "Dead Letter Queue Messages" table displays two failed events that were automatically routed to the DLQ, showing their partition/offset locations, error messages indicating transformation failures, timestamps, and unique record IDs. The system automatically filters messages by connector type (Events in this case) and tracks offset positions to avoid duplicate processing.
 
+**Behind the Scenes**: The DLQ system leverages Moose's DLQ transforms and recovery mechanisms, using DeadLetterModel to handle failed records and enable message recovery. Failed messages are automatically routed to DLQs where they can be inspected, fixed, and reprocessed through recovery transforms.
+
+## Summary
+
+This walkthrough has demonstrated how the Data Warehouse Frontend provides business users with an intuitive interface to interact with complex analytical infrastructure. Through the lens of this application, we've explored how Moose framework transforms traditional data engineering challenges into simple, declarative code.
+
+**What We've Covered:**
+- A unified dashboard showing real-time metrics across multiple data sources
+- Individual connector pages for detailed data exploration (Blobs, Logs, Events)
+- Interactive workflow monitoring with direct links to Temporal UI
+- Advanced error handling through Dead Letter Queue testing and recovery
+- Materialized views demonstrating pre-aggregated analytics capabilities
+
+**Moose's Role:**
+Moose has been the invisible foundation that makes this all possible. It automatically provisions ClickHouse databases, Redpanda streaming platforms, and API gateways from simple Python declarations. The framework ensures end-to-end type safety, provides built-in SQL injection protection, enables real-time stream processing, and offers robust error handling—all while maintaining the developer experience of writing simple, declarative code.
+
+The result is a production-ready data warehouse that business users can interact with confidently, knowing that the underlying infrastructure is reliable, scalable, and maintainable. This demonstrates Moose's core value: transforming complex analytical backends into accessible, business-friendly applications.
