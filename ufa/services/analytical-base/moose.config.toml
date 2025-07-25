@@ -24,6 +24,7 @@ proxy_port = 4101
 [redis_config]
 key_prefix = "MS"
 hostname = "127.0.0.1"
+# The Redis port has been intentionally changed from the default 6379 to 6740.
 port = 6740
 tls = false
 
