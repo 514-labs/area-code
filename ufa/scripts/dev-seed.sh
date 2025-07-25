@@ -140,10 +140,10 @@ restart_workflows() {
         # Start the workflow in background to not block the script
         if [ "$VERBOSE_MODE" = "true" ]; then
             echo "Starting supabase-listener workflow..."
-            pnpm dev:workflow:start &
+            pnpm dev:workflow &
             WORKFLOW_PID=$!
         else
-            nohup pnpm dev:workflow:start >> "$SEED_LOG" 2>&1 &
+            nohup pnpm dev:workflow >> "$SEED_LOG" 2>&1 &
             WORKFLOW_PID=$!
         fi
         echo "✅ Workflows restarted (PID: $WORKFLOW_PID)"
