@@ -13,7 +13,7 @@ Key features include one-click data extraction from multiple sources (blob stora
 In this walkthrough document, we'll step through each frontend page. Keep in mind that all pages are implemented using the following Moose framework features:
 
 - **Data Models**: Pydantic `BaseModel` classes with `Key[str]` primary keys and proper type annotations
-- **IngestPipeline**: Six pipelines (source + final) with ingest, stream, table, and DLQ configurations  
+- **IngestPipeline**: Multiple pipelines (source + final) with ingest, stream, table, and DLQ configurations  
 - **Stream Transformations**: Real-time data processing with `.add_transform()` and timestamp addition
 - **ConsumptionApi**: Type-safe HTTP endpoints using ClickHouse native parameter binding
 - **Workflow**: Temporal-powered workflows for pull-based data extraction with failure simulation
@@ -43,7 +43,7 @@ Connectors are mock data generators that simulate real-world data sources (blob 
 
 ### All Page
 
-The `All` connectors page displays a unified dashboard showing combined data from all three connectors. It features metric cards displaying real-time counts for Blob, Log, and Event data sources, plus a "Recent Data Summary" table showing the latest 10 records across all sources. Users can trigger fresh data extraction for all connectors simultaneously using the "Refresh" button, which populates the dashboard with current metrics and recent data from the warehouse.
+The `All` connectors page displays a unified dashboard showing combined data from all three connectors. It features metric cards displaying real-time counts for Blob, Log, and Event data sources, plus a data table showing records across all sources. Users can trigger fresh data extraction for all connectors simultaneously using the "Pull via connectors" button, which populates the dashboard with current metrics and recent data from the warehouse.
 
 ![overview all page](./dw-images/overview.png)
 
@@ -90,7 +90,7 @@ All connector pages include a Dead Letter Queue Testing section that provides in
 - **Batch Size Input**: Configurable number of records to process (default: 10)
 - **Failure Percentage Input**: Configurable failure rate (default: 20%)
 - **Trigger DLQ Button**: Simulates failures during processing
-- **View Queues Button**: Opens the Redpanda UI for queue inspection
+- **View Queues Button**: Opens the Kafdrop UI for queue inspection (will be replaced with new Moose features under development)
 
 When DLQ messages are retrieved, they display in a filtered table showing partition, offset, error details, and record information. Users can select individual messages to view their complete JSON payload for debugging and recovery analysis.
 
@@ -114,4 +114,4 @@ This walkthrough has demonstrated how the Data Warehouse Frontend provides busin
 **Moose's Role:**
 Moose has been the invisible foundation that makes this all possible. It automatically provisions ClickHouse databases, Redpanda streaming platforms, and API gateways from simple Python declarations. The framework ensures end-to-end type safety, provides built-in SQL injection protection, enables real-time stream processing, and offers robust error handling—all while maintaining the developer experience of writing simple, declarative code.
 
-The result is a production-ready data warehouse that business users can interact with confidently, knowing that the underlying infrastructure is reliable, scalable, and maintainable. This demonstrates Moose's core value: transforming complex analytical backends into accessible, business-friendly applications.
+The result is a working example of a data warehouse that business users can interact with confidently, knowing that the underlying infrastructure is reliable, scalable, and maintainable. This demonstrates Moose's core value: transforming complex analytical backends into accessible, business-friendly applications.

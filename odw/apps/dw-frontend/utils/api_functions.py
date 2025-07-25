@@ -132,7 +132,7 @@ def fetch_data(tag):
 
 def trigger_extract(api_url, label):
     batch_size = random.randint(10, 100)
-    url = f"{api_url}?batch_size=1000"
+    url = f"{api_url}?batch_size={batch_size}"
     try:
         response = requests.get(url)
         response.raise_for_status()
