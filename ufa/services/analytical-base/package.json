@@ -5,7 +5,8 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "ufa:dev": "./scripts/ufa-start-sequence.sh"
+    "ufa:dev": "moose-cli dev",
+    "ufa:dev:clean": "moose-cli clean"
   },
   "dependencies": {
     "axios": "^1.7.7",

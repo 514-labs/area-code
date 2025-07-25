@@ -12,10 +12,8 @@
   ],
   "scripts": {
     "ufa:dev": "turbo run ufa:dev --ui=tui",
-    "ufa:dev:clean": "pnpm --filter transactional-database ufa:dev:clean && pnpm --filter retrieval-base ufa:dev:clean && pnpm --filter sync-base ufa:dev:clean",
-    "ufa:dev:seed": "./ufa/scripts/dev-seed.sh",
-    "build": "turbo run build",
-    "clean": "turbo run clean"
+    "ufa:dev:clean": "turbo run ufa:dev:clean",
+    "ufa:dev:seed": "./ufa/scripts/dev-seed.sh"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",
