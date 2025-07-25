@@ -8,7 +8,7 @@ import type { Foo, Bar } from "@workspace/models";
 import { searchConfig } from "./search-config";
 
 /**
- * API client for communicating with retrieval-base service
+ * API client for communicating with retrieval-backend service
  * Handles all search-related API calls and response transformation
  */
 export class SearchClient {

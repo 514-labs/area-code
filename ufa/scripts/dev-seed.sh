@@ -97,7 +97,7 @@ is_service_running() {
         "analytical-backend")
             curl -s "http://localhost:4100/health" >/dev/null 2>&1
             ;;
-        "retrieval-base")
+        "retrieval-backend")
             curl -s "http://localhost:8083" >/dev/null 2>&1
             ;;
         *)
@@ -503,18 +503,18 @@ EOF
         log_message "analytical-backend is not running, skipping migration"
     fi
     
-    # 3. Start retrieval-base migration in BACKGROUND (slow process)
-    echo "🔍 Starting retrieval-base migration..."
-    log_message "Starting retrieval-base migration in background"
-    if is_service_running "retrieval-base"; then
-        log_message "retrieval-base is running, starting background data migration"
+    # 3. Start retrieval-backend migration in BACKGROUND (slow process)
+    echo "🔍 Starting retrieval-backend migration..."
+    log_message "Starting retrieval-backend migration in background"
+    if is_service_running "retrieval-backend"; then
+        log_message "retrieval-backend is running, starting background data migration"
         
         # Create background migration script
         cat > "$PROJECT_ROOT/temp_es_migration.sh" << 'EOF'
 #!/bin/bash
 # Background Elasticsearch migration script
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$PROJECT_ROOT/services/retrieval-base" || exit 1
+cd "$PROJECT_ROOT/services/retrieval-backend" || exit 1
 
 # Log file for background process
 LOG_FILE="$PROJECT_ROOT/elasticsearch_migration.log"
@@ -554,12 +554,12 @@ EOF
         nohup "$PROJECT_ROOT/temp_es_migration.sh" "$CLEAR_DATA" > /dev/null 2>&1 &
         ES_PID=$!
         
-        echo "✅ retrieval-base migration started (PID: $ES_PID)"
+        echo "✅ retrieval-backend migration started (PID: $ES_PID)"
         log_message "Elasticsearch migration started in background (PID: $ES_PID)"
         
     else
-        echo "⚠️  retrieval-base is not running, skipping migration"
-        log_message "retrieval-base is not running, skipping migration"
+        echo "⚠️  retrieval-backend is not running, skipping migration"
+        log_message "retrieval-backend is not running, skipping migration"
     fi
     
     # Step 4: Restart workflows to resume real-time synchronization
@@ -574,7 +574,7 @@ EOF
     echo "   📈 analytical-backend: Data migrated to ClickHouse"
     echo "   🔄 workflows: Restarted for real-time sync"
     echo ""
-    echo "🔄 BACKGROUND: retrieval-base → Elasticsearch (15-30 min)"
+    echo "🔄 BACKGROUND: retrieval-backend → Elasticsearch (15-30 min)"
     echo ""
     echo "📋 Monitor Elasticsearch migration:"
     echo "   tail -f $PROJECT_ROOT/elasticsearch_migration.log"

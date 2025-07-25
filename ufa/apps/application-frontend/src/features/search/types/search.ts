@@ -1,6 +1,6 @@
 import type { Foo, Bar } from "@workspace/models";
 
-// API Response Types (matching retrieval-base OpenAPI spec)
+// API Response Types (matching retrieval-backend OpenAPI spec)
 export interface SearchHit<T = Record<string, unknown>> {
   _id: string;
   _score: number | null;
@@ -21,7 +21,7 @@ export interface CombinedSearchResponse {
   bars: SearchResponse<Bar>;
 }
 
-// Search Parameters (matching retrieval-base query schema)
+// Search Parameters (matching retrieval-backend query schema)
 export interface SearchParams {
   q?: string;
   from?: number;

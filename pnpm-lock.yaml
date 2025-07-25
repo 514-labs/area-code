@@ -393,7 +393,7 @@ importers:
         specifier: ^20.12.12
         version: 20.19.5
 
-  ufa/services/retrieval-base:
+  ufa/services/retrieval-backend:
     dependencies:
       '@elastic/elasticsearch':
         specifier: ^8.15.0

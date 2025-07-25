@@ -142,7 +142,7 @@ pnpm es:reset
 ### View Logs
 
 ```bash
-docker logs retrieval-base-elasticsearch
+docker logs retrieval-backend-elasticsearch
 ```
 
 ### Access Kibana
