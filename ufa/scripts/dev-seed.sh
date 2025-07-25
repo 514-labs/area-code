@@ -94,7 +94,7 @@ is_service_running() {
         "transactional-backend")
             curl -s "http://localhost:8082" >/dev/null 2>&1
             ;;
-        "analytical-base")
+        "analytical-backend")
             curl -s "http://localhost:4100/health" >/dev/null 2>&1
             ;;
         "retrieval-base")
@@ -111,7 +111,7 @@ cleanup_existing_workflows() {
     echo "🛑 Stopping workflows..."
     log_message "Stopping existing workflows before seeding"
     
-    cd "$PROJECT_ROOT/services/sync-base" || true
+    cd "$PROJECT_ROOT/services/sync-service" || true
     if command -v pnpm >/dev/null 2>&1; then
         if [ "$VERBOSE_MODE" = "true" ]; then
             echo "Stopping supabase-listener workflow..."
@@ -135,7 +135,7 @@ cleanup_existing_workflows() {
 restart_workflows() {
     echo "🔄 Restarting workflows..."
     log_message "Restarting workflows after seeding"
-    cd "$PROJECT_ROOT/services/sync-base" || true
+    cd "$PROJECT_ROOT/services/sync-service" || true
     if command -v pnpm >/dev/null 2>&1; then
         # Start the workflow in background to not block the script
         if [ "$VERBOSE_MODE" = "true" ]; then
@@ -438,15 +438,15 @@ EOF
         log_message "transactional-backend is not running, skipping seeding"
     fi
     
-    # 2. Seed analytical-base (migrate data from transactional) - FAST
-    echo "📈 Seeding analytical-base..."
-    log_message "Starting analytical-base migration"
-    if is_service_running "analytical-base"; then
-        log_message "analytical-base is running, proceeding with data migration"
+    # 2. Seed analytical-backend (migrate data from transactional) - FAST
+    echo "📈 Seeding analytical-backend..."
+    log_message "Starting analytical-backend migration"
+    if is_service_running "analytical-backend"; then
+        log_message "analytical-backend is running, proceeding with data migration"
         
-        cd "$PROJECT_ROOT/services/analytical-base" || {
-            echo "⚠️  Could not access analytical-base directory, skipping analytical migration"
-            log_message "WARNING: Failed to change to analytical-base directory"
+        cd "$PROJECT_ROOT/services/analytical-backend" || {
+            echo "⚠️  Could not access analytical-backend directory, skipping analytical migration"
+            log_message "WARNING: Failed to change to analytical-backend directory"
             cd "$PROJECT_ROOT"
             return 0
         }
@@ -496,11 +496,11 @@ EOF
         fi
         
         cd "$PROJECT_ROOT"
-        echo "✅ analytical-base migrated"
-        log_message "analytical-base migration completed successfully"
+        echo "✅ analytical-backend migrated"
+        log_message "analytical-backend migration completed successfully"
     else
-        echo "⚠️  analytical-base is not running, skipping migration"
-        log_message "analytical-base is not running, skipping migration"
+        echo "⚠️  analytical-backend is not running, skipping migration"
+        log_message "analytical-backend is not running, skipping migration"
     fi
     
     # 3. Start retrieval-base migration in BACKGROUND (slow process)
@@ -571,7 +571,7 @@ EOF
     echo ""
     echo "✅ COMPLETED:"
     echo "   📊 transactional-backend: $FOO_ROWS foo, $BAR_ROWS bar records"
-    echo "   📈 analytical-base: Data migrated to ClickHouse"
+    echo "   📈 analytical-backend: Data migrated to ClickHouse"
     echo "   🔄 workflows: Restarted for real-time sync"
     echo ""
     echo "🔄 BACKGROUND: retrieval-base → Elasticsearch (15-30 min)"

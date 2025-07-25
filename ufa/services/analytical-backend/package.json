@@ -1,5 +1,5 @@
 {
-  "name": "analytical-base",
+  "name": "analytical-backend",
   "version": "0.0",
   "scripts": {
     "moose": "moose-cli",
