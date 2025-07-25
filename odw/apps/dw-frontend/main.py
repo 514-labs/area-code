@@ -3,12 +3,14 @@ import streamlit as st
 # Import pages
 from pages import overview, blobs_view, logs_view, events_view, analytics
 from utils.status_handler import display_status_messages, cleanup_old_status_messages
+from utils.tooltip_utils import add_tooltip_css
 
 # Page config
 st.set_page_config(
     page_title="Data Warehouse Front-end",
     page_icon="🚀",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 def set_sidebar_min_width():
@@ -29,6 +31,7 @@ def set_sidebar_min_width():
         [data-testid="stAppDeployButton"] {
             display: none !important;
         }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -36,6 +39,116 @@ def set_sidebar_min_width():
 
 # Apply sidebar styling
 set_sidebar_min_width()
+
+# Apply tooltip CSS for faster appearance
+add_tooltip_css()
+
+# Add CSS to hide permalink icons and style View Queues button
+st.markdown("""
+<style>
+[data-testid="stHeaderActionElements"] {
+    display: none;
+}
+
+/* Comprehensive styling for View Queues button hover state */
+/* Target all possible Streamlit button variations */
+.stButton > button:hover,
+.stButton > a:hover,
+.stButton button:hover,
+.stButton a:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Specific targeting for secondary buttons */
+.stButton > button[kind="secondary"]:hover,
+.stButton > button[data-testid="baseButton-secondary"]:hover,
+.stButton > a[data-testid="baseButton-secondary"]:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Target link buttons specifically */
+.stButton a[href*="localhost:9999"]:hover,
+.stButton a[href*="9999"]:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Additional selectors for Streamlit's button structure */
+div[data-testid="stButton"] > button:hover,
+div[data-testid="stButton"] > a:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Target buttons with specific text content */
+.stButton button:contains("View Queues"):hover,
+.stButton a:contains("View Queues"):hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* More specific selectors for Streamlit link buttons */
+.stButton a[target="_blank"]:hover,
+.stButton a[rel="noopener"]:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Target all buttons in the DLQ section */
+.stButton:has(a[href*="9999"]) a:hover,
+.stButton:has(button:contains("View Queues")) button:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Universal button hover override */
+button:hover, a:hover {
+    background-color: #F5F5F5 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+/* Number input control styling for DLQ section */
+/* Target the plus and minus buttons in number inputs */
+.stNumberInput > div > button:hover,
+.stNumberInput button:hover,
+[data-testid="stNumberInput"] > div > button:hover,
+[data-testid="stNumberInput"] button:hover {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+    border-color: #000000 !important;
+}
+
+/* More specific targeting for number input controls */
+.stNumberInput > div > div > button:hover,
+.stNumberInput > div > div > div > button:hover {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+    border-color: #000000 !important;
+}
+
+/* Target the increment/decrement buttons specifically */
+.stNumberInput button[aria-label*="increment"]:hover,
+.stNumberInput button[aria-label*="decrement"]:hover,
+.stNumberInput button[aria-label*="Increment"]:hover,
+.stNumberInput button[aria-label*="Decrement"]:hover {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+    border-color: #000000 !important;
+}
+
+
+</style>
+""", unsafe_allow_html=True)
 
 # Define navigation pages
 def create_navigation():
@@ -64,7 +177,7 @@ def create_navigation():
     events_page = st.Page(
         events_view.show,
         title="Events",
-        icon="📈",
+        icon="📢",
         url_path="events"
     )
     

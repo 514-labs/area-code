@@ -103,16 +103,18 @@ def show():
                 key=f"logs_metric_{level.lower()}"
             )
 
-    # Show workflow runs
-    st.divider()
-    title_with_info_icon("Logs Workflows", "View the status and history of logs processing workflows", "logs_workflows_info")
-    render_workflows_table("logs-workflow", "Logs", show_title=False)
+    # Show logs table
     st.divider()
     title_with_info_icon("Logs Table", "Display all log entries with their metadata and properties", "logs_table_info")
     if display_df is not None and not display_df.empty:
         st.dataframe(display_df, use_container_width=True)
     else:
         st.write("No logs data available.")
+
+    # Show workflow runs
+    st.divider()
+    title_with_info_icon("Logs Workflows", "View the status and history of logs processing workflows", "logs_workflows_info")
+    render_workflows_table("logs-workflow", "Logs", show_title=False)
     
     # Use the reusable DLQ controls function
     render_dlq_controls("extract-logs", "refresh_logs", show_info_icon=True, info_tooltip="Test and manage dead letter queue messages for logs processing")
