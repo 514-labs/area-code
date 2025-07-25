@@ -13,11 +13,16 @@ Follow these commands in order to set up and run the application:
 pnpm i
 
 # 2. Start development environment
-pnpm dev
+pnpm ufa:dev
 
 # 3. Seed databases with sample data (in a new terminal)
-pnpm dev:seed
+pnpm ufa:dev:seed
 
 # 4. Open front-end
 http://localhost:5173/
+```
+
+```bash
+# Clean
+pnpm ufa:dev:clean
 ```
