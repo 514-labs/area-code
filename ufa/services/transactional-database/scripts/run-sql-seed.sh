@@ -37,7 +37,7 @@ fi
 echo "Seeding $RECORD_COUNT records in container: $DB_CONTAINER"
 
 # Create seeding procedures
-docker cp src/scripts/seed-transactional-base-rows.sql "$DB_CONTAINER:/tmp/seed.sql"
+docker cp src/scripts/seed-transactional-database.sql "$DB_CONTAINER:/tmp/seed.sql"
 docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -f /tmp/seed.sql
 
 # Run seeding procedure (creates foo records only)
