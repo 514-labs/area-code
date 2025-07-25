@@ -1,5 +1,4 @@
 language = "Typescript"
-load_infra = false
 
 [redpanda_config]
 broker = "localhost:19092"
@@ -46,5 +45,6 @@ postgresql_version = "13"
 
 [features]
 streaming_engine = true
-workflows = true
+workflows = false
 data_model_v2 = true
+olap = true

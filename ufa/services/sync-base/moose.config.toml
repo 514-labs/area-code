@@ -43,6 +43,7 @@ postgresql_version = "13"
 [supported_old_versions]
 
 [features]
-streaming_engine = true
+streaming_engine = false
 workflows = true
-data_model_v2 = true
+data_model_v2 = false
+olap = false
