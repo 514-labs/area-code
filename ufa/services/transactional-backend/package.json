@@ -1,5 +1,5 @@
 {
-  "name": "transactional-base",
+  "name": "transactional-backend",
   "version": "1.0.0",
   "description": "Transactional business logic API with Drizzle ORM",
   "main": "dist/index.js",

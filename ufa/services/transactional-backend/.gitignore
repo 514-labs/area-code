@@ -68,3 +68,7 @@ docker-compose.local.yml
 # Local configuration overrides
 config.local.*
 settings.local.* 
+
+# Generated files
+openapi.yml
+openapi.json

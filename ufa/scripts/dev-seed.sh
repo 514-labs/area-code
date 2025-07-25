@@ -42,12 +42,6 @@ show_help() {
     echo "  $0 --foo-rows=500,000 --bar-rows=100,000  # Automated seeding"
     echo "  $0 --clear-data --foo-rows=1,000,000 --verbose  # Detailed output"
     echo ""
-    echo "Process:"
-    echo "  1. Stop any running workflows"
-    echo "  2. Seeds transactional-base (PostgreSQL) with foo/bar data"
-    echo "  3. Migrates data to analytical-base (ClickHouse) - Fast"
-    echo "  4. Migrates data to retrieval-base (Elasticsearch) - Background (15-30 min)"
-    echo "  5. Restart workflows to resume real-time synchronization"
     echo ""
     echo "Logs are saved to: $LOG_DIR/"
     echo ""
@@ -92,41 +86,24 @@ prompt_yes_no() {
     done
 }
 
-# Function to check if a service is running using health checks
+# Function to check if a service is running using port checks
 is_service_running() {
     local service="$1"
     
-    # Use our health check script to verify service is actually responding
-    if [ -f "$SCRIPT_DIR/health-check.sh" ]; then
-        # Run health check for specific service (suppress output, just check exit code)
-        if "$SCRIPT_DIR/health-check.sh" "$service" >/dev/null 2>&1; then
-            return 0  # Service is healthy
-        else
-            return 1  # Service is not responding
-        fi
-    else
-        # Fallback to basic port checks if health script is missing
-        case "$service" in
-            "transactional-base")
-                curl -s "http://localhost:8082" >/dev/null 2>&1
-                ;;
-            "sync-base")
-                curl -s "http://localhost:4000/health" >/dev/null 2>&1
-                ;;
-            "analytical-base")
-                curl -s "http://localhost:4100/health" >/dev/null 2>&1
-                ;;
-            "retrieval-base")
-                curl -s "http://localhost:8083" >/dev/null 2>&1
-                ;;
-            "frontend")
-                curl -s "http://localhost:5173" >/dev/null 2>&1
-                ;;
-            *)
-                return 1
-                ;;
-        esac
-    fi
+    case "$service" in
+        "transactional-backend")
+            curl -s "http://localhost:8082" >/dev/null 2>&1
+            ;;
+        "analytical-base")
+            curl -s "http://localhost:4100/health" >/dev/null 2>&1
+            ;;
+        "retrieval-base")
+            curl -s "http://localhost:8083" >/dev/null 2>&1
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # Function to cleanup existing workflows
@@ -263,15 +240,15 @@ seed_all_data() {
         echo "$TEMP_SCRIPT_PIDS" | xargs kill -9 2>/dev/null || true
     fi
     
-    # 1. Seed transactional-base (both foo and bar data)
-    echo "📊 Seeding transactional-base..."
-    log_message "Starting transactional-base seeding"
-    if is_service_running "transactional-base"; then
-        log_message "transactional-base is running, proceeding with seeding"
+    # 1. Seed transactional-backend (both foo and bar data)
+    echo "📊 Seeding transactional-backend..."
+    log_message "Starting transactional-backend seeding"
+    if is_service_running "transactional-backend"; then
+        log_message "transactional-backend is running, proceeding with seeding"
         
-        cd "$PROJECT_ROOT/services/transactional-base" || {
-            echo "⚠️  Could not access transactional-base directory, skipping transactional seeding"
-            log_message "WARNING: Failed to change to transactional-base directory"
+        cd "$PROJECT_ROOT/services/transactional-backend" || {
+            echo "⚠️  Could not access transactional-backend directory, skipping transactional seeding"
+            log_message "WARNING: Failed to change to transactional-backend directory"
             cd "$PROJECT_ROOT"
             return 0
         }
@@ -365,7 +342,7 @@ EOSQL
     
     # Run drizzle migrations to recreate schema
     echo "📋 Recreating database schema..."
-    cd "$PROJECT_ROOT/services/transactional-base"
+    cd "$PROJECT_ROOT/services/transactional-backend"
     
     # Run migration SQL directly via docker exec (same approach as seeding)
     for migration_file in migrations/*.sql; do
@@ -415,7 +392,7 @@ fi
 echo "Using container: \$DB_CONTAINER"
 
 # Copy the SQL procedures (from transactional-database service) - use absolute path from project root
-docker cp "$PROJECT_ROOT/services/transactional-database/scripts/seed-transactional-base-rows.sql" "\$DB_CONTAINER:/tmp/seed.sql"
+docker cp "$PROJECT_ROOT/services/transactional-database/scripts/seed-transactional-database.sql" "\$DB_CONTAINER:/tmp/seed.sql"
 
 echo "🔧 Dropping functions and procedures"
 # Execute SQL with filtered output - show only relevant messages
@@ -454,11 +431,11 @@ EOF
             rm temp_seed_all.sh
         
         cd "$PROJECT_ROOT"
-        echo "✅ transactional-base seeded"
-        log_message "transactional-base seeding completed successfully"
+        echo "✅ transactional-backend seeded"
+        log_message "transactional-backend seeding completed successfully"
     else
-        echo "⚠️  transactional-base is not running, skipping seeding"
-        log_message "transactional-base is not running, skipping seeding"
+        echo "⚠️  transactional-backend is not running, skipping seeding"
+        log_message "transactional-backend is not running, skipping seeding"
     fi
     
     # 2. Seed analytical-base (migrate data from transactional) - FAST
@@ -593,7 +570,7 @@ EOF
     log_message "=== Data Seeding Completed Successfully ==="
     echo ""
     echo "✅ COMPLETED:"
-    echo "   📊 transactional-base: $FOO_ROWS foo, $BAR_ROWS bar records"
+    echo "   📊 transactional-backend: $FOO_ROWS foo, $BAR_ROWS bar records"
     echo "   📈 analytical-base: Data migrated to ClickHouse"
     echo "   🔄 workflows: Restarted for real-time sync"
     echo ""

@@ -153,7 +153,7 @@ reset_environment() {
 show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "This script sets up the transactional-base environment by:"
+    echo "This script sets up the transactional-backend environment by:"
     echo "  - Checking required dependencies"
     echo "  - Creating .env file from env.example if needed"
     echo "  - Generating secrets for the .env file"

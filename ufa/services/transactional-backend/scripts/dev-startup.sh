@@ -35,7 +35,7 @@ start_supabase() {
         sleep 2
     done
     
-    cd ../transactional-base
+    cd ../transactional-backend
     echo "Supabase services started successfully"
 }
 
@@ -49,7 +49,7 @@ setup_realtime_replication() {
         exit 1
     fi
     
-    cd ../transactional-base
+    cd ../transactional-backend
     echo "Realtime replication setup completed"
 }
 
