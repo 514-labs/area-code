@@ -1,5 +1,4 @@
 language = "Typescript"
-load_infra = false
 
 [redpanda_config]
 broker = "localhost:19092"
@@ -23,8 +22,11 @@ management_port = 5101
 proxy_port = 4101
 
 [redis_config]
-url = "redis://127.0.0.1:6379"
 key_prefix = "MS"
+hostname = "127.0.0.1"
+# The Redis port has been intentionally changed from the default 6379 to 6740.
+port = 6740
+tls = false
 
 [git_config]
 main_branch_name = "main"
@@ -46,5 +48,6 @@ postgresql_version = "13"
 
 [features]
 streaming_engine = true
-workflows = true
+workflows = false
 data_model_v2 = true
+olap = true

@@ -157,13 +157,13 @@ run_clickhouse_query() {
     local result
     
     if [ -n "$CH_PASSWORD" ]; then
-        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query" 2>&1); then
+        if ! result=$(docker exec -i analytical-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query" 2>&1); then
             echo "❌ ClickHouse query failed: $query" >&2
             echo "   Error: $result" >&2
             return 1
         fi
     else
-        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query" 2>&1); then
+        if ! result=$(docker exec -i analytical-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query" 2>&1); then
             echo "❌ ClickHouse query failed: $query" >&2
             echo "   Error: $result" >&2
             return 1
@@ -186,14 +186,14 @@ import_to_clickhouse() {
     fi
     
     if [ -n "$CH_PASSWORD" ]; then
-        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+        if ! result=$(docker exec -i analytical-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
             echo "❌ Failed to import data to ClickHouse table: $table" >&2
             echo "   File: $file" >&2
             echo "   Error: $result" >&2
             return 1
         fi
     else
-        if ! result=$(docker exec -i sync-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+        if ! result=$(docker exec -i analytical-base-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
             echo "❌ Failed to import data to ClickHouse table: $table" >&2
             echo "   File: $file" >&2
             echo "   Error: $result" >&2
