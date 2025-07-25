@@ -3,6 +3,7 @@ import streamlit as st
 # Import pages
 from pages import overview, blobs_view, logs_view, events_view, analytics
 from utils.status_handler import display_status_messages, cleanup_old_status_messages
+from utils.tooltip_utils import add_tooltip_css
 
 # Page config
 st.set_page_config(
@@ -38,6 +39,9 @@ def set_sidebar_min_width():
 
 # Apply sidebar styling
 set_sidebar_min_width()
+
+# Apply tooltip CSS for faster appearance
+add_tooltip_css()
 
 # Add CSS to hide permalink icons and style View Queues button
 st.markdown("""
@@ -141,6 +145,8 @@ button:hover, a:hover {
     color: #FFFFFF !important;
     border-color: #000000 !important;
 }
+
+
 </style>
 """, unsafe_allow_html=True)
 

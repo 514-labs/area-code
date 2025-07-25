@@ -2,6 +2,63 @@ import streamlit as st
 import streamlit_shadcn_ui as ui
 import html
 
+# Add tooltip CSS for faster appearance
+def add_tooltip_css():
+    """Add CSS to reduce tooltip delay and improve appearance."""
+    st.markdown("""
+    <style>
+    /* Tooltip delay reduction - make tooltips appear faster */
+    [title]:hover::after {
+        transition-delay: 0.1s !important;
+    }
+    [title]:hover::before {
+        transition-delay: 0.1s !important;
+    }
+
+    /* Override browser default tooltip timing */
+    *[title] {
+        transition-delay: 0.1s !important;
+    }
+
+    /* Custom tooltip styling for faster appearance */
+    [title]:hover {
+        position: relative;
+    }
+
+    [title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1000;
+        transition: opacity 0.1s ease-in-out;
+        opacity: 1;
+        pointer-events: none;
+    }
+
+    [title]:hover::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        transition: opacity 0.1s ease-in-out;
+        opacity: 1;
+        pointer-events: none;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 def icon_button_with_tooltip(icon, tooltip_text, key, size="sm", variant="ghost"):
     """
     Create an icon button with a tooltip.
