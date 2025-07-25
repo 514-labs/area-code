@@ -2,6 +2,52 @@ import streamlit as st
 import streamlit_shadcn_ui as ui
 import html
 
+# Add tooltip CSS for faster appearance
+def add_tooltip_css():
+    """Add CSS to reduce tooltip delay and improve appearance."""
+    st.markdown("""
+    <style>
+    /* Custom tooltip styling for faster appearance */
+    [data-tooltip]:hover {
+        position: relative;
+    }
+
+    [data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1000;
+        transition: opacity 0.1s ease-in-out;
+        opacity: 1;
+        pointer-events: none;
+        margin-bottom: 4px;
+    }
+
+    [data-tooltip]:hover::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        transition: opacity 0.1s ease-in-out;
+        opacity: 1;
+        pointer-events: none;
+        margin-bottom: 8px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 def icon_button_with_tooltip(icon, tooltip_text, key, size="sm", variant="ghost"):
     """
     Create an icon button with a tooltip.
@@ -28,7 +74,7 @@ def icon_button_with_tooltip(icon, tooltip_text, key, size="sm", variant="ghost"
         )
     
     with col2:
-        st.markdown(f"<div title='{tooltip_text}' style='display: inline-block; margin-left: -10px;'>{icon}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div data-tooltip='{tooltip_text}' style='display: inline-block; margin-left: -10px;'>{icon}</div>", unsafe_allow_html=True)
     
     return clicked
 
@@ -46,7 +92,7 @@ def info_icon_with_tooltip(tooltip_text, key, size="sm"):
     """
     # Use a simple info icon with tooltip
     st.markdown(
-        f"<span title='{tooltip_text}' style='cursor: help; font-size: 16px; margin-left: 8px;'>ℹ️</span>",
+        f"<span data-tooltip='{tooltip_text}' style='cursor: help; font-size: 16px; margin-left: 8px;'>ℹ️</span>",
         unsafe_allow_html=True
     )
 
@@ -67,7 +113,7 @@ def title_with_info_icon(title_text, tooltip_text, key):
         f"<div style='display: flex; align-items: center; gap: 4px;'>"
         f"<h3 style='margin: 0;'>{html.escape(title_text)}</h3>"
         f"<button style='background: none; border: none; cursor: help; font-size: 16px; color: #0066cc; padding: 0; margin: 0;' "
-        f"title='{html.escape(tooltip_text)}'>ℹ️</button>"
+        f"data-tooltip='{html.escape(tooltip_text)}'>&nbsp;&nbsp;ℹ️</button>"
         f"</div>",
         unsafe_allow_html=True
     )
