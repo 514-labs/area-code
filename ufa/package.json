@@ -1,0 +1,14 @@
+{
+  "name": "area-code-ufa",
+  "version": "0.3.0",
+  "private": true,
+  "scripts": {
+    "ufa:dev": "cd .. && pnpm ufa:dev",
+    "ufa:dev:clean": "cd .. && pnpm ufa:dev:clean",
+    "ufa:dev:seed": "cd .. && pnpm ufa:dev:seed"
+  },
+  "packageManager": "pnpm@9.9.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
