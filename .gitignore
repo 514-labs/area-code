@@ -9,6 +9,8 @@ dist-ssr
 .cache
 ./logs/
 
+# Ignore scratch files - used for testing and development in Data Warehouse
+scratch*
 
 .cursor/
 

@@ -28,7 +28,8 @@
 
 [Presenter - walkthrough docs](./docs/README.md)
 
-## Overview
+
+## Project Overview
 
 <a href="./docs/ODW-architecture.jpg"><img src="./docs/ODW-architecture.jpg" alt="Data Warehouse Architecture" width="800"></a>
 
@@ -71,47 +72,48 @@ See: [Presenter - walkthrough docs](./docs/README.md)
 ## Project Structure
 
 ```
-odw/services/data-warehouse/
-├── app/
-│   ├── apis/                   # REST API endpoints
-│   ├── logs/                   # Log extraction workflow
-│   ├── blobs/                  # Blob extraction workflow
-│   ├── events/                 # Events extraction workflow
-│   ├── ingest/                 # Data models and transformations
-│   ├── views/                  # Materialized views
-│   └── main.py                 # Main application entry point
-├── setup.sh                    # Setup and management script
-├── moose.config.toml           # Moose configuration
-├── requirements.txt            # Python dependencies
-└── setup.py                    # Package configuration
+odw/
+├── services/
+│   ├── data-warehouse/         # Main Moose data warehouse service
+│   │   ├── app/
+│   │   │   ├── apis/           # REST API endpoints for data consumption
+│   │   │   ├── blobs/          # Blob data extraction workflows
+│   │   │   ├── events/         # Events data extraction workflows
+│   │   │   ├── ingest/         # Data models and stream transformations
+│   │   │   ├── logs/           # Log data extraction workflows
+│   │   │   ├── views/          # Materialized views for analytics
+│   │   │   └── main.py         # Main Moose application entry point
+│   │   ├── docs/               # Documentation and walkthrough guides
+│   │   ├── setup.sh            # Setup and management script
+│   │   ├── moose.config.toml   # Moose framework configuration
+│   │   └── requirements.txt    # Python dependencies
+│   └── connectors/             # External data source connectors
+│       └── src/
+│           ├── blob_connector.py    # Blob storage data connector
+│           ├── events_connector.py  # Events data connector
+│           ├── logs_connector.py    # Logs data connector
+│           └── connector_factory.py # Connector factory pattern
+└── apps/
+    └── dw-frontend/            # Streamlit web application
+        ├── pages/              # Frontend page components
+        ├── utils/              # Frontend utility functions
+        └── main.py             # Streamlit application entry point
 ```
 
+## Detailed high-level overview
 
-## Other Commands:
+For a high-level architectural overview of the system, see [high-level-overview.md](./high-level-overview.md).
 
-   ```bash
-   ./setup.sh help
-   ```
+## Other Commands
 
-   ```bash
-   ./setup.sh stop      # Stop service 
-   ```
-
-   ```bash
-   ./setup.sh start     # Start service (not required after initial setup)
-   ```
-
-   ```bash
-   ./setup.sh reset     # Full reset 
-   ```
-
-   ```bash
-   ./setup.sh status    # Check status
-   ```
-
-   ```bash
-   ./setup.sh env:check
-   ```
+| Command | Description |
+|---------|-------------|
+| `./setup.sh help` | Display available commands and usage |
+| `./setup.sh stop` | Stop the data warehouse service |
+| `./setup.sh start` | Start the service (not required after initial setup) |
+| `./setup.sh reset` | Perform a full reset of the system |
+| `./setup.sh status` | Check the current status of services |
+| `./setup.sh env:check` | Verify environment configuration |
 
 ## Installing Aurora AI Support
 
