@@ -24,7 +24,7 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
-  ufa/apps/vite-web-base:
+  ufa/apps/application-frontend:
     dependencies:
       '@dnd-kit/core':
         specifier: ^6.3.1

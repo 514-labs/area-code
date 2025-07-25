@@ -8,8 +8,8 @@
     "https://spec.openapis.org/oas/3.1/schema/2022-10-07": "file:///Users/timdelisle/Dev/area-code/services/transactional-base/openapi.yml"
   },
   "tailwindCSS.experimental.configFile": {
-    "apps/vite-web-base/src/index.css": "apps/vite-web-base/src/**",
-    "packages/ui/src/styles/globals.css": "packages/ui/src/**"
+    "/ufa/apps/application-frontend/src/index.css": "ufa/apps/application-frontend/src/**",
+    "/ufa/packages/ui/src/styles/globals.css": "ufa/packages/ui/src/**"
   },
   "files.associations": {
     "*.css": "tailwindcss"
