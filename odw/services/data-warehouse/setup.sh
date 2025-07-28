@@ -761,7 +761,7 @@ start_data_warehouse_service() {
         print_status "Starting the data-warehouse service..."
 
         # Start the service in the background and track PID
-        moose-cli dev &
+        moose-cli dev 2>&1 &
         MOOSE_SERVICE_PID=$!
 
         # Save PID to file
