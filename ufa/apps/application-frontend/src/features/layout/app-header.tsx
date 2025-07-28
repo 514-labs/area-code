@@ -46,13 +46,8 @@ export function AppHeader({ onChatToggle }: AppHeaderProps) {
         </RetrievalHighlightWrapper>
 
         {/* Chat Toggle Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onChatToggle}
-          className="ml-auto"
-        >
-          <MessageSquare className="w-4 h-4" />
+        <Button size="sm" onClick={onChatToggle} className="ml-auto">
+          AI Chat
           <span className="sr-only">Toggle Chat</span>
         </Button>
       </div>
