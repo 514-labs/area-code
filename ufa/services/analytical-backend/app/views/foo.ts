@@ -1,22 +1,28 @@
-import { MaterializedView, ClickHouseEngines, Aggregated, sql } from "@514labs/moose-lib";
+import {
+  MaterializedView,
+  ClickHouseEngines,
+  Aggregated,
+  sql,
+} from "@514labs/moose-lib";
 import { FooPipeline } from "../index";
+import { Foo } from "@workspace/models";
 
 // Schema for the aggregating view with proper state types matching the exact ClickHouse source types
-interface FooCurrentStateSchema {
+type FooCurrentStateSchema = Pick<Foo, "id"> & {
   id: string;
-  name: string & Aggregated<"argMax", [string, Date]>;                    // String
-  description: string & Aggregated<"argMax", [string, Date]>;             // Handle nullable in query
-  status: string & Aggregated<"argMax", [string, Date]>;                  // Enum8 -> String
-  priority: string & Aggregated<"argMax", [number, Date]>;                // Float64
-  is_active: string & Aggregated<"argMax", [boolean, Date]>;              // Bool
-  metadata: string & Aggregated<"argMax", [string, Date]>;                // JSON -> String
-  tags: string & Aggregated<"argMax", [string[], Date]>;                  // Array(String)
-  score: string & Aggregated<"argMax", [number, Date]>;                   // Float64
-  large_text: string & Aggregated<"argMax", [string, Date]>;              // String
-  created_at: string & Aggregated<"argMax", [Date, Date]>;                // DateTime('UTC')
-  updated_at: string & Aggregated<"argMax", [Date, Date]>;                // DateTime('UTC')
-  latest_operation: string & Aggregated<"argMax", [string, Date]>;        // String
-}
+  name: string & Aggregated<"argMax", [string, Date]>; // String
+  description: string & Aggregated<"argMax", [string, Date]>; // Handle nullable in query
+  status: string & Aggregated<"argMax", [string, Date]>; // Enum8 -> String
+  priority: string & Aggregated<"argMax", [number, Date]>; // Float64
+  is_active: string & Aggregated<"argMax", [boolean, Date]>; // Bool
+  metadata: string & Aggregated<"argMax", [string, Date]>; // JSON -> String
+  tags: string & Aggregated<"argMax", [string[], Date]>; // Array(String)
+  score: string & Aggregated<"argMax", [number, Date]>; // Float64
+  large_text: string & Aggregated<"argMax", [string, Date]>; // String
+  created_at: string & Aggregated<"argMax", [Date, Date]>; // DateTime('UTC')
+  updated_at: string & Aggregated<"argMax", [Date, Date]>; // DateTime('UTC')
+  latest_operation: string & Aggregated<"argMax", [string, Date]>; // String
+};
 
 // SQL query using aggregate state functions with proper nullable handling
 const query = sql`
@@ -46,4 +52,4 @@ export const FooCurrentStateView = new MaterializedView<FooCurrentStateSchema>({
   materializedViewName: "foo_current_state_mv",
   engine: ClickHouseEngines.AggregatingMergeTree,
   orderByFields: ["id"],
-}); 
+});
