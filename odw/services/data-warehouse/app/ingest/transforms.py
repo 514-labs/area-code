@@ -1,6 +1,8 @@
 from app.ingest.models import (
-    blobSourceModel, logSourceModel, eventSourceModel, blobModel, logModel, eventModel,
-    BlobSource, LogSource, EventSource, Blob, Log, Event
+    blobSourceModel, logSourceModel, eventSourceModel, unstructuredDataSourceModel, 
+    blobModel, logModel, eventModel, unstructuredDataModel,
+    BlobSource, LogSource, EventSource, UnstructuredDataSource, 
+    Blob, Log, Event, UnstructuredData
 )
 from moose_lib import DeadLetterModel, TransformConfig
 from datetime import datetime
@@ -62,6 +64,27 @@ def event_source_to_event(event_source: EventSource) -> Event:
         transform_timestamp=datetime.now().isoformat()
     )
 
+# Transform UnstructuredDataSource to UnstructuredData, adding timestamp and handling failures
+def unstructured_data_source_to_unstructured_data(unstructured_data_source: UnstructuredDataSource) -> UnstructuredData:
+    # Check for failure simulation (files with [DLQ] in file path)
+    if "[DLQ]" in unstructured_data_source.source_file_path:
+        raise ValueError(f"Transform failed for unstructured data {unstructured_data_source.id}: File path marked as failed")
+
+    # Validate JSON structure
+    import json
+    try:
+        json.loads(unstructured_data_source.extracted_data_json)
+    except json.JSONDecodeError:
+        raise ValueError(f"Transform failed for unstructured data {unstructured_data_source.id}: Invalid JSON in extracted_data_json")
+
+    return UnstructuredData(
+        id=unstructured_data_source.id,
+        source_file_path=unstructured_data_source.source_file_path,
+        extracted_data_json=unstructured_data_source.extracted_data_json,
+        processed_at=unstructured_data_source.processed_at,
+        transform_timestamp=datetime.now().isoformat()
+    )
+
 # Set up the transformations
 blobSourceModel.get_stream().add_transform(
     destination=blobModel.get_stream(),
@@ -84,6 +107,14 @@ eventSourceModel.get_stream().add_transform(
     transformation=event_source_to_event,
     config=TransformConfig(
         dead_letter_queue=eventSourceModel.get_dead_letter_queue()
+    )
+)
+
+unstructuredDataSourceModel.get_stream().add_transform(
+    destination=unstructuredDataModel.get_stream(),
+    transformation=unstructured_data_source_to_unstructured_data,
+    config=TransformConfig(
+        dead_letter_queue=unstructuredDataSourceModel.get_dead_letter_queue()
     )
 )
 
@@ -162,6 +193,35 @@ def invalid_event_source_to_event(dead_letter: DeadLetterModel[EventSource]) -> 
         print(f"Event recovery failed: {error}")
         return None
 
+# Dead letter queue recovery for UnstructuredDataSource
+def invalid_unstructured_data_source_to_unstructured_data(dead_letter: DeadLetterModel[UnstructuredDataSource]) -> Optional[UnstructuredData]:
+    try:
+        original_unstructured_data_source = dead_letter.as_typed()
+
+        # Fix the failure condition - remove [DLQ] from file path
+        corrected_file_path = original_unstructured_data_source.source_file_path
+        if "[DLQ]" in corrected_file_path:
+            corrected_file_path = corrected_file_path.replace("[DLQ]", "[RECOVERED]")
+
+        # Try to fix JSON if it's malformed by providing a default structure
+        corrected_json = original_unstructured_data_source.extracted_data_json
+        try:
+            json.loads(corrected_json)
+        except json.JSONDecodeError:
+            # Provide a default JSON structure for recovery
+            corrected_json = '{"error": "recovered_from_dlq", "original_data": "malformed"}'
+
+        return UnstructuredData(
+            id=original_unstructured_data_source.id,
+            source_file_path=corrected_file_path,
+            extracted_data_json=corrected_json,
+            processed_at=original_unstructured_data_source.processed_at,
+            transform_timestamp=datetime.now().isoformat()
+        )
+    except Exception as error:
+        print(f"UnstructuredData recovery failed: {error}")
+        return None
+
 # Set up dead letter queue transforms
 blobSourceModel.get_dead_letter_queue().add_transform(
     destination=blobModel.get_stream(),
@@ -176,4 +236,9 @@ logSourceModel.get_dead_letter_queue().add_transform(
 eventSourceModel.get_dead_letter_queue().add_transform(
     destination=eventModel.get_stream(),
     transformation=invalid_event_source_to_event,
+)
+
+unstructuredDataSourceModel.get_dead_letter_queue().add_transform(
+    destination=unstructuredDataModel.get_stream(),
+    transformation=invalid_unstructured_data_source_to_unstructured_data,
 )

@@ -44,6 +44,12 @@ class EventSource(BaseModel):
     ip_address: Optional[str]
     user_agent: Optional[str]
 
+class UnstructuredDataSource(BaseModel):
+    id: Key[str]
+    source_file_path: str
+    extracted_data_json: str
+    processed_at: str
+
 # Final models - processed data with transformations
 class Blob(BaseModel):
     id: Key[str]
@@ -77,6 +83,13 @@ class Event(BaseModel):
     user_agent: Optional[str]
     transform_timestamp: str
 
+class UnstructuredData(BaseModel):
+    id: Key[str]
+    source_file_path: str
+    extracted_data_json: str
+    processed_at: str
+    transform_timestamp: str
+
 # Source ingest pipelines
 blobSourceModel = IngestPipeline[BlobSource]("BlobSource", IngestPipelineConfig(
     ingest=True,
@@ -99,6 +112,13 @@ eventSourceModel = IngestPipeline[EventSource]("EventSource", IngestPipelineConf
     dead_letter_queue=True
 ))
 
+unstructuredDataSourceModel = IngestPipeline[UnstructuredDataSource]("UnstructuredDataSource", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=False,
+    dead_letter_queue=True
+))
+
 # Final processed pipelines
 blobModel = IngestPipeline[Blob]("Blob", IngestPipelineConfig(
     ingest=True,
@@ -115,6 +135,13 @@ logModel = IngestPipeline[Log]("Log", IngestPipelineConfig(
 ))
 
 eventModel = IngestPipeline[Event]("Event", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=True,
+    dead_letter_queue=True
+))
+
+unstructuredDataModel = IngestPipeline[UnstructuredData]("UnstructuredData", IngestPipelineConfig(
     ingest=True,
     stream=True,
     table=True,

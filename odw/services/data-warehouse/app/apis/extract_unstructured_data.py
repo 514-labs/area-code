@@ -1,0 +1,72 @@
+from moose_lib import ConsumptionApi, EgressConfig
+from app.ingest.models import UnstructuredDataSource
+from connectors.connector_factory import ConnectorFactory, ConnectorType
+from connectors.unstructured_data_connector import UnstructuredDataConnectorConfig
+from pydantic import BaseModel
+from typing import List, Optional
+
+# An API to submit unstructured data for extraction and processing.
+# This allows users to submit processed unstructured data that will be picked up
+# by the extraction workflow.
+
+# Define the input model for submitting unstructured data
+class SubmitUnstructuredDataRequest(BaseModel):
+    source_file_path: str
+    extracted_data_json: str
+
+# Define the response model
+class SubmitUnstructuredDataResponse(BaseModel):
+    success: bool
+    message: str
+    data_id: Optional[str] = None
+
+# Define the submission function
+def submit_unstructured_data(client, params: SubmitUnstructuredDataRequest) -> SubmitUnstructuredDataResponse:
+    """
+    Submit unstructured data for processing.
+    
+    Args:
+        client: Database client (not used for this submission)
+        params: Contains the file path and extracted JSON data
+        
+    Returns:
+        SubmitUnstructuredDataResponse indicating success/failure
+    """
+    
+    try:
+        # Create a connector to submit the data
+        connector = ConnectorFactory[UnstructuredDataSource].create(
+            ConnectorType.UnstructuredData,
+            UnstructuredDataConnectorConfig()
+        )
+        
+        # Submit the data to the connector
+        data_id = connector.submit_data(
+            source_file_path=params.source_file_path,
+            extracted_data_json=params.extracted_data_json
+        )
+        
+        return SubmitUnstructuredDataResponse(
+            success=True,
+            message=f"Successfully submitted unstructured data for processing",
+            data_id=data_id
+        )
+        
+    except ValueError as e:
+        return SubmitUnstructuredDataResponse(
+            success=False,
+            message=f"Validation error: {str(e)}"
+        )
+    except Exception as e:
+        return SubmitUnstructuredDataResponse(
+            success=False,
+            message=f"Failed to submit unstructured data: {str(e)}"
+        )
+
+# Create the submission API
+submit_unstructured_data_api = ConsumptionApi[SubmitUnstructuredDataRequest, SubmitUnstructuredDataResponse](
+    "submitUnstructuredData",
+    query_function=submit_unstructured_data,
+    source="UnstructuredDataSource",  # Source for documentation purposes
+    config=EgressConfig()
+) 
