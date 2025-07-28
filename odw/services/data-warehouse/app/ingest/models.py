@@ -90,6 +90,16 @@ class UnstructuredData(BaseModel):
     processed_at: str
     transform_timestamp: str
 
+class ProcessingInstruction(BaseModel):
+    id: Key[str]
+    instruction_type: str  # "transformation", "validation", "routing"
+    target_data_source: str  # "unstructured_data", "blob", "events", "logs"
+    content: Dict[str, Any]  # Flexible instruction content
+    priority: int = 1  # Higher numbers = higher priority
+    created_at: str
+    expires_at: Optional[str] = None
+    status: str = "pending"  # "pending", "active", "completed", "expired"
+
 # Source ingest pipelines
 blobSourceModel = IngestPipeline[BlobSource]("BlobSource", IngestPipelineConfig(
     ingest=True,
