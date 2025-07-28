@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { fooRoutes } from "./routes/foo";
 import { barRoutes } from "./routes/bar";
+import { chatRoutes } from "./routes/chat";
 
 // Load environment variables from .env file in parent directory
 import { config as dotenvConfig } from "dotenv";
@@ -16,8 +17,8 @@ import path from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env file in parent directory
-dotenvConfig({ path: path.resolve(__dirname, "../.env") });
+// Load environment variables from .env files
+dotenvConfig({ path: path.resolve(__dirname, "../.env.local") });
 
 const fastify = Fastify({
   logger: {
@@ -67,6 +68,7 @@ fastify.get("/", async (request, reply) => {
     endpoints: {
       foo: "/api/foo",
       bar: "/api/bar",
+      chat: "/api/chat",
       health: "/health",
       docs: "/docs",
     },
@@ -76,6 +78,7 @@ fastify.get("/", async (request, reply) => {
 // Register route plugins
 await fastify.register(fooRoutes, { prefix: "/api" });
 await fastify.register(barRoutes, { prefix: "/api" });
+await fastify.register(chatRoutes, { prefix: "/api" });
 
 // Manual OpenAPI documentation endpoints
 fastify.get("/documentation/json", async (request, reply) => {
@@ -136,6 +139,7 @@ const start = async () => {
     fastify.log.info("  POST /api/foo - Create foo item");
     fastify.log.info("  GET  /api/bar - List all bar items");
     fastify.log.info("  POST /api/bar - Create bar item");
+    fastify.log.info("  POST /api/chat - AI chat endpoint");
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

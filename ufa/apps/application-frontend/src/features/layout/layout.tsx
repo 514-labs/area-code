@@ -4,10 +4,12 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@workspace/ui/components/sidebar";
-import { CSSProperties, ReactNode } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@workspace/ui";
+import { CSSProperties, ReactNode, useState } from "react";
 import { navigationConfig } from "./navigation-config";
 import { AppHeader } from "./app-header";
 import AreaCodeLogo from "@/components/logos/area-code-logo";
+import AiChatInterface from "@/features/ai/ai-chat-interface";
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,6 +17,11 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const handleChatToggle = () => {
+    setIsChatOpen(!isChatOpen);
+  };
 
   return (
     <SidebarProvider
@@ -39,7 +46,7 @@ export function Layout({ children }: LayoutProps) {
         }
       />
       <SidebarInset>
-        <AppHeader />
+        <AppHeader onChatToggle={handleChatToggle} />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -48,6 +55,16 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </SidebarInset>
+
+      {/* Chat Panel */}
+      <Sheet open={isChatOpen} onOpenChange={setIsChatOpen}>
+        <SheetContent side="right" className="w-80 sm:max-w-80 p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Chat</SheetTitle>
+          </SheetHeader>
+          <AiChatInterface />
+        </SheetContent>
+      </Sheet>
     </SidebarProvider>
   );
 }

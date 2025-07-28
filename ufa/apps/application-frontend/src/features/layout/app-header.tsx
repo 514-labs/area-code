@@ -3,8 +3,14 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { SearchCommand } from "@/features/search/components/search-command";
 import type { SearchResult } from "@/features/search/types/search";
 import { RetrievalHighlightWrapper } from "@/features/origin-highlights/origin-highlights-wrappers";
+import { Button } from "@workspace/ui";
+import { MessageSquare } from "lucide-react";
 
-export function AppHeader() {
+interface AppHeaderProps {
+  onChatToggle?: () => void;
+}
+
+export function AppHeader({ onChatToggle }: AppHeaderProps) {
   const handleSearchSelect = (result: SearchResult) => {
     // Handle navigation based on search result
     console.log("Navigate to:", result);
@@ -38,6 +44,17 @@ export function AppHeader() {
             placeholder="Search documents..."
           />
         </RetrievalHighlightWrapper>
+
+        {/* Chat Toggle Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onChatToggle}
+          className="ml-auto"
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span className="sr-only">Toggle Chat</span>
+        </Button>
       </div>
     </header>
   );

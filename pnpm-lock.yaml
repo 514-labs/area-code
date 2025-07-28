@@ -26,6 +26,9 @@ importers:
 
   ufa/apps/application-frontend:
     dependencies:
+      '@ai-sdk/react':
+        specifier: 2.0.0-beta.28
+        version: 2.0.0-beta.28(react@19.1.0)(zod@3.25.76)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -68,6 +71,9 @@ importers:
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      ai:
+        specifier: 5.0.0-beta.28
+        version: 5.0.0-beta.28(zod@3.25.76)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -161,7 +167,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.317(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.321(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -372,7 +378,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.318(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.7.3))
+        version: 0.4.321(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -384,11 +390,11 @@ importers:
         version: 3.3.0
       typia:
         specifier: ^7.6.0
-        version: 7.6.4(@samchon/openapi@2.5.3)(typescript@5.7.3)
+        version: 7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3)
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.4.318
+        version: 0.4.321
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.5
@@ -440,7 +446,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.4.318(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.4.321(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.52.1
@@ -462,13 +468,19 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.4.318
+        version: 0.4.321
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.5
 
   ufa/services/transactional-backend:
     dependencies:
+      '@ai-sdk/anthropic':
+        specifier: 2.0.0-beta.10
+        version: 2.0.0-beta.10(zod@3.25.76)
+      '@ai-sdk/openai':
+        specifier: 2.0.0-beta.12
+        version: 2.0.0-beta.12(zod@3.25.76)
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0
@@ -481,6 +493,9 @@ importers:
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
+      ai:
+        specifier: 5.0.0-beta.28
+        version: 5.0.0-beta.28(zod@3.25.76)
       dotenv:
         specifier: ^16.3.1
         version: 16.6.1
@@ -564,43 +579,80 @@ importers:
 
 packages:
 
-  '@514labs/moose-cli-darwin-arm64@0.4.318':
-    resolution: {integrity: sha512-o45+ad6M9EpYKHkoGpAI5LtxM5173BzfqwJMv3O6yJchB+ztSbYJ1you1GrN77s8z2q8/4esZPi1N56rf8R/3Q==}
+  '@514labs/moose-cli-darwin-arm64@0.4.321':
+    resolution: {integrity: sha512-Y6Y+P9R3CEo6u8GgzI50OwSCaIjVYVErQLVRPs/9885WkkXWY3LI7Hp5cQhhlWZQs4yrxtn3QibjVsIFLzpRPQ==}
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.4.318':
-    resolution: {integrity: sha512-5xpqEqtF3IEM7rFIQrT8ySY4DUus/03J87BfRCy9LGFzKqiosofvU0kqo/5HH6x5ELnUGNqRlhRvoNHlJ3WRKw==}
+  '@514labs/moose-cli-darwin-x64@0.4.321':
+    resolution: {integrity: sha512-icvxEu+LJfeYxP3G1dVZ26CBUmfwcpPAFouV2fmjFUVjY1eCqYy5RXnO3nwow+F3NNfLs7+j79RUxYumLi+0QA==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.4.318':
-    resolution: {integrity: sha512-bLkzu0HE2YaafJo4Ecxo+k5ER493yJQfxtenHB1kNRB6RQ1peT74asRpbwVeYgIMkdycME8Pgcx3trFylqrzag==}
+  '@514labs/moose-cli-linux-arm64@0.4.321':
+    resolution: {integrity: sha512-CKMShpNka0bq6LnbQ9OEvmr+g0mWAI6ivQnuZDQeFT8KaFRYjlAS66Ee9u3ohZygX92BeQGkGpF3UgmT3TDV8w==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.4.318':
-    resolution: {integrity: sha512-hoc81sWYfPwt2aPSRq5oHn4ho3wrX80r3V1cugCjIit5ecDmdN3wq/wveRT/ilREaJM/VIwfL6+3l9CVMgh3og==}
+  '@514labs/moose-cli-linux-x64@0.4.321':
+    resolution: {integrity: sha512-4+O0KYo4gByToTT7BBrwAAkRZP2x0btyL7qQeRvY4/PaadFfsMD2Y9P3FPEVOQDHIzGk6axWpBpt9yRMvKizGA==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.4.318':
-    resolution: {integrity: sha512-f3NrQyIUGqZPFvBPjRc3BaVa+xNgmD2iPfMmbZe2qsJym84Cv10odgk3WcpnWKUr8PlImYJo4eVeyFn1vpI8SA==}
+  '@514labs/moose-cli@0.4.321':
+    resolution: {integrity: sha512-8SiV3N04W44in6pPuGsAK/H0+0bm1NhuK1Xo1kppBPJX5Z3MHeoAjmEiYkzDZXckKJIWZWfdDCgbB9yz2WCnrg==}
     hasBin: true
 
-  '@514labs/moose-lib@0.4.317':
-    resolution: {integrity: sha512-e+jjrg30GkyRV2HrGFng2s0/Ma14L2gjy5bkoiJgVn4j3OPkb47MTaBsj2MCwNEoKn08kirZpV/2yRyZnGkGcw==}
+  '@514labs/moose-lib@0.4.321':
+    resolution: {integrity: sha512-j1mde4UQa1HzRn7+SPwcwXBuOy97hQIMuZIn5t5+6tCEpE/HrtFHz70KSV+hU4vFP+YYvLFH56O81akijMcQoQ==}
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
       typia: ^7.6.0
 
-  '@514labs/moose-lib@0.4.318':
-    resolution: {integrity: sha512-zt3vyN2vcxNJhdGSJ2TnGmZc8HgWbmPskY5MZyVx3dIsnCe/P8JzeUwk3TOyeirF3GnrUrxNNMaqepSeIb9bNQ==}
-    hasBin: true
+  '@ai-sdk/anthropic@2.0.0-beta.10':
+    resolution: {integrity: sha512-P7uuGQjU7ouh833wfVS5oBn5/oE6JZZoe6wjaI8BvrHukvgEKWWk+qBlD77mqMzEAsde+v11PExqeAuNn02JOA==}
+    engines: {node: '>=18'}
     peerDependencies:
-      ts-patch: ^3.3.0
-      typia: ^7.6.0
+      zod: ^3.25.76 || ^4
+
+  '@ai-sdk/gateway@1.0.0-beta.14':
+    resolution: {integrity: sha512-jsOZoz4hd1vSQ6PBftdQ/j3hPC4Fxf7tY2slCgdpMEevrqFVmRBp6W5xEELDa2wXuPQ/3QxtrQhQU7Qxj42p2Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
+  '@ai-sdk/openai@2.0.0-beta.12':
+    resolution: {integrity: sha512-aXeNztqa1Lum46AcaJpoALfiH9VKly/aQTFU0xFzNo0/o/2fOpfJ82xG9DXrYBCWpnxAhrSEcyeqRB71d8gI6Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
+  '@ai-sdk/provider-utils@3.0.0-beta.6':
+    resolution: {integrity: sha512-r8Nswwko+7nuLnLxprPgAxjGcpjq5fnFmfFwtkz4k9KfF1Z6Nkwvl8+Ee9BULBWXOqbtJGh9iCiJaTPBnhZrqw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
+  '@ai-sdk/provider-utils@3.0.0-beta.7':
+    resolution: {integrity: sha512-w1nMJegq98/TpVOUlYPehX/tyTmyx4b0NCWH2VMHF6hpnJjGuS3UfzkEAKTkHCWYbNZY038b4IkGDx24C0xNOA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
+  '@ai-sdk/provider@2.0.0-beta.1':
+    resolution: {integrity: sha512-Z8SPncMtS3RsoXITmT7NVwrAq6M44dmw0DoUOYJqNNtCu8iMWuxB8Nxsoqpa0uEEy9R1V1ZThJAXTYgjTUxl3w==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/react@2.0.0-beta.28':
+    resolution: {integrity: sha512-MY6bd42wCM/R0Q0wAkzA2diN672L1ule28AfseYiabnNEgb6C/hZdRWMSkfwazTpOabAYQ+bZ7FJBj9velbSig==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: ^18 || ^19 || ^19.0.0-rc
+      zod: ^3.25.76 || ^4
+    peerDependenciesMeta:
+      zod:
+        optional: true
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -3105,6 +3157,13 @@ packages:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
     engines: {node: '>=8'}
 
+  ai@5.0.0-beta.28:
+    resolution: {integrity: sha512-RYAYmrM+mfS4DFT7Qq/WQF9OMEdxTqRffc8UISJ+GwwHtjT+tAcq08KBySJwGa/x+69T9AVKZKfWeVc3XzwcDg==}
+    engines: {node: '>=18'}
+    hasBin: true
+    peerDependencies:
+      zod: ^3.25.76 || ^4
+
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
     peerDependencies:
@@ -3905,6 +3964,10 @@ packages:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
 
+  eventsource-parser@3.0.3:
+    resolution: {integrity: sha512-nVpZkTMM9rF6AQ9gPJpFsNAMt48wIzB5TQgiTLdHiuO8XEDhUgZEhqKlZWXbIzo9VmJ/HvysHqEaVeD5v9TPvA==}
+    engines: {node: '>=20.0.0'}
+
   execa@5.1.1:
     resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}
     engines: {node: '>=10'}
@@ -4427,6 +4490,9 @@ packages:
 
   json-schema-traverse@1.0.0:
     resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
+
+  json-schema@0.4.0:
+    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
@@ -5392,6 +5458,11 @@ packages:
       '@swc/core': ^1.2.147
       webpack: '>=2'
 
+  swr@2.3.4:
+    resolution: {integrity: sha512-bYd2lrhc+VarcpkgWclcUi92wYCpOgMws9Sd1hG1ntAu0NEy+14CbotuFjshBU2kt9rYj9TSmDcybpxpeTU1fg==}
+    peerDependencies:
+      react: ^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   table-layout@4.1.1:
     resolution: {integrity: sha512-iK5/YhZxq5GO5z8wb0bY1317uDF3Zjpha0QFFLA8/trAoiLbQD0HUbMesEaxyzUgDxi2QlcbM8IvqOlEjgoXBA==}
     engines: {node: '>=12.17'}
@@ -5450,6 +5521,10 @@ packages:
 
   thread-stream@3.1.0:
     resolution: {integrity: sha512-OqyPZ9u96VohAyMfJykzmivOrY2wfMSf3C5TtFJVgN+Hm6aj+voFhlK+kZEIv2FBh1X6Xp3DlnCOfEQ3B2J86A==}
+
+  throttleit@2.1.0:
+    resolution: {integrity: sha512-nt6AMGKW1p/70DF/hGBdJB57B8Tspmbp5gfJ8ilhLnt7kkr2ye7hzD6NVG8GGErk2HWF34igrL2CXmNIkzKqKw==}
+    engines: {node: '>=18'}
 
   through@2.3.8:
     resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
@@ -5862,31 +5937,65 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod-to-json-schema@3.24.6:
+    resolution: {integrity: sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==}
+    peerDependencies:
+      zod: ^3.24.1
+
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
 
-  '@514labs/moose-cli-darwin-arm64@0.4.318':
+  '@514labs/moose-cli-darwin-arm64@0.4.321':
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.4.318':
+  '@514labs/moose-cli-darwin-x64@0.4.321':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.4.318':
+  '@514labs/moose-cli-linux-arm64@0.4.321':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.4.318':
+  '@514labs/moose-cli-linux-x64@0.4.321':
     optional: true
 
-  '@514labs/moose-cli@0.4.318':
+  '@514labs/moose-cli@0.4.321':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.4.318
-      '@514labs/moose-cli-darwin-x64': 0.4.318
-      '@514labs/moose-cli-linux-arm64': 0.4.318
-      '@514labs/moose-cli-linux-x64': 0.4.318
+      '@514labs/moose-cli-darwin-arm64': 0.4.321
+      '@514labs/moose-cli-darwin-x64': 0.4.321
+      '@514labs/moose-cli-linux-arm64': 0.4.321
+      '@514labs/moose-cli-linux-x64': 0.4.321
 
-  '@514labs/moose-lib@0.4.317(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.4.321(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+    dependencies:
+      '@clickhouse/client': 1.8.1
+      '@clickhouse/client-web': 1.5.0
+      '@temporalio/activity': 1.12.1
+      '@temporalio/client': 1.12.1
+      '@temporalio/common': 1.12.1
+      '@temporalio/worker': 1.12.1(@swc/helpers@0.5.17)
+      '@temporalio/workflow': 1.12.1
+      commander: 13.1.0
+      csv-parse: 5.6.0
+      fastq: 1.17.1
+      jose: 5.9.2
+      kafkajs: 2.2.4
+      redis: 4.7.1
+      toml: 3.0.0
+      ts-node: 10.9.2(@swc/core@1.12.11(@swc/helpers@0.5.17))(@types/node@20.19.5)(typescript@5.7.3)
+      ts-patch: 3.3.0
+      typescript: 5.7.3
+      typia: 7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3)
+    transitivePeerDependencies:
+      - '@swc/core'
+      - '@swc/helpers'
+      - '@swc/wasm'
+      - '@types/node'
+      - esbuild
+      - uglify-js
+      - webpack-cli
+
+  '@514labs/moose-lib@0.4.321(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.0.13)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -5915,63 +6024,53 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.4.318(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.7.3))':
+  '@ai-sdk/anthropic@2.0.0-beta.10(zod@3.25.76)':
     dependencies:
-      '@clickhouse/client': 1.8.1
-      '@clickhouse/client-web': 1.5.0
-      '@temporalio/activity': 1.12.1
-      '@temporalio/client': 1.12.1
-      '@temporalio/common': 1.12.1
-      '@temporalio/worker': 1.12.1(@swc/helpers@0.5.17)
-      '@temporalio/workflow': 1.12.1
-      commander: 13.1.0
-      csv-parse: 5.6.0
-      fastq: 1.17.1
-      jose: 5.9.2
-      kafkajs: 2.2.4
-      redis: 4.7.1
-      toml: 3.0.0
-      ts-node: 10.9.2(@swc/core@1.12.11(@swc/helpers@0.5.17))(@types/node@20.19.5)(typescript@5.7.3)
-      ts-patch: 3.3.0
-      typescript: 5.7.3
-      typia: 7.6.4(@samchon/openapi@2.5.3)(typescript@5.7.3)
-    transitivePeerDependencies:
-      - '@swc/core'
-      - '@swc/helpers'
-      - '@swc/wasm'
-      - '@types/node'
-      - esbuild
-      - uglify-js
-      - webpack-cli
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@ai-sdk/provider-utils': 3.0.0-beta.7(zod@3.25.76)
+      zod: 3.25.76
 
-  '@514labs/moose-lib@0.4.318(@swc/core@1.12.11(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.5)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@ai-sdk/gateway@1.0.0-beta.14(zod@3.25.76)':
     dependencies:
-      '@clickhouse/client': 1.8.1
-      '@clickhouse/client-web': 1.5.0
-      '@temporalio/activity': 1.12.1
-      '@temporalio/client': 1.12.1
-      '@temporalio/common': 1.12.1
-      '@temporalio/worker': 1.12.1(@swc/helpers@0.5.17)
-      '@temporalio/workflow': 1.12.1
-      commander: 13.1.0
-      csv-parse: 5.6.0
-      fastq: 1.17.1
-      jose: 5.9.2
-      kafkajs: 2.2.4
-      redis: 4.7.1
-      toml: 3.0.0
-      ts-node: 10.9.2(@swc/core@1.12.11(@swc/helpers@0.5.17))(@types/node@20.19.5)(typescript@5.7.3)
-      ts-patch: 3.3.0
-      typescript: 5.7.3
-      typia: 7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3)
-    transitivePeerDependencies:
-      - '@swc/core'
-      - '@swc/helpers'
-      - '@swc/wasm'
-      - '@types/node'
-      - esbuild
-      - uglify-js
-      - webpack-cli
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@ai-sdk/provider-utils': 3.0.0-beta.6(zod@3.25.76)
+      zod: 3.25.76
+
+  '@ai-sdk/openai@2.0.0-beta.12(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@ai-sdk/provider-utils': 3.0.0-beta.6(zod@3.25.76)
+      zod: 3.25.76
+
+  '@ai-sdk/provider-utils@3.0.0-beta.6(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.3
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.6(zod@3.25.76)
+
+  '@ai-sdk/provider-utils@3.0.0-beta.7(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.3
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.6(zod@3.25.76)
+
+  '@ai-sdk/provider@2.0.0-beta.1':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/react@2.0.0-beta.28(react@19.1.0)(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider-utils': 3.0.0-beta.6(zod@3.25.76)
+      ai: 5.0.0-beta.28(zod@3.25.76)
+      react: 19.1.0
+      swr: 2.3.4(react@19.1.0)
+      throttleit: 2.1.0
+    optionalDependencies:
+      zod: 3.25.76
 
   '@alloc/quick-lru@5.2.0': {}
 
@@ -8419,6 +8518,14 @@ snapshots:
       clean-stack: 2.2.0
       indent-string: 4.0.0
 
+  ai@5.0.0-beta.28(zod@3.25.76):
+    dependencies:
+      '@ai-sdk/gateway': 1.0.0-beta.14(zod@3.25.76)
+      '@ai-sdk/provider': 2.0.0-beta.1
+      '@ai-sdk/provider-utils': 3.0.0-beta.6(zod@3.25.76)
+      '@opentelemetry/api': 1.9.0
+      zod: 3.25.76
+
   ajv-formats@2.1.1(ajv@8.17.1):
     optionalDependencies:
       ajv: 8.17.1
@@ -9280,6 +9387,8 @@ snapshots:
 
   events@3.3.0: {}
 
+  eventsource-parser@3.0.3: {}
+
   execa@5.1.1:
     dependencies:
       cross-spawn: 7.0.6
@@ -9817,6 +9926,8 @@ snapshots:
   json-schema-traverse@0.4.1: {}
 
   json-schema-traverse@1.0.0: {}
+
+  json-schema@0.4.0: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
 
@@ -10771,6 +10882,12 @@ snapshots:
       '@swc/counter': 0.1.3
       webpack: 5.100.2(@swc/core@1.12.11(@swc/helpers@0.5.17))
 
+  swr@2.3.4(react@19.1.0):
+    dependencies:
+      dequal: 2.0.3
+      react: 19.1.0
+      use-sync-external-store: 1.5.0(react@19.1.0)
+
   table-layout@4.1.1:
     dependencies:
       array-back: 6.2.2
@@ -10824,6 +10941,8 @@ snapshots:
   thread-stream@3.1.0:
     dependencies:
       real-require: 0.2.0
+
+  throttleit@2.1.0: {}
 
   through@2.3.8: {}
 
@@ -10996,16 +11115,6 @@ snapshots:
   typescript@5.7.3: {}
 
   typescript@5.8.3: {}
-
-  typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.7.3):
-    dependencies:
-      '@samchon/openapi': 2.5.3
-      commander: 10.0.1
-      comment-json: 4.2.5
-      inquirer: 8.2.6
-      package-manager-detector: 0.2.11
-      randexp: 0.5.3
-      typescript: 5.7.3
 
   typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3):
     dependencies:
@@ -11247,5 +11356,9 @@ snapshots:
   yn@3.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zod-to-json-schema@3.24.6(zod@3.25.76):
+    dependencies:
+      zod: 3.25.76
 
   zod@3.25.76: {}
