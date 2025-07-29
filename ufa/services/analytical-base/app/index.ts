@@ -34,11 +34,18 @@ export * from "./apis/foo/consumption/foo-current-state";
 export * from "./apis/foo/consumption/foo-score-over-time";
 
 // SQL Server Pipelines
-import { sqlServerDebeziumPayloadStream, processSqlServerDebeziumPayloadPipeline, transformSqlServerDebeziumPayload } from "./pipelines/sqlServerPipeline";
+import { Stream, IngestPipeline} from "@514labs/moose-lib";
 
+import { transformSqlServerDebeziumPayload, replicatedRoomPipeline, transformToReplicatedRoom, SqlServerDebeziumPayload, ProcessSqlServerDebeziumPayload } from "./pipelines/sqlServerPipeline";
 
+export const sqlServerDebeziumPayloadStream = new Stream<SqlServerDebeziumPayload>("SqlServerDebeziumPayload", {});
+
+export const processSqlServerDebeziumPayloadPipeline = new IngestPipeline<ProcessSqlServerDebeziumPayload>("SqlServerDebeziumProcessedPayload", {
+    stream: true,
+    table: true,
+    ingest: false,
+});
+
+// // Fan Out - Transform the Debezium payload to a processed payload and a replicated payload
 sqlServerDebeziumPayloadStream.addTransform(processSqlServerDebeziumPayloadPipeline.stream!, transformSqlServerDebeziumPayload);
-
-
-
-
+sqlServerDebeziumPayloadStream.addTransform(replicatedRoomPipeline.stream!, transformToReplicatedRoom);
