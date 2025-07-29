@@ -132,17 +132,53 @@ def fetch_data(tag):
 
 def trigger_extract(api_url, label):
     batch_size = random.randint(10, 100)
-    url = f"{api_url}?batch_size={batch_size}"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        st.session_state["extract_status_msg"] = f"{label} extract triggered with batch size {batch_size}."
-        st.session_state["extract_status_type"] = "success"
-        st.session_state["extract_status_time"] = time.time()
-    except Exception as e:
-        st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract (batch size {batch_size}): {e}"
-        st.session_state["extract_status_type"] = "error"
-        st.session_state["extract_status_time"] = time.time()
+    
+    # Special handling for unstructured data workflow
+    if "extractUnstructuredData" in api_url:
+        try:
+            # Use subprocess to run the Moose CLI workflow command
+            import subprocess
+            import os
+            
+            # Change to the data warehouse directory
+            data_warehouse_dir = "/Users/cjus/dev/area-code/odw/services/data-warehouse"
+            
+            # Run the workflow using Moose CLI
+            result = subprocess.run(
+                ["moose-cli", "workflow", "run", "unstructured-data-workflow", 
+                 "--input", f'{{"batch_size": {batch_size}, "fail_percentage": 0}}'],
+                cwd=data_warehouse_dir,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                st.session_state["extract_status_msg"] = f"{label} workflow triggered successfully with batch size {batch_size}."
+                st.session_state["extract_status_type"] = "success"
+                st.session_state["extract_status_time"] = time.time()
+            else:
+                st.session_state["extract_status_msg"] = f"Failed to trigger {label} workflow: {result.stderr}"
+                st.session_state["extract_status_type"] = "error"
+                st.session_state["extract_status_time"] = time.time()
+                
+        except Exception as e:
+            st.session_state["extract_status_msg"] = f"Failed to trigger {label} workflow: {str(e)}"
+            st.session_state["extract_status_type"] = "error"
+            st.session_state["extract_status_time"] = time.time()
+    else:
+        # Original method for other workflows
+        url = f"{api_url}?batch_size={batch_size}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            st.session_state["extract_status_msg"] = f"{label} extract triggered with batch size {batch_size}."
+            st.session_state["extract_status_type"] = "success"
+            st.session_state["extract_status_time"] = time.time()
+        except Exception as e:
+            st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract (batch size {batch_size}): {e}"
+            st.session_state["extract_status_type"] = "error"
+            st.session_state["extract_status_time"] = time.time()
 
 def trigger_all_extracts():
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
@@ -677,7 +713,8 @@ def fetch_daily_pageviews_data(days_back=14, limit=14):
 
 def fetch_unstructured_data(source_file_path=None, limit=100, should_throw=False):
     """Fetch unstructured data from the getUnstructuredData API"""
-    api_url = f"{CONSUMPTION_API_BASE}/getUnstructuredData"
+    # Use the correct port (4201) for the unstructured data API
+    api_url = "http://localhost:4201/getUnstructuredData"
     params = {"limit": limit}
     
     if source_file_path:

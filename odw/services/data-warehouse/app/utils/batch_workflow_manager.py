@@ -275,14 +275,8 @@ class BatchWorkflowManager:
             # Step 3: Create UnstructuredDataSource record
             record_id = str(uuid.uuid4())
             
-            # Add batch metadata to extracted data
-            if isinstance(extracted_data, dict):
-                extracted_data['batch_info'] = {
-                    'batch_id': self.batch_id,
-                    'original_pattern': original_pattern,
-                    'file_path': file_path,
-                    'processing_timestamp': datetime.now().isoformat()
-                }
+            # Keep extracted data clean - don't add batch metadata to the LLM response
+            # Batch information is already available in the record metadata
             
             unstructured_data_record = UnstructuredDataSource(
                 id=record_id,

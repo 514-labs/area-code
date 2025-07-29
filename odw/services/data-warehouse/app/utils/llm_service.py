@@ -375,9 +375,11 @@ INSTRUCTION: {instruction}
 CONTENT:
 {content_preview}
 
-Please extract the requested information and return it as a valid JSON object. Include only the data that can be reliably extracted from the content. If certain information is not available, omit those fields rather than guessing.
+IMPORTANT: Return ONLY the requested data fields as a valid JSON object. Do not add any additional fields, metadata, or explanatory text. Include only the specific data that was requested in the instruction.
 
-Return only the JSON object, no additional text or formatting."""
+If certain information is not available in the content, omit those fields rather than guessing or adding placeholder values.
+
+Return only the JSON object with the requested fields, no additional text, formatting, or metadata."""
     
     def _build_validation_prompt(self, data_json: str, instruction: str) -> str:
         """Build prompt for data validation."""
@@ -428,14 +430,28 @@ Please determine the new file path based on the data content and routing instruc
     def _parse_extraction_response(self, response_text: str, instruction: str) -> Dict[str, Any]:
         """Parse LLM extraction response into structured data."""
         try:
+            # Clean the response text - remove markdown code blocks if present
+            cleaned_text = response_text.strip()
+            
+            # Check if response is wrapped in markdown code blocks
+            if cleaned_text.startswith("```json") and cleaned_text.endswith("```"):
+                # Extract JSON from markdown code blocks
+                json_start = cleaned_text.find("```json") + 7
+                json_end = cleaned_text.rfind("```")
+                if json_start < json_end:
+                    cleaned_text = cleaned_text[json_start:json_end].strip()
+            elif cleaned_text.startswith("```") and cleaned_text.endswith("```"):
+                # Extract JSON from generic code blocks
+                json_start = cleaned_text.find("```") + 3
+                json_end = cleaned_text.rfind("```")
+                if json_start < json_end:
+                    cleaned_text = cleaned_text[json_start:json_end].strip()
+            
             # Try to parse as JSON
-            extracted_data = json.loads(response_text.strip())
+            extracted_data = json.loads(cleaned_text)
             
-            # Add metadata
-            extracted_data["extraction_instruction"] = instruction
-            extracted_data["extracted_at"] = datetime.now().isoformat()
-            extracted_data["extraction_method"] = "llm_anthropic"
-            
+            # Return only the LLM-extracted data without additional metadata
+            # The system will add metadata at the database level if needed
             return extracted_data
         except json.JSONDecodeError:
             # If not valid JSON, return structured error

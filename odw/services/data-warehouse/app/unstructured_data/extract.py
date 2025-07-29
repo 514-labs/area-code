@@ -19,6 +19,7 @@ import json
 # 1. Legacy single-file processing from connector queue
 # 2. S3 pattern expansion and batch processing with LLM
 # 3. Failed file handling via DLQ
+# 4. Database-based processing for unprocessed records
 #
 # When the data lands in ingest, it goes through a stream where it is transformed.
 # See app/ingest/transforms.py for the transformation logic.
@@ -26,6 +27,62 @@ import json
 class UnstructuredDataExtractParams(BaseModel):
     batch_size: Optional[int] = 100
     fail_percentage: Optional[int] = 0
+
+def get_unprocessed_records_from_database(client, limit: int = 100) -> List[UnstructuredDataSource]:
+    """
+    Read unprocessed records from the UnstructuredData table.
+    Only process records from the last 24 hours to avoid processing old records
+    with different processing instructions.
+    
+    Args:
+        client: Database client
+        limit: Maximum number of records to retrieve
+        
+    Returns:
+        List of UnstructuredDataSource records that need processing
+    """
+    query = """
+        SELECT
+            id,
+            source_file_path,
+            extracted_data_json,
+            processed_at,
+            processing_instructions
+        FROM UnstructuredData
+        WHERE extracted_data_json IS NULL OR extracted_data_json = ''
+        ORDER BY id DESC
+        LIMIT {limit}
+    """
+    
+    try:
+        result = client.query.execute(query, {"limit": limit})
+        records = []
+        
+        for item in result:
+            record = UnstructuredDataSource(
+                id=item['id'],
+                source_file_path=item['source_file_path'],
+                extracted_data_json=item['extracted_data_json'],
+                processed_at=item['processed_at'],
+                processing_instructions=item.get('processing_instructions')
+            )
+            records.append(record)
+        
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"Retrieved {len(records)} unprocessed records from database",
+            message_type="Info"
+        ))
+        
+        return records
+        
+    except Exception as e:
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"Error reading from database: {str(e)}",
+            message_type="Error"
+        ))
+        return []
 
 def process_unstructured_data_item(item: UnstructuredDataSource) -> UnstructuredDataSource:
     """
@@ -288,55 +345,119 @@ def extract_and_process_s3_patterns(connector, batch_manager: BatchWorkflowManag
 def run_task(input: UnstructuredDataExtractParams) -> None:
     cli_log(CliLogData(action="UnstructuredDataWorkflow", message="Running Enhanced UnstructuredData task...", message_type="Info"))
 
-    # Create a connector to extract data from UnstructuredData
-    connector = ConnectorFactory[UnstructuredDataSource].create(
-        ConnectorType.UnstructuredData,
-        UnstructuredDataConnectorConfig(batch_size=input.batch_size)
+    # Get database client from Moose
+    from moose_lib import MooseClient
+    from clickhouse_connect import get_client
+    
+    ch_client = get_client(
+        interface='http',
+        host='localhost',
+        port=18123,
+        database='local',
+        username='panda',
+        password='pandapass'
     )
+    
+    moose_client = MooseClient(ch_client, None)
 
-    # Check if there's any pending data
-    if not connector.has_pending_data():
+    # Phase 1: Read unprocessed records from database
+    unprocessed_records = get_unprocessed_records_from_database(moose_client, input.batch_size)
+    
+    if not unprocessed_records:
         cli_log(CliLogData(
             action="UnstructuredDataWorkflow",
-            message="No pending unstructured data to process",
+            message="No unprocessed records found in database",
             message_type="Info"
         ))
         return
+
+    cli_log(CliLogData(
+        action="UnstructuredDataWorkflow",
+        message=f"Found {len(unprocessed_records)} unprocessed records to process",
+        message_type="Info"
+    ))
 
     # Initialize batch workflow manager for S3 pattern processing
     batch_manager = BatchWorkflowManager()
     all_processed_data = []
 
-    # Phase 1: Process S3 patterns with wildcards (new functionality)
-    if has_s3_patterns_to_process(connector):
+    # Phase 2: Process S3 patterns with wildcards
+    wildcard_records = [record for record in unprocessed_records if S3PatternValidator._has_wildcards(record.source_file_path)]
+    regular_records = [record for record in unprocessed_records if not S3PatternValidator._has_wildcards(record.source_file_path)]
+    
+    if wildcard_records:
         cli_log(CliLogData(
             action="UnstructuredDataWorkflow",
-            message="Processing S3 patterns with wildcards",
+            message=f"Processing {len(wildcard_records)} S3 patterns with wildcards",
             message_type="Info"
         ))
         
-        pattern_processed_data = extract_and_process_s3_patterns(connector, batch_manager)
-        all_processed_data.extend(pattern_processed_data)
+        # Process each wildcard pattern
+        for record in wildcard_records:
+            try:
+                batch_result = batch_manager.process_s3_pattern(
+                    s3_pattern=record.source_file_path,
+                    processing_instructions=record.processing_instructions or "Extract and structure data from this file",
+                    batch_id=record.id
+                )
+                
+                if batch_result['success']:
+                    # Collect successful records from batch processing
+                    for result in batch_manager._last_processing_results if hasattr(batch_manager, '_last_processing_results') else []:
+                        if result['success'] and 'record' in result:
+                            all_processed_data.append(result['record'])
+                    
+                    cli_log(CliLogData(
+                        action="UnstructuredDataWorkflow",
+                        message=f"Successfully processed pattern {record.source_file_path}: {batch_result['summary']['files_succeeded']} files",
+                        message_type="Info"
+                    ))
+                else:
+                    # Create a failed record for the pattern
+                    failed_record = UnstructuredDataSource(
+                        id=record.id,
+                        source_file_path=f"[DLQ]PATTERN_ERROR_{record.source_file_path}",
+                        extracted_data_json=json.dumps({
+                            "error": "pattern_processing_failed",
+                            "original_pattern": record.source_file_path,
+                            "error_message": batch_result.get('error_message', 'Unknown error'),
+                            "batch_id": batch_result['batch_id']
+                        }),
+                        processed_at=record.processed_at,
+                        processing_instructions=record.processing_instructions
+                    )
+                    all_processed_data.append(failed_record)
+                    
+            except Exception as e:
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"Failed to process pattern {record.source_file_path}: {str(e)}",
+                    message_type="Error"
+                ))
+                # Create a failed record for unexpected errors
+                failed_record = UnstructuredDataSource(
+                    id=record.id,
+                    source_file_path=f"[DLQ]PATTERN_EXCEPTION_{record.source_file_path}",
+                    extracted_data_json=json.dumps({
+                        "error": "pattern_processing_exception",
+                        "original_pattern": record.source_file_path,
+                        "error_message": str(e)
+                    }),
+                    processed_at=record.processed_at,
+                    processing_instructions=record.processing_instructions
+                )
+                all_processed_data.append(failed_record)
 
-    # Phase 2: Process regular items (legacy functionality)
-    if connector.has_pending_data():
+    # Phase 3: Process regular single-file items
+    if regular_records:
         cli_log(CliLogData(
             action="UnstructuredDataWorkflow",
-            message="Processing regular single-file items",
+            message=f"Processing {len(regular_records)} regular single-file items",
             message_type="Info"
         ))
         
-        # Extract remaining regular data from connector
-        regular_data = connector.extract()
-
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"Extracted {len(regular_data)} regular items for processing",
-            message_type="Info"
-        ))
-
         # Process each regular item: read file and perform basic extraction
-        for item in regular_data:
+        for item in regular_records:
             try:
                 processed_item = process_unstructured_data_item(item)
                 all_processed_data.append(processed_item)

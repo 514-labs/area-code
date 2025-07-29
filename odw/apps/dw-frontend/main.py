@@ -185,7 +185,8 @@ def create_navigation():
         unstructured_data_view.show,
         title="USD",
         icon="📄",
-        url_path="unstructured-data"
+        url_path="unstructured-data",
+        default=False
     )
     
     analytics_page = st.Page(
@@ -208,7 +209,11 @@ def create_navigation():
 nav = create_navigation()
 
 # Run the navigation (this will render the navigation menu in the sidebar)
-nav.run()
+try:
+    nav.run()
+except Exception as e:
+    st.error(f"Navigation error: {e}")
+    st.info("Please try refreshing the page or navigating to a different section.")
 
 # Display status messages at the bottom of the sidebar
 with st.sidebar:

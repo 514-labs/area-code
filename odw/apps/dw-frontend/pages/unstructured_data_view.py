@@ -37,6 +37,17 @@ def format_extracted_data(data_json):
     except:
         return "Invalid JSON"
 
+def format_stringified_json(data_json):
+    """Format the full stringified JSON for display"""
+    if data_json is None:
+        return "Not processed yet"
+    try:
+        # Parse and re-stringify to ensure proper formatting
+        data = json.loads(data_json)
+        return json.dumps(data, indent=2)
+    except:
+        return "Invalid JSON"
+
 def prepare_unstructured_display_data(df):
     """Transform unstructured data for display"""
     if df.empty:
@@ -49,13 +60,13 @@ def prepare_unstructured_display_data(df):
         display_df["Processing Instructions"] = display_df["processing_instructions"].apply(format_processing_instructions)
     
     if "extracted_data_json" in display_df.columns:
-        display_df["Extracted Data"] = display_df["extracted_data_json"].apply(format_extracted_data)
+        display_df["Structured Data"] = display_df["extracted_data_json"].apply(format_stringified_json)
     
     # Column display mapping
     display_columns = {
         "id": "ID",
         "source_file_path": "Source File Path",
-        "Extracted Data": "Extracted Data Summary",
+        "Structured Data": "Structured Data",
         "processed_at": "Processed At",
         "transform_timestamp": "Transform Timestamp",
         "Processing Instructions": "Processing Instructions"
@@ -69,35 +80,23 @@ def prepare_unstructured_display_data(df):
     return display_df
 
 def show():
-    # Header
-    st.title("Unstructured Data Connector")
-    st.markdown("Submit and view unstructured data processing results")
-    
-    # Create tabs for Submit and View
-    submit_tab, view_tab = st.tabs(["📤 Submit Data", "📊 View Data"])
+    try:
+        # Header
+        st.title("Unstructured Data Connector")
+        st.markdown("Submit and view unstructured data processing results")
+        
+        # Create tabs for Submit and View
+        submit_tab, view_tab = st.tabs(["📤 Submit Data", "📊 View Data"])
+    except Exception as e:
+        st.error(f"Error loading Unstructured Data Connector: {e}")
+        st.info("Please try refreshing the page.")
+        return
     
     with submit_tab:
         st.subheader("Submit Unstructured Data")
         st.markdown("Use this form to submit unstructured data for processing")
         
-        # S3 Pattern Examples and Help
-        with st.expander("📋 S3 Pattern Examples & Help"):
-            st.markdown("**Supported Patterns:**")
-            examples = S3PatternValidator.get_examples()
-            for example in examples:
-                complexity_color = {
-                    "simple": "🟢",
-                    "low": "🟡", 
-                    "medium": "🟠",
-                    "high": "🔴"
-                }
-                st.code(f"{complexity_color.get(example['complexity'], '⚪')} {example['pattern']}")
-                st.caption(example['description'])
-            
-            st.markdown("**Wildcard Guide:**")
-            st.markdown("• `*` - Match any characters except `/`")
-            st.markdown("• `**` - Match any characters including `/` (recursive)")
-            st.markdown("• `?` - Match any single character")
+        # S3 Pattern Examples and Help section removed as requested
         
         with st.form("submit_unstructured_data"):
             # S3 Pattern input with validation
@@ -191,23 +190,14 @@ def show():
                 st.session_state["refresh_unstructured"] = True
                 st.rerun()
         
-        # Filter options
-        with st.expander("Filter Options"):
-            col1, col2 = st.columns(2)
-            with col1:
-                file_path_filter = st.text_input("Filter by file path", placeholder="Enter partial file path")
-            with col2:
-                limit = st.number_input("Limit results", min_value=10, max_value=1000, value=100, step=10)
+        # Removed filter options as requested
         
         # Fetch and display data
         if st.session_state.get("refresh_unstructured", False):
             st.session_state["refresh_unstructured"] = False
         
-        # Fetch data with filters
-        df = fetch_unstructured_data(
-            source_file_path=file_path_filter if file_path_filter else None,
-            limit=limit
-        )
+        # Fetch data with default limit
+        df = fetch_unstructured_data(limit=100)
         
         if not df.empty:
             # Show metrics
@@ -235,14 +225,46 @@ def show():
                     key="with_instructions"
                 )
             
+            # Store the original data for JSON display
+            st.session_state["unstructured_raw_data"] = df.to_dict('records')
+            
             # Prepare and display data
             display_df = prepare_unstructured_display_data(df)
             if display_df is not None:
-                st.dataframe(
+                # Add selection capability to the dataframe
+                selected_rows = st.dataframe(
                     display_df,
                     use_container_width=True,
-                    hide_index=True
+                    hide_index=True,
+                    on_select="rerun",
+                    selection_mode="single-row"
                 )
+                
+                # Display JSON for selected row
+                if selected_rows.selection.rows:
+                    selected_idx = selected_rows.selection.rows[0]
+                    if selected_idx < len(st.session_state["unstructured_raw_data"]):
+                        st.subheader(f"JSON Details for Record #{selected_idx + 1}")
+                        
+                        # Get the original record from session state
+                        original_record = st.session_state["unstructured_raw_data"][selected_idx]
+                        
+                        # Display the extracted data JSON
+                        if original_record.get("extracted_data_json"):
+                            st.markdown("**Extracted Structured Data:**")
+                            try:
+                                extracted_data = json.loads(original_record["extracted_data_json"])
+                                st.json(extracted_data)
+                            except:
+                                st.code(original_record["extracted_data_json"], language="json")
+                        else:
+                            st.info("No extracted data available for this record.")
+                        
+                        # Display the full record JSON
+                        st.markdown("**Full Record JSON:**")
+                        st.json(original_record)
+                    else:
+                        st.error("Selected record data not available.")
             else:
                 st.info("No data available to display.")
         else:
