@@ -105,6 +105,7 @@ area-code/
 
 - [Moose analytical APIs + ClickHouse](https://docs.fiveonefour.com/moose/building/consumption-apis) with automatic OpenAPI/Swagger docs
 - [Moose streaming Ingest Pipelines + Redpanda](https://docs.fiveonefour.com/moose/building/ingestion) for real-time data processing
+- [Moose workflows + Temporal](https://docs.fiveonefour.com/moose/building/workflows) for durable long-running data synchronization
 - REST API endpoints for data consumption and analytics
 - Materialized views for optimized query performance
 
@@ -114,10 +115,6 @@ area-code/
 - Factory pattern for easy connector integration
 - Support for blob storage, events, and logs data sources
 - Extensible architecture for custom data connectors
-
-### Sync Service
-
-- [Moose workflows + Temporal](https://docs.fiveonefour.com/moose/building/workflows) for durable long-running data synchronization
 
 ### Infrastructure Services
 
