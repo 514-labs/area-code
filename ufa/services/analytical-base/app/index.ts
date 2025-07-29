@@ -32,3 +32,6 @@ export * from "./apis/foo/consumption/foo-average-score";
 export * from "./apis/foo/consumption/foo-base";
 export * from "./apis/foo/consumption/foo-current-state";
 export * from "./apis/foo/consumption/foo-score-over-time";
+
+// SQL Server Pipelines
+export * from "./pipelines/sqlServerPipeline";
