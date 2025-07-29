@@ -36,7 +36,16 @@ export * from "./apis/foo/consumption/foo-score-over-time";
 // SQL Server Pipelines
 import { Stream, IngestPipeline} from "@514labs/moose-lib";
 
-import { transformSqlServerDebeziumPayload, replicatedRoomPipeline, transformToReplicatedRoom, SqlServerDebeziumPayload, ProcessSqlServerDebeziumPayload } from "./pipelines/sqlServerPipeline";
+import { 
+  transformSqlServerDebeziumPayload, 
+  transformToFooWithCDC,
+  transformToBarWithCDC,
+  SqlServerDebeziumPayload, 
+  ProcessSqlServerDebeziumPayload 
+} from "./pipelines/sqlServerPipeline";
+
+// Import existing Foo and Bar pipelines
+import { FooPipeline, BarPipeline } from "./pipelines/eventsPipeline";
 
 export const sqlServerDebeziumPayloadStream = new Stream<SqlServerDebeziumPayload>("SqlServerDebeziumPayload", {});
 
@@ -46,6 +55,12 @@ export const processSqlServerDebeziumPayloadPipeline = new IngestPipeline<Proces
     ingest: false,
 });
 
-// // Fan Out - Transform the Debezium payload to a processed payload and a replicated payload
+// Fan Out - Transform the Debezium payload to various destinations
+// 1. General processed payload for debugging/monitoring
 sqlServerDebeziumPayloadStream.addTransform(processSqlServerDebeziumPayloadPipeline.stream!, transformSqlServerDebeziumPayload);
-sqlServerDebeziumPayloadStream.addTransform(replicatedRoomPipeline.stream!, transformToReplicatedRoom);
+
+// 2. Foo table → existing Foo pipeline with CDC
+sqlServerDebeziumPayloadStream.addTransform(FooPipeline.stream!, transformToFooWithCDC);
+
+// 3. Bar table → existing Bar pipeline with CDC  
+sqlServerDebeziumPayloadStream.addTransform(BarPipeline.stream!, transformToBarWithCDC);
