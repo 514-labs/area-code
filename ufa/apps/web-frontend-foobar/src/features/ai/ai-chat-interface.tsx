@@ -17,7 +17,7 @@ export default function AiChatInterface() {
   const [input, setInput] = useState("");
 
   return (
-    <div className="w-full h-full flex flex-col bg-background text-foreground">
+    <div className="w-full h-full flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header */}
       <div className="flex-none py-3 px-4 border-b border-border">
         <div className="flex items-center gap-2 text-sm font-medium">
@@ -27,7 +27,7 @@ export default function AiChatInterface() {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-3">
+      <ScrollArea className="flex-1 min-h-0 p-3">
         <ChatOutputArea messages={messages} />
       </ScrollArea>
 
