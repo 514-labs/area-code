@@ -9,6 +9,14 @@ import { dirname } from "path";
 import { fooRoutes } from "./routes/foo";
 import { barRoutes } from "./routes/bar";
 import { chatRoutes } from "./routes/chat";
+import {
+  bootstrapAuroraMCPClient,
+  shutdownAuroraMCPClient,
+} from "./ai-agent/aurora-mcp-client";
+import {
+  bootstrapSupabaseLocalMCPClient,
+  shutdownSupabaseLocalMCPClient,
+} from "./ai-agent/supabase-local-mcp-client";
 
 // Load environment variables from .env file in parent directory
 import { config as dotenvConfig } from "dotenv";
@@ -113,11 +121,32 @@ fastify.setErrorHandler((error, request, reply) => {
   });
 });
 
+// Bootstrap MCP clients during startup
+async function bootstrapMCPClients() {
+  try {
+    fastify.log.info("🔧 Bootstrapping MCP clients...");
+
+    // Bootstrap both MCP clients in parallel
+    await Promise.all([
+      bootstrapAuroraMCPClient(),
+      bootstrapSupabaseLocalMCPClient(),
+    ]);
+
+    fastify.log.info("✅ All MCP clients successfully bootstrapped");
+  } catch (error) {
+    fastify.log.error("❌ Failed to bootstrap MCP clients:", error);
+    throw error;
+  }
+}
+
 // Start server
 const start = async () => {
   try {
     const port = parseInt(process.env.PORT || "8082");
     const host = process.env.HOST || "0.0.0.0";
+
+    // Bootstrap MCP clients before starting the server
+    await bootstrapMCPClients();
 
     // Ensure all routes are registered so Swagger captures them
     await fastify.ready();
@@ -156,6 +185,15 @@ start();
 const gracefulShutdown = async (signal: string) => {
   fastify.log.info(`Received ${signal}, shutting down gracefully...`);
   try {
+    // Shutdown MCP clients first
+    fastify.log.info("🔧 Shutting down MCP clients...");
+    await Promise.all([
+      shutdownAuroraMCPClient(),
+      shutdownSupabaseLocalMCPClient(),
+    ]);
+    fastify.log.info("✅ All MCP clients successfully shut down");
+
+    // Then close the Fastify server
     await fastify.close();
     fastify.log.info("Server closed successfully");
     process.exit(0);
