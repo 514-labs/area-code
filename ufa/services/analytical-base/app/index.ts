@@ -34,4 +34,11 @@ export * from "./apis/foo/consumption/foo-current-state";
 export * from "./apis/foo/consumption/foo-score-over-time";
 
 // SQL Server Pipelines
-export * from "./pipelines/sqlServerPipeline";
+import { sqlServerDebeziumPayloadStream, processSqlServerDebeziumPayloadPipeline, transformSqlServerDebeziumPayload } from "./pipelines/sqlServerPipeline";
+
+
+sqlServerDebeziumPayloadStream.addTransform(processSqlServerDebeziumPayloadPipeline.stream!, transformSqlServerDebeziumPayload);
+
+
+
+

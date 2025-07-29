@@ -1,58 +1,92 @@
-import { IngestPipeline } from "@514labs/moose-lib";
+import { IngestPipeline, Stream, Key} from "@514labs/moose-lib";
 
-// Rooms table record structure (from SQL Server)
-export interface RoomsRecord {
-  id: number;
-  hotel_id: string;
+
+interface CDCSchema {
+  type: string;
+  fields: {
+    name: string;
+    type: string;
+  }[];
+  optional: boolean;
   name: string;
-  description: string | null;
-  total_rooms: number | null;
-  used_rooms: number | null;
-  left_rooms: number | null;
+  field: string;
 }
 
-// Debezium source metadata
-export interface DebeziumSource {
+interface CDCSource {
   version: string;
   connector: string;
   name: string;
   ts_ms: number;
-  snapshot: string | null;
+  snapshot: boolean;
   db: string;
-  sequence: string | null;
-  ts_us: number | null;
-  ts_ns: number | null;
+  sequence?: string;
+  ts_us?: number;
+  ts_ns?: number;
   schema: string;
   table: string;
-  change_lsn: string | null;
-  commit_lsn: string | null;
-  event_serial_no: number | null;
+  change_lsn?: string;
+  commit_lsn?: string;
+  event_serial_no?: number;
 }
 
-// Transaction metadata (can be null)
-export interface DebeziumTransaction {
-  id: string;
-  total_order: number;
-  data_collection_order: number;
+interface CDCPayload {
+  before?: Record<string, any>;
+  after: Record<string, any>;
+  source: CDCSource;
+  op: "r" | "c" | "u" | "d";
+  ts_ms: number;
+  ts_us?: number;
+  ts_ns?: number;
 }
 
-// Main Debezium envelope structure
-export interface SqlServer {
-  before: RoomsRecord | null;  // Previous state (null for INSERT)
-  after: RoomsRecord | null;   // New state (null for DELETE) 
-  source: DebeziumSource;      // CDC metadata
-  op: "r" | "c" | "u" | "d";   // Operation: read, create, update, delete
-  ts_ms: number;               // Event timestamp (milliseconds)
-  ts_us?: number;              // Event timestamp (microseconds)
-  ts_ns?: number;              // Event timestamp (nanoseconds)
-  transaction: DebeziumTransaction | null; // Transaction info
+
+export interface SqlServerDebeziumPayload {
+  schema: CDCSchema;
+  payload: CDCPayload;
 }
 
-export const SqlServerPipeline = new IngestPipeline<SqlServer>("SqlServer", {
-  table: {
-    orderByFields: ["ts_ms"],
-    deduplicate: true,
-  },
+
+export const sqlServerDebeziumPayloadStream = new Stream<SqlServerDebeziumPayload>("SqlServerDebeziumPayload", {});
+
+
+export interface ProcessSqlServerDebeziumPayload {
+  time: Key<Date>;
+  payload: Record<string, any>;
+}
+
+export const processSqlServerDebeziumPayloadPipeline = new IngestPipeline<ProcessSqlServerDebeziumPayload>("SqlServerDebeziumProcessedPayload", {
   stream: true,
-  ingest: true,
+  table: true,
+  ingest: false,
 });
+
+export const transformSqlServerDebeziumPayload = (payload: SqlServerDebeziumPayload) => {
+  const after = payload.payload.after;
+  const before = payload.payload.before;
+  const op = payload.payload.op;
+  const source = payload.payload.source;
+  const ts_ms = payload.payload.ts_ms;
+  const ts_us = payload.payload.ts_us;
+  const ts_ns = payload.payload.ts_ns;
+  console.log("AFTER:");
+  console.log(JSON.stringify(after, null, 2));
+  console.log("BEFORE:");
+  console.log(JSON.stringify(before, null, 2));
+  console.log("OPERATION:");
+  console.log(op);
+  console.log("SOURCE:");
+  console.log(source);
+  console.log("TIMESTAMP MS:");
+  console.log(ts_ms);
+  console.log("TIMESTAMP US:");
+  console.log(ts_us);
+  console.log("TIMESTAMP NS:");
+  console.log(ts_ns);
+  console.log("--------------------------------");
+  return {
+    time: new Date(),
+    payload: payload,
+  };
+};
+
+
