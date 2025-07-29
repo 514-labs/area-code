@@ -99,7 +99,7 @@ export default function ResizableChatLayout({
       </style>
       <ResizablePanelGroup
         direction="horizontal"
-        className={`h-full ${!isDragging ? "panel-group-animated" : ""}`}
+        className={`relativeh-screen ${!isDragging ? "panel-group-animated" : ""}`}
       >
         <ResizablePanel
           id="main-panel"
@@ -128,7 +128,14 @@ export default function ResizableChatLayout({
           order={2}
           onResize={handlePanelResize}
         >
-          <div className={`h-full`}>{rightContent}</div>
+          <div
+            className="fixed h-screen"
+            style={{
+              width: `${targetChatSize}%`,
+            }}
+          >
+            {rightContent}
+          </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
