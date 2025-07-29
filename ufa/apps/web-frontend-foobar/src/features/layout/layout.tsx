@@ -43,6 +43,11 @@ export function Layout({ children }: LayoutProps) {
     });
   }, [saveToLocalStorage]);
 
+  const handleChatClose = useCallback(() => {
+    setIsChatOpen(false);
+    saveToLocalStorage(CHAT_OPEN_STORAGE_KEY, false);
+  }, [saveToLocalStorage]);
+
   const leftContent = useMemo(
     () => (
       <SidebarProvider
@@ -81,7 +86,10 @@ export function Layout({ children }: LayoutProps) {
     [location.pathname, handleChatToggle, children]
   );
 
-  const rightContent = useMemo(() => <AiChatInterface />, []);
+  const rightContent = useMemo(
+    () => <AiChatInterface onClose={handleChatClose} />,
+    [handleChatClose]
+  );
 
   return (
     <ResizableChatLayout

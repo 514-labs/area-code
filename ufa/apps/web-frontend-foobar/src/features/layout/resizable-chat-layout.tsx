@@ -157,7 +157,7 @@ export default function ResizableChatLayout({
         {isChatOpen && (
           <ResizableHandle
             id="chat-handle"
-            className="transition-opacity duration-[300ms] ease-out opacity-0 hover:opacity-100"
+            className="transition-opacity duration-[300ms] ease-out opacity-0 hover:opacity-100 w-[2px]"
             onDragging={setIsDragging}
           />
         )}
