@@ -1,5 +1,5 @@
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic";
-import { convertToModelMessages, UIMessage } from "ai";
+import { convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { getAuroraMCPClient } from "./aurora-mcp-client";
 import { getSupabaseLocalMCPClient } from "./supabase-local-mcp-client";
 import { getAISystemPrompt } from "./ai-system-prompt";
@@ -27,7 +27,7 @@ export async function getAnthropicAgentStreamTextOptions(
     ...supabaseTools,
   };
 
-  // Convert UIMessages to ModelMessages
+  // Convert UIMessages to ModelMessages for AI SDK v5
   const modelMessages = convertToModelMessages(messages);
 
   return {
@@ -35,10 +35,8 @@ export async function getAnthropicAgentStreamTextOptions(
     system: getAISystemPrompt(),
     messages: modelMessages,
     tools: allTools,
-    // providerOptions: {
-    //   anthropic: {
-    //     thinking: { type: "enabled", budgetTokens: 12000 },
-    //   } satisfies AnthropicProviderOptions,
-    // },
+    toolChoice: "auto",
+    // 👇 THIS is the correct way to enable multi-step in AI SDK v5!
+    stopWhen: stepCountIs(5),
   };
 }
