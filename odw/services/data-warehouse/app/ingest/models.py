@@ -47,8 +47,9 @@ class EventSource(BaseModel):
 class UnstructuredDataSource(BaseModel):
     id: Key[str]
     source_file_path: str
-    extracted_data_json: str
+    extracted_data_json: Optional[str] = None
     processed_at: str
+    processing_instructions: Optional[str] = None
 
 # Final models - processed data with transformations
 class Blob(BaseModel):
@@ -86,18 +87,11 @@ class Event(BaseModel):
 class UnstructuredData(BaseModel):
     id: Key[str]
     source_file_path: str
-    extracted_data_json: str
+    extracted_data_json: Optional[str] = None
     processed_at: str
     transform_timestamp: str
+    processing_instructions: Optional[str] = None
 
-class ProcessingInstruction(BaseModel):
-    id: Key[str]
-    instruction_type: str  # "extraction", "transformation", "validation", "routing"
-    target_data_source: str  # "unstructured_data", "blob", "events", "logs"
-    content: str  # Natural language instruction for LLM interpretation
-    created_at: str
-    expires_at: Optional[str] = None
-    status: str = "pending"  # "pending", "active", "completed", "expired"
 
 # Source ingest pipelines
 blobSourceModel = IngestPipeline[BlobSource]("BlobSource", IngestPipelineConfig(

@@ -70,19 +70,21 @@ def unstructured_data_source_to_unstructured_data(unstructured_data_source: Unst
     if "[DLQ]" in unstructured_data_source.source_file_path:
         raise ValueError(f"Transform failed for unstructured data {unstructured_data_source.id}: File path marked as failed")
 
-    # Validate JSON structure
-    import json
-    try:
-        json.loads(unstructured_data_source.extracted_data_json)
-    except json.JSONDecodeError:
-        raise ValueError(f"Transform failed for unstructured data {unstructured_data_source.id}: Invalid JSON in extracted_data_json")
+    # Validate JSON structure only if extracted_data_json is provided
+    if unstructured_data_source.extracted_data_json is not None:
+        import json
+        try:
+            json.loads(unstructured_data_source.extracted_data_json)
+        except json.JSONDecodeError:
+            raise ValueError(f"Transform failed for unstructured data {unstructured_data_source.id}: Invalid JSON in extracted_data_json")
 
     return UnstructuredData(
         id=unstructured_data_source.id,
         source_file_path=unstructured_data_source.source_file_path,
         extracted_data_json=unstructured_data_source.extracted_data_json,
         processed_at=unstructured_data_source.processed_at,
-        transform_timestamp=datetime.now().isoformat()
+        transform_timestamp=datetime.now().isoformat(),
+        processing_instructions=unstructured_data_source.processing_instructions
     )
 
 # Set up the transformations
@@ -203,20 +205,22 @@ def invalid_unstructured_data_source_to_unstructured_data(dead_letter: DeadLette
         if "[DLQ]" in corrected_file_path:
             corrected_file_path = corrected_file_path.replace("[DLQ]", "[RECOVERED]")
 
-        # Try to fix JSON if it's malformed by providing a default structure
+        # Try to fix JSON if it's provided and malformed
         corrected_json = original_unstructured_data_source.extracted_data_json
-        try:
-            json.loads(corrected_json)
-        except json.JSONDecodeError:
-            # Provide a default JSON structure for recovery
-            corrected_json = '{"error": "recovered_from_dlq", "original_data": "malformed"}'
+        if corrected_json is not None:
+            try:
+                json.loads(corrected_json)
+            except json.JSONDecodeError:
+                # Provide a default JSON structure for recovery
+                corrected_json = '{"error": "recovered_from_dlq", "original_data": "malformed"}'
 
         return UnstructuredData(
             id=original_unstructured_data_source.id,
             source_file_path=corrected_file_path,
             extracted_data_json=corrected_json,
             processed_at=original_unstructured_data_source.processed_at,
-            transform_timestamp=datetime.now().isoformat()
+            transform_timestamp=datetime.now().isoformat(),
+            processing_instructions=original_unstructured_data_source.processing_instructions
         )
     except Exception as error:
         print(f"UnstructuredData recovery failed: {error}")

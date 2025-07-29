@@ -15,29 +15,32 @@ class UnstructuredDataConnector(Generic[T]):
         self._batch_size = config.batch_size or 1000
         self._pending_data: List[UnstructuredDataSource] = []
 
-    def submit_data(self, source_file_path: str, extracted_data_json: str) -> str:
+    def submit_data(self, source_file_path: str, extracted_data_json: Optional[str] = None, processing_instructions: Optional[str] = None) -> str:
         """
         Submit processed unstructured data for ingestion.
         
         Args:
             source_file_path: Path to the original unstructured file
-            extracted_data_json: JSON string containing extracted structured data
+            extracted_data_json: Optional JSON string containing extracted structured data
+            processing_instructions: Optional instructions for processing the data
             
         Returns:
             The ID of the submitted data record
         """
-        # Validate JSON
-        try:
-            json.loads(extracted_data_json)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in extracted_data_json: {e}")
+        # Validate JSON only if provided
+        if extracted_data_json is not None:
+            try:
+                json.loads(extracted_data_json)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON in extracted_data_json: {e}")
         
         data_id = str(uuid.uuid4())
         unstructured_data = UnstructuredDataSource(
             id=data_id,
             source_file_path=source_file_path,
             extracted_data_json=extracted_data_json,
-            processed_at=datetime.now().isoformat()
+            processed_at=datetime.now().isoformat(),
+            processing_instructions=processing_instructions
         )
         
         self._pending_data.append(unstructured_data)

@@ -8,7 +8,7 @@ import streamlit_shadcn_ui as ui
 from datetime import datetime, timedelta
 from requests.exceptions import ConnectionError
 
-from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
+from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE, INGEST_API_BASE
 
 def normalize_for_display(blob_df, log_df, events_df=None):
     """Convert blob, log, and events data to a unified display format for 'All' view"""
@@ -674,6 +674,72 @@ def fetch_daily_pageviews_data(days_back=14, limit=14):
     except Exception as e:
         st.error(f"Unexpected error fetching daily page views: {str(e)}")
         return pd.DataFrame()
+
+def fetch_unstructured_data(source_file_path=None, limit=100, should_throw=False):
+    """Fetch unstructured data from the getUnstructuredData API"""
+    api_url = f"{CONSUMPTION_API_BASE}/getUnstructuredData"
+    params = {"limit": limit}
+    
+    if source_file_path:
+        params["source_file_path"] = source_file_path
+
+    try:
+        response = requests.get(api_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        items = data.get("items", [])
+        df = pd.DataFrame(items)
+        return df
+    except Exception as e:
+        if should_throw:
+            raise e
+        else:
+            print(f"Unstructured Data API error: {e}")
+            st.toast("Error fetching unstructured data. Check terminal for details.")
+        return pd.DataFrame()
+
+def submit_unstructured_data(source_file_path, extracted_data_json=None, processing_instructions=None):
+    """Submit unstructured data using the correct Moose ingest endpoint"""
+    api_url = f"{INGEST_API_BASE}/UnstructuredDataSource"
+    
+    # Generate unique ID and timestamp for Moose ingest requirements
+    import uuid
+    data_id = str(uuid.uuid4())
+    processed_at = datetime.now().isoformat()
+    
+    payload = {
+        "id": data_id,
+        "source_file_path": source_file_path,
+        "processed_at": processed_at
+    }
+    
+    if extracted_data_json is not None:
+        payload["extracted_data_json"] = extracted_data_json
+    
+    if processing_instructions:
+        payload["processing_instructions"] = processing_instructions
+    
+    try:
+        response = requests.post(api_url, json=payload)
+        response.raise_for_status()
+        
+        # Moose ingest endpoints return different response format
+        if response.status_code == 200:
+            st.session_state["submit_status_msg"] = f"Successfully submitted unstructured data with ID: {data_id}"
+            st.session_state["submit_status_type"] = "success"
+            st.session_state["submit_status_time"] = time.time()
+            return True, data_id
+        else:
+            st.session_state["submit_status_msg"] = f"Failed to submit: HTTP {response.status_code}"
+            st.session_state["submit_status_type"] = "error"
+            st.session_state["submit_status_time"] = time.time()
+            return False, None
+            
+    except Exception as e:
+        st.session_state["submit_status_msg"] = f"Error submitting unstructured data: {str(e)}"
+        st.session_state["submit_status_type"] = "error"
+        st.session_state["submit_status_time"] = time.time()
+        return False, None
 
 def is_data_warehouse_not_ready(error):
     if isinstance(error, ConnectionError):

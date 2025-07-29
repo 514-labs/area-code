@@ -13,10 +13,23 @@ from typing import List, Optional
 # - Local paths: /path/to/file.txt
 # - S3 paths: s3://bucket/key or minio://bucket/key
 
+# Extract API models (similar to other extract APIs)
+class ExtractUnstructuredDataQueryParams(BaseModel):
+  batch_size: Optional[int] = 100
+  fail_percentage: Optional[int] = 0
+
+class ExtractUnstructuredDataResponse(BaseModel):
+  success: bool
+  body: str
+
+def extract_unstructured_data(client, params: ExtractUnstructuredDataQueryParams):
+  return client.workflow.execute("unstructured-data-workflow", params)
+
 # Define the input model for submitting unstructured data
 class SubmitUnstructuredDataRequest(BaseModel):
     source_file_path: str  # Local path, s3://bucket/key, or minio://bucket/key
-    extracted_data_json: str
+    extracted_data_json: Optional[str] = None
+    processing_instructions: Optional[str] = None
 
 # Define the response model
 class SubmitUnstructuredDataResponse(BaseModel):
@@ -47,7 +60,8 @@ def submit_unstructured_data(client, params: SubmitUnstructuredDataRequest) -> S
         # Submit the data to the connector
         data_id = connector.submit_data(
             source_file_path=params.source_file_path,
-            extracted_data_json=params.extracted_data_json
+            extracted_data_json=params.extracted_data_json,
+            processing_instructions=params.processing_instructions
         )
         
         return SubmitUnstructuredDataResponse(
@@ -66,6 +80,14 @@ def submit_unstructured_data(client, params: SubmitUnstructuredDataRequest) -> S
             success=False,
             message=f"Failed to submit unstructured data: {str(e)}"
         )
+
+# Create the extract API
+extract_unstructured_data_api = ConsumptionApi[ExtractUnstructuredDataQueryParams, ExtractUnstructuredDataResponse](
+    "extractUnstructuredData",
+    query_function=extract_unstructured_data,
+    source="UnstructuredDataSource",
+    config=EgressConfig()
+)
 
 # Create the submission API
 submit_unstructured_data_api = ConsumptionApi[SubmitUnstructuredDataRequest, SubmitUnstructuredDataResponse](
