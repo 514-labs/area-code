@@ -4,7 +4,7 @@ import {
   ResizablePanelGroup,
   useSaveInLocalStorage,
 } from "@workspace/ui";
-import { ReactNode, useState, useRef, useEffect } from "react";
+import { ReactNode, useState, useRef, useEffect, useMemo } from "react";
 
 type ResizableChatLayoutProps = {
   leftContent: ReactNode;
@@ -16,7 +16,7 @@ type ResizableChatLayoutProps = {
   className?: string;
 };
 
-const CHAT_SIZE_STORAGE_KEY = "area-code-chat-size";
+export const CHAT_SIZE_STORAGE_KEY = "area-code-chat-size";
 
 export default function ResizableChatLayout({
   leftContent,
@@ -33,30 +33,58 @@ export default function ResizableChatLayout({
   const [isDragging, setIsDragging] = useState(false);
   const saveToLocalStorage = useSaveInLocalStorage(300);
 
-  const [lastChatSize, setLastChatSize] = useState<number | null>(() => {
+  const [lastChatSize, setLastChatSize] = useState<number | null>(null);
+
+  const [savedChatSizePixels] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(CHAT_SIZE_STORAGE_KEY);
-      return saved ? parseFloat(saved) : null;
+      console.log("saved", saved);
+      return saved ? parseFloat(saved) : defaultChatWidthPx;
     }
-    return null;
+    return defaultChatWidthPx;
   });
 
-  // Calculate percentage values from pixel constraints
-  const minChatPercent =
-    containerWidth > 0
-      ? Math.max(0, (minChatWidthPx / containerWidth) * 100)
-      : 0;
-  const maxChatPercent =
-    containerWidth > 0
-      ? Math.min(100, (maxChatWidthPx / containerWidth) * 100)
-      : 40;
-  const defaultChatPercent =
-    containerWidth > 0
-      ? Math.min(maxChatPercent, (defaultChatWidthPx / containerWidth) * 100)
-      : 25;
+  const savedChatPercent = useMemo(() => {
+    const clampedPixels = Math.min(
+      maxChatWidthPx,
+      Math.max(minChatWidthPx, savedChatSizePixels)
+    );
 
-  // Use last user size if available, otherwise use default
-  const targetChatSize = lastChatSize || defaultChatPercent;
+    if (typeof window !== "undefined") {
+      const percentage = (clampedPixels / window.innerWidth) * 100;
+      console.log(
+        "clampedPixels",
+        clampedPixels,
+        window.innerWidth,
+        "percentage",
+        percentage
+      );
+      return percentage;
+    }
+    return 25;
+  }, [savedChatSizePixels, minChatWidthPx, maxChatWidthPx]);
+
+  const minChatPercent = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return Math.max(0, (minChatWidthPx / window.innerWidth) * 100);
+    }
+    return 0;
+  }, [minChatWidthPx]);
+
+  const maxChatPercent = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return Math.min(100, (maxChatWidthPx / window.innerWidth) * 100);
+    }
+    return 40;
+  }, [maxChatWidthPx]);
+
+  const targetChatSize = lastChatSize ?? savedChatPercent;
+
+  const initialDefaultSize = isChatOpen
+    ? (lastChatSize ?? savedChatPercent)
+    : 0;
+
+  const mainPanelDefaultSize = isChatOpen ? 100 - initialDefaultSize : 100;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -70,7 +98,6 @@ export default function ResizableChatLayout({
 
     resizeObserver.observe(container);
 
-    // Set initial width
     setContainerWidth(container.getBoundingClientRect().width);
 
     return () => {
@@ -89,11 +116,18 @@ export default function ResizableChatLayout({
   }, [isChatOpen, targetChatSize]);
 
   const handlePanelResize = (size: number) => {
-    if (isChatOpen && size > 0) {
+    if (isChatOpen && size > 0 && containerWidth > 0) {
+      const actualPixels = (size / 100) * containerWidth;
       setLastChatSize(size);
-      saveToLocalStorage(CHAT_SIZE_STORAGE_KEY, size);
+      saveToLocalStorage(CHAT_SIZE_STORAGE_KEY, actualPixels);
+      console.log("saved pixel at value", actualPixels);
     }
   };
+
+  console.log("initialDefaultSize", initialDefaultSize);
+  console.log("mainPanelDefaultSize", mainPanelDefaultSize);
+  console.log("minChatPercent", minChatPercent);
+  console.log("maxChatPercent", maxChatPercent);
 
   return (
     <div ref={containerRef} className={className}>
@@ -114,8 +148,7 @@ export default function ResizableChatLayout({
       >
         <ResizablePanel
           id="main-panel"
-          defaultSize={100}
-          minSize={50}
+          defaultSize={mainPanelDefaultSize}
           order={1}
         >
           {leftContent}
@@ -133,7 +166,7 @@ export default function ResizableChatLayout({
         <ResizablePanel
           ref={chatPanelRef}
           id="chat-panel"
-          defaultSize={0}
+          defaultSize={initialDefaultSize}
           minSize={isChatOpen ? minChatPercent : 0}
           maxSize={maxChatPercent}
           order={2}

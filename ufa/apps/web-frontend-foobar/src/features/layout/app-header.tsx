@@ -4,7 +4,6 @@ import { SearchCommand } from "@/features/search/components/search-command";
 import type { SearchResult } from "@/features/search/types/search";
 import { RetrievalHighlightWrapper } from "@/features/origin-highlights/origin-highlights-wrappers";
 import { Button } from "@workspace/ui";
-import { MessageSquare } from "lucide-react";
 
 interface AppHeaderProps {
   onChatToggle?: () => void;
