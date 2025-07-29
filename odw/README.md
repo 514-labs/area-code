@@ -115,6 +115,10 @@ area-code/
 - Support for blob storage, events, and logs data sources
 - Extensible architecture for custom data connectors
 
+### Sync Service
+
+- [Moose workflows + Temporal](https://docs.fiveonefour.com/moose/building/workflows) for durable long-running data synchronization
+
 ### Infrastructure Services
 
 - **Redpanda**: Kafka-compatible message queue for real-time data streaming
