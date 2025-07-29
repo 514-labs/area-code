@@ -55,9 +55,9 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-hidden py-3 pl-2 pr-4">
-        <div className="max-w-full overflow-y-auto h-full">
-          <ChatOutputArea messages={messages} />
+      <div className="flex-1 min-h-0 overflow-hidden py-3">
+        <div className="max-w-full overflow-y-auto h-full pl-2.5 pr-4">
+          <ChatOutputArea messages={messages} status={status} />
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
       )}
 
       {/* Input */}
-      <div className="flex-none py-2 pl-2 pr-4">
+      <div className="flex-none py-2 pl-1.5 pr-4">
         <form
           onSubmit={(e) => {
             e.preventDefault();

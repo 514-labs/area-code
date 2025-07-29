@@ -4,9 +4,11 @@ import { ToolInvocation } from "./tool-invocation";
 import { ReasoningSection } from "./reasoning-section";
 import { SourceSection } from "./source-section";
 import { TextFormatter } from "./text-formatter";
+import { ChatStatus } from "ai";
 
 type ChatOutputAreaProps = {
   messages: UIMessage[];
+  status?: ChatStatus;
   className?: string;
 };
 
@@ -39,7 +41,7 @@ function UserOutput({ message }: { message: UIMessage }) {
     <div
       className={cn(
         "p-3 rounded-lg text-sm leading-relaxed",
-        "bg-background border border-input",
+        "bg-background border border-input dark:bg-input/30",
         "text-foreground"
       )}
     >
@@ -90,6 +92,14 @@ function AIOutput({ message }: { message: UIMessage }) {
             case "source-document":
               return <SourceSection key={index} part={part} />;
 
+            case "step-start":
+            case "step-finish":
+            case "step":
+              // Handle step-related parts - these are part of multi-step workflows
+              // These contain metadata like messageId, request info, usage stats, etc.
+              // For now, we don't render anything for these internal step indicators
+              return null;
+
             default:
               // Handle tool calls (tool-*)
               if (part.type.startsWith("tool-")) {
@@ -113,6 +123,27 @@ function AIOutput({ message }: { message: UIMessage }) {
   );
 }
 
+function LoadingDots() {
+  return (
+    <div className="flex items-center space-x-1 p-3">
+      <div className="flex space-x-1">
+        <div
+          className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce"
+          style={{ animationDelay: "0ms", animationDuration: "1s" }}
+        ></div>
+        <div
+          className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce"
+          style={{ animationDelay: "150ms", animationDuration: "1s" }}
+        ></div>
+        <div
+          className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce"
+          style={{ animationDelay: "300ms", animationDuration: "1s" }}
+        ></div>
+      </div>
+    </div>
+  );
+}
+
 const roleOutputMap = {
   user: UserOutput,
   assistant: AIOutput,
@@ -122,21 +153,28 @@ const roleOutputMap = {
 
 export default function ChatOutputArea({
   messages,
+  status,
   className,
 }: ChatOutputAreaProps) {
+  const showLoading =
+    (status === "submitted" || status === "streaming") && messages.length > 0;
+
   return (
     <div className={cn("space-y-4 gap-4 max-w-full", className)}>
       {messages.length === 0 ? (
         <EmptyState />
       ) : (
-        messages.map((message) => {
-          const OutputComponent = roleOutputMap[message.role];
-          return (
-            <div key={message.id} className="space-y-3">
-              <OutputComponent message={message} />
-            </div>
-          );
-        })
+        <>
+          {messages.map((message) => {
+            const OutputComponent = roleOutputMap[message.role];
+            return (
+              <div key={message.id} className="space-y-3">
+                <OutputComponent message={message} />
+              </div>
+            );
+          })}
+          {showLoading && <LoadingDots />}
+        </>
       )}
     </div>
   );
