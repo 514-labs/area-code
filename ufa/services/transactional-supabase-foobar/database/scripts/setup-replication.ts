@@ -18,7 +18,7 @@ const config = {
   dbName: process.env.POSTGRES_DB || "postgres",
   dbUser: "postgres",
   dbPassword: process.env.POSTGRES_PASSWORD || "postgres",
-  dockerContainer: "supabase_db_transactional-supabase", // Updated to Supabase CLI container name
+  dockerContainer: "supabase_db_transactional-supabase-foobar", // Actual running container name
 };
 
 async function setupReplication() {

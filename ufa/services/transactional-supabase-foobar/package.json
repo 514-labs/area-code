@@ -20,9 +20,9 @@
     "db:stop": "pnpm supabase stop",
     "db:reset": "pnpm supabase db reset",
     "db:status": "pnpm supabase status",
-    "setup:replication": "pnpm tsx scripts/setup-replication.ts",
-    "setup:replication:status": "pnpm tsx scripts/setup-replication.ts --status",
-    "replication:stop": "pnpm tsx scripts/teardown-replication.ts"
+    "setup:replication": "pnpm tsx database/scripts/setup-replication.ts",
+    "setup:replication:status": "pnpm tsx database/scripts/setup-replication.ts --status",
+    "replication:stop": "pnpm tsx database/scripts/teardown-replication.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "2.0.0-beta.10",

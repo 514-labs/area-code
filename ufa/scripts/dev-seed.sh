@@ -392,7 +392,7 @@ fi
 echo "Using container: \$DB_CONTAINER"
 
 # Copy the SQL procedures - use absolute path from project root
-docker cp "$PROJECT_ROOT/services/transactional-supabase-foobar/database/scripts/seed-transactional-supabase-foobar.sql" "\$DB_CONTAINER:/tmp/seed.sql"
+docker cp "$PROJECT_ROOT/services/transactional-supabase-foobar/database/scripts/seed-transactional-database.sql" "\$DB_CONTAINER:/tmp/seed.sql"
 
 echo "🔧 Dropping functions and procedures"
 # Execute SQL with filtered output - show only relevant messages
