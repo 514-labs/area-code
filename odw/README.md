@@ -1,4 +1,4 @@
-<img width="1074" height="120" alt="Area Code starter repo powered by Moose — Automated setup with Turborepo" src="https://github.com/user-attachments/assets/a860328a-cb75-41a2-ade4-b9a0624918e0" />
+<img width="1074" height="120" alt="Area Code starter repo powered by Moose — Operational Data Warehouse with Streamlit" src="https://github.com/user-attachments/assets/a860328a-cb75-41a2-ade4-b9a0624918e0" />
 
 # Area Code - Operational Data Warehouse Starter Application
 
