@@ -19,9 +19,9 @@ export default function ResizableChatLayout({
   leftContent,
   rightContent,
   isChatOpen,
-  minChatWidthPx = 300,
-  maxChatWidthPx = 600,
-  defaultChatWidthPx = 400,
+  minChatWidthPx = 400,
+  maxChatWidthPx = 700,
+  defaultChatWidthPx = 500,
   className = "h-full",
 }: ResizableChatLayoutProps) {
   const chatPanelRef = useRef<any>(null);

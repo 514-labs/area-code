@@ -74,9 +74,6 @@ export function Layout({ children }: LayoutProps) {
       leftContent={leftContent}
       rightContent={rightContent}
       isChatOpen={isChatOpen}
-      minChatWidthPx={300}
-      maxChatWidthPx={600}
-      defaultChatWidthPx={400}
     />
   );
 }
