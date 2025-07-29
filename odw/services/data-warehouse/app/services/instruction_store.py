@@ -1,7 +1,7 @@
 import threading
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from app.ingest.models import ProcessingInstruction
 from pydantic import BaseModel
 import json
@@ -35,8 +35,7 @@ class InstructionStoreService:
         self,
         instruction_type: str,
         target_data_source: str,
-        content: Dict[str, Any],
-        priority: int = 1,
+        content: str,
         expires_in_minutes: Optional[int] = None
     ) -> str:
         """
@@ -45,8 +44,7 @@ class InstructionStoreService:
         Args:
             instruction_type: Type of instruction ("transformation", "validation", "routing")
             target_data_source: Target data source ("unstructured_data", "blob", etc.)
-            content: Instruction content as dictionary
-            priority: Priority level (higher = more important)
+            content: Natural language instruction for LLM interpretation
             expires_in_minutes: Minutes until instruction expires
             
         Returns:
@@ -65,7 +63,6 @@ class InstructionStoreService:
                 instruction_type=instruction_type,
                 target_data_source=target_data_source,
                 content=content,
-                priority=priority,
                 created_at=created_at,
                 expires_at=expires_at,
                 status="pending"
@@ -97,7 +94,7 @@ class InstructionStoreService:
             status: Status filter (default: "pending")
             
         Returns:
-            List of matching instructions sorted by priority (highest first)
+            List of matching instructions sorted by created_at (oldest first)
         """
         with self._data_lock:
             self._cleanup_expired()
@@ -109,10 +106,10 @@ class InstructionStoreService:
                     (instruction_type is None or instruction.instruction_type == instruction_type)):
                     filtered_instructions.append(instruction)
             
-            # Sort by priority (highest first), then by created_at (oldest first)
+            # Sort by created_at (oldest first)
             return sorted(
                 filtered_instructions,
-                key=lambda x: (-x.priority, x.created_at)
+                key=lambda x: x.created_at
             )
     
     def list_all_instructions(self, include_expired: bool = False) -> List[ProcessingInstruction]:
@@ -123,7 +120,7 @@ class InstructionStoreService:
             
             return sorted(
                 list(self._instructions.values()),
-                key=lambda x: (-x.priority, x.created_at)
+                key=lambda x: x.created_at
             )
     
     def update_instruction_status(self, instruction_id: str, status: str) -> bool:
@@ -207,8 +204,7 @@ class InstructionStoreService:
             stats = {
                 "total_instructions": len(self._instructions),
                 "by_status": {},
-                "by_target": {},
-                "by_type": {}
+                "by_target": {}
             }
             
             for instruction in self._instructions.values():
@@ -219,10 +215,6 @@ class InstructionStoreService:
                 # Count by target
                 target = instruction.target_data_source
                 stats["by_target"][target] = stats["by_target"].get(target, 0) + 1
-                
-                # Count by type
-                inst_type = instruction.instruction_type
-                stats["by_type"][inst_type] = stats["by_type"].get(inst_type, 0) + 1
             
             return stats
 

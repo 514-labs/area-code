@@ -92,10 +92,9 @@ class UnstructuredData(BaseModel):
 
 class ProcessingInstruction(BaseModel):
     id: Key[str]
-    instruction_type: str  # "transformation", "validation", "routing"
+    instruction_type: str  # "extraction", "transformation", "validation", "routing"
     target_data_source: str  # "unstructured_data", "blob", "events", "logs"
-    content: Dict[str, Any]  # Flexible instruction content
-    priority: int = 1  # Higher numbers = higher priority
+    content: str  # Natural language instruction for LLM interpretation
     created_at: str
     expires_at: Optional[str] = None
     status: str = "pending"  # "pending", "active", "completed", "expired"

@@ -10,6 +10,34 @@
 - Node.js 20+
 - Docker 2.23.1+
 
+## LLM Configuration
+
+This project includes **LLM-powered unstructured data extraction** using Anthropic's Claude API. To enable this feature:
+
+### Required Environment Variables
+
+- `ANTHROPIC_API_KEY`: Your Anthropic API key for Claude LLM integration
+
+### Setup Instructions
+
+1. **Get an Anthropic API key**: Sign up at [console.anthropic.com](https://console.anthropic.com) and create an API key
+2. **Set the environment variable**:
+   ```bash
+   export ANTHROPIC_API_KEY="your-api-key-here"
+   ```
+   Or add it to your shell profile (`.bashrc`, `.zshrc`, etc.)
+
+3. **Verify setup**: The LLM service will be automatically initialized when processing unstructured data
+
+### LLM Features
+
+- **Extraction**: Convert unstructured documents (text, PDFs, images) to structured JSON using natural language instructions
+- **Validation**: Validate extracted data against business rules specified in plain English
+- **Transformation**: Modify and enrich extracted data using natural language transformations
+- **Routing**: Intelligently route data based on content analysis
+
+**Note**: LLM features are optional. The system will work without the API key, but unstructured data processing will use default extraction methods.
+
 ## Quick Start
 
 (If you haven't already, navigate here `cd odw/services/data-warehouse`, and make sure Docker Desktop is running)

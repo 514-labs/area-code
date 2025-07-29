@@ -1,22 +1,21 @@
 from moose_lib import ConsumptionApi, EgressConfig
 from app.services.instruction_store import get_instruction_store
 from pydantic import BaseModel, validator
-from typing import Dict, Any, Optional
+from typing import Optional
 
 # An API to submit processing instructions that will be used during workflow execution.
 # Processing instructions allow users to dynamically configure how data should be processed.
 
 # Define the input model for submitting processing instructions
 class SubmitProcessingInstructionRequest(BaseModel):
-    instruction_type: str  # "transformation", "validation", "routing"
+    instruction_type: str  # "extraction", "transformation", "validation", "routing"
     target_data_source: str  # "unstructured_data", "blob", "events", "logs" 
-    content: Dict[str, Any]  # Flexible instruction content
-    priority: int = 1  # Higher numbers = higher priority
+    content: str  # Natural language instruction for LLM interpretation
     expires_in_minutes: Optional[int] = None  # Minutes until instruction expires
     
     @validator('instruction_type')
     def validate_instruction_type(cls, v):
-        valid_types = ["transformation", "validation", "routing"]
+        valid_types = ["extraction", "transformation", "validation", "routing"]
         if v not in valid_types:
             raise ValueError(f"instruction_type must be one of: {valid_types}")
         return v
@@ -28,11 +27,13 @@ class SubmitProcessingInstructionRequest(BaseModel):
             raise ValueError(f"target_data_source must be one of: {valid_sources}")
         return v
     
-    @validator('priority')
-    def validate_priority(cls, v):
-        if v < 1 or v > 10:
-            raise ValueError("priority must be between 1 and 10")
-        return v
+    @validator('content')
+    def validate_content(cls, v):
+        if not v or len(v.strip()) == 0:
+            raise ValueError("content cannot be empty")
+        if len(v) > 2000:
+            raise ValueError("content must be 2000 characters or less")
+        return v.strip()
     
     @validator('expires_in_minutes')
     def validate_expires_in_minutes(cls, v):
@@ -68,7 +69,6 @@ def submit_processing_instruction(client, params: SubmitProcessingInstructionReq
             instruction_type=params.instruction_type,
             target_data_source=params.target_data_source,
             content=params.content,
-            priority=params.priority,
             expires_in_minutes=params.expires_in_minutes
         )
         

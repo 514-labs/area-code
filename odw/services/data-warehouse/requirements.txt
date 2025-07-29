@@ -4,4 +4,5 @@ requests==2.32.4
 moose-cli==0.4.310
 moose-lib==0.4.310
 faker
+anthropic>=0.57.1
 ../connectors
