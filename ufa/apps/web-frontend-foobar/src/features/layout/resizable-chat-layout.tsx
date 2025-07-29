@@ -2,6 +2,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  useSaveInLocalStorage,
 } from "@workspace/ui";
 import { ReactNode, useState, useRef, useEffect } from "react";
 
@@ -14,6 +15,8 @@ type ResizableChatLayoutProps = {
   defaultChatWidthPx?: number;
   className?: string;
 };
+
+const CHAT_SIZE_STORAGE_KEY = "area-code-chat-size";
 
 export default function ResizableChatLayout({
   leftContent,
@@ -28,7 +31,15 @@ export default function ResizableChatLayout({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [lastChatSize, setLastChatSize] = useState<number | null>(null);
+  const saveToLocalStorage = useSaveInLocalStorage(300);
+
+  const [lastChatSize, setLastChatSize] = useState<number | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(CHAT_SIZE_STORAGE_KEY);
+      return saved ? parseFloat(saved) : null;
+    }
+    return null;
+  });
 
   // Calculate percentage values from pixel constraints
   const minChatPercent =
@@ -77,10 +88,10 @@ export default function ResizableChatLayout({
     }
   }, [isChatOpen, targetChatSize]);
 
-  // Handle manual resizing - remember the user's preferred size
   const handlePanelResize = (size: number) => {
     if (isChatOpen && size > 0) {
       setLastChatSize(size);
+      saveToLocalStorage(CHAT_SIZE_STORAGE_KEY, size);
     }
   };
 

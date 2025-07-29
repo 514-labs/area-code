@@ -1,5 +1,5 @@
 import { useLocation } from "@tanstack/react-router";
-import { AppSidebar } from "@workspace/ui/components/app-sidebar";
+import { AppSidebar, useSaveInLocalStorage } from "@workspace/ui";
 import {
   SidebarInset,
   SidebarProvider,
@@ -21,13 +21,27 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+const CHAT_OPEN_STORAGE_KEY = "area-code-chat-open";
+
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const saveToLocalStorage = useSaveInLocalStorage(300);
+
+  const [isChatOpen, setIsChatOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(CHAT_OPEN_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
 
   const handleChatToggle = useCallback(() => {
-    setIsChatOpen((prev) => !prev);
-  }, []);
+    setIsChatOpen((prev: boolean) => {
+      const newValue = !prev;
+      saveToLocalStorage(CHAT_OPEN_STORAGE_KEY, newValue);
+      return newValue;
+    });
+  }, [saveToLocalStorage]);
 
   const leftContent = useMemo(
     () => (
