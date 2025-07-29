@@ -1,6 +1,7 @@
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, UIMessage } from "ai";
 import { getAuroraMCPClient } from "./aurora-mcp-client";
+import { getSupabaseLocalMCPClient } from "./supabase-local-mcp-client";
 import { getAISystemPrompt } from "./ai-system-prompt";
 
 export async function getAnthropicAgentStreamTextOptions(
@@ -14,8 +15,17 @@ export async function getAnthropicAgentStreamTextOptions(
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
-  // Get Aurora MCP client and tools
-  const { tools } = await getAuroraMCPClient();
+  // Get both Aurora MCP and local Supabase PostgreSQL MCP clients and tools
+  const [{ tools: auroraTools }, { tools: supabaseTools }] = await Promise.all([
+    getAuroraMCPClient(),
+    getSupabaseLocalMCPClient(),
+  ]);
+
+  // Combine tools from both MCP servers
+  const allTools = {
+    ...auroraTools,
+    ...supabaseTools,
+  };
 
   // Convert UIMessages to ModelMessages
   const modelMessages = convertToModelMessages(messages);
@@ -24,7 +34,7 @@ export async function getAnthropicAgentStreamTextOptions(
     model: anthropic("claude-3-5-sonnet-20241022"),
     system: getAISystemPrompt(),
     messages: modelMessages,
-    tools,
+    tools: allTools,
     // providerOptions: {
     //   anthropic: {
     //     thinking: { type: "enabled", budgetTokens: 12000 },
