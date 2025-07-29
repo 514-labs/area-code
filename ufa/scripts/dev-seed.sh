@@ -91,13 +91,13 @@ is_service_running() {
     local service="$1"
     
     case "$service" in
-        "transactional-backend")
+        "transactional-supabase-foobar")
             curl -s "http://localhost:8082" >/dev/null 2>&1
             ;;
-        "analytical-backend")
+        "analytical-moose-foobar")
             curl -s "http://localhost:4100/health" >/dev/null 2>&1
             ;;
-        "retrieval-backend")
+        "retrieval-elasticsearch-foobar")
             curl -s "http://localhost:8083" >/dev/null 2>&1
             ;;
         *)
@@ -111,7 +111,7 @@ cleanup_existing_workflows() {
     echo "🛑 Stopping workflows..."
     log_message "Stopping existing workflows before seeding"
     
-    cd "$PROJECT_ROOT/services/sync-service" || true
+    cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
     if command -v pnpm >/dev/null 2>&1; then
         if [ "$VERBOSE_MODE" = "true" ]; then
             echo "Stopping supabase-listener workflow..."
@@ -135,7 +135,7 @@ cleanup_existing_workflows() {
 restart_workflows() {
     echo "🔄 Restarting workflows..."
     log_message "Restarting workflows after seeding"
-    cd "$PROJECT_ROOT/services/sync-service" || true
+    cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
     if command -v pnpm >/dev/null 2>&1; then
         # Start the workflow in background to not block the script
         if [ "$VERBOSE_MODE" = "true" ]; then
@@ -240,15 +240,15 @@ seed_all_data() {
         echo "$TEMP_SCRIPT_PIDS" | xargs kill -9 2>/dev/null || true
     fi
     
-    # 1. Seed transactional-backend (both foo and bar data)
-    echo "📊 Seeding transactional-backend..."
-    log_message "Starting transactional-backend seeding"
-    if is_service_running "transactional-backend"; then
-        log_message "transactional-backend is running, proceeding with seeding"
+    # 1. Seed transactional-supabase-foobar (both foo and bar data)
+    echo "📊 Seeding transactional-supabase-foobar..."
+    log_message "Starting transactional-supabase-foobar seeding"
+    if is_service_running "transactional-supabase-foobar"; then
+        log_message "transactional-supabase-foobar is running, proceeding with seeding"
         
-        cd "$PROJECT_ROOT/services/transactional-backend" || {
-            echo "⚠️  Could not access transactional-backend directory, skipping transactional seeding"
-            log_message "WARNING: Failed to change to transactional-backend directory"
+        cd "$PROJECT_ROOT/services/transactional-supabase-foobar" || {
+            echo "⚠️  Could not access transactional-supabase-foobar directory, skipping transactional seeding"
+            log_message "WARNING: Failed to change to transactional-supabase-foobar directory"
             cd "$PROJECT_ROOT"
             return 0
         }
@@ -342,7 +342,7 @@ EOSQL
     
     # Run drizzle migrations to recreate schema
     echo "📋 Recreating database schema..."
-    cd "$PROJECT_ROOT/services/transactional-backend"
+    cd "$PROJECT_ROOT/services/transactional-supabase-foobar"
     
     # Run migration SQL directly via docker exec (same approach as seeding)
     for migration_file in migrations/*.sql; do
@@ -391,8 +391,8 @@ if [ -z "\$DB_CONTAINER" ]; then
 fi
 echo "Using container: \$DB_CONTAINER"
 
-# Copy the SQL procedures (from transactional-database service) - use absolute path from project root
-docker cp "$PROJECT_ROOT/services/transactional-database/scripts/seed-transactional-database.sql" "\$DB_CONTAINER:/tmp/seed.sql"
+# Copy the SQL procedures - use absolute path from project root
+docker cp "$PROJECT_ROOT/services/transactional-supabase-foobar/database/scripts/seed-transactional-supabase-foobar.sql" "\$DB_CONTAINER:/tmp/seed.sql"
 
 echo "🔧 Dropping functions and procedures"
 # Execute SQL with filtered output - show only relevant messages
@@ -431,22 +431,22 @@ EOF
             rm temp_seed_all.sh
         
         cd "$PROJECT_ROOT"
-        echo "✅ transactional-backend seeded"
-        log_message "transactional-backend seeding completed successfully"
+        echo "✅ transactional-supabase-foobar seeded"
+        log_message "transactional-supabase-foobar seeding completed successfully"
     else
-        echo "⚠️  transactional-backend is not running, skipping seeding"
-        log_message "transactional-backend is not running, skipping seeding"
+        echo "⚠️  transactional-supabase-foobar is not running, skipping seeding"
+        log_message "transactional-supabase-foobar is not running, skipping seeding"
     fi
     
-    # 2. Seed analytical-backend (migrate data from transactional) - FAST
-    echo "📈 Seeding analytical-backend..."
-    log_message "Starting analytical-backend migration"
-    if is_service_running "analytical-backend"; then
-        log_message "analytical-backend is running, proceeding with data migration"
+    # 2. Seed analytical-moose-foobar (migrate data from transactional) - FAST
+    echo "📈 Seeding analytical-moose-foobar..."
+    log_message "Starting analytical-moose-foobar migration"
+    if is_service_running "analytical-moose-foobar"; then
+        log_message "analytical-moose-foobar is running, proceeding with data migration"
         
-        cd "$PROJECT_ROOT/services/analytical-backend" || {
-            echo "⚠️  Could not access analytical-backend directory, skipping analytical migration"
-            log_message "WARNING: Failed to change to analytical-backend directory"
+        cd "$PROJECT_ROOT/services/analytical-moose-foobar" || {
+            echo "⚠️  Could not access analytical-moose-foobar directory, skipping analytical migration"
+            log_message "WARNING: Failed to change to analytical-moose-foobar directory"
             cd "$PROJECT_ROOT"
             return 0
         }
@@ -496,25 +496,25 @@ EOF
         fi
         
         cd "$PROJECT_ROOT"
-        echo "✅ analytical-backend migrated"
-        log_message "analytical-backend migration completed successfully"
+        echo "✅ analytical-moose-foobar migrated"
+        log_message "analytical-moose-foobar migration completed successfully"
     else
-        echo "⚠️  analytical-backend is not running, skipping migration"
-        log_message "analytical-backend is not running, skipping migration"
+        echo "⚠️  analytical-moose-foobar is not running, skipping migration"
+        log_message "analytical-moose-foobar is not running, skipping migration"
     fi
     
-    # 3. Start retrieval-backend migration in BACKGROUND (slow process)
-    echo "🔍 Starting retrieval-backend migration..."
-    log_message "Starting retrieval-backend migration in background"
-    if is_service_running "retrieval-backend"; then
-        log_message "retrieval-backend is running, starting background data migration"
+    # 3. Start retrieval-elasticsearch-foobar migration in BACKGROUND (slow process)
+    echo "🔍 Starting retrieval-elasticsearch-foobar migration..."
+    log_message "Starting retrieval-elasticsearch-foobar migration in background"
+    if is_service_running "retrieval-elasticsearch-foobar"; then
+        log_message "retrieval-elasticsearch-foobar is running, starting background data migration"
         
         # Create background migration script
         cat > "$PROJECT_ROOT/temp_es_migration.sh" << 'EOF'
 #!/bin/bash
 # Background Elasticsearch migration script
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$PROJECT_ROOT/services/retrieval-backend" || exit 1
+cd "$PROJECT_ROOT/services/retrieval-elasticsearch-foobar" || exit 1
 
 # Log file for background process
 LOG_FILE="$PROJECT_ROOT/elasticsearch_migration.log"
@@ -554,12 +554,12 @@ EOF
         nohup "$PROJECT_ROOT/temp_es_migration.sh" "$CLEAR_DATA" > /dev/null 2>&1 &
         ES_PID=$!
         
-        echo "✅ retrieval-backend migration started (PID: $ES_PID)"
+        echo "✅ retrieval-elasticsearch-foobar migration started (PID: $ES_PID)"
         log_message "Elasticsearch migration started in background (PID: $ES_PID)"
         
     else
-        echo "⚠️  retrieval-backend is not running, skipping migration"
-        log_message "retrieval-backend is not running, skipping migration"
+        echo "⚠️  retrieval-elasticsearch-foobar is not running, skipping migration"
+        log_message "retrieval-elasticsearch-foobar is not running, skipping migration"
     fi
     
     # Step 4: Restart workflows to resume real-time synchronization
@@ -570,11 +570,11 @@ EOF
     log_message "=== Data Seeding Completed Successfully ==="
     echo ""
     echo "✅ COMPLETED:"
-    echo "   📊 transactional-backend: $FOO_ROWS foo, $BAR_ROWS bar records"
-    echo "   📈 analytical-backend: Data migrated to ClickHouse"
+    echo "   📊 transactional-supabase-foobar: $FOO_ROWS foo, $BAR_ROWS bar records"
+    echo "   📈 analytical-moose-foobar: Data migrated to ClickHouse"
     echo "   🔄 workflows: Restarted for real-time sync"
     echo ""
-    echo "🔄 BACKGROUND: retrieval-backend → Elasticsearch (15-30 min)"
+    echo "🔄 BACKGROUND: retrieval-elasticsearch-foobar → Elasticsearch (15-30 min)"
     echo ""
     echo "📋 Monitor Elasticsearch migration:"
     echo "   tail -f $PROJECT_ROOT/elasticsearch_migration.log"

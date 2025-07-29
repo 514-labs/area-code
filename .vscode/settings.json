@@ -5,7 +5,7 @@
     }
   ],
   "tailwindCSS.experimental.configFile": {
-    "/ufa/apps/application-frontend/src/index.css": "ufa/apps/application-frontend/src/**",
+    "/ufa/apps/web-frontend-foobar/src/index.css": "ufa/apps/web-frontend-foobar/src/**",
     "/ufa/packages/ui/src/styles/globals.css": "ufa/packages/ui/src/**"
   },
   "files.associations": {
