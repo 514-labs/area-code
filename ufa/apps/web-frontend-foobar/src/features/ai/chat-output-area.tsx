@@ -125,7 +125,7 @@ export default function ChatOutputArea({
   className,
 }: ChatOutputAreaProps) {
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-4 gap-4 max-w-full", className)}>
       {messages.length === 0 ? (
         <EmptyState />
       ) : (

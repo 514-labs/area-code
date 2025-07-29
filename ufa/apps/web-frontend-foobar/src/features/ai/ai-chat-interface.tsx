@@ -4,9 +4,10 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
 import { Send, MessageSquare } from "lucide-react";
-import { Button, Textarea, ScrollArea, cn } from "@workspace/ui";
+import { Button, Textarea, cn } from "@workspace/ui";
 import { getTransactionApiBase } from "@/env-vars";
 import ChatOutputArea from "./chat-output-area";
+import { SuggestedPrompt } from "./suggested-prompt";
 
 export default function AiChatInterface() {
   const { messages, sendMessage, status } = useChat({
@@ -16,8 +17,19 @@ export default function AiChatInterface() {
   });
   const [input, setInput] = useState("");
 
+  const handleSetInput = (input: string) => {
+    setInput(input);
+    sendMessage({ text: input });
+  };
+
+  const handleSuggestedPromptClick = (prompt: string) => {
+    sendMessage({ text: prompt });
+  };
+
+  const isEmptyState = messages.length === 0;
+
   return (
-    <div className="w-full h-full flex flex-col bg-background text-foreground overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-sidebar text-foreground overflow-hidden">
       {/* Header */}
       <div className="flex-none py-3 px-4 border-b border-border">
         <div className="flex items-center gap-2 text-sm font-medium">
@@ -27,9 +39,15 @@ export default function AiChatInterface() {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 min-h-0 p-3">
-        <ChatOutputArea messages={messages} />
-      </ScrollArea>
+      <div className="flex-1 min-h-0 overflow-hidden p-3">
+        <div className="max-w-full overflow-y-auto h-full">
+          <ChatOutputArea messages={messages} />
+        </div>
+      </div>
+
+      {isEmptyState && (
+        <SuggestedPrompt onPromptClick={handleSuggestedPromptClick} />
+      )}
 
       {/* Input */}
       <div className="flex-none p-4">
@@ -37,8 +55,7 @@ export default function AiChatInterface() {
           onSubmit={(e) => {
             e.preventDefault();
             if (input.trim()) {
-              sendMessage({ text: input });
-              setInput("");
+              handleSetInput(input);
             }
           }}
           className="w-full space-y-3"
@@ -58,8 +75,7 @@ export default function AiChatInterface() {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 if (input.trim()) {
-                  sendMessage({ text: input });
-                  setInput("");
+                  handleSetInput(input);
                 }
               }
             }}

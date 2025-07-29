@@ -37,6 +37,6 @@ export async function getAnthropicAgentStreamTextOptions(
     tools: allTools,
     toolChoice: "auto",
     // 👇 THIS is the correct way to enable multi-step in AI SDK v5!
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(25),
   };
 }
