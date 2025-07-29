@@ -99,7 +99,7 @@ export default function ResizableChatLayout({
       </style>
       <ResizablePanelGroup
         direction="horizontal"
-        className={`relativeh-screen ${!isDragging ? "panel-group-animated" : ""}`}
+        className={`relative ${!isDragging ? "panel-group-animated" : ""}`}
       >
         <ResizablePanel
           id="main-panel"

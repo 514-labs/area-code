@@ -67,14 +67,7 @@ export function Layout({ children }: LayoutProps) {
     [location.pathname, handleChatToggle, children]
   );
 
-  const rightContent = useMemo(
-    () => (
-      <div className="h-screen border-l bg-background">
-        <AiChatInterface />
-      </div>
-    ),
-    []
-  );
+  const rightContent = useMemo(() => <AiChatInterface />, []);
 
   return (
     <ResizableChatLayout
