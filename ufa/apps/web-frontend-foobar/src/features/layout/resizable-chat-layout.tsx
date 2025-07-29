@@ -38,7 +38,6 @@ export default function ResizableChatLayout({
   const [savedChatSizePixels] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(CHAT_SIZE_STORAGE_KEY);
-      console.log("saved", saved);
       return saved ? parseFloat(saved) : defaultChatWidthPx;
     }
     return defaultChatWidthPx;
@@ -52,13 +51,6 @@ export default function ResizableChatLayout({
 
     if (typeof window !== "undefined") {
       const percentage = (clampedPixels / window.innerWidth) * 100;
-      console.log(
-        "clampedPixels",
-        clampedPixels,
-        window.innerWidth,
-        "percentage",
-        percentage
-      );
       return percentage;
     }
     return 25;
@@ -120,14 +112,8 @@ export default function ResizableChatLayout({
       const actualPixels = (size / 100) * containerWidth;
       setLastChatSize(size);
       saveToLocalStorage(CHAT_SIZE_STORAGE_KEY, actualPixels);
-      console.log("saved pixel at value", actualPixels);
     }
   };
-
-  console.log("initialDefaultSize", initialDefaultSize);
-  console.log("mainPanelDefaultSize", mainPanelDefaultSize);
-  console.log("minChatPercent", minChatPercent);
-  console.log("maxChatPercent", maxChatPercent);
 
   return (
     <div ref={containerRef} className={className}>

@@ -106,6 +106,48 @@ export function FooScoreOverTimeGraph({
     return [domainMin, domainMax];
   }, [chartData]);
 
+  // Memoized functions to prevent unnecessary rerenders
+  const tickFormatter = React.useCallback((value: any) => {
+    const date = new Date(value);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  }, []);
+
+  const labelFormatter = React.useCallback((value: string | number) => {
+    return new Date(value).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, []);
+
+  const valueFormatter = React.useCallback((value: any, name: any) => {
+    if (name === "averageScore") {
+      return [Number(value).toFixed(2), " Average Score"];
+    }
+    if (name === "totalCount") {
+      return [value, "Records"];
+    }
+    return [value, name];
+  }, []);
+
+  const defaultIndex = React.useMemo(() => {
+    return isMobile ? -1 : Math.floor(chartData.length / 2);
+  }, [isMobile, chartData.length]);
+
+  const tooltipContent = React.useMemo(
+    () => (
+      <ChartTooltipContent
+        labelFormatter={labelFormatter}
+        formatter={valueFormatter}
+        indicator="dot"
+      />
+    ),
+    [labelFormatter, valueFormatter]
+  );
+
   // Get the time range description for display
   const getTimeRangeDescription = (days: number) => {
     if (days === 7) return "Last 7 days";
@@ -239,39 +281,13 @@ export function FooScoreOverTimeGraph({
                 axisLine={false}
                 tickMargin={8}
                 minTickGap={32}
-                tickFormatter={(value) => {
-                  const date = new Date(value);
-                  return date.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  });
-                }}
+                tickFormatter={tickFormatter}
               />
               <YAxis hide domain={yAxisDomain} />
               <ChartTooltip
                 cursor={false}
-                defaultIndex={isMobile ? -1 : Math.floor(chartData.length / 2)}
-                content={
-                  <ChartTooltipContent
-                    labelFormatter={(value: string | number) => {
-                      return new Date(value).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      });
-                    }}
-                    formatter={(value, name) => {
-                      if (name === "averageScore") {
-                        return [Number(value).toFixed(2), " Average Score"];
-                      }
-                      if (name === "totalCount") {
-                        return [value, "Records"];
-                      }
-                      return [value, name];
-                    }}
-                    indicator="dot"
-                  />
-                }
+                defaultIndex={defaultIndex}
+                content={tooltipContent}
               />
               <Area
                 dataKey="averageScore"
