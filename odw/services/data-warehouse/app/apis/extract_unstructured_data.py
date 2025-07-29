@@ -8,10 +8,14 @@ from typing import List, Optional
 # An API to submit unstructured data for extraction and processing.
 # This allows users to submit processed unstructured data that will be picked up
 # by the extraction workflow.
+#
+# The source_file_path now supports both local filesystem paths and S3 paths:
+# - Local paths: /path/to/file.txt
+# - S3 paths: s3://bucket/key or minio://bucket/key
 
 # Define the input model for submitting unstructured data
 class SubmitUnstructuredDataRequest(BaseModel):
-    source_file_path: str
+    source_file_path: str  # Local path, s3://bucket/key, or minio://bucket/key
     extracted_data_json: str
 
 # Define the response model

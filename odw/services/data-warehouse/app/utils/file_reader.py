@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 from pathlib import Path
 import mimetypes
 from moose_lib import cli_log, CliLogData
+from .s3_file_reader import S3FileReader
 
 class FileReader:
     """
@@ -13,10 +14,10 @@ class FileReader:
     @staticmethod
     def read_file(file_path: str) -> Tuple[str, str]:
         """
-        Read file content from the given path.
+        Read file content from the given path (local filesystem or S3).
         
         Args:
-            file_path: Path to the file to read
+            file_path: Path to the file to read (local path, s3://bucket/key, or minio://bucket/key)
             
         Returns:
             Tuple of (content: str, file_type: str)
@@ -27,6 +28,25 @@ class FileReader:
             Exception: For other file reading errors
         """
         
+        # Check if this is an S3 path and route to S3FileReader
+        if S3FileReader.is_s3_path(file_path):
+            cli_log(CliLogData(
+                action="FileReader",
+                message=f"Detected S3 path, routing to S3FileReader: {file_path}",
+                message_type="Info"
+            ))
+            try:
+                s3_reader = S3FileReader()
+                return s3_reader.read_file(file_path)
+            except Exception as e:
+                cli_log(CliLogData(
+                    action="FileReader",
+                    message=f"S3 file reading failed: {str(e)}",
+                    message_type="Error"
+                ))
+                raise
+        
+        # Handle local file paths (existing functionality)
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
         
@@ -38,7 +58,7 @@ class FileReader:
         
         cli_log(CliLogData(
             action="FileReader",
-            message=f"Reading file: {file_path} (type: {file_type})",
+            message=f"Reading local file: {file_path} (type: {file_type})",
             message_type="Info"
         ))
         
@@ -63,7 +83,7 @@ class FileReader:
         except Exception as e:
             cli_log(CliLogData(
                 action="FileReader",
-                message=f"Error reading file {file_path}: {str(e)}",
+                message=f"Error reading local file {file_path}: {str(e)}",
                 message_type="Error"
             ))
             raise

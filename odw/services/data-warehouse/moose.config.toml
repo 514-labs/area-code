@@ -50,6 +50,15 @@ api_key = ""
 
 [authentication]
 
+[s3_config]
+# S3/MinIO configuration for unstructured data storage
+endpoint_url = "http://localhost:9500"  # MinIO endpoint, set to empty string for AWS S3
+access_key_id = "minioadmin"
+secret_access_key = "minioadmin"
+region_name = "us-east-1"
+bucket_name = "unstructured-data"
+signature_version = "s3v4"
+
 [features]
 streaming_engine = true
 workflows = true
