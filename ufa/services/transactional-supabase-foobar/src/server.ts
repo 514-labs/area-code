@@ -17,7 +17,11 @@ import path from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env files
+// Load environment variables from .env files in order of precedence
+dotenvConfig({ path: path.resolve(__dirname, "../.env") });
+// .env.development (base development config)
+dotenvConfig({ path: path.resolve(__dirname, "../.env.development") });
+// .env.local (local overrides)
 dotenvConfig({ path: path.resolve(__dirname, "../.env.local") });
 
 const fastify = Fastify({
