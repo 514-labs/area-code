@@ -1,7 +1,7 @@
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { getAuroraMCPClient } from "./aurora-mcp-client";
-import { getSupabaseLocalMCPClient } from "./supabase-local-mcp-client";
+import { getSupabaseLocalMCPClient } from "./supabase-mcp-client";
 import { getAISystemPrompt } from "./ai-system-prompt";
 
 export async function getAnthropicAgentStreamTextOptions(

@@ -16,7 +16,7 @@ import {
 import {
   bootstrapSupabaseLocalMCPClient,
   shutdownSupabaseLocalMCPClient,
-} from "./ai-agent/supabase-local-mcp-client";
+} from "./ai-agent/supabase-mcp-client";
 
 // Load environment variables from .env file in parent directory
 import { config as dotenvConfig } from "dotenv";
