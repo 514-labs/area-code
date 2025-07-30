@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { execSync } from "child_process";
+import { findAnalyticalMooseServicePath } from "./moose-location-utils.js";
 
 // Get current directory in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -33,26 +34,6 @@ let initializationPromise: Promise<{
 
 // Track the current status of the MCP client
 let auroraMCPCurrentStatus: AuroraMCPStatus = AuroraMCPStatus.NOT_STARTED;
-
-function findAnalyticalMooseServicePath(): string {
-  // Start from current service and navigate to workspace root, then to analytical service
-  const currentServiceDir = path.resolve(__dirname, "../..");
-  const workspaceRoot = path.resolve(currentServiceDir, "../../..");
-  const analyticalServicePath = path.resolve(
-    workspaceRoot,
-    "ufa/services/analytical-moose-foobar"
-  );
-
-  // Verify the path exists and has a moose.config.toml
-  const configPath = path.join(analyticalServicePath, "moose.config.toml");
-  if (!fs.existsSync(configPath)) {
-    throw new Error(
-      `Analytical Moose service not found at ${analyticalServicePath}. Expected moose.config.toml at ${configPath}`
-    );
-  }
-
-  return analyticalServicePath;
-}
 
 function discoverToolPath(toolName: string): string | null {
   try {
@@ -100,7 +81,7 @@ async function createAuroraMCPClient(): Promise<{
     throw new Error("ANTHROPIC_API_KEY environment variable is not set");
   }
 
-  const analyticalServicePath = findAnalyticalMooseServicePath();
+  const analyticalServicePath = findAnalyticalMooseServicePath(__dirname);
   const toolPaths = getToolPaths();
 
   console.log("Creating Aurora MCP client at:", analyticalServicePath);
