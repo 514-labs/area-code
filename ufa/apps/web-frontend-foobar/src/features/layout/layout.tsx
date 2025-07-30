@@ -1,5 +1,5 @@
-import { useLocation } from "@tanstack/react-router";
-import { AppSidebar } from "@workspace/ui";
+import { useLocation, Link } from "@tanstack/react-router";
+import { AppSidebar } from "./app-sidebar";
 import {
   SidebarInset,
   SidebarProvider,
@@ -34,10 +34,10 @@ function MainContent({ children }: { children: ReactNode }) {
         navSecondary={navigationConfig.navSecondary}
         user={navigationConfig.user}
         topHero={
-          <a href="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <AreaCodeLogo className="w-[32.5px] h-[16px] text-black dark:text-white" />
             <span className="text-base font-semibold">Area Code</span>
-          </a>
+          </Link>
         }
       />
       <SidebarInset>

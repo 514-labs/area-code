@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
+import { Link } from "@tanstack/react-router";
 
 export interface NavItem {
   title: string;
@@ -53,10 +54,10 @@ export function NavSecondary({
                   </SidebarMenuButton>
                 ) : (
                   <SidebarMenuButton asChild isActive={isActive}>
-                    <a href={navItem.url}>
+                    <Link to={navItem.url}>
                       <navItem.icon />
                       <span>{navItem.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 )}
               </SidebarMenuItem>

@@ -1,9 +1,6 @@
-import { NavMain, type NavMainItem } from "@workspace/ui/components/nav-main";
-import {
-  NavSecondary,
-  type NavItem,
-} from "@workspace/ui/components/nav-secondary";
-import { NavUser } from "@workspace/ui/components/nav-user";
+import { NavMain, type NavMainItem } from "./nav-main";
+import { NavSecondary, type NavItem } from "./nav-secondary";
+import { NavUser } from "./nav-user";
 import {
   Sidebar,
   SidebarContent,

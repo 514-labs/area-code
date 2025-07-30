@@ -7,6 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar";
+import { Link } from "@tanstack/react-router";
 
 export interface NavMainItem {
   title: string;
@@ -42,10 +43,10 @@ export function NavMain({
                   tooltip={navItem.title}
                   isActive={isActive}
                 >
-                  <a href={navItem.url}>
+                  <Link to={navItem.url}>
                     {navItem.icon && <navItem.icon />}
                     <span>{navItem.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );

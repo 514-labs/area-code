@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Home, Package, BarChart } from "lucide-react";
-import { type NavMainItem } from "@workspace/ui/components/nav-main";
-import { type NavItem } from "@workspace/ui/components/nav-secondary";
+import { type NavMainItem } from "./nav-main";
+import { type NavItem } from "./nav-secondary";
 import { SidebarThemeToggle } from "../theme/sidebar-theme-toggle";
 import { SidebarFrontendCacheToggle } from "../frontend-caching/sidebar-frontend-cache-toggle";
 import { SidebarGithubButton } from "./sidebar-github-button";

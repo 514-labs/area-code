@@ -42,10 +42,6 @@ export * from "./components/tooltip";
 
 // Export sidebar components
 export * from "./components/sidebar";
-export * from "./components/app-sidebar";
-export * from "./components/nav-main";
-export * from "./components/nav-secondary";
-export * from "./components/nav-user";
 
 // Export theme components
 export * from "./components/theme-provider";
