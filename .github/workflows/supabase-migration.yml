@@ -27,22 +27,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "pnpm"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+          cache: "npm"
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm install
 
       - name: Validate migrations against production
         run: |
           # Check migration consistency
-          pnpm drizzle-kit check
+          npx drizzle-kit check
           # Test schema validity against production
-          pnpm drizzle-kit push --dry-run
+          npx drizzle-kit push --dry-run
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
           NODE_ENV: production
@@ -64,18 +59,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "pnpm"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+          cache: "npm"
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm install
 
       - name: Apply migrations to production
-        run: pnpm drizzle-kit migrate
+        run: npx drizzle-kit migrate
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
           NODE_ENV: production
