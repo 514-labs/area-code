@@ -6,6 +6,7 @@ from pathlib import Path
 import mimetypes
 import toml
 import os
+import base64
 from moose_lib import cli_log, CliLogData
 
 class S3FileReader:
@@ -250,33 +251,105 @@ class S3FileReader:
     
     def _process_pdf_content(self, content: bytes, object_key: str) -> str:
         """
-        Process PDF content from S3.
-        Note: This is a placeholder implementation. In production, you would use
-        a library like PyPDF2, pdfplumber, or pymupdf to extract text from PDFs.
+        Process PDF content from S3 for LLM processing.
+        Returns the PDF content as base64-encoded data for LLM vision processing.
         """
-        # TODO: Implement PDF reading with appropriate library
-        # For now, return a placeholder that indicates PDF processing is needed
-        return f"[PDF_CONTENT] S3 Object: {object_key} - PDF text extraction not yet implemented. Please integrate with PyPDF2, pdfplumber, or similar library."
+        try:
+            # Convert PDF binary data to base64 for LLM processing
+            pdf_base64 = base64.b64encode(content).decode('utf-8')
+            
+            cli_log(CliLogData(
+                action="S3FileReader",
+                message=f"Successfully processed S3 PDF: {object_key} ({len(content)} bytes)",
+                message_type="Info"
+            ))
+            
+            # Return the PDF data in a format that can be processed by the LLM
+            # The LLM service will handle the actual text extraction
+            return f"[PDF_DATA]data:application/pdf;base64,{pdf_base64}"
+            
+        except Exception as e:
+            cli_log(CliLogData(
+                action="S3FileReader",
+                message=f"Error processing S3 PDF {object_key}: {str(e)}",
+                message_type="Error"
+            ))
+            raise Exception(f"Unable to process S3 PDF {object_key}: {str(e)}")
     
     def _process_image_content(self, content: bytes, object_key: str) -> str:
         """
-        Process image content from S3 for OCR.
-        Note: This is a placeholder implementation. In production, you would use
-        OCR libraries like Tesseract, or cloud OCR services.
+        Process image content from S3 and convert to base64 for LLM vision processing.
         """
-        # TODO: Implement OCR processing with appropriate library
-        # For now, return a placeholder that indicates image processing is needed
-        return f"[IMAGE_CONTENT] S3 Object: {object_key} - OCR text extraction not yet implemented. Please integrate with Tesseract, AWS Textract, or similar OCR service."
+        try:
+            # Convert binary image data to base64
+            image_base64 = base64.b64encode(content).decode('utf-8')
+            
+            # Determine the MIME type for the image
+            mime_type, _ = mimetypes.guess_type(object_key)
+            if not mime_type:
+                # Fallback MIME type based on file extension
+                file_extension = Path(object_key).suffix.lower()
+                if file_extension == '.png':
+                    mime_type = 'image/png'
+                elif file_extension in ['.jpg', '.jpeg']:
+                    mime_type = 'image/jpeg'
+                elif file_extension == '.gif':
+                    mime_type = 'image/gif'
+                elif file_extension == '.bmp':
+                    mime_type = 'image/bmp'
+                else:
+                    mime_type = 'image/jpeg'  # Default fallback
+            
+            cli_log(CliLogData(
+                action="S3FileReader",
+                message=f"Successfully processed S3 image: {object_key} ({len(content)} bytes, MIME: {mime_type})",
+                message_type="Info"
+            ))
+            
+            # Return the image data in a format that can be processed by the LLM
+            # The LLM service will handle the actual OCR extraction
+            return f"[IMAGE_DATA]data:{mime_type};base64,{image_base64}"
+            
+        except Exception as e:
+            cli_log(CliLogData(
+                action="S3FileReader",
+                message=f"Error processing S3 image {object_key}: {str(e)}",
+                message_type="Error"
+            ))
+            raise Exception(f"Unable to process S3 image {object_key}: {str(e)}")
     
     def _process_word_content(self, content: bytes, object_key: str) -> str:
         """
-        Process Word document content from S3.
-        Note: This is a placeholder implementation. In production, you would use
-        libraries like python-docx for .docx files.
+        Process Word document content from S3 for LLM processing.
+        Returns the document content as base64-encoded data for LLM processing.
         """
-        # TODO: Implement Word document reading with appropriate library
-        # For now, return a placeholder that indicates Word processing is needed
-        return f"[WORD_CONTENT] S3 Object: {object_key} - Word document text extraction not yet implemented. Please integrate with python-docx or similar library."
+        try:
+            # Convert Word document binary data to base64 for LLM processing
+            doc_base64 = base64.b64encode(content).decode('utf-8')
+            
+            # Determine the MIME type based on file extension
+            if object_key.lower().endswith('.docx'):
+                mime_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            else:
+                mime_type = 'application/msword'
+            
+            cli_log(CliLogData(
+                action="S3FileReader",
+                message=f"Successfully processed S3 Word document: {object_key} ({len(content)} bytes)",
+                message_type="Info"
+            ))
+            
+            # Return the document data in a format that can be processed by the LLM
+            # The LLM service will handle the actual text extraction
+            return f"[DOC_DATA]data:{mime_type};base64,{doc_base64}"
+            
+        except Exception as e:
+            cli_log(CliLogData(
+                action="S3FileReader",
+                message=f"Error processing S3 Word document {object_key}: {str(e)}",
+                message_type="Error"
+            ))
+            raise Exception(f"Unable to process S3 Word document {object_key}: {str(e)}")
     
     def list_objects(self, bucket_name: str = None, prefix: str = "", pattern: str = None) -> list:
         """

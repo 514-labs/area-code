@@ -183,7 +183,7 @@ def create_navigation():
     
     unstructured_data_page = st.Page(
         unstructured_data_view.show,
-        title="USD",
+        title="Unstructured",
         icon="📄",
         url_path="unstructured-data",
         default=False

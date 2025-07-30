@@ -3,6 +3,7 @@ from app.utils.simulator import simulate_failures
 from app.utils.file_reader import FileReader
 from app.utils.batch_workflow_manager import BatchWorkflowManager
 from app.utils.s3_pattern_validator import S3PatternValidator
+from app.utils.llm_service import get_llm_service
 from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.unstructured_data_connector import UnstructuredDataConnectorConfig
 from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
@@ -127,12 +128,12 @@ def process_unstructured_data_item(item: UnstructuredDataSource) -> Unstructured
 
 def perform_basic_extraction(item: UnstructuredDataSource, file_content: str, file_type: str) -> UnstructuredDataSource:
     """
-    Perform basic extraction of file content to structured JSON.
+    Perform extraction of file content using LLM service for intelligent processing.
     
     Args:
         item: UnstructuredDataSource to update
         file_content: Raw content from the file
-        file_type: Type of file (txt, pdf, json, etc.)
+        file_type: Type of file (txt, pdf, json, image, etc.)
         
     Returns:
         Updated UnstructuredDataSource with extracted_data_json
@@ -140,64 +141,108 @@ def perform_basic_extraction(item: UnstructuredDataSource, file_content: str, fi
     
     cli_log(CliLogData(
         action="UnstructuredDataWorkflow",
-        message=f"Performing basic extraction for {file_type} file",
+        message=f"Performing LLM extraction for {file_type} file",
         message_type="Info"
     ))
     
     try:
-        # Basic extraction based on file type
-        if file_type in ['json']:
-            # For JSON files, try to parse the content
-            try:
-                parsed_json = json.loads(file_content)
-                extracted_data = {
-                    "file_type": file_type,
-                    "extraction_method": "json_parse",
-                    "data": parsed_json
-                }
-            except json.JSONDecodeError:
-                extracted_data = {
-                    "file_type": file_type,
-                    "extraction_method": "text_fallback",
-                    "raw_content": file_content[:1000] + "..." if len(file_content) > 1000 else file_content
-                }
-        else:
-            # For other file types, store as text content
-            extracted_data = {
-                "file_type": file_type,
-                "extraction_method": "text_content",
-                "raw_content": file_content[:1000] + "..." if len(file_content) > 1000 else file_content,
-                "content_length": len(file_content)
-            }
+        # Get LLM service for intelligent extraction
+        llm_service = get_llm_service()
+        
+        # Use processing instructions if available, otherwise use default
+        processing_instructions = item.processing_instructions or "Extract and structure data from this file"
+        
+        # Perform LLM-based extraction
+        extracted_data = llm_service.extract_structured_data(
+            file_content=file_content,
+            file_type=file_type,
+            instruction=processing_instructions,
+            file_path=item.source_file_path
+        )
         
         # Add metadata
         extracted_data.update({
             "source_file_path": item.source_file_path,
-            "processed_timestamp": item.processed_at
+            "processed_timestamp": item.processed_at,
+            "extraction_method": "llm_intelligent",
+            "file_type": file_type
         })
         
         item.extracted_data_json = json.dumps(extracted_data)
         
         cli_log(CliLogData(
             action="UnstructuredDataWorkflow",
-            message=f"Successfully extracted data from {file_type} file",
+            message=f"Successfully extracted data from {file_type} file using LLM",
             message_type="Info"
         ))
         
     except Exception as e:
         cli_log(CliLogData(
             action="UnstructuredDataWorkflow",
-            message=f"Basic extraction failed: {str(e)}",
+            message=f"LLM extraction failed: {str(e)}",
             message_type="Error"
         ))
         
-        # Fallback extraction
-        item.extracted_data_json = json.dumps({
-            "error": "extraction_failed",
-            "error_message": str(e),
-            "file_type": file_type,
-            "source_file_path": item.source_file_path
-        })
+        # Fallback to basic extraction if LLM fails
+        try:
+            if file_type in ['json']:
+                # For JSON files, try to parse the content
+                try:
+                    parsed_json = json.loads(file_content)
+                    extracted_data = {
+                        "file_type": file_type,
+                        "extraction_method": "json_parse_fallback",
+                        "data": parsed_json,
+                        "error": "llm_extraction_failed",
+                        "error_message": str(e)
+                    }
+                except json.JSONDecodeError:
+                    extracted_data = {
+                        "file_type": file_type,
+                        "extraction_method": "text_fallback",
+                        "raw_content": file_content[:1000] + "..." if len(file_content) > 1000 else file_content,
+                        "error": "llm_extraction_failed",
+                        "error_message": str(e)
+                    }
+            else:
+                # For other file types, store as text content
+                extracted_data = {
+                    "file_type": file_type,
+                    "extraction_method": "text_content_fallback",
+                    "raw_content": file_content[:1000] + "..." if len(file_content) > 1000 else file_content,
+                    "content_length": len(file_content),
+                    "error": "llm_extraction_failed",
+                    "error_message": str(e)
+                }
+            
+            # Add metadata
+            extracted_data.update({
+                "source_file_path": item.source_file_path,
+                "processed_timestamp": item.processed_at
+            })
+            
+            item.extracted_data_json = json.dumps(extracted_data)
+            
+            cli_log(CliLogData(
+                action="UnstructuredDataWorkflow",
+                message=f"Fallback extraction completed for {file_type} file",
+                message_type="Warning"
+            ))
+            
+        except Exception as fallback_error:
+            cli_log(CliLogData(
+                action="UnstructuredDataWorkflow",
+                message=f"Fallback extraction also failed: {str(fallback_error)}",
+                message_type="Error"
+            ))
+            
+            # Final fallback
+            item.extracted_data_json = json.dumps({
+                "error": "extraction_failed",
+                "error_message": f"LLM: {str(e)}, Fallback: {str(fallback_error)}",
+                "file_type": file_type,
+                "source_file_path": item.source_file_path
+            })
     
     return item
 

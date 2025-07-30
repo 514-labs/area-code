@@ -1,7 +1,9 @@
 import json
 import uuid
+import re
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
+from pathlib import Path
 from moose_lib import cli_log, CliLogData
 from app.ingest.models import UnstructuredDataSource
 from .s3_wildcard_resolver import S3WildcardResolver
@@ -252,6 +254,17 @@ class BatchWorkflowManager:
         """
         
         try:
+            # Step 0: Validate file extension against pattern
+            expected_extensions = self._extract_extensions_from_pattern(original_pattern)
+            if expected_extensions and not self._file_matches_extensions(file_path, expected_extensions):
+                return {
+                    'success': False,
+                    'aborted': False,
+                    'file_path': file_path,
+                    'error_message': f'File extension does not match pattern. Expected: {expected_extensions}, Got: {Path(file_path).suffix}',
+                    'record_id': None
+                }
+            
             # Step 1: Read file content
             file_content, file_type = self.file_reader.read_file(file_path)
             
@@ -399,4 +412,67 @@ class BatchWorkflowManager:
         elif estimated_minutes > 60:
             return "Long processing time - recommend running during off-peak hours"
         else:
-            return "Standard processing time expected" 
+            return "Standard processing time expected"
+    
+    def _extract_extensions_from_pattern(self, pattern: str) -> List[str]:
+        """
+        Extract expected file extensions from S3 pattern.
+        
+        Args:
+            pattern: S3 pattern (e.g., "s3://bucket/memo_001*.jpg")
+            
+        Returns:
+            List of expected file extensions (e.g., [".jpg"])
+        """
+        try:
+            # Remove S3 prefix to get the object pattern
+            if '://' in pattern:
+                object_pattern = pattern.split('://', 1)[1]
+                if '/' in object_pattern:
+                    object_pattern = '/'.join(object_pattern.split('/')[1:])  # Remove bucket name
+            else:
+                object_pattern = pattern
+            
+            # Look for file extensions in the pattern
+            # Match patterns like *.jpg, *.txt, **/*.pdf, etc.
+            extension_matches = re.findall(r'\*+\.([a-zA-Z0-9]+)', object_pattern)
+            
+            if extension_matches:
+                # Return extensions with dot prefix
+                return [f".{ext.lower()}" for ext in extension_matches]
+            
+            # If no wildcard extension found, check if pattern ends with specific extension
+            if '.' in object_pattern:
+                potential_ext = Path(object_pattern).suffix.lower()
+                if potential_ext and len(potential_ext) <= 5:  # Reasonable extension length
+                    return [potential_ext]
+            
+            return []
+            
+        except Exception as e:
+            cli_log(CliLogData(
+                action="BatchWorkflowManager",
+                message=f"Error extracting extensions from pattern {pattern}: {str(e)}",
+                message_type="Info"
+            ))
+            return []
+    
+    def _file_matches_extensions(self, file_path: str, expected_extensions: List[str]) -> bool:
+        """
+        Check if file matches any of the expected extensions.
+        
+        Args:
+            file_path: Path to the file
+            expected_extensions: List of expected extensions (e.g., [".jpg", ".jpeg"])
+            
+        Returns:
+            True if file extension matches any expected extension
+        """
+        if not expected_extensions:
+            return True  # No restrictions if no extensions specified
+        
+        try:
+            file_extension = Path(file_path).suffix.lower()
+            return file_extension in expected_extensions
+        except Exception:
+            return True  # Be permissive on error 

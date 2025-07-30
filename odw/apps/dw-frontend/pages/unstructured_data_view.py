@@ -4,6 +4,9 @@ import pandas as pd
 import streamlit_shadcn_ui as ui
 import json
 from datetime import datetime
+import requests
+from urllib.parse import urlparse
+import mimetypes
 
 # Import shared functions
 from utils.api_functions import (
@@ -48,6 +51,83 @@ def format_stringified_json(data_json):
     except:
         return "Invalid JSON"
 
+def get_file_content_display(source_file_path):
+    """Fetch and display file content from S3 URL"""
+    try:
+        # Convert S3 URL to local server URL
+        if source_file_path.startswith('s3://'):
+            # Parse the S3 URL to get bucket and key
+            parsed = urlparse(source_file_path)
+            # For S3 URLs like s3://bucket-name/path/to/file
+            # parsed.netloc will be the bucket name
+            # parsed.path will be the file path
+            bucket_name = parsed.netloc
+            file_path = parsed.path.lstrip('/')
+            # Convert to local server URL with bucket name included
+            local_url = f"http://localhost:9500/{bucket_name}/{file_path}"
+        else:
+            local_url = source_file_path
+        
+        # Fetch the file content
+        response = requests.get(local_url, timeout=10)
+        response.raise_for_status()
+        
+        # Determine content type
+        content_type = response.headers.get('content-type', '')
+        
+        # Check if it's an image
+        if content_type.startswith('image/') or any(ext in source_file_path.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']):
+            # Display as image with border
+            st.markdown("""
+            <style>
+            /* Add border to images */
+            .stImage img {
+                border: 2px solid #e0e0e0 !important;
+                border-radius: 8px !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            st.image(local_url, caption=source_file_path, use_container_width=True)
+            return True
+        else:
+            # Display as text
+            content = response.text
+            if len(content) > 10000:  # Truncate very long files
+                st.text_area("File content", content[:10000] + "\n\n... (content truncated)", height=400, disabled=True, key="file_content_text", label_visibility="hidden")
+                st.info(f"File content truncated. Full file has {len(content)} characters.")
+            else:
+                st.text_area("File content", content, height=400, disabled=True, key="file_content_text", label_visibility="hidden")
+            
+            # Add CSS to make text darker and larger
+            st.markdown("""
+            <style>
+            /* Target the text area for unstructured content */
+            textarea[key="file_content_text"] {
+                color: #000000 !important;
+                font-weight: 600 !important;
+                font-size: 18px !important;
+                line-height: 1.6 !important;
+            }
+            
+            /* Fallback for general text areas */
+            .stTextArea textarea {
+                color: #000000 !important;
+                font-weight: 600 !important;
+                font-size: 18px !important;
+                line-height: 1.6 !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            return True
+            
+    except requests.exceptions.RequestException as e:
+        st.error(f"Failed to fetch file content: {e}")
+        return False
+    except Exception as e:
+        st.error(f"Error displaying file content: {e}")
+        return False
+
 def prepare_unstructured_display_data(df):
     """Transform unstructured data for display"""
     if df.empty:
@@ -64,7 +144,6 @@ def prepare_unstructured_display_data(df):
     
     # Column display mapping
     display_columns = {
-        "id": "ID",
         "source_file_path": "Source File Path",
         "Structured Data": "Structured Data",
         "processed_at": "Processed At",
@@ -83,7 +162,7 @@ def show():
     try:
         # Header
         st.title("Unstructured Data Connector")
-        st.markdown("Submit and view unstructured data processing results")
+        st.markdown("Trigger and view data processing results")
         
         # Create tabs for Submit and View
         submit_tab, view_tab = st.tabs(["📤 Submit Data", "📊 View Data"])
@@ -142,7 +221,35 @@ def show():
                 height=100
             )
             
-            submitted = st.form_submit_button("Submit Data", type="primary")
+            # Add custom CSS to style the submit button like other pages
+            st.markdown("""
+            <style>
+            /* Style the submit button to match other pages */
+            button[data-testid="stBaseButton-secondaryFormSubmit"] {
+                background-color: #000000 !important;
+                color: #ffffff !important;
+                border: none !important;
+                border-radius: 6px !important;
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+                height: 32px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition: background-color 0.2s !important;
+                cursor: pointer !important;
+                white-space: normal !important;
+                word-wrap: break-word !important;
+                min-width: fit-content !important;
+            }
+            button[data-testid="stBaseButton-secondaryFormSubmit"]:hover {
+                background-color: #333333 !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            submitted = st.form_submit_button("Submit Data", type="secondary")
             
             if submitted:
                 # Validate inputs
@@ -173,21 +280,28 @@ def show():
                         
                         if success:
                             st.success(f"S3 pattern submitted successfully! Batch ID: {data_id}")
+                            
+                            # Trigger async extraction for the newly submitted data
+                            with st.spinner("Triggering extraction workflow for new data..."):
+                                try:
+                                    trigger_extract(f"{CONSUMPTION_API_BASE}/extractUnstructuredData", "Unstructured Data")
+                                    st.info("🔄 Extraction workflow triggered successfully! Processing has started in the background. You can check results in the View Data tab.")
+                                except Exception as e:
+                                    st.warning(f"⚠️ Data submitted successfully, but extraction trigger failed: {str(e)}. You can manually trigger extraction from the View Data tab.")
+                            
                             st.session_state["refresh_unstructured"] = True
                         else:
                             st.error("Failed to submit S3 pattern. Check the status messages below.")
     
     with view_tab:
-        # Header with extract button
+        # Header with refresh button
         col1, col2 = st.columns([3, 1])
         with col1:
             st.subheader("Unstructured Data Records")
         with col2:
-            if st.button("🔄 Extract Data", help="Trigger extraction workflow"):
-                with st.spinner("Triggering extraction..."):
-                    trigger_extract(f"{CONSUMPTION_API_BASE}/extractUnstructuredData", "Unstructured Data")
-                    time.sleep(2)
-                st.session_state["refresh_unstructured"] = True
+            if st.button("🔄 Refresh Data", help="Refresh the data table to show latest processed records"):
+                with st.spinner("Refreshing data..."):
+                    st.session_state["refresh_unstructured"] = True
                 st.rerun()
         
         # Removed filter options as requested
@@ -244,14 +358,21 @@ def show():
                 if selected_rows.selection.rows:
                     selected_idx = selected_rows.selection.rows[0]
                     if selected_idx < len(st.session_state["unstructured_raw_data"]):
-                        st.subheader(f"JSON Details for Record #{selected_idx + 1}")
+                        st.markdown("---")
+                        st.subheader(f"Details for Record #{selected_idx + 1}")
                         
                         # Get the original record from session state
                         original_record = st.session_state["unstructured_raw_data"][selected_idx]
                         
+                        # Display file content first
+                        source_file_path = original_record.get("source_file_path")
+                        if source_file_path:
+                            st.markdown("#### Unstructured Content")
+                            get_file_content_display(source_file_path)
+                        
                         # Display the extracted data JSON
+                        st.markdown("#### Extracted Structured Data")
                         if original_record.get("extracted_data_json"):
-                            st.markdown("**Extracted Structured Data:**")
                             try:
                                 extracted_data = json.loads(original_record["extracted_data_json"])
                                 st.json(extracted_data)
@@ -259,10 +380,6 @@ def show():
                                 st.code(original_record["extracted_data_json"], language="json")
                         else:
                             st.info("No extracted data available for this record.")
-                        
-                        # Display the full record JSON
-                        st.markdown("**Full Record JSON:**")
-                        st.json(original_record)
                     else:
                         st.error("Selected record data not available.")
             else:
