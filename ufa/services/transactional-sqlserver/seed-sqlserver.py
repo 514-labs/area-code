@@ -121,14 +121,53 @@ BEGIN
 END
 GO
 
--- Grant CDC permissions to sa user
-EXEC sys.sp_cdc_add_job @job_type = N'capture';
-EXEC sys.sp_cdc_add_job @job_type = N'cleanup';
+-- Grant CDC permissions to sa user and create necessary CDC jobs
+IF NOT EXISTS (SELECT * FROM msdb.dbo.sysjobs WHERE name = 'cdc.sqlCDC_capture')
+BEGIN
+    EXEC sys.sp_cdc_add_job @job_type = N'capture';
+    PRINT 'CDC capture job created';
+END
+ELSE
+BEGIN
+    PRINT 'CDC capture job already exists';
+END
 
--- Ensure sa has access to CDC functions and schema
-GRANT SELECT ON SCHEMA::cdc TO sa;
-GRANT EXECUTE ON SCHEMA::cdc TO sa;
-PRINT 'CDC permissions granted to sa user';
+IF NOT EXISTS (SELECT * FROM msdb.dbo.sysjobs WHERE name = 'cdc.sqlCDC_cleanup')
+BEGIN
+    EXEC sys.sp_cdc_add_job @job_type = N'cleanup';
+    PRINT 'CDC cleanup job created';
+END
+ELSE
+BEGIN
+    PRINT 'CDC cleanup job already exists';
+END
+
+-- Create a database user for 'sa' login if it doesn't exist
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'sa' AND type = 'S')
+BEGIN
+    CREATE USER [sa] FOR LOGIN [sa];
+    PRINT 'Database user sa created';
+END
+ELSE
+BEGIN
+    PRINT 'Database user sa already exists';
+END
+
+-- Grant comprehensive CDC permissions to sa user
+GRANT SELECT ON SCHEMA::cdc TO [sa];
+GRANT EXECUTE ON SCHEMA::cdc TO [sa];
+GRANT INSERT ON SCHEMA::cdc TO [sa];
+GRANT UPDATE ON SCHEMA::cdc TO [sa];
+GRANT DELETE ON SCHEMA::cdc TO [sa];
+
+-- Add sa to db_owner role for full CDC access
+ALTER ROLE db_owner ADD MEMBER [sa];
+
+-- Grant additional permissions needed for Debezium
+GRANT VIEW DEFINITION ON SCHEMA::cdc TO [sa];
+GRANT VIEW DATABASE STATE TO [sa];
+
+PRINT 'Comprehensive CDC permissions granted to sa user';
 GO
 
 """
@@ -165,7 +204,7 @@ BEGIN
         is_active BIT DEFAULT 1,
         metadata NVARCHAR(MAX), -- JSON string
         tags NVARCHAR(MAX), -- JSON array as string
-        score DECIMAL(5,2),
+        score INT,
         large_text NVARCHAR(MAX),
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE()
@@ -214,9 +253,8 @@ ELSE
 BEGIN
     PRINT 'CDC already enabled on foo table';
 END
-GO
 
--- Enable CDC on bar table
+-- Enable CDC on bar table  
 IF NOT EXISTS (SELECT * FROM cdc.change_tables WHERE source_object_id = OBJECT_ID('dbo.bar'))
 BEGIN
     EXEC sys.sp_cdc_enable_table 
@@ -230,6 +268,19 @@ ELSE
 BEGIN
     PRINT 'CDC already enabled on bar table';
 END
+
+-- Verify CDC setup
+PRINT 'CDC Setup Verification:';
+SELECT 'Database CDC Status:' as Info, 
+       CASE WHEN is_cdc_enabled = 1 THEN 'ENABLED' ELSE 'DISABLED' END as Status
+FROM sys.databases WHERE name = 'sqlCDC';
+
+SELECT 'Table CDC Status:' as Info, 
+       object_name(source_object_id) as TableName,
+       capture_instance as CaptureInstance
+FROM cdc.change_tables;
+
+PRINT 'CDC setup completed successfully';
 GO
 """
         
@@ -276,9 +327,9 @@ GO
         random_time = start_date + timedelta(days=random_days)
         return random_time.strftime('%Y-%m-%d %H:%M:%S')
     
-    def seed_foo_data(self, clean_existing: bool = False) -> str:
-        """Seed foo table with a single record and return its ID"""
-        logger.info("🌱 Creating single foo record...")
+    def seed_foo_data(self, record_count: int = 1, clean_existing: bool = False) -> List[str]:
+        """Seed foo table with specified number of records and return their IDs"""
+        logger.info(f"🌱 Creating {record_count} foo record(s)...")
         
         if clean_existing:
             clear_sql = """
@@ -288,7 +339,7 @@ DELETE FROM foo;
 GO
 """
             if not self.execute_sql_file(clear_sql):
-                return None
+                return []
             logger.info("🧹 Existing data cleared")
         
         # Data generation lists
@@ -325,77 +376,101 @@ GO
         
         statuses = ['active', 'inactive', 'pending', 'archived']
         
-        # Generate single foo record
-        created_at = self.generate_random_timestamp()
-        updated_at_dt = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S') + timedelta(
-            seconds=random.randint(0, int((datetime.now() - datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')).total_seconds()))
-        )
-        updated_at = updated_at_dt.strftime('%Y-%m-%d %H:%M:%S')
+        foo_ids = []
         
-        name = f"{random.choice(service_names)}_Master".replace("'", "''")
-        description = random.choice(descriptions).replace("'", "''")
-        status = random.choice(statuses)
-        priority = random.randint(1, 10)
-        is_active = 1 if random.random() < 0.7 else 0
-        metadata = self.generate_random_metadata()
-        tags = self.generate_random_tags()
-        score = round(random.uniform(0, 100), 2)
-        large_text = random.choice(large_texts).replace("'", "''")
+        # Create foo records in batches for better performance
+        batch_size = 50
+        total_batches = (record_count + batch_size - 1) // batch_size
         
-        # Use DECLARE and OUTPUT to get the inserted ID
-        insert_sql = f"""
-USE sqlCDC;
-DECLARE @foo_id UNIQUEIDENTIFIER = NEWID();
-INSERT INTO foo (id, name, description, status, priority, is_active, metadata, tags, score, large_text, created_at, updated_at)
-VALUES (@foo_id, '{name}', '{description}', '{status}', {priority}, {is_active}, '{metadata}', '{tags}', {score}, '{large_text}', '{created_at}', '{updated_at}');
-SELECT @foo_id as inserted_id;
-GO
-"""
-        
-        try:
-            # Execute the insert and capture the ID using -Q flag instead of stdin
-            # First, escape any single quotes in the SQL for shell execution
-            escaped_sql = insert_sql.replace("'", "''").replace('"', '\\"')
+        for batch_num in range(total_batches):
+            start_idx = batch_num * batch_size
+            end_idx = min(start_idx + batch_size, record_count)
+            batch_records = end_idx - start_idx
             
-            result = subprocess.run([
-                'docker', 'exec', self.container_name,
-                '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
-                '-Q', insert_sql, '-N', '-C', '-h', '-1'
-            ], capture_output=True, text=True, check=True)
+            if record_count > 1 and batch_num % 2 == 0:
+                progress = (batch_num / total_batches) * 100
+                logger.info(f"🌱 Processing foo batch {batch_num + 1}/{total_batches} ({progress:.1f}% complete)")
             
-            # Parse the UUID from the output (more robust parsing)
-            uuid_pattern = re.compile(r'[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', re.IGNORECASE)
-            lines = result.stdout.strip().split('\n')
-            foo_id = None
+            # Build batch INSERT SQL with DECLARE for multiple UUIDs
+            batch_sql = "USE sqlCDC;\n"
+            uuid_declarations = []
+            insert_statements = []
+            select_statements = []
             
-            # Look for UUID pattern in any line, not just exact matches
-            for line in lines:
-                line = line.strip()
-                if line:
-                    match = uuid_pattern.search(line)
-                    if match:
-                        foo_id = match.group(0)
-                        break
-                        
-            if not foo_id:
-                logger.error("❌ Failed to retrieve foo ID from insert")
-                logger.error(f"SQL output was: {result.stdout}")
-                return None
+            for i in range(batch_records):
+                created_at = self.generate_random_timestamp()
+                updated_at_dt = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S') + timedelta(
+                    seconds=random.randint(0, int((datetime.now() - datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')).total_seconds()))
+                )
+                updated_at = updated_at_dt.strftime('%Y-%m-%d %H:%M:%S')
                 
-            logger.info(f"✅ Successfully created foo record with ID: {foo_id}")
-            return foo_id
+                name = f"{random.choice(service_names)}_{start_idx + i + 1}".replace("'", "''")
+                description = random.choice(descriptions).replace("'", "''")
+                status = random.choice(statuses)
+                priority = random.randint(1, 10)
+                is_active = 1 if random.random() < 0.7 else 0
+                metadata = self.generate_random_metadata()
+                tags = self.generate_random_tags()
+                score = random.randint(0, 100)
+                large_text = random.choice(large_texts).replace("'", "''")
+                
+                var_name = f"@foo_id_{i}"
+                uuid_declarations.append(f"DECLARE {var_name} UNIQUEIDENTIFIER = NEWID();")
+                insert_statements.append(f"INSERT INTO foo (id, name, description, status, priority, is_active, metadata, tags, score, large_text, created_at, updated_at) VALUES ({var_name}, '{name}', '{description}', '{status}', {priority}, {is_active}, '{metadata}', '{tags}', {score}, '{large_text}', '{created_at}', '{updated_at}');")
+                select_statements.append(f"SELECT {var_name} as inserted_id;")
             
-        except subprocess.CalledProcessError as e:
-            logger.error(f"❌ Failed to insert foo record: {e}")
-            if hasattr(e, 'stdout') and e.stdout:
-                logger.error(f"stdout: {e.stdout}")
-            if hasattr(e, 'stderr') and e.stderr:
-                logger.error(f"stderr: {e.stderr}")
-            return None
+            # Combine all parts
+            batch_sql += "\n".join(uuid_declarations) + "\n"
+            batch_sql += "\n".join(insert_statements) + "\n"
+            batch_sql += "\n".join(select_statements) + "\n"
+            batch_sql += "GO\n"
+            
+            try:
+                result = subprocess.run([
+                    'docker', 'exec', self.container_name,
+                    '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
+                    '-Q', batch_sql, '-N', '-C', '-h', '-1'
+                ], capture_output=True, text=True, check=True)
+                
+                # Parse the UUIDs from the output
+                uuid_pattern = re.compile(r'[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', re.IGNORECASE)
+                lines = result.stdout.strip().split('\n')
+                
+                batch_ids = []
+                for line in lines:
+                    line = line.strip()
+                    if line:
+                        match = uuid_pattern.search(line)
+                        if match:
+                            batch_ids.append(match.group(0))
+                
+                if len(batch_ids) != batch_records:
+                    logger.error(f"❌ Expected {batch_records} IDs but got {len(batch_ids)} from batch {batch_num + 1}")
+                    return []
+                
+                foo_ids.extend(batch_ids)
+                
+            except subprocess.CalledProcessError as e:
+                logger.error(f"❌ Failed to insert foo batch {batch_num + 1}: {e}")
+                if hasattr(e, 'stdout') and e.stdout:
+                    logger.error(f"stdout: {e.stdout}")
+                if hasattr(e, 'stderr') and e.stderr:
+                    logger.error(f"stderr: {e.stderr}")
+                return []
+        
+        logger.info(f"✅ Successfully created {len(foo_ids)} foo record(s)")
+        if record_count <= 5:  # Only show individual IDs for small numbers
+            for i, foo_id in enumerate(foo_ids, 1):
+                logger.info(f"   • foo_{i}: {foo_id}")
+        else:
+            logger.info(f"   • First ID: {foo_ids[0]}")
+            logger.info(f"   • Last ID: {foo_ids[-1]}")
+        
+        return foo_ids
     
-    def seed_bar_data(self, record_count: int, foo_id: str, clean_existing: bool = False) -> bool:
-        """Seed bar table with specified number of records using a single foo_id"""
-        logger.info(f"📊 Seeding {record_count:,} bar records using foo_id: {foo_id}")
+    def seed_bar_data(self, record_count: int, foo_ids: List[str], clean_existing: bool = False) -> bool:
+        """Seed bar table with specified number of records distributed across multiple foo_ids"""
+        logger.info(f"📊 Seeding {record_count:,} bar records distributed across {len(foo_ids)} foo record(s)")
         
         if clean_existing:
             clear_sql = """
@@ -407,33 +482,38 @@ GO
                 return False
             logger.info("🧹 Existing bar data cleared")
         
-        # Validate that the provided foo_id exists
-        try:
-            result = subprocess.run([
-                'docker', 'exec', self.container_name,
-                '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
-                '-Q', f"USE sqlCDC; SELECT COUNT(*) FROM foo WHERE id = '{foo_id}';", '-N', '-C', '-h', '-1'
-            ], capture_output=True, text=True, check=True)
-            
-            # Parse the count from the output - look for a line that contains just a number
-            lines = result.stdout.strip().split('\n')
-            count = None
-            
-            for line in lines:
-                line = line.strip()
-                if line.isdigit():
-                    count = line
-                    break
-            
-            if count != '1':
-                logger.error(f"❌ Foo record with ID {foo_id} not found. Count was: '{count}'")
-                return False
+        if record_count == 0:
+            logger.info("✅ Successfully seeded 0 bar records (as requested)")
+            return True
+        
+        # Validate that all provided foo_ids exist
+        for i, foo_id in enumerate(foo_ids):
+            try:
+                result = subprocess.run([
+                    'docker', 'exec', self.container_name,
+                    '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
+                    '-Q', f"USE sqlCDC; SELECT COUNT(*) FROM foo WHERE id = '{foo_id}';", '-N', '-C', '-h', '-1'
+                ], capture_output=True, text=True, check=True)
                 
-            logger.info(f"📋 Using foo_id: {foo_id} for all bar records")
-            
-        except subprocess.CalledProcessError as e:
-            logger.error(f"❌ Failed to validate foo ID: {e}")
-            return False
+                # Parse the count from the output
+                lines = result.stdout.strip().split('\n')
+                count = None
+                
+                for line in lines:
+                    line = line.strip()
+                    if line.isdigit():
+                        count = line
+                        break
+                
+                if count != '1':
+                    logger.error(f"❌ Foo record {i+1} with ID {foo_id} not found. Count was: '{count}'")
+                    return False
+                    
+            except subprocess.CalledProcessError as e:
+                logger.error(f"❌ Failed to validate foo ID {i+1}: {e}")
+                return False
+        
+        logger.info(f"📋 Distributing {record_count:,} bar records across {len(foo_ids)} foo record(s)")
         
         # Data generation lists
         labels = ['Primary', 'Secondary', 'Backup', 'Test', 'Production', 'Development',
@@ -450,7 +530,7 @@ GO
             'Configured with redundancy for business continuity.'
         ]
         
-        batch_size = 1000  # Larger batches for bar since it's simpler
+        batch_size = 1000
         total_batches = (record_count + batch_size - 1) // batch_size
         
         for batch_num in range(total_batches):
@@ -472,6 +552,9 @@ GO
                 )
                 updated_at = updated_at_dt.strftime('%Y-%m-%d %H:%M:%S')
                 
+                # Distribute bar records across foo_ids (round-robin distribution)
+                foo_id = foo_ids[(start_idx + i) % len(foo_ids)]
+                
                 value = random.randint(0, 999)
                 label = random.choice(labels).replace("'", "''")
                 notes = random.choice(notes_options).replace("'", "''")
@@ -492,6 +575,12 @@ VALUES ('{foo_id}', {value}, '{label}', '{notes}', {is_enabled}, '{created_at}',
             if batch_num % 5 == 0 and batch_num > 0:
                 time.sleep(0.1)
         
+        # Show distribution summary
+        if len(foo_ids) > 1:
+            expected_per_foo = record_count // len(foo_ids)
+            remainder = record_count % len(foo_ids)
+            logger.info(f"📈 Distribution: ~{expected_per_foo} bar records per foo (first {remainder} foo records get +1 extra)")
+        
         logger.info(f"✅ Successfully seeded {record_count:,} bar records")
         return True
 
@@ -509,12 +598,78 @@ VALUES ('{foo_id}', {value}, '{label}', '{notes}', {is_enabled}, '{created_at}',
             lines = result.stdout.strip().split('\n')
             counts = [line.strip() for line in lines if line.strip().isdigit()]
             if len(counts) >= 2:
-                logger.info(f"✅ Verification: {counts[0]} foo records, {counts[1]} bar records")
+                foo_count = int(counts[0])
+                bar_count = int(counts[1])
+                
+                logger.info(f"📊 Current data counts:")
+                logger.info(f"   • foo table: {foo_count:,} records")
+                logger.info(f"   • bar table: {bar_count:,} records")
+                
+                if foo_count == 0 and bar_count == 0:
+                    logger.info("✅ Database is CLEARED - no data present")
+                else:
+                    logger.info(f"📈 Database contains {foo_count + bar_count:,} total records")
+                    
             else:
                 logger.info(f"✅ Verification output: {result.stdout.strip()}")
             return True
         except subprocess.CalledProcessError as e:
             logger.warning(f"⚠️  Could not verify data counts: {e}")
+            return False
+
+    def clear_all_data(self) -> bool:
+        """Clear all data from the database (foo and bar tables)"""
+        logger.info("🧹 Clearing all data from database...")
+        clear_sql = """
+USE sqlCDC;
+DELETE FROM bar;
+DELETE FROM foo;
+GO
+"""
+        return self.execute_sql_file(clear_sql)
+
+    def verify_cdc_status(self) -> bool:
+        """Verify CDC is properly enabled on database and tables"""
+        logger.info("🔍 Verifying CDC status...")
+        try:
+            # Check database CDC status
+            result = subprocess.run([
+                'docker', 'exec', self.container_name,
+                '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
+                '-Q', 'USE sqlCDC; SELECT is_cdc_enabled FROM sys.databases WHERE name = \'sqlCDC\';', '-N', '-C', '-h', '-1'
+            ], capture_output=True, text=True, check=True)
+            
+            db_cdc_enabled = '1' in result.stdout.strip()
+            
+            # Check table CDC status
+            result = subprocess.run([
+                'docker', 'exec', self.container_name,
+                '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
+                '-Q', 'USE sqlCDC; SELECT COUNT(*) FROM cdc.change_tables WHERE object_name(source_object_id) IN (\'foo\', \'bar\');', '-N', '-C', '-h', '-1'
+            ], capture_output=True, text=True, check=True)
+            
+            # Parse the count from the output - look for digits in each line
+            table_cdc_count = 0
+            lines = result.stdout.strip().split('\n')
+            for line in lines:
+                line = line.strip()
+                if line.isdigit():
+                    table_cdc_count = int(line)
+                    break
+            
+            logger.info(f"📊 CDC Status:")
+            logger.info(f"   • Database CDC: {'✅ ENABLED' if db_cdc_enabled else '❌ DISABLED'}")
+            logger.info(f"   • Tables with CDC: {table_cdc_count}/2 ({'✅ ALL ENABLED' if table_cdc_count == 2 else '⚠️  PARTIAL/DISABLED'})")
+            
+            if db_cdc_enabled and table_cdc_count == 2:
+                logger.info("✅ CDC is properly configured for Debezium")
+                return True
+            else:
+                logger.warning("⚠️  CDC configuration incomplete - may cause Debezium issues")
+                return False
+                
+        except subprocess.CalledProcessError as e:
+            logger.error(f"❌ Failed to verify CDC status: {e}")
             return False
 
 def main():
@@ -536,10 +691,30 @@ def main():
     seed_parser.add_argument('--container-name', 
                        default='transactional-sqlserver-sqlserver-1',
                        help='SQL Server container name')
+    seed_parser.add_argument('--foo-rows', type=int, default=1, 
+                       help='Number of foo records to create (default: 1)')
     seed_parser.add_argument('--bar-rows', type=int, default=5000, 
-                       help='Number of bar records to create (all will reference a single foo record)')
+                       help='Number of bar records to create (will be distributed across foo records)')
     seed_parser.add_argument('--clear-data', action='store_true', 
                        help='Clear existing data before seeding')
+    
+    # Verify command
+    verify_parser = subparsers.add_parser('verify', help='Check current data counts in the database')
+    verify_parser.add_argument('--container-name', 
+                       default='transactional-sqlserver-sqlserver-1',
+                       help='SQL Server container name')
+    
+    # Clear command
+    clear_parser = subparsers.add_parser('clear', help='Clear all data from the database')
+    clear_parser.add_argument('--container-name', 
+                       default='transactional-sqlserver-sqlserver-1',
+                       help='SQL Server container name')
+    
+    # CDC Status command
+    cdc_parser = subparsers.add_parser('cdc-status', help='Check CDC (Change Data Capture) status for Debezium')
+    cdc_parser.add_argument('--container-name', 
+                       default='transactional-sqlserver-sqlserver-1',
+                       help='SQL Server container name')
     
     args = parser.parse_args()
     
@@ -576,20 +751,27 @@ def main():
                 
             logger.info("🎉 Database setup completed successfully!")
             
+            # Verify CDC status after setup
+            logger.info("🔍 Verifying CDC configuration...")
+            if seeder.verify_cdc_status():
+                logger.info("✅ CDC is ready for Debezium!")
+            else:
+                logger.warning("⚠️  CDC setup may have issues - check the logs above")
+            
         elif args.command == 'seed':
             logger.info("🚀 Starting data seeding...")
             logger.info(f"🐳 Container: {args.container_name}")
-            logger.info(f"📊 Configuration: 1 foo record, {args.bar_rows:,} bar records")
+            logger.info(f"📊 Configuration: {args.foo_rows} foo records, {args.bar_rows:,} bar records")
             logger.info(f"🧹 Clear data: {args.clear_data}")
             
             # Seed foo data (creates single record and returns its ID)
-            foo_id = seeder.seed_foo_data(args.clear_data)
-            if not foo_id:
+            foo_ids = seeder.seed_foo_data(args.foo_rows, args.clear_data)
+            if not foo_ids:
                 logger.error("❌ Failed to seed foo data")
                 sys.exit(1)
             
             # Seed bar data using the single foo_id
-            if not seeder.seed_bar_data(args.bar_rows, foo_id, False):  # Don't clear bar when foo is already seeded
+            if not seeder.seed_bar_data(args.bar_rows, foo_ids, False):  # Don't clear bar when foo is already seeded
                 logger.error("❌ Failed to seed bar data")
                 sys.exit(1)
             
@@ -598,11 +780,43 @@ def main():
             
             end_time = datetime.now()
             duration = end_time - start_time
-            total_records = 1 + args.bar_rows  # 1 foo + N bar records
+            total_records = args.foo_rows + args.bar_rows  # N foo + N bar records
             
             logger.info(f"🎉 Data seeding completed successfully!")
             logger.info(f"⏱️  Total time: {duration}")
             logger.info(f"📈 Total records: {total_records:,} ({total_records/duration.total_seconds():.0f} records/second)")
+        
+        elif args.command == 'verify':
+            logger.info("🔍 Checking current data counts...")
+            logger.info(f"🐳 Container: {args.container_name}")
+            
+            if not seeder.verify_data():
+                logger.error("❌ Failed to verify data")
+                sys.exit(1)
+        
+        elif args.command == 'clear':
+            logger.info("🧹 Clearing all data from database...")
+            logger.info(f"🐳 Container: {args.container_name}")
+            
+            if not seeder.clear_all_data():
+                logger.error("❌ Failed to clear data")
+                sys.exit(1)
+                
+            logger.info("✅ All data cleared successfully!")
+            
+            # Verify the clearing worked
+            seeder.verify_data()
+        
+        elif args.command == 'cdc-status':
+            logger.info("🔍 Checking CDC status for Debezium compatibility...")
+            logger.info(f"🐳 Container: {args.container_name}")
+            
+            if not seeder.verify_cdc_status():
+                logger.error("❌ CDC configuration issues detected")
+                logger.info("💡 Run 'python3 seed-sqlserver.py setup --clear-data' to fix CDC setup")
+                sys.exit(1)
+            else:
+                logger.info("🎉 CDC is properly configured for Debezium!")
         
     except KeyboardInterrupt:
         logger.info("⚠️  Operation interrupted by user")

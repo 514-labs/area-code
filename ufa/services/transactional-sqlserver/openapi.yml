@@ -7,6 +7,16 @@ info:
 components:
   schemas: {}
 paths:
+  /api/foo/average-score:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /api/foo/score-over-time:
+    get:
+      responses:
+        "200":
+          description: Default Response
   /api/foo:
     get:
       responses:
@@ -27,7 +37,7 @@ paths:
       responses:
         "200":
           description: Default Response
-    delete:
+    put:
       parameters:
         - schema:
             type: string
@@ -37,8 +47,13 @@ paths:
       responses:
         "200":
           description: Default Response
-  /api/foo/average-score:
-    get:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
       responses:
         "200":
           description: Default Response
