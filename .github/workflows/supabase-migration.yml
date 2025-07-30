@@ -12,13 +12,13 @@ on:
       - "ufa/services/transactional-supabase-foobar/src/database/schema.ts"
 
 jobs:
-    validate-migrations:
+  validate-migrations:
     name: Validate Database Migrations (Dry Run)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ufa/services/transactional-supabase-foobar
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
