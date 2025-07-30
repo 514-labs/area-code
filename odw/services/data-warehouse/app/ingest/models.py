@@ -150,3 +150,19 @@ unstructuredDataModel = IngestPipeline[UnstructuredData]("UnstructuredData", Ing
     table=True,
     dead_letter_queue=True
 ))
+
+class Medical(BaseModel):
+    id: Key[str]
+    patient_name: str
+    phone_number: str
+    scheduled_appointment_date: str
+    dental_procedure_name: str
+    doctor: str
+    transform_timestamp: str
+
+medicalModel = IngestPipeline[Medical]("Medical", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=True,
+    dead_letter_queue=True
+))

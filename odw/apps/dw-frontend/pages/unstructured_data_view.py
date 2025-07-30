@@ -165,61 +165,28 @@ def show():
         st.markdown("Trigger and view data processing results")
         
         # Create tabs for Submit and View
-        submit_tab, view_tab = st.tabs(["📤 Submit Data", "📊 View Data"])
+        submit_tab, view_tab = st.tabs(["📤 Process Data", "📊 View Processed Data"])
     except Exception as e:
         st.error(f"Error loading Unstructured Data Connector: {e}")
         st.info("Please try refreshing the page.")
         return
     
     with submit_tab:
-        st.subheader("Submit Unstructured Data")
-        st.markdown("Use this form to submit unstructured data for processing")
+        st.subheader("Process Unstructured Data")
+        st.markdown("Use this form to process unstructured data")
         
         # S3 Pattern Examples and Help section removed as requested
         
         with st.form("submit_unstructured_data"):
             # S3 Pattern input with validation
             source_file_path = st.text_input(
-                "S3 Pattern",
+                "Data source",
                 placeholder="e.g., s3://bucket/*/reports/*.txt",
                 help="S3 path pattern with wildcards to match multiple files"
             )
             
-            # Real-time validation feedback
-            if source_file_path:
-                is_valid, error_msg, pattern_info = S3PatternValidator.validate_pattern(source_file_path)
-                
-                if is_valid and pattern_info:
-                    # Show validation success with pattern info
-                    complexity = pattern_info.get('estimated_complexity', 'unknown')
-                    wildcard_count = pattern_info.get('wildcard_count', 0)
-                    has_wildcards = pattern_info.get('has_wildcards', False)
-                    
-                    if has_wildcards:
-                        complexity_emoji = {
-                            "simple": "🟢",
-                            "low": "🟡",
-                            "medium": "🟠", 
-                            "high": "🔴"
-                        }
-                        st.success(f"✅ Valid S3 pattern {complexity_emoji.get(complexity, '⚪')} Complexity: {complexity.title()} ({wildcard_count} wildcards)")
-                        
-                        # Show suggestions if any
-                        suggestions = S3PatternValidator.suggest_improvements(source_file_path)
-                        if suggestions:
-                            st.info("💡 **Suggestions:** " + " • ".join(suggestions))
-                    else:
-                        st.info("ℹ️ This appears to be a single file path (no wildcards)")
-                
-                elif error_msg:
-                    st.error(f"❌ {error_msg}")
-            
-            processing_instructions = st.text_area(
-                "Processing Instructions",
-                placeholder="Instructions for how to process this data...",
-                help="Instructions for processing the data using LLM",
-                height=100
-            )
+            # Hard-coded processing instructions for dental appointments
+            processing_instructions = "Extract the patient's name, phone number, scheduled appointment date, dental procedure name, and the doctor who will be treating the patient."
             
             # Add custom CSS to style the submit button like other pages
             st.markdown("""
@@ -249,29 +216,21 @@ def show():
             </style>
             """, unsafe_allow_html=True)
             
-            submitted = st.form_submit_button("Submit Data", type="secondary")
+            submitted = st.form_submit_button("Process", type="secondary")
             
             if submitted:
                 # Validate inputs
                 if not source_file_path:
-                    st.error("S3 pattern is required")
-                elif not processing_instructions:
-                    st.error("Processing instructions are required")
+                    st.error("Data source is required")
                 else:
                     # Validate S3 pattern before submission
                     is_valid, error_msg, pattern_info = S3PatternValidator.validate_pattern(source_file_path)
                     
                     if not is_valid:
-                        st.error(f"Invalid S3 pattern: {error_msg}")
+                        st.error(f"Invalid data source: {error_msg}")
                     else:
-                        # Show processing info
-                        if pattern_info and pattern_info.get('has_wildcards'):
-                            complexity = pattern_info.get('estimated_complexity', 'unknown')
-                            if complexity == 'high':
-                                st.warning("⚠️ High complexity pattern detected. This may take longer to process.")
-                        
-                        # Submit the data
-                        with st.spinner("Submitting S3 pattern for processing..."):
+                        # Process the data
+                        with st.spinner("Processing data source..."):
                             success, data_id = submit_unstructured_data(
                                 source_file_path=source_file_path,
                                 extracted_data_json=None,  # No longer provided by user
@@ -279,7 +238,7 @@ def show():
                             )
                         
                         if success:
-                            st.success(f"S3 pattern submitted successfully! Batch ID: {data_id}")
+                            st.success(f"Data source processed successfully! Batch ID: {data_id}")
                             
                             # Trigger async extraction for the newly submitted data
                             with st.spinner("Triggering extraction workflow for new data..."):
@@ -287,11 +246,11 @@ def show():
                                     trigger_extract(f"{CONSUMPTION_API_BASE}/extractUnstructuredData", "Unstructured Data")
                                     st.info("🔄 Extraction workflow triggered successfully! Processing has started in the background. You can check results in the View Data tab.")
                                 except Exception as e:
-                                    st.warning(f"⚠️ Data submitted successfully, but extraction trigger failed: {str(e)}. You can manually trigger extraction from the View Data tab.")
+                                    st.warning(f"⚠️ Data processed successfully, but extraction trigger failed: {str(e)}. You can manually trigger extraction from the View Data tab.")
                             
                             st.session_state["refresh_unstructured"] = True
                         else:
-                            st.error("Failed to submit S3 pattern. Check the status messages below.")
+                            st.error("Failed to process data source. Check the status messages below.")
     
     with view_tab:
         # Header with refresh button
@@ -385,7 +344,7 @@ def show():
             else:
                 st.info("No data available to display.")
         else:
-            st.info("No unstructured data found. Submit some data using the form above!")
+            st.info("No unstructured data found. Process some data using the form above!")
     
     # Status messages
     if "submit_status_msg" in st.session_state:
