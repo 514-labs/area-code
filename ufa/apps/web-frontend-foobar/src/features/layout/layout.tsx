@@ -16,7 +16,6 @@ interface LayoutProps {
 
 // Create stable components that don't re-render when chat state changes
 function MainContent({ children }: { children: ReactNode }) {
-  console.log("Rendering MainContent");
   const location = useLocation();
 
   return (
