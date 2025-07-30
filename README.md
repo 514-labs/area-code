@@ -11,29 +11,26 @@ There are two sample applications: [User Facing Analytics](/UFA) and [Operationa
 The UFA monorepo is a starter kit for building applications with a multi-modal backend that combines transactional (PostgreSQL), analytical (ClickHouse), and search (Elasticsearch) capabilities. The stack is configured for real-time data synchronization across services.
 
 ### UFA Stack:
+
 Backend & Data:
-* Transactional: PostgreSQL | Fastify | Drizzle ORM
-* Analytical: ClickHouse | Moose (API & Ingest)
-* Search: Elasticsearch
 
-Sync & Streaming: Moose Workflows (with Temporal) | Moose Stream (with Redpanda) | Supabase Realtime 
+- Transactional: PostgreSQL | Fastify | Drizzle ORM
+- Analytical: ClickHouse | Moose (API & Ingest)
+- Search: Elasticsearch
+
+Sync & Streaming: Moose Workflows (with Temporal) | Moose Stream (with Redpanda) | Supabase Realtime
 Frontend: Vite | React 19 | TypeScript | TanStack (Router, Query, Form) | Tailwind CSS
-
 
 ## Operational Data Warehouse
 
 The odw project is a starter kit for an operational data warehouse, using the Moose framework to ingest data from various sources (Blobs, Events, Logs) into an analytical backend (ClickHouse).
 
 ### ODW Stack:
+
 Backend & Data:
-* Framework: Moose (Python)
-* Data Platform: ClickHouse (Warehouse) | RedPanda (Streaming)
-* Ingestion: Moose connectors for Blobs, Events, and Logs
+
+- Framework: Moose (Python)
+- Data Platform: ClickHouse (Warehouse) | RedPanda (Streaming)
+- Ingestion: Moose connectors for Blobs, Events, and Logs
 
 Frontend: Streamlit
-
-
-
-
-
-

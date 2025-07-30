@@ -398,11 +398,23 @@ export default function FooTransactionalDataTable({
   const data = fooResponse?.data || [];
   const serverPagination = fooResponse?.pagination;
 
+  // Create a shared drawer state and handler for each row
+  const [drawerStates, setDrawerStates] = useState<Record<string, boolean>>({});
+
+  const openDrawer = (itemId: string) => {
+    setDrawerStates((prev) => ({ ...prev, [itemId]: true }));
+  };
+
+  const closeDrawer = (itemId: string) => {
+    setDrawerStates((prev) => ({ ...prev, [itemId]: false }));
+  };
+
   // Create actions column if editApiEndpoint is provided
   const actionsColumn: ColumnDef<Foo> = {
     id: "actions",
     cell: ({ row }) => {
-      const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+      const itemId = row.original.id;
+      const isDrawerOpen = drawerStates[itemId] || false;
 
       return (
         <>
@@ -419,7 +431,7 @@ export default function FooTransactionalDataTable({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-32">
               <DropdownMenuItem
-                onClick={() => setIsDrawerOpen(true)}
+                onClick={() => openDrawer(itemId)}
                 className="cursor-pointer"
               >
                 <IconEdit className="h-4 w-4 mr-2" />
@@ -433,7 +445,9 @@ export default function FooTransactionalDataTable({
             editApiEndpoint={editApiEndpoint}
             onSave={() => refetch()}
             isOpen={isDrawerOpen}
-            onOpenChange={setIsDrawerOpen}
+            onOpenChange={(open) =>
+              open ? openDrawer(itemId) : closeDrawer(itemId)
+            }
           />
         </>
       );
@@ -442,10 +456,50 @@ export default function FooTransactionalDataTable({
     enableHiding: false,
   };
 
+  // Create custom name column with edit functionality
+  const nameColumn: ColumnDef<Foo> = {
+    accessorKey: "name",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Name</SortableHeader>
+    ),
+    cell: ({ row }) => {
+      const itemId = row.original.id;
+      const isDrawerOpen = drawerStates[itemId] || false;
+
+      return (
+        <>
+          <Button
+            variant="link"
+            className="text-foreground w-fit px-0 text-left"
+            onClick={() => openDrawer(itemId)}
+          >
+            {row.original.name}
+          </Button>
+          <TableCellViewer
+            item={row.original}
+            editApiEndpoint={editApiEndpoint}
+            onSave={() => refetch()}
+            isOpen={isDrawerOpen}
+            onOpenChange={(open) =>
+              open ? openDrawer(itemId) : closeDrawer(itemId)
+            }
+          />
+        </>
+      );
+    },
+    enableHiding: false,
+    enableSorting: true,
+  };
+
   // Conditionally include columns based on props
   let availableColumns = selectableRows
     ? columns
     : columns.filter((col) => col.id !== "select");
+
+  // Replace the original name column with the custom one that has edit functionality
+  availableColumns = availableColumns.map((col) =>
+    "accessorKey" in col && col.accessorKey === "name" ? nameColumn : col
+  );
 
   // Add actions column for transactional tables
   availableColumns = [...availableColumns, actionsColumn];
