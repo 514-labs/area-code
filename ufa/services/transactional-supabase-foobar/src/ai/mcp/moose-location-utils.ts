@@ -49,8 +49,10 @@ export function searchForAnalyticalService(
           const configPath = path.join(servicePath, "moose.config.toml");
 
           if (fs.existsSync(configPath)) {
-            // If it has a moose.config.toml, it's a moose project
-            return servicePath;
+            // Check if this is specifically the analytical service
+            if (subdir.includes("analytical")) {
+              return servicePath;
+            }
           }
         }
       }
