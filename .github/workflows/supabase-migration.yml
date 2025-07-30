@@ -38,7 +38,7 @@ jobs:
       - name: Validate migrations against production
         run: |
           # Check migration consistency
-          npx drizzle-kit check
+          npx drizzle-kit check:pg
           # Test schema validity against production
           npx drizzle-kit push --dry-run
         env:
