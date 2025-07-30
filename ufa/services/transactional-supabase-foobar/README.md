@@ -2,6 +2,20 @@
 
 A Fastify API service providing CRUD operations for Foo and Bar entities using Drizzle ORM and PostgreSQL.
 
+## Setup
+
+### Environment Variables
+
+This service requires an Anthropic API key to enable AI chat functionality with Aurora MCP (Model Context Protocol) tools:
+
+1. **Get an Anthropic API key**: Visit [console.anthropic.com](https://console.anthropic.com) to create an account and generate an API key
+2. **Create a `.env.local` file** in this service directory (`ufa/services/transactional-supabase-foobar/`):
+   ```bash
+   ANTHROPIC_API_KEY=your-api-key-here
+   ```
+
+The Aurora MCP provides AI-powered tools for interacting with your Moose analytical backend, enabling intelligent data querying and analysis through the chat interface.
+
 ## Available Scripts
 
 ```bash
