@@ -7,6 +7,16 @@ interface ChatBody {
 }
 
 export async function chatRoutes(fastify: FastifyInstance) {
+  // Endpoint to check if Anthropic key is available
+  fastify.get("/chat/status", async (request, reply) => {
+    const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+
+    return {
+      anthropicKeyAvailable: hasAnthropicKey,
+      status: hasAnthropicKey ? "ready" : "missing_key",
+    };
+  });
+
   fastify.post<{
     Body: ChatBody;
     Reply: any;

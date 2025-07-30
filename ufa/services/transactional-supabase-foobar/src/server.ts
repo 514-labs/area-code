@@ -209,6 +209,7 @@ const start = async () => {
     fastify.log.info("  POST /api/foo - Create foo item");
     fastify.log.info("  GET  /api/bar - List all bar items");
     fastify.log.info("  POST /api/bar - Create bar item");
+    fastify.log.info("  GET  /api/chat/status - AI chat status check");
     fastify.log.info("  POST /api/chat - AI chat endpoint");
   } catch (err) {
     fastify.log.error(err);
