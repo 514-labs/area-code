@@ -38,6 +38,11 @@ jobs:
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
+      - name: Configure network for Supabase
+        run: |
+          # Force IPv4 for Supabase connection
+          echo "precedence ::ffff:0:0/96 100" | sudo tee -a /etc/gai.conf
+
       - name: Validate migrations
         run: |
           # Check migration consistency
