@@ -32,6 +32,43 @@ dotenvConfig({ path: path.resolve(__dirname, "../.env.development") });
 // .env.local (local overrides)
 dotenvConfig({ path: path.resolve(__dirname, "../.env.local") });
 
+// Watch for .env file changes in development
+if (
+  process.env.NODE_ENV === "development" ||
+  process.env.SUPABASE_CLI === "true"
+) {
+  import("fs").then(({ watch, utimes }) => {
+    const envFiles = [".env", ".env.development", ".env.local"];
+
+    envFiles.forEach((file) => {
+      const envPath = path.resolve(__dirname, `../${file}`);
+      try {
+        watch(envPath, (eventType) => {
+          if (eventType === "change") {
+            console.log(
+              `🔄 Environment file ${file} changed, triggering server restart...`
+            );
+            // Touch the server.ts file to trigger tsx restart
+            const serverPath = path.resolve(__dirname, "server.ts");
+            const now = new Date();
+            utimes(serverPath, now, now, (err) => {
+              if (err) {
+                console.log(
+                  "⚠️  Could not trigger restart, manually restart server"
+                );
+              }
+            });
+          }
+        });
+        console.log(`👀 Watching ${file} for changes...`);
+      } catch (err) {
+        // File might not exist, that's ok
+        console.log(`⚠️  ${file} not found, skipping watch...`);
+      }
+    });
+  });
+}
+
 const fastify = Fastify({
   logger: {
     level: "info",

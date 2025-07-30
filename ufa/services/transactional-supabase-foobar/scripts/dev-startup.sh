@@ -62,8 +62,8 @@ run_migrations() {
 start_server() {
     echo "Starting Fastify server..."
     
-    # Start server with environment variable
-    SUPABASE_CLI=true pnpm tsx watch src/server.ts
+    # Start server with .env file watching
+    pnpm dev:fastify
 }
 
 # Main execution
