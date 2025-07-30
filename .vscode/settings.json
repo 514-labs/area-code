@@ -4,13 +4,11 @@
       "mode": "auto"
     }
   ],
-  "yaml.schemas": {
-    "https://spec.openapis.org/oas/3.1/schema/2022-10-07": "file:///Users/timdelisle/Dev/area-code/services/transactional-base/openapi.yml"
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
   },
-  "tailwindCSS.experimental.configFile": {
-    "apps/vite-web-base/src/index.css": "apps/vite-web-base/src/**",
-    "packages/ui/src/styles/globals.css": "packages/ui/src/**"
-  },
+  "tailwindCSS.emmetCompletions": true,
   "files.associations": {
     "*.css": "tailwindcss"
   },
@@ -26,5 +24,7 @@
     "class:list",
     ".*[Ss]tyles.*",
     ".*[Cc]lasses.*"
-  ]
+  ],
+  "tailwindCSS.rootFontSize": 16,
+  "tailwindCSS.hooverPreview": true
 }
