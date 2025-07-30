@@ -26,28 +26,35 @@ log_message() {
 show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "This script seeds sample data across all area-code services."
-    echo "It handles data migration between transactional, analytical, and retrieval services."
+    echo "This script seeds sample data for area-code services."
+    echo "Choose between PostgreSQL flow (default) or SQL Server flow."
     echo ""
     echo "Options:"
     echo "  --clear-data        Clear existing data before seeding (skip prompt)"
     echo "  --foo-rows=N        Number of foo records to create (skip prompt)"
     echo "  --bar-rows=N        Number of bar records to create (skip prompt)"
+    echo "  --sqlserver-only    Use SQL Server instead of PostgreSQL flow"
     echo "  --verbose           Show detailed output (otherwise logged to file)"
     echo "  --help              Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                                        # Interactive seeding"
+    echo "  $0                                        # PostgreSQL flow (default)"
     echo "  $0 --clear-data                          # Clear data and prompt for counts"
-    echo "  $0 --foo-rows=500,000 --bar-rows=100,000  # Automated seeding"
+    echo "  $0 --foo-rows=500,000 --bar-rows=100,000  # Automated PostgreSQL seeding"
     echo "  $0 --clear-data --foo-rows=1,000,000 --verbose  # Detailed output"
+    echo "  $0 --sqlserver-only --foo-rows=50,000     # Use SQL Server instead"
     echo ""
-    echo "Process:"
-    echo "  1. Stop any running workflows"
-    echo "  2. Seeds transactional-base (PostgreSQL) with foo/bar data"
-    echo "  3. Migrates data to analytical-base (ClickHouse) - Fast"
-    echo "  4. Migrates data to retrieval-base (Elasticsearch) - Background (15-30 min)"
-    echo "  5. Restart workflows to resume real-time synchronization"
+    echo "Flows:"
+    echo "  PostgreSQL (default):"
+    echo "    1. Stop workflows"
+    echo "    2. Seed transactional-base (PostgreSQL) with foo/bar data"
+    echo "    3. Migrate to analytical-base (ClickHouse) - Fast"
+    echo "    4. Migrate to retrieval-base (Elasticsearch) - Background (15-30 min)"
+    echo "    5. Restart workflows"
+    echo ""
+    echo "  SQL Server (--sqlserver-only):"
+    echo "    1. Seed transactional-sqlserver (SQL Server) with foo/bar data"
+    echo "    2. Complete (no workflow management needed)"
     echo ""
     echo "Logs are saved to: $LOG_DIR/"
     echo ""
@@ -119,6 +126,14 @@ is_service_running() {
             "retrieval-base")
                 curl -s "http://localhost:8083" >/dev/null 2>&1
                 ;;
+            "transactional-sqlserver")
+                # Check if SQL Server container is running and accepting connections
+                if command -v docker >/dev/null 2>&1; then
+                    docker exec transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Password!" -Q "SELECT 1;" -N -C >/dev/null 2>&1
+                else
+                    return 1
+                fi
+                ;;
             "frontend")
                 curl -s "http://localhost:5173" >/dev/null 2>&1
                 ;;
@@ -178,19 +193,76 @@ restart_workflows() {
     cd "$PROJECT_ROOT"
 }
 
+# Function to seed SQL Server data
+seed_sqlserver_data() {
+    echo "🗄️  Seeding SQL Server..."
+    log_message "Starting SQL Server seeding"
+    
+    if is_service_running "transactional-sqlserver"; then
+        log_message "SQL Server is running, proceeding with seeding"
+        
+        # Check if Python 3 is available
+        if ! command -v python3 >/dev/null 2>&1; then
+            echo "⚠️  Python 3 not found, skipping SQL Server seeding"
+            log_message "WARNING: Python 3 not available for SQL Server seeding"
+            return 0
+        fi
+        
+        # Check if docker is available
+        if ! command -v docker >/dev/null 2>&1; then
+            echo "⚠️  Docker not found, skipping SQL Server seeding"
+            log_message "WARNING: Docker not available for SQL Server seeding"
+            return 0
+        fi
+        
+        cd "$PROJECT_ROOT/scripts" || {
+            echo "⚠️  Could not access scripts directory, skipping SQL Server seeding"
+            log_message "WARNING: Failed to change to scripts directory"
+            cd "$PROJECT_ROOT"
+            return 0
+        }
+        
+        # Build Python command arguments
+        PYTHON_ARGS="--foo-rows ${FOO_ROWS//,/} --bar-rows ${BAR_ROWS//,/}"
+        
+        if [ "$CLEAR_DATA" = "true" ]; then
+            PYTHON_ARGS="$PYTHON_ARGS --clear-data --setup-schema"
+        fi
+        
+        echo "🐍 Running SQL Server seed script..."
+        log_message "Executing SQL Server seeding with args: $PYTHON_ARGS"
+        
+        if [ "$VERBOSE_MODE" = "true" ]; then
+            python3 seed-sqlserver.py $PYTHON_ARGS
+        else
+            python3 seed-sqlserver.py $PYTHON_ARGS >> "$SEED_LOG" 2>&1
+        fi
+        
+        if [ $? -eq 0 ]; then
+            echo "✅ SQL Server seeded successfully"
+            log_message "SQL Server seeding completed successfully"
+        else
+            echo "⚠️  SQL Server seeding completed with warnings (see logs)"
+            log_message "WARNING: SQL Server seeding completed with non-zero exit code"
+        fi
+        
+        cd "$PROJECT_ROOT"
+    else
+        echo "⚠️  SQL Server is not running, skipping seeding"
+        log_message "SQL Server is not running, skipping seeding"
+    fi
+}
+
 # Function to seed data across all services
 seed_all_data() {
     echo "🌱 Starting data seeding across all services..."
-    echo ""
-    
-    # Step 0: Stop any running workflows first
-    cleanup_existing_workflows
     echo ""
     
     # Check for command line flags
     CLEAR_DATA="false"
     FOO_ROWS=""
     BAR_ROWS=""
+    SQLSERVER_ONLY="false"
     
     # Parse arguments for flags
     for arg in "$@"; do
@@ -204,6 +276,9 @@ seed_all_data() {
             --bar-rows=*)
                 BAR_ROWS="${arg#*=}"
                 ;;
+            --sqlserver-only)
+                SQLSERVER_ONLY="true"
+                ;;
             --verbose)
                 VERBOSE_MODE="true"
                 ;;
@@ -216,6 +291,7 @@ seed_all_data() {
     log_message "Clear data: $CLEAR_DATA"
     log_message "Foo rows: $FOO_ROWS"
     log_message "Bar rows: $BAR_ROWS"
+    log_message "SQL Server only: $SQLSERVER_ONLY"
     
     # Get parameters from user if not provided via flags
     if [ "$CLEAR_DATA" != "true" ]; then
@@ -238,6 +314,7 @@ seed_all_data() {
     echo "  • Clear data: $CLEAR_DATA (drops tables in public schema, then migrates)"
     echo "  • Foo rows: $FOO_ROWS"
     echo "  • Bar rows: $BAR_ROWS"
+    echo "  • SQL Server only: $SQLSERVER_ONLY"
     echo ""
     
     if ! prompt_yes_no "Proceed with seeding?" "y"; then
@@ -262,6 +339,29 @@ seed_all_data() {
         log_message "Killing existing temp migration scripts: $TEMP_SCRIPT_PIDS"
         echo "$TEMP_SCRIPT_PIDS" | xargs kill -9 2>/dev/null || true
     fi
+    
+    # Skip PostgreSQL flow if SQL Server only mode
+    if [ "$SQLSERVER_ONLY" = "true" ]; then
+        echo "🔀 SQL Server only mode - skipping PostgreSQL/ClickHouse/Elasticsearch flow"
+        log_message "SQL Server only mode enabled - skipping standard flow"
+        
+        # Seed SQL Server
+        seed_sqlserver_data
+        
+        echo ""
+        echo "🎉 SQL Server-only seeding completed!"
+        log_message "=== SQL Server-only Data Seeding Completed Successfully ==="
+        echo ""
+        echo "✅ COMPLETED:"
+        echo "   🗄️  SQL Server: $FOO_ROWS foo, $BAR_ROWS bar records"
+        echo ""
+        echo "📄 Detailed logs: $SEED_LOG"
+        return 0
+    fi
+    
+    # PostgreSQL flow - Stop workflows first to prevent conflicts
+    cleanup_existing_workflows
+    echo ""
     
     # 1. Seed transactional-base (both foo and bar data)
     echo "📊 Seeding transactional-base..."
@@ -526,7 +626,7 @@ EOF
         log_message "analytical-base is not running, skipping migration"
     fi
     
-    # 3. Start retrieval-base migration in BACKGROUND (slow process)
+    # 4. Start retrieval-base migration in BACKGROUND (slow process)
     echo "🔍 Starting retrieval-base migration..."
     log_message "Starting retrieval-base migration in background"
     if is_service_running "retrieval-base"; then
@@ -585,7 +685,7 @@ EOF
         log_message "retrieval-base is not running, skipping migration"
     fi
     
-    # Step 4: Restart workflows to resume real-time synchronization
+    # Step 5: Restart workflows to resume real-time synchronization
     restart_workflows
     
     echo ""
@@ -619,7 +719,11 @@ echo "  Area Code Data Seeding"
 echo "=========================================="
 echo ""
 
-echo "📋 Process: workflows → transactional → analytical → retrieval → workflows"
+if [ "$SQLSERVER_ONLY" = "true" ]; then
+    echo "📋 Process: SQL Server seeding only"
+else
+    echo "📋 Process: workflows → transactional → analytical → retrieval → workflows"
+fi
 echo "📄 Detailed logs: $SEED_LOG"
 if [ "$VERBOSE_MODE" != "true" ]; then
     echo "💡 Use --verbose for full console output"

@@ -15,6 +15,10 @@ import {
   GetBarsParams,
   GetBarsResponse,
   BarWithFoo,
+  BulkDeleteBarsRequest,
+  BulkDeleteBarsResponse,
+  DeleteBarResponse,
+  GetBarsByFooIdResponse,
 } from "@workspace/models/bar";
 
 export async function barRoutes(fastify: FastifyInstance) {
@@ -311,7 +315,7 @@ export async function barRoutes(fastify: FastifyInstance) {
   // Delete bar
   fastify.delete<{
     Params: { id: string };
-    Reply: { success: boolean } | { error: string };
+    Reply: DeleteBarResponse | { error: string };
   }>("/bar/:id", async (request, reply) => {
     try {
       const { id } = request.params;
@@ -330,8 +334,8 @@ export async function barRoutes(fastify: FastifyInstance) {
 
   // Bulk delete bar items
   fastify.delete<{
-    Body: { ids: string[] };
-    Reply: { success: boolean; deletedCount: number } | { error: string };
+    Body: BulkDeleteBarsRequest;
+    Reply: BulkDeleteBarsResponse | { error: string };
   }>("/bar", async (request, reply) => {
     try {
       const { ids } = request.body;
@@ -362,7 +366,10 @@ export async function barRoutes(fastify: FastifyInstance) {
   });
 
   // Get bars by foo ID
-  fastify.get<{ Params: { fooId: string }; Reply: Bar[] | { error: string } }>(
+  fastify.get<{ 
+    Params: { fooId: string }; 
+    Reply: GetBarsByFooIdResponse | { error: string };
+  }>(
     "/foo/:fooId/bars",
     async (request, reply) => {
       try {

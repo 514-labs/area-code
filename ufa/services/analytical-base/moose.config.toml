@@ -34,12 +34,12 @@ main_branch_name = "main"
 [temporal_config]
 db_user = "temporal"
 db_password = "temporal"
-db_port = 5433
-temporal_port = 7233
+db_port = 5434
+temporal_port = 7234
 temporal_version = "1.22.3"
 admin_tools_version = "1.22.3"
 ui_version = "2.21.3"
-ui_port = 8080
+ui_port = 8081
 ui_cors_origins = "http://localhost:3000"
 config_path = "config/dynamicconfig/development-sql.yaml"
 postgresql_version = "13"

@@ -5,7 +5,6 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "ufa:dev": "moose-cli dev",
     "ufa:dev:clean": "moose-cli clean",
     "dev:workflow": "moose-cli workflow run supabase-listener",
     "dev:workflow:stop": "moose-cli workflow terminate supabase-listener"
