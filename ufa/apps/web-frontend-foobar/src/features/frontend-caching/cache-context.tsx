@@ -36,12 +36,6 @@ export function FrontendCachingContextProvider({
     // Clear React Query cache when disabling cache
     if (!newCacheState) {
       queryClient.clear();
-
-      // Alternative: More targeted cache clearing
-      // queryClient.removeQueries({ queryKey: ["foos"] });
-      // queryClient.removeQueries({ queryKey: ["foo-average-score"] });
-      // queryClient.removeQueries({ queryKey: ["bars"] });
-      // queryClient.removeQueries({ queryKey: ["bar-average-value"] });
     }
   };
 
