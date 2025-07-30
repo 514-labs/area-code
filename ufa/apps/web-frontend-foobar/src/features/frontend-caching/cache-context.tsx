@@ -20,12 +20,12 @@ export function FrontendCachingContextProvider({
   const queryClient = useQueryClient();
 
   const [cacheEnabled, setCacheEnabled] = useState(() => {
-    // Initialize from localStorage or default to true
+    // Initialize from localStorage or default to false
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("cache-enabled");
-      return saved ? JSON.parse(saved) : true;
+      return saved ? JSON.parse(saved) : false;
     }
-    return true;
+    return false;
   });
 
   const toggleCache = () => {
