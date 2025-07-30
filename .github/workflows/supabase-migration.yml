@@ -35,12 +35,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Validate migrations against production
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Validate migrations
         run: |
           # Check migration consistency
           npx drizzle-kit check:pg --out=./migrations
-          # Test schema validity against production (dry run)
-          npx drizzle-kit push:pg --dry-run --schema=./src/database/schema.ts --url="$DATABASE_URL"
+          # Test migrations safely with transaction rollback
+          echo "Testing migrations against production database (with rollback)..."
+          {
+            echo "BEGIN;"
+            # Include all SQL migration files in order
+            find ./migrations -name "*.sql" -not -path "./migrations/_meta/*" | sort | while read -r file; do
+              echo "\\ir $file"
+            done
+            echo "ROLLBACK;"
+          } | psql "$DATABASE_URL" -v ON_ERROR_STOP=1
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
           NODE_ENV: production
