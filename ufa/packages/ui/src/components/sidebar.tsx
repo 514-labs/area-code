@@ -67,7 +67,7 @@ function SidebarProvider({
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
-  const saveToLocalStorage = useSaveInLocalStorage(300);
+  const saveToLocalStorage = useSaveInLocalStorage(SIDEBAR_STORAGE_KEY, 300);
   const [openMobile, setOpenMobile] = React.useState(false);
 
   const [_open, _setOpen] = React.useState(() => {
@@ -88,7 +88,7 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      saveToLocalStorage(SIDEBAR_STORAGE_KEY, openState);
+      saveToLocalStorage(openState);
     },
     [setOpenProp, open, saveToLocalStorage]
   );

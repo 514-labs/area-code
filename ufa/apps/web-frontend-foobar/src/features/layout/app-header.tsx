@@ -3,13 +3,12 @@ import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { SearchCommand } from "@/features/search/components/search-command";
 import type { SearchResult } from "@/features/search/types/search";
 import { RetrievalHighlightWrapper } from "@/features/origin-highlights/origin-highlights-wrappers";
+import { useChatLayout } from "./resizable-chat-layout";
 import { Button } from "@workspace/ui";
 
-interface AppHeaderProps {
-  onChatToggle?: () => void;
-}
+export function AppHeader() {
+  const { isChatOpen, toggleChat } = useChatLayout();
 
-export function AppHeader({ onChatToggle }: AppHeaderProps) {
   const handleSearchSelect = (result: SearchResult) => {
     // Handle navigation based on search result
     console.log("Navigate to:", result);
@@ -35,7 +34,6 @@ export function AppHeader({ onChatToggle }: AppHeaderProps) {
         />
         <h1 className="text-base font-medium"></h1>
 
-        {/* Search Integration wrapped with RetrievalWrapper */}
         <RetrievalHighlightWrapper className="flex-1 flex justify-center mx-4 rounded-md">
           <SearchCommand
             className="w-full "
@@ -44,9 +42,8 @@ export function AppHeader({ onChatToggle }: AppHeaderProps) {
           />
         </RetrievalHighlightWrapper>
 
-        {/* Chat Toggle Button */}
-        <Button size="sm" onClick={onChatToggle} className="ml-auto">
-          AI Chat
+        <Button size="sm" onClick={toggleChat} className="ml-auto">
+          {isChatOpen ? "Close Chat" : "Open Chat"}
           <span className="sr-only">Toggle Chat</span>
         </Button>
       </div>
