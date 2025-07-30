@@ -40,7 +40,7 @@ jobs:
           # Check migration consistency
           npx drizzle-kit check:pg --out=./migrations
           # Test schema validity against production (dry run)
-          npx drizzle-kit push --dry-run --schema=./src/database/schema.ts --url="$DATABASE_URL"
+          npx drizzle-kit push:pg --dry-run --schema=./src/database/schema.ts --url="$DATABASE_URL"
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
           NODE_ENV: production
@@ -71,7 +71,7 @@ jobs:
         run: pnpm install
 
       - name: Apply migrations to production
-        run: npx drizzle-kit migrate --out=./migrations --url="$DATABASE_URL"
+        run: npx drizzle-kit migrate:pg --out=./migrations --url="$DATABASE_URL"
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
           NODE_ENV: production
