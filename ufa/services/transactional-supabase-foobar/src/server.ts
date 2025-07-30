@@ -12,11 +12,11 @@ import { chatRoutes } from "./routes/chat";
 import {
   bootstrapAuroraMCPClient,
   shutdownAuroraMCPClient,
-} from "./ai-agent/aurora-mcp-client";
+} from "./ai/mcp/aurora-mcp-client";
 import {
   bootstrapSupabaseLocalMCPClient,
   shutdownSupabaseLocalMCPClient,
-} from "./ai-agent/supabase-mcp-client";
+} from "./ai/mcp/supabase-mcp-client";
 
 // Load environment variables from .env file in parent directory
 import { config as dotenvConfig } from "dotenv";
@@ -73,7 +73,7 @@ fastify.get("/health", async (request, reply) => {
 // API info route
 fastify.get("/", async (request, reply) => {
   return {
-    name: "Transactional Base 2 Service API",
+    name: "Transactional supabase foobar Service API",
     version: "1.0.0",
     description:
       "Self-hosted Supabase transactional service with foo and bar entities using PostgreSQL and Drizzle ORM",

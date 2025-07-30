@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { UIMessage, streamText } from "ai";
-import { getAnthropicAgentStreamTextOptions } from "../ai-agent/anthropic-agent";
+import { getAnthropicAgentStreamTextOptions } from "../ai/agent/anthropic-agent";
 
 interface ChatBody {
   messages: UIMessage[];

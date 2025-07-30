@@ -12,6 +12,14 @@ const __dirname = path.dirname(__filename);
 type MCPClient = Awaited<ReturnType<typeof createMCPClient>>;
 type McpToolSet = Awaited<ReturnType<MCPClient["tools"]>>;
 
+// Status enum for tracking bootstrap state
+export enum AuroraMCPStatus {
+  NOT_STARTED = "not_started",
+  IN_PROGRESS = "in_progress",
+  SUCCESS = "success",
+  FAILED = "failed",
+}
+
 // Singleton instance storage
 let mcpClientInstance: {
   mcpClient: MCPClient;
@@ -22,6 +30,9 @@ let initializationPromise: Promise<{
   mcpClient: MCPClient;
   tools: McpToolSet;
 }> | null = null;
+
+// Track the current status of the MCP client
+let auroraMCPCurrentStatus: AuroraMCPStatus = AuroraMCPStatus.NOT_STARTED;
 
 function findAnalyticalMooseServicePath(): string {
   // Start from current service and navigate to workspace root, then to analytical service
@@ -123,8 +134,8 @@ async function createAuroraMCPClient(): Promise<{
 }
 
 /**
- * Bootstrap the Aurora MCP client during server startup.
  * Should be called once when the server starts.
+ * Will not throw errors - server can continue running even if Aurora MCP fails to bootstrap.
  */
 export async function bootstrapAuroraMCPClient(): Promise<void> {
   if (mcpClientInstance) {
@@ -134,50 +145,74 @@ export async function bootstrapAuroraMCPClient(): Promise<void> {
 
   if (initializationPromise) {
     console.log("Aurora MCP client bootstrap in progress, waiting...");
-    await initializationPromise;
+    try {
+      await initializationPromise;
+    } catch (error) {
+      console.log("Bootstrap attempt completed with failure");
+    }
     return;
   }
 
   console.log("Bootstrapping Aurora MCP client...");
+  auroraMCPCurrentStatus = AuroraMCPStatus.IN_PROGRESS;
+
   initializationPromise = createAuroraMCPClient();
 
   try {
     mcpClientInstance = await initializationPromise;
+    auroraMCPCurrentStatus = AuroraMCPStatus.SUCCESS;
     console.log("✅ Aurora MCP client successfully bootstrapped");
   } catch (error) {
-    console.error("❌ Failed to bootstrap Aurora MCP client:", error);
+    auroraMCPCurrentStatus = AuroraMCPStatus.FAILED;
+    console.warn(
+      "⚠️ Failed to bootstrap Aurora MCP client - server will continue without Aurora MCP tools:",
+      error
+    );
     initializationPromise = null;
-    throw error;
   }
 }
 
-/**
- * Get the Aurora MCP client instance.
- * Returns the singleton instance created during bootstrap.
- */
 export async function getAuroraMCPClient(): Promise<{
-  mcpClient: MCPClient;
-  tools: McpToolSet;
+  mcpClient: MCPClient | null;
+  tools: McpToolSet | {};
 }> {
   if (!mcpClientInstance) {
     if (initializationPromise) {
       // Bootstrap is in progress, wait for it
       console.log("Aurora MCP client not ready, waiting for bootstrap...");
-      mcpClientInstance = await initializationPromise;
+      try {
+        mcpClientInstance = await initializationPromise;
+      } catch (error) {
+        // If bootstrap failed, return the fallback
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.log(
+          `Aurora MCP client bootstrap failed, returning null client: ${errorMessage}`
+        );
+        return { mcpClient: null, tools: {} };
+      }
     } else {
-      throw new Error(
-        "Aurora MCP client not bootstrapped. Call bootstrapAuroraMCPClient() during server startup."
-      );
+      // Client was never bootstrapped or failed to bootstrap
+      console.log("Aurora MCP client not available, returning null client");
+      return { mcpClient: null, tools: {} };
     }
   }
 
   return mcpClientInstance;
 }
 
-/**
- * Shutdown the Aurora MCP client during server shutdown.
- * Should be called once when the server is shutting down.
- */
+export function getAuroraMCPStatus(): {
+  status: AuroraMCPStatus;
+  isAvailable: boolean;
+} {
+  return {
+    status: auroraMCPCurrentStatus,
+    isAvailable:
+      auroraMCPCurrentStatus === AuroraMCPStatus.SUCCESS &&
+      mcpClientInstance !== null,
+  };
+}
+
 export async function shutdownAuroraMCPClient(): Promise<void> {
   if (!mcpClientInstance) {
     console.log("Aurora MCP client not initialized, nothing to shutdown");
@@ -194,5 +229,6 @@ export async function shutdownAuroraMCPClient(): Promise<void> {
   } finally {
     mcpClientInstance = null;
     initializationPromise = null;
+    auroraMCPCurrentStatus = AuroraMCPStatus.NOT_STARTED;
   }
 }

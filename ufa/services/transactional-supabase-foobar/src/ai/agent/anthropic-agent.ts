@@ -1,7 +1,7 @@
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, UIMessage, stepCountIs } from "ai";
-import { getAuroraMCPClient } from "./aurora-mcp-client";
-import { getSupabaseLocalMCPClient } from "./supabase-mcp-client";
+import { getAuroraMCPClient } from "../mcp/aurora-mcp-client";
+import { getSupabaseLocalMCPClient } from "../mcp/supabase-mcp-client";
 import { getAISystemPrompt } from "./ai-system-prompt";
 
 export async function getAnthropicAgentStreamTextOptions(
@@ -15,11 +15,21 @@ export async function getAnthropicAgentStreamTextOptions(
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
-  // Get both Aurora MCP and local Supabase PostgreSQL MCP clients and tools
-  const [{ tools: auroraTools }, { tools: supabaseTools }] = await Promise.all([
-    getAuroraMCPClient(),
-    getSupabaseLocalMCPClient(),
-  ]);
+  // Get Aurora MCP client (fault-tolerant - won't throw)
+  const { tools: auroraTools } = await getAuroraMCPClient();
+
+  // Get Supabase MCP client (may throw - handle gracefully)
+  let supabaseTools = {};
+  try {
+    const { tools } = await getSupabaseLocalMCPClient();
+    supabaseTools = tools;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `⚠️ Supabase MCP client not available - continuing without Supabase tools: ${errorMessage}`
+    );
+    console.error("Full Supabase MCP error:", error);
+  }
 
   // Combine tools from both MCP servers
   const allTools = {
