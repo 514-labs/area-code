@@ -104,6 +104,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
       const endDateStr = endDate.toISOString().split("T")[0];
 
       // Query to get daily score aggregations using SQL Server date functions
+      // Use literal values to avoid parameterization issues
       const result = await executeQuery<{
         date: string;
         averageScore: number;
@@ -115,12 +116,11 @@ export async function fooRoutes(fastify: FastifyInstance) {
            AVG(CAST(score AS DECIMAL(10,2))) as averageScore,
            COUNT(*) as totalCount
          FROM foo 
-         WHERE CAST(created_at AS DATE) >= @startDate 
-           AND CAST(created_at AS DATE) <= @endDate
+         WHERE CAST(created_at AS DATE) >= '${startDateStr}' 
+           AND CAST(created_at AS DATE) <= '${endDateStr}'
            AND score IS NOT NULL
          GROUP BY CAST(created_at AS DATE)
-         ORDER BY CAST(created_at AS DATE) ASC`,
-        { startDate: startDateStr, endDate: endDateStr }
+         ORDER BY CAST(created_at AS DATE) ASC`
       );
 
       const queryTime = Date.now() - startTime;
@@ -136,7 +136,11 @@ export async function fooRoutes(fastify: FastifyInstance) {
 
       while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split("T")[0];
-        const existingData = result.find((r) => r.date === dateStr);
+        // SQL Server returns dates as "2025-07-30T00:00:00.000Z", so we need to compare the date part
+        const existingData = result.find((r) => {
+          const dbDateStr = new Date(r.date).toISOString().split("T")[0];
+          return dbDateStr === dateStr;
+        });
 
         filledData.push({
           date: dateStr,

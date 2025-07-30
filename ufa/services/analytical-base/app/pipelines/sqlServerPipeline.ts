@@ -143,7 +143,7 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWit
         is_active: after.is_active || false,
         metadata: metadata,
         tags: tags,
-        score: convertDebeziumDecimal(after.score) || 0.0,
+        score: after.score,
         large_text: after.large_text || "",
         created_at: after.created_at ? new Date(after.created_at / 1000000) : new Date(), // Convert nanoseconds to milliseconds
         updated_at: after.updated_at ? new Date(after.updated_at / 1000000) : new Date(),
@@ -192,7 +192,7 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWit
         is_active: before.is_active || false,
         metadata: beforeMetadata,
         tags: beforeTags,
-        score: convertDebeziumDecimal(before.score) || 0.0,
+        score: before.score || 0.0,
         large_text: before.large_text || "",
         created_at: before.created_at ? new Date(before.created_at / 1000000) : new Date(),
         updated_at: before.updated_at ? new Date(before.updated_at / 1000000) : new Date(),
