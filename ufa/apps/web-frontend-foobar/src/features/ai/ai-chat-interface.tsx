@@ -21,9 +21,9 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
   });
   const [input, setInput] = useState("");
 
-  const handleSetInput = (input: string) => {
-    setInput(input);
+  const handleSubmit = (input: string) => {
     sendMessage({ text: input });
+    setInput("");
   };
 
   const handleSuggestedPromptClick = (prompt: string) => {
@@ -71,7 +71,7 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
           onSubmit={(e) => {
             e.preventDefault();
             if (input.trim()) {
-              handleSetInput(input);
+              handleSubmit(input);
             }
           }}
           className="w-full space-y-1"
@@ -91,7 +91,7 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 if (input.trim()) {
-                  handleSetInput(input);
+                  handleSubmit(input);
                 }
               }
             }}
