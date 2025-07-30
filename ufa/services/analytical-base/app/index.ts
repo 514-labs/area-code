@@ -59,8 +59,8 @@ export const processSqlServerDebeziumPayloadPipeline = new IngestPipeline<Proces
 // 1. General processed payload for debugging/monitoring
 sqlServerDebeziumPayloadStream.addTransform(processSqlServerDebeziumPayloadPipeline.stream!, transformSqlServerDebeziumPayload);
 
-// 2. Foo table → existing Foo pipeline with CDC (includes Elasticsearch integration)
+// 2. Foo table → existing Foo pipeline with CDC
 sqlServerDebeziumPayloadStream.addTransform(FooPipeline.stream!, transformToFooWithCDC);
 
-// 3. Bar table → existing Bar pipeline with CDC (includes Elasticsearch integration)
+// 3. Bar table → existing Bar pipeline with CDC  
 sqlServerDebeziumPayloadStream.addTransform(BarPipeline.stream!, transformToBarWithCDC);

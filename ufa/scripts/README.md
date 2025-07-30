@@ -93,19 +93,13 @@ docker compose up -d
 
 ### 2. Initialize Database Schema
 ```bash
-# Option 1: Use the seeding script with setup flag
 ./dev-seed.sh --sqlserver-only --setup-schema --foo-rows=1000
 
-# Option 2: Manual setup
-cat ../services/transactional-sqlserver/sql-generator.sql | \
-docker exec -i transactional-sqlserver-sqlserver-1 \
-bash -c '/opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -N -C'
-```
 
 ### 3. Register Debezium Connector (Optional)
 ```bash
 curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" \
-http://localhost:8083/connectors/ \
+http://localhost:8084/connectors/ \
 -d @../services/transactional-sqlserver/register-sqlserver.json
 ```
 

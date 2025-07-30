@@ -89,19 +89,6 @@ class SQLServerSeeder:
             logger.error(f"❌ Unexpected error executing SQL: {e}")
             return False
     
-    def execute_sql_command(self, sql_command: str) -> bool:
-        """Execute a single SQL command"""
-        try:
-            result = subprocess.run([
-                'docker', 'exec', self.container_name,
-                '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
-                '-Q', sql_command, '-N', '-C'
-            ], capture_output=True, text=True, check=True)
-            return True
-        except subprocess.CalledProcessError as e:
-            logger.error(f"❌ SQL command failed: {e}")
-            return False
-    
     def setup_database(self, clear_data: bool = False) -> bool:
         """Setup database schema and enable CDC"""
         logger.info("🏗️ Setting up SQL Server database schema...")
@@ -111,6 +98,11 @@ class SQLServerSeeder:
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'sqlCDC')
 BEGIN
     CREATE DATABASE sqlCDC;
+    PRINT 'Database sqlCDC created successfully';
+END
+ELSE
+BEGIN
+    PRINT 'Database sqlCDC already exists';
 END
 GO
 
@@ -121,6 +113,11 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.change_tracking_databases WHERE database_id = DB_ID('sqlCDC'))
 BEGIN
     EXEC sys.sp_cdc_enable_db;
+    PRINT 'CDC enabled on database sqlCDC';
+END
+ELSE
+BEGIN
+    PRINT 'CDC already enabled on database sqlCDC';
 END
 GO
 
@@ -130,8 +127,17 @@ GO
             logger.info("🧹 Clearing existing data...")
             setup_sql += """
 -- Clear existing data if requested
-IF OBJECT_ID('dbo.bar', 'U') IS NOT NULL DROP TABLE dbo.bar;
-IF OBJECT_ID('dbo.foo', 'U') IS NOT NULL DROP TABLE dbo.foo;
+IF OBJECT_ID('dbo.bar', 'U') IS NOT NULL 
+BEGIN
+    DROP TABLE dbo.bar;
+    PRINT 'Existing bar table dropped';
+END
+
+IF OBJECT_ID('dbo.foo', 'U') IS NOT NULL 
+BEGIN
+    DROP TABLE dbo.foo;
+    PRINT 'Existing foo table dropped';
+END
 GO
 
 """
@@ -154,6 +160,11 @@ BEGIN
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE()
     );
+    PRINT 'Table foo created successfully';
+END
+ELSE
+BEGIN
+    PRINT 'Table foo already exists';
 END
 GO
 
@@ -171,6 +182,11 @@ BEGIN
         updated_at DATETIME2 DEFAULT GETDATE(),
         FOREIGN KEY (foo_id) REFERENCES foo(id)
     );
+    PRINT 'Table bar created successfully';
+END
+ELSE
+BEGIN
+    PRINT 'Table bar already exists';
 END
 GO
 
@@ -182,6 +198,11 @@ BEGIN
         @source_name = 'foo', 
         @role_name = NULL, 
         @supports_net_changes = 0;
+    PRINT 'CDC enabled on foo table';
+END
+ELSE
+BEGIN
+    PRINT 'CDC already enabled on foo table';
 END
 GO
 
@@ -193,6 +214,11 @@ BEGIN
         @source_name = 'bar', 
         @role_name = NULL, 
         @supports_net_changes = 0;
+    PRINT 'CDC enabled on bar table';
+END
+ELSE
+BEGIN
+    PRINT 'CDC already enabled on bar table';
 END
 GO
 """
@@ -200,31 +226,8 @@ GO
         if not self.execute_sql_file(setup_sql):
             return False
         
-        logger.info("✅ Database schema setup completed")
         return True
-    
 
-    def connector_register(self) -> bool:
-        logger.info("🔌 Registering SQL Server connector...")
-        try:
-            response = subprocess.run([
-                'curl', '-X', 'POST',
-                '-H', 'Content-Type: application/json',
-                '--data', '@register-sqlserver.json',
-                'http://localhost:8084/connectors'
-            ], capture_output=True, text=True, check=True)
-            
-            if response.returncode == 0:
-                logger.info("✅ Successfully registered SQL Server connector")
-                return True
-            else:
-                logger.error(f"❌ Failed to register connector: {response.stderr}")
-                return False
-                
-        except subprocess.CalledProcessError as e:
-            logger.error(f"❌ Failed to register connector: {e}")
-            return False
-        
     def generate_random_metadata(self) -> str:
         """Generate random metadata JSON"""
         dept_options = ['eng', 'prod', 'data', 'ops', 'sec']
@@ -480,23 +483,39 @@ VALUES ('{foo_id}', {value}, '{label}', '{notes}', {is_enabled}, '{created_at}',
             return True
         except subprocess.CalledProcessError as e:
             logger.warning(f"⚠️  Could not verify data counts: {e}")
+            return False
 
 def main():
-    parser = argparse.ArgumentParser(description='SQL Server Data Seeding Script')
-    parser.add_argument('--container-name', 
+    parser = argparse.ArgumentParser(description='SQL Server Setup and Data Seeding Script')
+    
+    # Subcommands
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Setup command
+    setup_parser = subparsers.add_parser('setup', help='Setup database schema and enable CDC')
+    setup_parser.add_argument('--container-name', 
                        default='transactional-sqlserver-sqlserver-1',
                        help='SQL Server container name')
-    parser.add_argument('--foo-rows', type=int, default=100000, help='Number of foo records to create')
-    parser.add_argument('--bar-rows', type=int, default=10000, help='Number of bar records to create')
-    parser.add_argument('--clear-data', action='store_true', help='Clear existing data before seeding')
-    parser.add_argument('--setup-schema', action='store_true', help='Setup database schema and enable CDC')
+    setup_parser.add_argument('--clear-data', action='store_true', 
+                       help='Clear existing tables before creating new ones')
+    
+    # Seed command
+    seed_parser = subparsers.add_parser('seed', help='Seed data into existing tables')
+    seed_parser.add_argument('--container-name', 
+                       default='transactional-sqlserver-sqlserver-1',
+                       help='SQL Server container name')
+    seed_parser.add_argument('--foo-rows', type=int, default=10000, 
+                       help='Number of foo records to create')
+    seed_parser.add_argument('--bar-rows', type=int, default=5000, 
+                       help='Number of bar records to create')
+    seed_parser.add_argument('--clear-data', action='store_true', 
+                       help='Clear existing data before seeding')
     
     args = parser.parse_args()
     
-    logger.info("🚀 Starting SQL Server data seeding...")
-    logger.info(f"🐳 Container: {args.container_name}")
-    logger.info(f"📊 Configuration: {args.foo_rows:,} foo records, {args.bar_rows:,} bar records")
-    logger.info(f"🧹 Clear data: {args.clear_data}")
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
     
     # Initialize seeder
     seeder = SQLServerSeeder(args.container_name)
@@ -516,56 +535,46 @@ def main():
     try:
         start_time = datetime.now()
         
-        # Setup schema if requested
-        if args.setup_schema:
+        if args.command == 'setup':
+            logger.info("🚀 Starting database setup...")
+            logger.info(f"🐳 Container: {args.container_name}")
+            logger.info(f"🧹 Clear data: {args.clear_data}")
+            
             if not seeder.setup_database(args.clear_data):
                 logger.error("❌ Failed to setup database schema")
                 sys.exit(1)
-        
-        # Register connector
-        if not seeder.connector_register():
-            logger.error("❌ Failed to register connector")
-            sys.exit(1)
-        
-        # Seed foo data
-        if not seeder.seed_foo_data(args.foo_rows, args.clear_data and not args.setup_schema):
-            logger.error("❌ Failed to seed foo data")
-            sys.exit(1)
-        
-        # Seed bar data
-        if not seeder.seed_bar_data(args.bar_rows, False):  # Don't clear bar when foo is already seeded
-            logger.error("❌ Failed to seed bar data")
-            sys.exit(1)
-        
-        end_time = datetime.now()
-        duration = end_time - start_time
-        total_records = args.foo_rows + args.bar_rows
-        
-        logger.info(f"🎉 Seeding completed successfully!")
-        logger.info(f"⏱️  Total time: {duration}")
-        logger.info(f"📈 Total records: {total_records:,} ({total_records/duration.total_seconds():.0f} records/second)")
-        
-        # Verify data was inserted
-        logger.info("🔍 Verifying data...")
-        try:
-            result = subprocess.run([
-                'docker', 'exec', args.container_name,
-                '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
-                '-Q', 'USE sqlCDC; SELECT COUNT(*) as foo_count FROM foo; SELECT COUNT(*) as bar_count FROM bar;', '-N', '-C'
-            ], capture_output=True, text=True, check=True)
+                
+            logger.info("🎉 Database setup completed successfully!")
             
-            # Parse the counts from the output
-            lines = result.stdout.strip().split('\n')
-            counts = [line.strip() for line in lines if line.strip().isdigit()]
-            if len(counts) >= 2:
-                logger.info(f"✅ Verification: {counts[0]} foo records, {counts[1]} bar records")
-            else:
-                logger.info(f"✅ Verification output: {result.stdout.strip()}")
-        except subprocess.CalledProcessError as e:
-            logger.warning(f"⚠️  Could not verify data counts: {e}")
+        elif args.command == 'seed':
+            logger.info("🚀 Starting data seeding...")
+            logger.info(f"🐳 Container: {args.container_name}")
+            logger.info(f"📊 Configuration: {args.foo_rows:,} foo records, {args.bar_rows:,} bar records")
+            logger.info(f"🧹 Clear data: {args.clear_data}")
+            
+            # Seed foo data
+            if not seeder.seed_foo_data(args.foo_rows, args.clear_data):
+                logger.error("❌ Failed to seed foo data")
+                sys.exit(1)
+            
+            # Seed bar data
+            if not seeder.seed_bar_data(args.bar_rows, False):  # Don't clear bar when foo is already seeded
+                logger.error("❌ Failed to seed bar data")
+                sys.exit(1)
+            
+            # Verify data
+            seeder.verify_data()
+            
+            end_time = datetime.now()
+            duration = end_time - start_time
+            total_records = args.foo_rows + args.bar_rows
+            
+            logger.info(f"🎉 Data seeding completed successfully!")
+            logger.info(f"⏱️  Total time: {duration}")
+            logger.info(f"📈 Total records: {total_records:,} ({total_records/duration.total_seconds():.0f} records/second)")
         
     except KeyboardInterrupt:
-        logger.info("⚠️  Seeding interrupted by user")
+        logger.info("⚠️  Operation interrupted by user")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
         sys.exit(1)

@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: Transactional SQL Server Service API
+  version: 1.0.0
+  description: Transactional service with foo and bar entities using SQL Server
+    and Tedious driver
+components:
+  schemas: {}
+paths:
+  /api/foo:
+    get:
+      responses:
+        "200":
+          description: Default Response
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /api/foo/{id}:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
+      responses:
+        "200":
+          description: Default Response
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /api/foo/average-score:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /api/bar/test:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /api/bar/simple:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /api/bar/average-value:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /api/bar:
+    get:
+      responses:
+        "200":
+          description: Default Response
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /api/bar/{id}:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
+      responses:
+        "200":
+          description: Default Response
+    put:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
+      responses:
+        "200":
+          description: Default Response
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: id
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /api/foo/{fooId}/bars:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: fooId
+          required: true
+      responses:
+        "200":
+          description: Default Response

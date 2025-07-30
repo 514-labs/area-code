@@ -1,6 +1,5 @@
 import { IngestPipeline, Stream, Key, OlapTable} from "@514labs/moose-lib";
 import { FooWithCDC, BarWithCDC, FooStatus } from "@workspace/models";
-import { sendDataToElasticsearch, prepareElasticsearchData } from "../utils/elasticsearch";
 
 /**
  * Helper function to convert Debezium decimal fields from base64 bytes to number
@@ -31,7 +30,6 @@ function convertDebeziumDecimal(value: any): number {
 }
 
 
-// Debezium CDC Schema
 interface CDCSchema {
   type: string;
   fields: {
@@ -70,28 +68,30 @@ interface CDCPayload {
   ts_ns?: number;
 }
 
-// Debezium CDC Payload
+
 export interface SqlServerDebeziumPayload {
   schema: CDCSchema;
   payload: CDCPayload;
 }
 
-// Table to store all the CDC events - for record keeping
 export interface ProcessSqlServerDebeziumPayload {
   time: Key<Date>;
   payload: Record<string, any>;
 }
 
-// Transform the Debezium CDC payload to a format that can be stored in a database table - with a key
 export const transformSqlServerDebeziumPayload = (payload: SqlServerDebeziumPayload) => {
+  // Track the Debezium changelog in a database table
   return {
     time: new Date(),
     payload: payload,
   };
 };
 
-// Transform function to convert SQL Server Debezium CDC events for 'foo' table into FooWithCDC format for the existing Foo pipeline
-export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload, sendToElasticsearch: boolean = true): FooWithCDC | null => {
+/**
+ * Transform function to convert SQL Server Debezium CDC events for 'foo' table
+ * into FooWithCDC format for the existing Foo pipeline
+ */
+export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWithCDC | null => {
   if (payload.payload.source.table !== "foo") {
     console.log("Skipping non-foo table");
     return null;
@@ -101,8 +101,6 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload, sendToE
   const before = payload.payload.before;
   const op = payload.payload.op;
   const source = payload.payload.source;
-  
-  let result: FooWithCDC | null = null;
   
   // Handle different CDC operations
   switch (op) {
@@ -136,7 +134,7 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload, sendToE
         tags = [];
       }
 
-      result = {
+      return {
         id: after.id,
         name: after.name,
         description: after.description || null,
@@ -154,7 +152,6 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload, sendToE
         cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE"),
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
-      break;
       
     case "d": // Delete
       if (!before) {
@@ -186,7 +183,7 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload, sendToE
 
       
       // For deletes, use before data with DELETE operation
-      result = {
+      return {
         id: before.id,
         name: before.name,
         description: before.description || null,
@@ -204,33 +201,18 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload, sendToE
         cdc_operation: "DELETE",
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
-      break;
       
     default:
       console.log(`Unknown foo operation: ${op}`);
       return null;
   }
-
-  // Send to Elasticsearch as a side effect (non-blocking)
-  if (result && sendToElasticsearch) {
-    setImmediate(async () => {
-      try {
-        const { action, data } = prepareElasticsearchData(result, result.cdc_operation);
-        await sendDataToElasticsearch("foo", action, data);
-      } catch (error) {
-        console.error("Error sending foo data to Elasticsearch:", error);
-      }
-    });
-  }
-
-  return result;
 };
 
 /**
  * Transform function to convert SQL Server Debezium CDC events for 'bar' table
  * into BarWithCDC format for the existing Bar pipeline
  */
-export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload, sendToElasticsearch: boolean = true): BarWithCDC | null => {
+export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWithCDC | null => {
   if (payload.payload.source.table !== "bar") {
     console.log("Skipping non-bar table");
     return null;
@@ -240,8 +222,6 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload, sendToE
   const before = payload.payload.before;
   const op = payload.payload.op;
   const source = payload.payload.source;
-  
-  let result: BarWithCDC | null = null;
   
   // Handle different CDC operations
   switch (op) {
@@ -253,7 +233,7 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload, sendToE
         return null;
       }
 
-      result = {
+      return {
         id: after.id,
         foo_id: after.foo_id,
         value: after.value || 0,
@@ -267,7 +247,6 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload, sendToE
         cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE"),
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
-      break;
       
     case "d": // Delete
       if (!before) {
@@ -276,7 +255,7 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload, sendToE
       }
 
       // For deletes, use before data with DELETE operation
-      result = {
+      return {
         id: before.id,
         foo_id: before.foo_id,
         value: before.value || 0,
@@ -290,25 +269,10 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload, sendToE
         cdc_operation: "DELETE",
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
-      break;
       
     default:
       console.log(`Unknown bar operation: ${op}`);
       return null;
   }
-
-  // Send to Elasticsearch as a side effect (non-blocking)
-  if (result && sendToElasticsearch) {
-    setImmediate(async () => {
-      try {
-        const { action, data } = prepareElasticsearchData(result, result.cdc_operation);
-        await sendDataToElasticsearch("bar", action, data);
-      } catch (error) {
-        console.error("Error sending bar data to Elasticsearch:", error);
-      }
-    });
-  }
-
-  return result;
 };
 

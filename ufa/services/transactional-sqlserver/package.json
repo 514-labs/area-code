@@ -1,12 +1,18 @@
 {
-  "name": "transactional-sqlserver",
+  "name": "@workspace/transactional-sqlserver",
   "version": "1.0.0",
-  "description": "SQL Server with Debezium CDC infrastructure for streaming transactional data changes",
+  "description": "SQL Server with Debezium CDC infrastructure and fastify API for streaming transactional data changes",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm sqlserver:start && sleep 15 && pnpm connector:register",
-    "ufa:dev": "pnpm sqlserver:start && sleep 15 && pnpm connector:register",
+    "build": "tsc",
+    "dev": "pnpm sqlserver:start",
+    "dev:server": "tsx watch src/server.ts",
+    "dev:full": "pnpm sqlserver:start && pnpm dev:server",
+    "start": "node dist/server.js",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "ufa:dev": "pnpm sqlserver:start && pnpm dev:server",
     "ufa:dev:clean": "pnpm sqlserver:stop",
     "sqlserver:start": "docker compose up -d",
     "sqlserver:stop": "docker compose down",
@@ -18,21 +24,38 @@
     "connector:status": "curl -X GET http://localhost:8084/connectors/inventory-connector/status",
     "connector:delete": "curl -X DELETE http://localhost:8084/connectors/inventory-connector",
     "connector:list": "curl -X GET http://localhost:8084/connectors",
+    "sqlserver:sqlCDCdb ": "docker exec -it transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -No -Q 'USE sqlCDC; DROP TABLE IF EXISTS foo; DROP TABLE IF EXISTS bar; DROP TABLE IF EXISTS foo_bar;' -N -C",
     "sqlserver:count": "docker exec -it transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -No -Q 'USE sqlCDC; SELECT COUNT(*) FROM foo; SELECT COUNT(*) FROM bar;' -N -C"
+  },
+  "dependencies": {
+    "fastify": "^5.4.0",
+    "tedious": "^18.6.1",
+    "@fastify/cors": "^10.0.1",
+    "@fastify/swagger": "^9.5.1",
+    "@fastify/swagger-ui": "^5.2.3",
+    "dotenv": "^16.3.1",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.22.4",
+    "@workspace/models": "workspace:*"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^20.0.0",
+    "@types/tedious": "^4.0.14",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.0"
   },
   "keywords": [
+    "fastify",
     "sqlserver",
     "debezium",
     "cdc",
     "change-data-capture",
     "kafka",
-    "docker"
+    "docker",
+    "api",
+    "transactional"
   ],
   "author": "",
   "license": "MIT"
