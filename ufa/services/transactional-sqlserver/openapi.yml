@@ -47,6 +47,11 @@ paths:
       responses:
         "200":
           description: Default Response
+  /api/bar/test-delete:
+    delete:
+      responses:
+        "200":
+          description: Default Response
   /api/bar/simple:
     get:
       responses:
@@ -63,6 +68,10 @@ paths:
         "200":
           description: Default Response
     post:
+      responses:
+        "200":
+          description: Default Response
+    delete:
       responses:
         "200":
           description: Default Response

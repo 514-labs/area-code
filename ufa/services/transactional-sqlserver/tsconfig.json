@@ -1,14 +1,21 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "module": "esnext",
-    "target": "es2022",
-    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "paths": {
+      "@workspace/models": ["../../packages/models/src/index"],
+      "@workspace/models/*": ["../../packages/models/src/*"]
+    }
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "../../packages/models/src/**/*"
+  ],
   "exclude": ["node_modules", "dist"]
 }

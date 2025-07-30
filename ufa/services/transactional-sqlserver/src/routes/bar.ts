@@ -5,6 +5,10 @@ import {
   GetBarsParams,
   GetBarsResponse,
   BarWithFoo,
+  BulkDeleteBarsRequest,
+  BulkDeleteBarsResponse,
+  DeleteBarResponse,
+  GetBarsByFooIdResponse,
 } from "@workspace/models/bar";
 import { Bar, CreateBar, UpdateBar } from "@workspace/models/bar";
 
@@ -28,6 +32,17 @@ export async function barRoutes(fastify: FastifyInstance) {
         error: "Bar database test failed",
         message: err instanceof Error ? err.message : String(err)
       });
+    }
+  });
+
+  // Simple DELETE test endpoint
+  fastify.delete("/bar/test-delete", async (request, reply) => {
+    try {
+      console.log("🗑️ TEST DELETE endpoint called");
+      return reply.send({ message: "Test delete endpoint works", success: true });
+    } catch (err) {
+      console.error("Test delete error:", err);
+      return reply.status(500).send({ error: "Test delete failed" });
     }
   });
 
@@ -373,29 +388,96 @@ export async function barRoutes(fastify: FastifyInstance) {
   // Delete bar
   fastify.delete<{
     Params: { id: string };
-    Reply: { success: boolean } | { error: string };
+    Reply: DeleteBarResponse | { error: string };
   }>("/bar/:id", async (request, reply) => {
     try {
       const { id } = request.params;
+      console.log("🗑️  DELETE /api/bar/:id called with ID:", id);
+      console.log("🗑️  ID type:", typeof id);
+      console.log("🗑️  ID length:", id.length);
       
-      const result = await executeQuery<Bar>(
-        "USE sqlCDC; DELETE FROM bar OUTPUT DELETED.* WHERE id = @id",
+      // First, let's check if the bar exists
+      console.log("🔍 Checking if bar exists before deletion...");
+      const existsResult = await executeQuery<any>(
+        "USE sqlCDC; SELECT id, foo_id, label FROM bar WHERE id = @id",
         { id }
       );
-
-      if (result.length === 0) {
+      console.log("🔍 Exists query result:", existsResult);
+      console.log("🔍 Found bars count:", existsResult.length);
+      
+      if (existsResult.length === 0) {
+        console.log("❌ Bar not found during existence check");
         return reply.status(404).send({ error: "Bar not found" });
       }
+      
+      console.log("✅ Bar found, proceeding with deletion...");
+      console.log("📝 Executing DELETE query (without OUTPUT)...");
+      
+      // Try simple delete without OUTPUT clause first
+      const result = await executeQuery<any>(
+        "USE sqlCDC; DELETE FROM bar WHERE id = @id",
+        { id }
+      );
+      
+      console.log("🗑️  Delete query result:", result);
+      console.log("🗑️  Deleted rows count:", result.length);
 
+      console.log("✅ Bar deleted successfully");
       return reply.send({ success: true });
     } catch (err) {
-      console.error("Delete bar error:", err);
+      console.error("❌ Delete bar error - FULL DETAILS:", err);
+      console.error("❌ Error message:", err instanceof Error ? err.message : String(err));
+      console.error("❌ Error stack:", err instanceof Error ? err.stack : "No stack trace");
+      console.error("❌ Error type:", typeof err);
+      console.error("❌ Error constructor:", err?.constructor?.name);
       return reply.status(500).send({ error: "Failed to delete bar" });
     }
   });
 
+  // Bulk delete bar items
+  fastify.delete<{
+    Body: BulkDeleteBarsRequest;
+    Reply: BulkDeleteBarsResponse | { error: string };
+  }>("/bar", async (request, reply) => {
+    try {
+      const { ids } = request.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return reply.status(400).send({ error: "Invalid or empty ids array" });
+      }
+
+      // Validate that all IDs are strings
+      if (!ids.every((id) => typeof id === "string")) {
+        return reply.status(400).send({ error: "All IDs must be strings" });
+      }
+
+      // Build parameterized query for bulk delete
+      const placeholders = ids.map((_, index) => `@id${index}`).join(",");
+      const params: Record<string, string> = {};
+      ids.forEach((id, index) => {
+        params[`id${index}`] = id;
+      });
+
+      const result = await executeQuery<Bar>(
+        `USE sqlCDC; DELETE FROM bar OUTPUT DELETED.* WHERE id IN (${placeholders})`,
+        params
+      );
+
+      return reply.send({
+        success: true,
+        deletedCount: result.length,
+      });
+    } catch (err) {
+      console.error("Error in bulk delete:", err);
+      return reply.status(500).send({ error: "Failed to delete bar items" });
+    }
+  });
+
   // Get bars by foo ID
-  fastify.get<{ Params: { fooId: string }; Reply: Bar[] | { error: string } }>(
+  fastify.get<{ 
+    Params: { fooId: string }; 
+    Reply: GetBarsByFooIdResponse | { error: string };
+  }>(
     "/foo/:fooId/bars",
     async (request, reply) => {
       try {

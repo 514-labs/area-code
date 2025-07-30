@@ -110,7 +110,7 @@ USE sqlCDC;
 GO
 
 -- Enable CDC on database if not already enabled
-IF NOT EXISTS (SELECT * FROM sys.change_tracking_databases WHERE database_id = DB_ID('sqlCDC'))
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'sqlCDC' AND is_cdc_enabled = 1)
 BEGIN
     EXEC sys.sp_cdc_enable_db;
     PRINT 'CDC enabled on database sqlCDC';
@@ -119,6 +119,16 @@ ELSE
 BEGIN
     PRINT 'CDC already enabled on database sqlCDC';
 END
+GO
+
+-- Grant CDC permissions to sa user
+EXEC sys.sp_cdc_add_job @job_type = N'capture';
+EXEC sys.sp_cdc_add_job @job_type = N'cleanup';
+
+-- Ensure sa has access to CDC functions and schema
+GRANT SELECT ON SCHEMA::cdc TO sa;
+GRANT EXECUTE ON SCHEMA::cdc TO sa;
+PRINT 'CDC permissions granted to sa user';
 GO
 
 """
@@ -266,9 +276,9 @@ GO
         random_time = start_date + timedelta(days=random_days)
         return random_time.strftime('%Y-%m-%d %H:%M:%S')
     
-    def seed_foo_data(self, record_count: int, clean_existing: bool = False) -> bool:
-        """Seed foo table with specified number of records"""
-        logger.info(f"🌱 Seeding {record_count:,} foo records...")
+    def seed_foo_data(self, clean_existing: bool = False) -> str:
+        """Seed foo table with a single record and return its ID"""
+        logger.info("🌱 Creating single foo record...")
         
         if clean_existing:
             clear_sql = """
@@ -278,7 +288,7 @@ DELETE FROM foo;
 GO
 """
             if not self.execute_sql_file(clear_sql):
-                return False
+                return None
             logger.info("🧹 Existing data cleared")
         
         # Data generation lists
@@ -315,59 +325,77 @@ GO
         
         statuses = ['active', 'inactive', 'pending', 'archived']
         
-        batch_size = 500  # Smaller batches for SQL file approach
-        total_batches = (record_count + batch_size - 1) // batch_size
+        # Generate single foo record
+        created_at = self.generate_random_timestamp()
+        updated_at_dt = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S') + timedelta(
+            seconds=random.randint(0, int((datetime.now() - datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')).total_seconds()))
+        )
+        updated_at = updated_at_dt.strftime('%Y-%m-%d %H:%M:%S')
         
-        for batch_num in range(total_batches):
-            start_idx = batch_num * batch_size
-            end_idx = min(start_idx + batch_size, record_count)
-            batch_records = end_idx - start_idx
-            
-            if batch_num % 5 == 0:
-                progress = (batch_num / total_batches) * 100
-                logger.info(f"📊 Processing foo batch {batch_num + 1}/{total_batches} ({progress:.1f}% complete)")
-            
-            # Build batch INSERT SQL
-            batch_sql = "USE sqlCDC;\n"
-            
-            for i in range(batch_records):
-                created_at = self.generate_random_timestamp()
-                updated_at_dt = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S') + timedelta(
-                    seconds=random.randint(0, int((datetime.now() - datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')).total_seconds()))
-                )
-                updated_at = updated_at_dt.strftime('%Y-%m-%d %H:%M:%S')
-                
-                name = f"{random.choice(service_names)}_{start_idx + i + 1}".replace("'", "''")
-                description = random.choice(descriptions).replace("'", "''")
-                status = random.choice(statuses)
-                priority = random.randint(1, 10)
-                is_active = 1 if random.random() < 0.7 else 0
-                metadata = self.generate_random_metadata()
-                tags = self.generate_random_tags()
-                score = round(random.uniform(0, 100), 2)
-                large_text = random.choice(large_texts).replace("'", "''")
-                
-                batch_sql += f"""
-INSERT INTO foo (name, description, status, priority, is_active, metadata, tags, score, large_text, created_at, updated_at)
-VALUES ('{name}', '{description}', '{status}', {priority}, {is_active}, '{metadata}', '{tags}', {score}, '{large_text}', '{created_at}', '{updated_at}');
+        name = f"{random.choice(service_names)}_Master".replace("'", "''")
+        description = random.choice(descriptions).replace("'", "''")
+        status = random.choice(statuses)
+        priority = random.randint(1, 10)
+        is_active = 1 if random.random() < 0.7 else 0
+        metadata = self.generate_random_metadata()
+        tags = self.generate_random_tags()
+        score = round(random.uniform(0, 100), 2)
+        large_text = random.choice(large_texts).replace("'", "''")
+        
+        # Use DECLARE and OUTPUT to get the inserted ID
+        insert_sql = f"""
+USE sqlCDC;
+DECLARE @foo_id UNIQUEIDENTIFIER = NEWID();
+INSERT INTO foo (id, name, description, status, priority, is_active, metadata, tags, score, large_text, created_at, updated_at)
+VALUES (@foo_id, '{name}', '{description}', '{status}', {priority}, {is_active}, '{metadata}', '{tags}', {score}, '{large_text}', '{created_at}', '{updated_at}');
+SELECT @foo_id as inserted_id;
+GO
 """
-            
-            batch_sql += "GO\n"
-            
-            if not self.execute_sql_file(batch_sql):
-                logger.error(f"❌ Failed to insert foo batch {batch_num + 1}")
-                return False
-            
-            # Small delay every 10 batches
-            if batch_num % 10 == 0 and batch_num > 0:
-                time.sleep(0.1)
         
-        logger.info(f"✅ Successfully seeded {record_count:,} foo records")
-        return True
+        try:
+            # Execute the insert and capture the ID using -Q flag instead of stdin
+            # First, escape any single quotes in the SQL for shell execution
+            escaped_sql = insert_sql.replace("'", "''").replace('"', '\\"')
+            
+            result = subprocess.run([
+                'docker', 'exec', self.container_name,
+                '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
+                '-Q', insert_sql, '-N', '-C', '-h', '-1'
+            ], capture_output=True, text=True, check=True)
+            
+            # Parse the UUID from the output (more robust parsing)
+            uuid_pattern = re.compile(r'[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}', re.IGNORECASE)
+            lines = result.stdout.strip().split('\n')
+            foo_id = None
+            
+            # Look for UUID pattern in any line, not just exact matches
+            for line in lines:
+                line = line.strip()
+                if line:
+                    match = uuid_pattern.search(line)
+                    if match:
+                        foo_id = match.group(0)
+                        break
+                        
+            if not foo_id:
+                logger.error("❌ Failed to retrieve foo ID from insert")
+                logger.error(f"SQL output was: {result.stdout}")
+                return None
+                
+            logger.info(f"✅ Successfully created foo record with ID: {foo_id}")
+            return foo_id
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"❌ Failed to insert foo record: {e}")
+            if hasattr(e, 'stdout') and e.stdout:
+                logger.error(f"stdout: {e.stdout}")
+            if hasattr(e, 'stderr') and e.stderr:
+                logger.error(f"stderr: {e.stderr}")
+            return None
     
-    def seed_bar_data(self, record_count: int, clean_existing: bool = False) -> bool:
-        """Seed bar table with specified number of records"""
-        logger.info(f"📊 Seeding {record_count:,} bar records...")
+    def seed_bar_data(self, record_count: int, foo_id: str, clean_existing: bool = False) -> bool:
+        """Seed bar table with specified number of records using a single foo_id"""
+        logger.info(f"📊 Seeding {record_count:,} bar records using foo_id: {foo_id}")
         
         if clean_existing:
             clear_sql = """
@@ -379,27 +407,32 @@ GO
                 return False
             logger.info("🧹 Existing bar data cleared")
         
-        # Get available foo IDs
+        # Validate that the provided foo_id exists
         try:
             result = subprocess.run([
                 'docker', 'exec', self.container_name,
                 '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost', '-U', 'sa', '-P', 'Password!',
-                '-Q', 'USE sqlCDC; SELECT id FROM foo;', '-N', '-C', '-h', '-1'
+                '-Q', f"USE sqlCDC; SELECT COUNT(*) FROM foo WHERE id = '{foo_id}';", '-N', '-C', '-h', '-1'
             ], capture_output=True, text=True, check=True)
             
-            # Parse only lines that look like UUIDs (36 characters with dashes)
-            uuid_pattern = re.compile(r'^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$', re.IGNORECASE)
-            foo_ids = [line.strip() for line in result.stdout.strip().split('\n') 
-                      if line.strip() and uuid_pattern.match(line.strip())]
+            # Parse the count from the output - look for a line that contains just a number
+            lines = result.stdout.strip().split('\n')
+            count = None
             
-            if not foo_ids:
-                logger.error("❌ No foo records found. Please seed foo data first.")
+            for line in lines:
+                line = line.strip()
+                if line.isdigit():
+                    count = line
+                    break
+            
+            if count != '1':
+                logger.error(f"❌ Foo record with ID {foo_id} not found. Count was: '{count}'")
                 return False
                 
-            logger.info(f"📋 Found {len(foo_ids):,} foo records for referencing")
+            logger.info(f"📋 Using foo_id: {foo_id} for all bar records")
             
         except subprocess.CalledProcessError as e:
-            logger.error(f"❌ Failed to fetch foo IDs: {e}")
+            logger.error(f"❌ Failed to validate foo ID: {e}")
             return False
         
         # Data generation lists
@@ -439,7 +472,6 @@ GO
                 )
                 updated_at = updated_at_dt.strftime('%Y-%m-%d %H:%M:%S')
                 
-                foo_id = random.choice(foo_ids)
                 value = random.randint(0, 999)
                 label = random.choice(labels).replace("'", "''")
                 notes = random.choice(notes_options).replace("'", "''")
@@ -504,10 +536,8 @@ def main():
     seed_parser.add_argument('--container-name', 
                        default='transactional-sqlserver-sqlserver-1',
                        help='SQL Server container name')
-    seed_parser.add_argument('--foo-rows', type=int, default=10000, 
-                       help='Number of foo records to create')
     seed_parser.add_argument('--bar-rows', type=int, default=5000, 
-                       help='Number of bar records to create')
+                       help='Number of bar records to create (all will reference a single foo record)')
     seed_parser.add_argument('--clear-data', action='store_true', 
                        help='Clear existing data before seeding')
     
@@ -549,16 +579,17 @@ def main():
         elif args.command == 'seed':
             logger.info("🚀 Starting data seeding...")
             logger.info(f"🐳 Container: {args.container_name}")
-            logger.info(f"📊 Configuration: {args.foo_rows:,} foo records, {args.bar_rows:,} bar records")
+            logger.info(f"📊 Configuration: 1 foo record, {args.bar_rows:,} bar records")
             logger.info(f"🧹 Clear data: {args.clear_data}")
             
-            # Seed foo data
-            if not seeder.seed_foo_data(args.foo_rows, args.clear_data):
+            # Seed foo data (creates single record and returns its ID)
+            foo_id = seeder.seed_foo_data(args.clear_data)
+            if not foo_id:
                 logger.error("❌ Failed to seed foo data")
                 sys.exit(1)
             
-            # Seed bar data
-            if not seeder.seed_bar_data(args.bar_rows, False):  # Don't clear bar when foo is already seeded
+            # Seed bar data using the single foo_id
+            if not seeder.seed_bar_data(args.bar_rows, foo_id, False):  # Don't clear bar when foo is already seeded
                 logger.error("❌ Failed to seed bar data")
                 sys.exit(1)
             
@@ -567,7 +598,7 @@ def main():
             
             end_time = datetime.now()
             duration = end_time - start_time
-            total_records = args.foo_rows + args.bar_rows
+            total_records = 1 + args.bar_rows  # 1 foo + N bar records
             
             logger.info(f"🎉 Data seeding completed successfully!")
             logger.info(f"⏱️  Total time: {duration}")

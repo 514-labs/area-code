@@ -1,4 +1,4 @@
-import { Connection, Request } from "tedious";
+import { Connection, Request, TYPES } from "tedious";
 import { ConnectionConfiguration } from "tedious";
 import { config as dotenvConfig } from "dotenv";
 import path from "path";
@@ -117,21 +117,37 @@ export function executeQuery<T = any>(
 ): Promise<T[]> {
   return new Promise(async (resolve, reject) => {
     try {
+      console.log("🔍 SQL Query being executed:", query);
+      console.log("🔍 SQL Parameters:", params);
+      
       const connection = await connectionPool.getConnection();
       const results: T[] = [];
 
       const request = new Request(query, (err, rowCount) => {
         if (err) {
-          console.error("Query execution error:", err);
+          console.error("❌ Query execution error - FULL DETAILS:", err);
+          console.error("❌ SQL Error message:", err.message);
+          console.error("❌ SQL Error number:", (err as any).number);
+          console.error("❌ SQL Error state:", (err as any).state);
+          console.error("❌ SQL Error class:", (err as any).class);
+          console.error("❌ SQL Error lineNumber:", (err as any).lineNumber);
+          console.error("❌ SQL Error serverName:", (err as any).serverName);
+          console.error("❌ SQL Error procName:", (err as any).procName);
           reject(err);
         } else {
+          console.log("✅ Query executed successfully. Row count:", rowCount);
+          console.log("✅ Results returned:", results.length, "rows");
           resolve(results);
         }
       });
 
       // Add parameters to request
       Object.entries(params).forEach(([key, value]) => {
-        request.addParameter(key, getTediousType(value), value);
+        const tediousType = getTediousType(value);
+        console.log(`🔍 Adding parameter: ${key} = ${value} (type: ${tediousType})`);
+        // Ensure parameter name doesn't have @ prefix when adding (Tedious handles this)
+        const paramName = key.startsWith('@') ? key.substring(1) : key;
+        request.addParameter(paramName, tediousType, value);
       });
 
       request.on("row", (columns: any[]) => {
@@ -139,11 +155,13 @@ export function executeQuery<T = any>(
         columns.forEach((column: any) => {
           row[column.metadata.colName] = column.value;
         });
+        console.log("📄 Row received:", row);
         results.push(row);
       });
 
       connection.execSql(request);
     } catch (error) {
+      console.error("❌ executeQuery catch block error:", error);
       reject(error);
     }
   });
@@ -151,8 +169,6 @@ export function executeQuery<T = any>(
 
 // Helper function to determine tedious data type
 function getTediousType(value: any): any {
-  const TYPES = require("tedious").TYPES;
-  
   if (typeof value === "string") {
     return TYPES.NVarChar;
   } else if (typeof value === "number") {

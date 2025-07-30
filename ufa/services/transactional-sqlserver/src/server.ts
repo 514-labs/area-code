@@ -102,6 +102,11 @@ fastify.get("/documentation/yaml", async (request, reply) => {
 
 // Error handler
 fastify.setErrorHandler((error, request, reply) => {
+  console.error("🚨 GLOBAL ERROR HANDLER - Method:", request.method, "URL:", request.url);
+  console.error("🚨 GLOBAL ERROR HANDLER - Error details:", error);
+  console.error("🚨 GLOBAL ERROR HANDLER - Error message:", error.message);
+  console.error("🚨 GLOBAL ERROR HANDLER - Error stack:", error.stack);
+  console.error("🚨 GLOBAL ERROR HANDLER - Error constructor:", error.constructor.name);
   fastify.log.error(error);
 
   if (error.validation) {
@@ -116,6 +121,7 @@ fastify.setErrorHandler((error, request, reply) => {
   reply.status(500).send({
     error: "Internal Server Error",
     message: "Something went wrong",
+    actualError: error.message, // Add actual error for debugging
   });
 });
 
