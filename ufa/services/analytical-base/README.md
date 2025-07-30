@@ -1,32 +1,72 @@
-# This is a [MooseJs](https://www.moosejs.com/) project bootstrapped with the [`Moose CLI`](https://github.com/514-labs/moose/tree/main/apps/framework-cli).
+# Analytical Base Service
 
-<a href="https://www.getmoose.dev/"><img src="https://raw.githubusercontent.com/514-labs/moose/main/logo-m-light.png" alt="moose logo" height="100px"></a>
+This service handles analytics and data processing for the UFA platform.
 
-[![NPM Version](https://img.shields.io/npm/v/%40514labs%2Fmoose-cli?logo=npm)](https://www.npmjs.com/package/@514labs/moose-cli?activeTab=readme)
-[![Moose Community](https://img.shields.io/badge/slack-moose_community-purple.svg?logo=slack)](https://join.slack.com/t/moose-community/shared_invite/zt-2fjh5n3wz-cnOmM9Xe9DYAgQrNu8xKxg)
-[![Docs](https://img.shields.io/badge/quick_start-docs-blue.svg)](https://docs.moosejs.com/)
-[![MIT license](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+## Features
 
-[Moose](https://www.getmoose.dev/) is an open-source data engineering framework designed to drastically accellerate AI-enabled software developers, as you prototype and scale data-intensive features and applications.
+- **CDC Processing**: Processes Change Data Capture (CDC) events from SQL Server via Debezium
+- **Data Transformation**: Transforms raw CDC data into structured formats for analytics
+- **Elasticsearch Integration**: Automatically indexes processed data for search capabilities
+- **Real-time Analytics**: Provides real-time data processing and analytics APIs
 
-# Get started with Moose
+## Architecture
 
-Get up and running with your own Moose project in minutes by using our [Quick Start Tutorial](https://docs.getmoose.dev/quickstart). We also have our [Docs](https://docs.getmoose.dev/) where you can pick your path, learn more about Moose, and learn what types of applications can be built with Moose.
+### Data Flow
 
-# Beta release
+1. **SQL Server CDC** → **Debezium** → **Analytical Base**
+2. **Analytical Base** processes and transforms data
+3. Data flows to:
+   - **ClickHouse** (for analytics storage)
+   - **Elasticsearch** (for search indexing)
 
-Moose is beta software and is in active development. Multiple public companies across the globe are using Moose in production. We’d love for you to [get your hands on it and try it out](https://docs.getmoose.dev/quickstart). If you're interested in using Moose in production, or if you just want to chat, you can reach us at [hello@moosejs.dev](mailto:hello@moosejs.dev) or in the Moose developer community below.
+### Elasticsearch Integration
 
-# Community
+The service automatically sends processed CDC data to Elasticsearch via the retrieval-base service. This enables:
 
-You can join the Moose community [on Slack](https://join.slack.com/t/moose-community/shared_invite/zt-2fjh5n3wz-cnOmM9Xe9DYAgQrNu8xKxg).
+- **Real-time Search**: Data is indexed in Elasticsearch as it flows through the analytics pipeline
+- **Unified Data**: Both Foo and Bar data are searchable
+- **Automatic Sync**: INSERT, UPDATE, and DELETE operations are properly reflected in Elasticsearch
 
-Here you can get together with other Moose developers, ask questions, give feedback, make feature requests, and interact directly with Moose maintainers.
+#### Configuration
 
-# Contributing
+Set these environment variables to configure Elasticsearch integration:
 
-We welcome contributions to Moose! Please check out the [contribution guidelines](https://github.com/514-labs/moose/blob/main/CONTRIBUTING.md).
+```bash
+# Retrieval service URL (default: http://localhost:8083)
+RETRIEVAL_BASE_URL=http://localhost:8083
 
-# Made by 514
+# Enable/disable Elasticsearch integration (default: enabled)
+ELASTICSEARCH_ENABLED=true
+```
 
-Our mission at [fiveonefour](https://www.fiveonefour.com/) is to bring incredible developer experiences to the data stack. If you’re interested in enterprise solutions, commercial support, or design partnerships, then we’d love to chat with you: [hello@moosejs.dev](mailto:hello@moosejs.dev)
+#### How It Works
+
+1. **CDC Events** arrive from SQL Server via Debezium
+2. **Transform Functions** convert CDC data to structured formats (`FooWithCDC`, `BarWithCDC`)
+3. **Elasticsearch Side Effect** sends the transformed data to Elasticsearch asynchronously
+4. **Data Storage** continues to ClickHouse for analytics
+
+The integration is non-blocking - if Elasticsearch is unavailable, the main data pipeline continues to work.
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start the service
+moose dev
+
+# The service will run on port 4100
+```
+
+## API Endpoints
+
+- **Analytics APIs**: Available at `http://localhost:4100/api/`
+- **Data Ingestion**: CDC data is ingested automatically via the streaming pipeline
+
+## Related Services
+
+- **retrieval-base**: Provides search capabilities via Elasticsearch
+- **sync-base**: Handles real-time synchronization with Supabase
+- **transactional-base**: Manages transactional data operations

@@ -44,7 +44,7 @@ import {
   ProcessSqlServerDebeziumPayload 
 } from "./pipelines/sqlServerPipeline";
 
-// Import existing Foo and Bar pipelines
+
 import { FooPipeline, BarPipeline } from "./pipelines/eventsPipeline";
 
 export const sqlServerDebeziumPayloadStream = new Stream<SqlServerDebeziumPayload>("SqlServerDebeziumPayload", {});
@@ -59,8 +59,8 @@ export const processSqlServerDebeziumPayloadPipeline = new IngestPipeline<Proces
 // 1. General processed payload for debugging/monitoring
 sqlServerDebeziumPayloadStream.addTransform(processSqlServerDebeziumPayloadPipeline.stream!, transformSqlServerDebeziumPayload);
 
-// 2. Foo table → existing Foo pipeline with CDC
+// 2. Foo table → existing Foo pipeline with CDC (includes Elasticsearch integration)
 sqlServerDebeziumPayloadStream.addTransform(FooPipeline.stream!, transformToFooWithCDC);
 
-// 3. Bar table → existing Bar pipeline with CDC  
+// 3. Bar table → existing Bar pipeline with CDC (includes Elasticsearch integration)
 sqlServerDebeziumPayloadStream.addTransform(BarPipeline.stream!, transformToBarWithCDC);

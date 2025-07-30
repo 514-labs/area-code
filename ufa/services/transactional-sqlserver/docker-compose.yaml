@@ -13,7 +13,7 @@ services:
     image: quay.io/debezium/connect:3.0
     platform: linux/amd64
     ports:
-     - 8083:8083
+     - 8084:8083
     environment:
      - BOOTSTRAP_SERVERS=redpanda:9092
      - GROUP_ID=1

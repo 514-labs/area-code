@@ -1,0 +1,39 @@
+{
+  "name": "transactional-sqlserver",
+  "version": "1.0.0",
+  "description": "SQL Server with Debezium CDC infrastructure for streaming transactional data changes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm sqlserver:start && sleep 15 && pnpm connector:register",
+    "ufa:dev": "pnpm sqlserver:start && sleep 15 && pnpm connector:register",
+    "ufa:dev:clean": "pnpm sqlserver:stop",
+    "sqlserver:start": "docker compose up -d",
+    "sqlserver:stop": "docker compose down",
+    "sqlserver:restart": "docker compose restart",
+    "sqlserver:reset": "docker compose down -v && docker compose up -d",
+    "sqlserver:logs": "docker compose logs -f",
+    "sqlserver:status": "docker compose ps",
+    "connector:register": "curl -X POST -H 'Content-Type: application/json' --data @register-sqlserver.json http://localhost:8084/connectors",
+    "connector:status": "curl -X GET http://localhost:8084/connectors/inventory-connector/status",
+    "connector:delete": "curl -X DELETE http://localhost:8084/connectors/inventory-connector",
+    "connector:list": "curl -X GET http://localhost:8084/connectors",
+    "sqlserver:count": "docker exec -it transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -No -Q 'USE sqlCDC; SELECT COUNT(*) FROM foo; SELECT COUNT(*) FROM bar;' -N -C"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "sqlserver",
+    "debezium",
+    "cdc",
+    "change-data-capture",
+    "kafka",
+    "docker"
+  ],
+  "author": "",
+  "license": "MIT"
+}

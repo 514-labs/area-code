@@ -1,5 +1,6 @@
 import { IngestPipeline, Stream, Key, OlapTable} from "@514labs/moose-lib";
 import { FooWithCDC, BarWithCDC, FooStatus } from "@workspace/models";
+import { sendDataToElasticsearch, prepareElasticsearchData } from "../utils/elasticsearch";
 
 /**
  * Helper function to convert Debezium decimal fields from base64 bytes to number
@@ -30,6 +31,7 @@ function convertDebeziumDecimal(value: any): number {
 }
 
 
+// Debezium CDC Schema
 interface CDCSchema {
   type: string;
   fields: {
@@ -68,147 +70,28 @@ interface CDCPayload {
   ts_ns?: number;
 }
 
-
+// Debezium CDC Payload
 export interface SqlServerDebeziumPayload {
   schema: CDCSchema;
   payload: CDCPayload;
 }
 
-// Stream the Debezium writes to 
-
-
+// Table to store all the CDC events - for record keeping
 export interface ProcessSqlServerDebeziumPayload {
   time: Key<Date>;
   payload: Record<string, any>;
 }
 
-
-
+// Transform the Debezium CDC payload to a format that can be stored in a database table - with a key
 export const transformSqlServerDebeziumPayload = (payload: SqlServerDebeziumPayload) => {
-  const after = payload.payload.after;
-  const before = payload.payload.before;
-  const op = payload.payload.op;
-  const source = payload.payload.source;
-  const ts_ms = payload.payload.ts_ms;
-  const ts_us = payload.payload.ts_us;
-  const ts_ns = payload.payload.ts_ns;
-  console.log("AFTER:");
-  console.log(JSON.stringify(after, null, 2));
-  console.log("BEFORE:");
-  console.log(JSON.stringify(before, null, 2));
-  console.log("OPERATION:");
-  console.log(op);
-  console.log("SOURCE:");
-  console.log(source);
-  console.log("TIMESTAMP MS:");
-  console.log(ts_ms);
-  console.log("TIMESTAMP US:");
-  console.log(ts_us);
-  console.log("TIMESTAMP NS:");
-  console.log(ts_ns);
-  console.log("--------------------------------");
-
   return {
     time: new Date(),
     payload: payload,
   };
 };
 
-/**
- * Interface representing the rooms table structure from SQL Server
- */
-
-export const transformToReplicatedRoom = (payload: SqlServerDebeziumPayload): Room | null => {
-  if (payload.payload.source.table !== "rooms") {
-    console.log("Skipping non-room table");
-    return null;
-  }
-
-  const after = payload.payload.after;
-  const before = payload.payload.before;
-  const op = payload.payload.op;
-  const source = payload.payload.source;
-  
-  // Handle different CDC operations
-  switch (op) {
-    case "r": // Read (initial snapshot)
-    case "c": // Create (insert)
-    case "u": // Update
-      if (!after) {
-        console.log(`No 'after' data for operation ${op}, skipping`);
-        return null;
-      }
-      return {
-        id: after.id,
-        hotel_id: after.hotel_id,
-        name: after.name,
-        description: after.description || null,
-        total_rooms: after.total_rooms || null,
-        used_rooms: after.used_rooms || null,
-        left_rooms: after.left_rooms || null,
-        is_deleted: false,
-        version: payload.payload.ts_ms, // Use Debezium timestamp as version
-        cdc_operation: op,
-        cdc_timestamp: new Date(payload.payload.ts_ms)
-      };
-      
-    case "d": // Delete
-      if (!before) {
-        console.log("No 'before' data for delete operation, skipping");
-        return null;
-      }
-      // For deletes, we insert a record with the before data marked as deleted
-      return {
-        id: before.id,
-        hotel_id: before.hotel_id,
-        name: before.name,
-        description: before.description || null,
-        total_rooms: before.total_rooms || null,
-        used_rooms: before.used_rooms || null,
-        left_rooms: before.left_rooms || null,
-        is_deleted: true,
-        version: payload.payload.ts_ms, // Use Debezium timestamp as version
-        cdc_operation: op,
-        cdc_timestamp: new Date(payload.payload.ts_ms)
-      };
-      
-    default:
-      console.log(`Unknown operation: ${op}`);
-      return null;
-  }
-};
-
-export interface Room {
-  id: Key<number>;                    // INTEGER IDENTITY(101,1) NOT NULL PRIMARY KEY
-  hotel_id: string;             // VARCHAR(255) NOT NULL
-  name: Key<string>;                 // VARCHAR(255) NOT NULL
-  description?: string | null;   // VARCHAR(512)
-  total_rooms?: number | null;   // INTEGER
-  used_rooms?: number | null;    // INTEGER
-  left_rooms?: number | null;    // INTEGER 
-  
-  // CDC metadata fields for ReplacingMergeTree
-  is_deleted: boolean;          // Track deletion status
-  version: number;              // Version for ReplacingMergeTree (using Debezium timestamp)
-  cdc_operation: string;        // Track the CDC operation type for debugging
-  cdc_timestamp: Date;          // When the change occurred
-}
-
-
-export const replicatedRoomPipeline = new IngestPipeline<Room>("replicatedRoom", {
-  stream: true,
-  table: {         
-    orderByFields: ["id", "name", "version"], // Include version for ReplacingMergeTree
-    deduplicate: true
-  },
-  ingest: false,
-});
-
-/**
- * Transform function to convert SQL Server Debezium CDC events for 'foo' table
- * into FooWithCDC format for the existing Foo pipeline
- */
-export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWithCDC | null => {
+// Transform function to convert SQL Server Debezium CDC events for 'foo' table into FooWithCDC format for the existing Foo pipeline
+export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload, sendToElasticsearch: boolean = true): FooWithCDC | null => {
   if (payload.payload.source.table !== "foo") {
     console.log("Skipping non-foo table");
     return null;
@@ -218,6 +101,8 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWit
   const before = payload.payload.before;
   const op = payload.payload.op;
   const source = payload.payload.source;
+  
+  let result: FooWithCDC | null = null;
   
   // Handle different CDC operations
   switch (op) {
@@ -251,7 +136,7 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWit
         tags = [];
       }
 
-      return {
+      result = {
         id: after.id,
         name: after.name,
         description: after.description || null,
@@ -269,6 +154,7 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWit
         cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE"),
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
+      break;
       
     case "d": // Delete
       if (!before) {
@@ -298,8 +184,9 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWit
         beforeTags = [];
       }
 
+      
       // For deletes, use before data with DELETE operation
-      return {
+      result = {
         id: before.id,
         name: before.name,
         description: before.description || null,
@@ -317,18 +204,33 @@ export const transformToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWit
         cdc_operation: "DELETE",
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
+      break;
       
     default:
       console.log(`Unknown foo operation: ${op}`);
       return null;
   }
+
+  // Send to Elasticsearch as a side effect (non-blocking)
+  if (result && sendToElasticsearch) {
+    setImmediate(async () => {
+      try {
+        const { action, data } = prepareElasticsearchData(result, result.cdc_operation);
+        await sendDataToElasticsearch("foo", action, data);
+      } catch (error) {
+        console.error("Error sending foo data to Elasticsearch:", error);
+      }
+    });
+  }
+
+  return result;
 };
 
 /**
  * Transform function to convert SQL Server Debezium CDC events for 'bar' table
  * into BarWithCDC format for the existing Bar pipeline
  */
-export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWithCDC | null => {
+export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload, sendToElasticsearch: boolean = true): BarWithCDC | null => {
   if (payload.payload.source.table !== "bar") {
     console.log("Skipping non-bar table");
     return null;
@@ -338,6 +240,8 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWit
   const before = payload.payload.before;
   const op = payload.payload.op;
   const source = payload.payload.source;
+  
+  let result: BarWithCDC | null = null;
   
   // Handle different CDC operations
   switch (op) {
@@ -349,7 +253,7 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWit
         return null;
       }
 
-      return {
+      result = {
         id: after.id,
         foo_id: after.foo_id,
         value: after.value || 0,
@@ -363,6 +267,7 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWit
         cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE"),
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
+      break;
       
     case "d": // Delete
       if (!before) {
@@ -371,7 +276,7 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWit
       }
 
       // For deletes, use before data with DELETE operation
-      return {
+      result = {
         id: before.id,
         foo_id: before.foo_id,
         value: before.value || 0,
@@ -385,10 +290,25 @@ export const transformToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWit
         cdc_operation: "DELETE",
         cdc_timestamp: new Date(payload.payload.ts_ms)
       };
+      break;
       
     default:
       console.log(`Unknown bar operation: ${op}`);
       return null;
   }
+
+  // Send to Elasticsearch as a side effect (non-blocking)
+  if (result && sendToElasticsearch) {
+    setImmediate(async () => {
+      try {
+        const { action, data } = prepareElasticsearchData(result, result.cdc_operation);
+        await sendDataToElasticsearch("bar", action, data);
+      } catch (error) {
+        console.error("Error sending bar data to Elasticsearch:", error);
+      }
+    });
+  }
+
+  return result;
 };
 
