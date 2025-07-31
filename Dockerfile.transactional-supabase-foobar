@@ -1,68 +1,73 @@
 # syntax = docker/dockerfile:1
 
-ARG NODE_VERSION=20
 FROM node:20-alpine AS base
 
 LABEL fly_launch_runtime="Node.js"
 
+# Builder stage - prune the monorepo
+FROM base AS builder
+RUN apk update
+RUN apk add --no-cache libc6-compat
+
 # Set working directory
 WORKDIR /app
 
-# Set production environment
-ENV NODE_ENV="production"
+# Install pnpm and turbo globally
+RUN npm install -g pnpm turbo
 
-# Build stage
-FROM base AS build
+# Copy entire monorepo for pruning
+COPY . .
 
-# Install pnpm, turbo, and typescript globally
-RUN npm install -g pnpm turbo typescript
+# Generate a partial monorepo with a pruned lockfile for transactional-supabase-foobar
+RUN turbo prune transactional-supabase-foobar --docker
 
-# Copy workspace configuration files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+# Installer stage - install dependencies and build
+FROM base AS installer
+RUN apk update
+RUN apk add --no-cache libc6-compat
 
-# Copy all workspace packages (needed for workspace deps)
-COPY ufa/packages ./ufa/packages/
+WORKDIR /app
 
-# Copy the specific service we're building
-COPY ufa/services/transactional-supabase-foobar ./ufa/services/transactional-supabase-foobar/
+# Install pnpm
+RUN npm install -g pnpm
 
-# Install all dependencies including devDependencies (this will handle workspace linking and provide TypeScript)
+# First install the dependencies (as they change less often)
+# Copy pruned package.json files
+COPY --from=builder /app/out/json/ .
+
+# Install dependencies using the pruned lockfile
 RUN pnpm install --frozen-lockfile
 
-# Build workspace dependencies first
-RUN pnpm --filter "@workspace/models" build
+# Build the project
+# Copy pruned source files
+COPY --from=builder /app/out/full/ .
 
-# Build TypeScript directly (avoid package.json script issues)
-WORKDIR /app/ufa/services/transactional-supabase-foobar
-RUN npx tsc
-
-# Copy env file if needed
-RUN [ -f .env.production ] && cp .env.production dist/ || echo 'Warning: .env.production file not found'
+# Build the specific service
+RUN pnpm turbo run build --filter=transactional-supabase-foobar
 
 # Production stage
-FROM node:20-alpine
+FROM node:20-alpine AS runner
+
+WORKDIR /app
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
 
 # Install pnpm for production
 RUN npm install -g pnpm
 
-# Copy workspace configuration for production dependencies
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Copy pruned package.json files for production install
+COPY --from=builder /app/out/json/ .
 
-# Copy built workspace packages that are dependencies
-COPY --from=build /app/ufa/packages ./ufa/packages/
-
-# Copy service package.json first for better caching
-COPY ufa/services/transactional-supabase-foobar/package.json ./ufa/services/transactional-supabase-foobar/
-
-# Install only production dependencies with workspace context
+# Install only production dependencies
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy the built service application
-COPY --from=build /app/ufa/services/transactional-supabase-foobar/dist ./ufa/services/transactional-supabase-foobar/dist
+# Copy the built application
+COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/dist ./ufa/services/transactional-supabase-foobar/dist
+
+# Copy any additional runtime files if needed
+COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/package.json ./ufa/services/transactional-supabase-foobar/
 
 # Set working directory to the service
 WORKDIR /app/ufa/services/transactional-supabase-foobar
