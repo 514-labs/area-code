@@ -1,5 +1,8 @@
 name: Supabase Database Migration Pipeline
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:
