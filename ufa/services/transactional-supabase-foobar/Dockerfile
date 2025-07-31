@@ -18,8 +18,8 @@ FROM base as build
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential pkg-config python-is-python3
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install pnpm and TypeScript globally for build
+RUN npm install -g pnpm typescript
 
 # Copy workspace files from monorepo root (context is root)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -33,8 +33,9 @@ COPY ufa/services/transactional-supabase-foobar/ ./ufa/services/transactional-su
 # Install all dependencies (including workspace deps)
 RUN pnpm install --frozen-lockfile
 
-# Build the TypeScript (from workspace root to maintain workspace context)
-RUN pnpm --filter transactional-supabase-foobar run build
+# Build the TypeScript
+WORKDIR /app/ufa/services/transactional-supabase-foobar
+RUN pnpm run build
 
 # Production stage
 FROM base
