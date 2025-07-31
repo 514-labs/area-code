@@ -6,7 +6,6 @@ kill_timeout = 5
 
 [build]
   dockerfile = "ufa/services/transactional-supabase-foobar/Dockerfile"
-  build_context = "../../../"
 
 [deploy]
   strategy = "rolling"
