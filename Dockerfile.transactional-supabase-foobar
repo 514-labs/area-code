@@ -82,7 +82,4 @@ USER nodejs
 EXPOSE 8082
 
 # Start the server
-CMD ["node", "/app/ufa/services/transactional-supabase-foobar/dist/services/transactional-supabase-foobar/src/server.js"]
-
-
-
+CMD ["node", "dist/services/transactional-supabase-foobar/src/server.js"]
