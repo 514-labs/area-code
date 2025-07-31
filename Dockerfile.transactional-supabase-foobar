@@ -1,13 +1,14 @@
 # syntax = docker/dockerfile:1
 
-FROM node:20-alpine AS base
+FROM node:slim AS base
 
 LABEL fly_launch_runtime="Node.js"
 
 # Builder stage - prune the monorepo
 FROM base AS builder
-RUN apk update
-RUN apk add --no-cache libc6-compat
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -23,8 +24,9 @@ RUN turbo prune transactional-supabase-foobar --docker
 
 # Installer stage - install dependencies and build
 FROM base AS installer
-RUN apk update
-RUN apk add --no-cache libc6-compat
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -46,7 +48,7 @@ COPY --from=builder /app/out/full/ .
 RUN pnpm turbo run build --filter=transactional-supabase-foobar
 
 # Production stage
-FROM node:20-alpine AS runner
+FROM node:slim AS runner
 
 WORKDIR /app
 
@@ -66,6 +68,9 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy the built application following Turborepo pattern
 COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/dist ./
 
+# Copy package.json for node_modules resolution  
+COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/package.json ./
+
 # Change ownership to nodejs user
 RUN chown -R nodejs:nodejs /app
 
@@ -75,5 +80,5 @@ USER nodejs
 # Expose port
 EXPOSE 8082
 
-# Start the server
-CMD ["sh", "-c", "echo '=== DEBUGGING DEPENDENCIES ===' && pwd && ls -la && echo '=== NODE_MODULES ===' && ls -la node_modules | head -10 && echo '=== PACKAGE.JSON ===' && find . -name 'package.json' | head -5 && echo '=== SERVER LOCATION ===' && find . -name 'server.js' && echo '=== ATTEMPTING TO START ===' && node services/transactional-supabase-foobar/src/server.js"]
+# Start the server - run the compiled server.js from dist
+CMD ["node", "server.js"]
