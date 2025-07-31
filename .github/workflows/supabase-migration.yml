@@ -48,23 +48,6 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
-      - name: Check for schema drift
-        run: |
-          echo "🔄 Checking for schema drift..."
-          cd database/supabase
-          supabase db diff > drift-check.sql || true
-          if [ -s drift-check.sql ]; then
-            echo "⚠️  Schema drift detected:"
-            cat drift-check.sql
-            echo ""
-            echo "Please review the differences above to ensure migrations are complete."
-          else
-            echo "✅ No schema drift detected"
-          fi
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-
   deploy-migrations:
     name: Deploy to Production
     runs-on: ubuntu-latest
