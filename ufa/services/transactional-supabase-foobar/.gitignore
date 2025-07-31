@@ -2,9 +2,7 @@
 .env
 .env.local
 .env.development
-.env.production
 .env.test
-.env.*
 !.env.example
 
 # Docker data volumes - persistent database data
@@ -77,7 +75,6 @@ openapi.json
 prod/volumes/db/data/
 supabase/.branches/
 supabase/.temp/
-supabase/
 
 # Environment files (may contain secrets)
 .env

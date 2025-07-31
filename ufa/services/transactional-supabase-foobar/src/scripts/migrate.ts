@@ -45,7 +45,10 @@ async function main() {
     await waitForDatabase();
 
     // Use absolute path to migrations folder
-    const migrationsFolder = path.join(serviceRoot, "migrations");
+    const migrationsFolder = path.join(
+      serviceRoot,
+      "database/supabase/migrations"
+    );
     console.log(`📁 Using migrations folder: ${migrationsFolder}`);
 
     // Run migrations

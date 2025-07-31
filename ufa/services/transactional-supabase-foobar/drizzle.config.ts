@@ -46,7 +46,7 @@ if (isSupabaseCLI) {
 
 export default {
   schema: "./src/database/schema.ts",
-  out: "./migrations",
+  out: "./database/supabase/migrations", // Output to Supabase migrations directory
   driver: "pg",
   dbCredentials: {
     connectionString,
