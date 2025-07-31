@@ -7,7 +7,7 @@
   "scripts": {
     "ufa:dev": "./scripts/dev-startup.sh",
     "ufa:dev:clean": "pnpm db:stop",
-    "build": "pnpm clean && tsc && pnpm build:copy-env",
+    "build": "pnpm clean && pnpm tsc && pnpm build:copy-env",
     "build:copy-env": "[ -f .env.production ] && cp .env.production dist/ || echo 'Warning: .env.production file is missing. Ensure it exists if required.'",
     "dev": "./scripts/dev-startup.sh",
     "dev:fastify": "SUPABASE_CLI=true pnpm tsx watch src/server.ts",

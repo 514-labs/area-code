@@ -30,13 +30,13 @@ COPY ufa/packages ./ufa/packages/
 # Copy the specific service we're building
 COPY ufa/services/transactional-supabase-foobar ./ufa/services/transactional-supabase-foobar/
 
-# Install all dependencies (this will handle workspace linking)
+# Install all dependencies including devDependencies (this will handle workspace linking and provide TypeScript)
 RUN pnpm install --frozen-lockfile
 
 # Build workspace dependencies first (like @workspace/models)
 RUN pnpm --filter "@workspace/models" build
 
-# Build the service
+# Build the service (TypeScript will be available from node_modules)
 RUN pnpm --filter "transactional-supabase-foobar" build
 
 # Production stage
