@@ -63,11 +63,8 @@ COPY --from=builder /app/out/json/ .
 # Install only production dependencies
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy the built application
-COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/dist ./ufa/services/transactional-supabase-foobar/dist
-
-# Copy any additional runtime files if needed
-COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/package.json ./ufa/services/transactional-supabase-foobar/
+# Copy the built application - copy entire service directory to preserve structure
+COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/ ./ufa/services/transactional-supabase-foobar/
 
 # Set working directory to the service
 WORKDIR /app/ufa/services/transactional-supabase-foobar
