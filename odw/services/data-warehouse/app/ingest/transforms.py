@@ -1,8 +1,8 @@
 from app.ingest.models import (
-    blobSourceModel, logSourceModel, eventSourceModel,
-    blobModel, logModel, eventModel, medicalModel,
-    BlobSource, LogSource, EventSource,
-    Blob, Log, Event, Medical
+    blobSourceModel, logSourceModel, eventSourceModel, unstructuredDataSourceModel,
+    blobModel, logModel, eventModel, unstructuredDataModel, medicalModel,
+    BlobSource, LogSource, EventSource, UnstructuredDataSource,
+    Blob, Log, Event, UnstructuredData, Medical
 )
 from moose_lib import DeadLetterModel, TransformConfig
 from datetime import datetime
@@ -89,11 +89,30 @@ eventSourceModel.get_stream().add_transform(
     config=TransformConfig(
         dead_letter_queue=eventSourceModel.get_dead_letter_queue()
     )
-)
+    )
 
-# Note: UnstructuredDataSource streaming transformation removed
-# The unstructured data workflow now processes files directly to Medical records
-# without using the UnstructuredDataSource intermediate step
+# Transform UnstructuredDataSource to UnstructuredData, adding timestamp
+def unstructured_data_source_to_unstructured_data(source: UnstructuredDataSource) -> UnstructuredData:
+    # Check for failure simulation
+    if source.source_file_path.startswith("[DLQ]"):
+        raise ValueError(f"Transform failed for unstructured data {source.id}: File marked as failed")
+
+    return UnstructuredData(
+        id=source.id,
+        source_file_path=source.source_file_path,
+        extracted_data_json=source.extracted_data_json,
+        processed_at=source.processed_at,
+        processing_instructions=source.processing_instructions,
+        transform_timestamp=datetime.now().isoformat()
+    )
+
+unstructuredDataSourceModel.get_stream().add_transform(
+    destination=unstructuredDataModel.get_stream(),
+    transformation=unstructured_data_source_to_unstructured_data,
+    config=TransformConfig(
+        dead_letter_queue=unstructuredDataSourceModel.get_dead_letter_queue()
+    )
+)
 
 
 # Dead letter queue recovery for BlobSource
@@ -171,6 +190,28 @@ def invalid_event_source_to_event(dead_letter: DeadLetterModel[EventSource]) -> 
         print(f"Event recovery failed: {error}")
         return None
 
+# Dead letter queue recovery for UnstructuredDataSource
+def invalid_unstructured_data_source_to_unstructured_data(dead_letter: DeadLetterModel[UnstructuredDataSource]) -> Optional[UnstructuredData]:
+    try:
+        original_source = dead_letter.as_typed()
+
+        # Fix the failure condition - change [DLQ] to [RECOVERED]
+        corrected_file_path = original_source.source_file_path
+        if corrected_file_path.startswith("[DLQ]"):
+            corrected_file_path = corrected_file_path.replace("[DLQ]", "[RECOVERED]", 1)
+
+        return UnstructuredData(
+            id=original_source.id,
+            source_file_path=corrected_file_path,
+            extracted_data_json=original_source.extracted_data_json,
+            processed_at=original_source.processed_at,
+            processing_instructions=original_source.processing_instructions,
+            transform_timestamp=datetime.now().isoformat()
+        )
+    except Exception as error:
+        print(f"UnstructuredData recovery failed: {error}")
+        return None
+
 
 # Set up dead letter queue transforms
 blobSourceModel.get_dead_letter_queue().add_transform(
@@ -186,5 +227,10 @@ logSourceModel.get_dead_letter_queue().add_transform(
 eventSourceModel.get_dead_letter_queue().add_transform(
     destination=eventModel.get_stream(),
     transformation=invalid_event_source_to_event,
+)
+
+unstructuredDataSourceModel.get_dead_letter_queue().add_transform(
+    destination=unstructuredDataModel.get_stream(),
+    transformation=invalid_unstructured_data_source_to_unstructured_data,
 )
 

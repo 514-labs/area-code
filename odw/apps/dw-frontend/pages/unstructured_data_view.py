@@ -187,37 +187,11 @@ def show():
     try:
         # Header
         st.title("Unstructured Data Connector")
-        st.markdown("Trigger and view data processing results")
+        st.markdown("Process unstructured data and view results")
         
-        # Add CSS styling for tabs
-        st.markdown("""
-        <style>
-            /* Target active tab */
-            .stTabs [data-baseweb="tab"][aria-selected="true"] {
-                color: #1f77b4 !important; /* Blue text */
-                font-weight: bold !important; /* Bold text */
-                border-bottom: 2px solid #1f77b4 !important; /* Blue underline */
-            }
-
-            /* Target tab on hover */
-            .stTabs [data-baseweb="tab"]:hover {
-                color: #1f77b4 !important; /* Blue text on hover */
-            }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Create tabs for Submit and View
-        submit_tab, view_tab = st.tabs(["📤 Process Data", "📊 View Processed Data"])
-    except Exception as e:
-        st.error(f"Error loading Unstructured Data Connector: {e}")
-        st.info("Please try refreshing the page.")
-        return
-    
-    with submit_tab:
-        st.subheader("Process Unstructured Data")
+        # Process Data Section
+        st.subheader("📤 Process Unstructured Data")
         st.markdown("Use this form to process unstructured data")
-        
-        # S3 Pattern Examples and Help section removed as requested
         
         with st.form("submit_unstructured_data"):
             
@@ -283,7 +257,7 @@ Return only the JSON object with no additional text or formatting."""
                     with st.spinner("Processing S3 pattern directly..."):
                         try:
                             trigger_extract(
-                                f"{CONSUMPTION_API_BASE}/extractUnstructuredData", 
+                                f"{CONSUMPTION_API_BASE}/extract-unstructured-data", 
                                 "Unstructured Data",
                                 source_file_pattern=source_file_path,
                                 processing_instructions=processing_instructions
@@ -293,10 +267,12 @@ Return only the JSON object with no additional text or formatting."""
                         except Exception as e:
                             st.error(f"Failed to trigger pattern processing: {str(e)}")
 
-    
-    with view_tab:
+        # Add visual separator between sections
+        st.markdown("---")
+        
+        # View Data Section
         # Header with refresh button using the same styling as logs page
-        if title_with_button("Structured Data Records", "Refresh Data", "refresh_data_btn", button_size="sm"):
+        if title_with_button("📊 Structured Data Records", "Refresh Data", "refresh_data_btn", button_size="sm"):
             with st.spinner("Refreshing data..."):
                 st.session_state["refresh_unstructured"] = True
             st.rerun()
@@ -383,4 +359,8 @@ Return only the JSON object with no additional text or formatting."""
                 st.info("No data available to display.")
         else:
             st.info("No medical data found. Process some unstructured data using the form above to generate medical records!")
+    except Exception as e:
+        st.error(f"Error loading Unstructured Data Connector: {e}")
+        st.info("Please try refreshing the page.")
+        return
  

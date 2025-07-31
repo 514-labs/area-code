@@ -8,7 +8,17 @@ from typing import Optional
 # Extract API models (similar to other extract APIs)
 class ExtractUnstructuredDataQueryParams(BaseModel):
   source_file_pattern: str = "s3://unstructured-data/*"  # S3 pattern to process
-  processing_instructions: Optional[str] = "Extract dental appointment information from this document"
+  processing_instructions: Optional[str] = """Extract the following information from this dental appointment document and return it as JSON with these exact field names:
+
+{
+  "patient_name": "[full patient name]",
+  "phone_number": "[patient phone number with any extensions]", 
+  "scheduled_appointment_date": "[appointment date in original format]",
+  "dental_procedure_name": "[specific dental procedure or treatment]",
+  "doctor": "[doctor's name including title]"
+}
+
+Return only the JSON object with no additional text or formatting."""
   batch_size: Optional[int] = 100
   fail_percentage: Optional[int] = 0
 
@@ -38,7 +48,7 @@ def extract_unstructured_data(client, params: ExtractUnstructuredDataQueryParams
 
 # Create the extract API
 extract_unstructured_data_api = ConsumptionApi[ExtractUnstructuredDataQueryParams, ExtractUnstructuredDataResponse](
-    "extractUnstructuredData",
+    "extract-unstructured-data",
     query_function=extract_unstructured_data,
     source="",  # No source table - workflow processes S3 directly
     config=EgressConfig()

@@ -134,7 +134,7 @@ def trigger_extract(api_url, label, source_file_pattern=None, processing_instruc
     batch_size = random.randint(10, 100)
     
     # Special handling for unstructured data workflow
-    if "extractUnstructuredData" in api_url:
+    if "extract-unstructured-data" in api_url:
         try:
             # Use subprocess to run the Moose CLI workflow command
             import subprocess
