@@ -3,8 +3,12 @@ permissions:
   contents: read
 
 on:
+  # Run on pushes to main branch only (direct commits)
   push:
+    branches: [main]
+  # Run on all PRs (this covers validation before merge)
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   # Check if migration-related files were changed
