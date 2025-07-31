@@ -31,22 +31,27 @@ jobs:
       - name: Lint migration files
         run: |
           echo "🔍 Linting migration files..."
-          supabase db lint --workdir database/supabase
+          supabase db lint --workdir database/supabase --project-ref "$PROJECT_REF"
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Validate migrations (dry run)
         run: |
           echo "🧪 Testing migrations against production database (dry run)..."
           cd database/supabase
-          supabase db push --db-url "$DATABASE_URL" --dry-run
+          supabase db push --db-url "$DATABASE_URL" --dry-run --project-ref "$PROJECT_REF"
           echo "✅ Migration validation successful - ready for deployment"
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Check for schema drift
         run: |
           echo "🔄 Checking for schema drift..."
           cd database/supabase
-          supabase db diff --db-url "$DATABASE_URL" > drift-check.sql || true
+          supabase db diff --db-url "$DATABASE_URL" --project-ref "$PROJECT_REF" > drift-check.sql || true
           if [ -s drift-check.sql ]; then
             echo "⚠️  Schema drift detected:"
             cat drift-check.sql
@@ -57,6 +62,8 @@ jobs:
           fi
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
   deploy-migrations:
     name: Deploy to Production
@@ -80,7 +87,9 @@ jobs:
         run: |
           echo "🚀 Deploying migrations to production database..."
           cd database/supabase
-          supabase db push --db-url "$DATABASE_URL"
+          supabase db push --db-url "$DATABASE_URL" --project-ref "$PROJECT_REF"
           echo "✅ Migrations successfully deployed to production!"
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
