@@ -33,9 +33,8 @@ COPY ufa/services/transactional-supabase-foobar/ ./ufa/services/transactional-su
 # Install all dependencies (including workspace deps)
 RUN pnpm install --frozen-lockfile
 
-# Build the TypeScript
-WORKDIR /app/ufa/services/transactional-supabase-foobar
-RUN pnpm run build
+# Build the TypeScript (from workspace root to maintain workspace context)
+RUN pnpm --filter transactional-supabase-foobar run build
 
 # Production stage
 FROM base
