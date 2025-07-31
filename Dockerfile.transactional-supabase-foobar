@@ -1,0 +1,70 @@
+# syntax = docker/dockerfile:1
+
+ARG NODE_VERSION=20
+FROM node:${NODE_VERSION}-slim AS base
+
+LABEL fly_launch_runtime="Node.js"
+
+# Set working directory
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV="production"
+
+# Build stage
+FROM base AS build
+
+# Install packages needed to build node modules
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential pkg-config python-is-python3
+
+# Install pnpm globally for build
+RUN npm install -g pnpm
+
+# Copy workspace configuration files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+
+# Copy all workspace packages (needed for workspace deps)
+COPY ufa/packages ./ufa/packages/
+
+# Copy the specific service we're building
+COPY ufa/services/transactional-supabase-foobar ./ufa/services/transactional-supabase-foobar/
+
+# Install all dependencies (this will handle workspace linking)
+RUN pnpm install --frozen-lockfile
+
+# Build workspace dependencies first (like @workspace/models)
+RUN pnpm --filter "@workspace/models" build
+
+# Build the service
+RUN pnpm --filter "transactional-supabase-foobar" build
+
+# Production stage
+FROM base
+
+# Install pnpm for production
+RUN npm install -g pnpm
+
+# Copy workspace configuration for production dependencies
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy built workspace packages that are dependencies
+COPY --from=build /app/ufa/packages ./ufa/packages/
+
+# Copy service package.json first for better caching
+COPY ufa/services/transactional-supabase-foobar/package.json ./ufa/services/transactional-supabase-foobar/
+
+# Install only production dependencies with workspace context
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy the built service application
+COPY --from=build /app/ufa/services/transactional-supabase-foobar/dist ./ufa/services/transactional-supabase-foobar/dist
+
+# Set working directory to the service
+WORKDIR /app/ufa/services/transactional-supabase-foobar
+
+# Expose port
+EXPOSE 8082
+
+# Start the server
+CMD ["node", "dist/src/server.js"]

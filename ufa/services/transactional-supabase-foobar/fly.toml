@@ -5,8 +5,7 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 
 [build]
-  dockerfile = "Dockerfile"
-  build_context = "../../../"
+  dockerfile = "Dockerfile.transactional-supabase-foobar"
 
 [deploy]
   strategy = "rolling"
