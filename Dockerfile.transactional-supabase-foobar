@@ -76,4 +76,4 @@ USER nodejs
 EXPOSE 8082
 
 # Start the server
-CMD ["node", "services/transactional-supabase-foobar/src/server.js"]
+CMD ["sh", "-c", "echo '=== DEBUGGING DEPENDENCIES ===' && pwd && ls -la && echo '=== NODE_MODULES ===' && ls -la node_modules | head -10 && echo '=== PACKAGE.JSON ===' && find . -name 'package.json' | head -5 && echo '=== SERVER LOCATION ===' && find . -name 'server.js' && echo '=== ATTEMPTING TO START ===' && node services/transactional-supabase-foobar/src/server.js"]
