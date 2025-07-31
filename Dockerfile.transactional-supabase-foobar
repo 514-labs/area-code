@@ -1,84 +1,30 @@
-# syntax = docker/dockerfile:1
-
-FROM node:slim AS base
-
-LABEL fly_launch_runtime="Node.js"
-
-# Builder stage - prune the monorepo
-FROM base AS builder
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
-WORKDIR /app
-
-# Install pnpm and turbo globally
-RUN npm install -g pnpm turbo
-
-# Copy entire monorepo for pruning
-COPY . .
-
-# Generate a partial monorepo with a pruned lockfile for transactional-supabase-foobar
-RUN turbo prune transactional-supabase-foobar --docker
-
-# Installer stage - install dependencies and build
-FROM base AS installer
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Simple Dockerfile that replicates development environment
+FROM node:slim
 
 WORKDIR /app
 
 # Install pnpm
 RUN npm install -g pnpm
 
-# First install the dependencies (as they change less often)
-# Copy pruned package.json files
-COPY --from=builder /app/out/json/ .
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY ufa/services/transactional-supabase-foobar/package.json ./ufa/services/transactional-supabase-foobar/
+COPY ufa/packages/models/package.json ./ufa/packages/models/
+COPY ufa/packages/eslint-config/package.json ./ufa/packages/eslint-config/
+COPY ufa/packages/typescript-config/package.json ./ufa/packages/typescript-config/
 
-# Install dependencies using the pruned lockfile
-RUN pnpm install --frozen-lockfile
+# Install all dependencies (including dev dependencies like tsx)
+RUN pnpm install
 
-# Build the project
-# Copy pruned source files
-COPY --from=builder /app/out/full/ .
+# Copy source code
+COPY ufa/services/transactional-supabase-foobar ./ufa/services/transactional-supabase-foobar
+COPY ufa/packages ./ufa/packages
 
-# Build the specific service
-RUN pnpm turbo run build --filter=transactional-supabase-foobar
-
-# Production stage
-FROM node:slim AS runner
-
-WORKDIR /app
-
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
-
-# Install pnpm for production dependencies
-RUN npm install -g pnpm
-
-# Copy pruned package.json files for production install
-COPY --from=builder /app/out/json/ .
-
-# Install only production dependencies
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy the built application following Turborepo pattern
-COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/dist ./
-
-# Copy package.json for node_modules resolution  
-COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/package.json ./
-
-# Change ownership to nodejs user
-RUN chown -R nodejs:nodejs /app
-
-# Switch to non-root user
-USER nodejs
+# Set working directory to the service
+WORKDIR /app/ufa/services/transactional-supabase-foobar
 
 # Expose port
 EXPOSE 8082
 
-# Start the server - run the compiled server.js from dist
-CMD ["node", "server.js"]
+# Use the development script (which we know works)
+CMD ["pnpm", "tsx", "src/server.ts"]
