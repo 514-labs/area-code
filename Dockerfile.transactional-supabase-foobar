@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1
 
 ARG NODE_VERSION=20
-FROM node:${NODE_VERSION}-slim AS base
+FROM node:20-alpine AS base
 
 LABEL fly_launch_runtime="Node.js"
 
@@ -14,11 +14,7 @@ ENV NODE_ENV="production"
 # Build stage
 FROM base AS build
 
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential pkg-config python-is-python3
-
-# Install pnpm, turbo, and typescript globally for build
+# Install pnpm, turbo, and typescript globally
 RUN npm install -g pnpm turbo typescript
 
 # Copy workspace configuration files
@@ -44,7 +40,11 @@ RUN npx tsc
 RUN [ -f .env.production ] && cp .env.production dist/ || echo 'Warning: .env.production file not found'
 
 # Production stage
-FROM base
+FROM node:20-alpine
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
 # Install pnpm for production
 RUN npm install -g pnpm
@@ -66,6 +66,12 @@ COPY --from=build /app/ufa/services/transactional-supabase-foobar/dist ./ufa/ser
 
 # Set working directory to the service
 WORKDIR /app/ufa/services/transactional-supabase-foobar
+
+# Change ownership to nodejs user
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
 
 # Expose port
 EXPOSE 8082
