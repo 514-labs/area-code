@@ -54,6 +54,15 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
+# Install pnpm for production dependencies
+RUN npm install -g pnpm
+
+# Copy pruned package.json files for production install
+COPY --from=builder /app/out/json/ .
+
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
 # Copy the built application following Turborepo pattern
 COPY --from=installer --chown=nodejs:nodejs /app/ufa/services/transactional-supabase-foobar/dist ./
 
