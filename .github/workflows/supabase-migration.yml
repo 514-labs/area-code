@@ -1,5 +1,4 @@
 name: Supabase Database Migration Pipeline
-
 permissions:
   contents: read
 
