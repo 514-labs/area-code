@@ -30,6 +30,8 @@ show_help() {
     echo "It handles data migration between transactional, analytical, and retrieval services."
     echo ""
     echo "Options:"
+    echo "  --service=SERVICE   Target specific service (transactional-supabase-foobar,"
+    echo "                      analytical-moose-foobar, retrieval-elasticsearch-foobar)"
     echo "  --clear-data        Clear existing data before seeding (skip prompt)"
     echo "  --foo-rows=N        Number of foo records to create (skip prompt)"
     echo "  --bar-rows=N        Number of bar records to create (skip prompt)"
@@ -37,7 +39,9 @@ show_help() {
     echo "  --help              Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                                        # Interactive seeding"
+    echo "  $0                                        # Interactive seeding (all services)"
+    echo "  $0 --service=transactional-supabase-foobar  # Seed only transactional service"
+    echo "  $0 --service=analytical-moose-foobar     # Seed only analytical service"
     echo "  $0 --clear-data                          # Clear data and prompt for counts"
     echo "  $0 --foo-rows=500,000 --bar-rows=100,000  # Automated seeding"
     echo "  $0 --clear-data --foo-rows=1,000,000 --verbose  # Detailed output"
@@ -168,6 +172,7 @@ seed_all_data() {
     CLEAR_DATA="false"
     FOO_ROWS=""
     BAR_ROWS=""
+    TARGET_SERVICE=""
     
     # Parse arguments for flags
     for arg in "$@"; do
@@ -181,11 +186,28 @@ seed_all_data() {
             --bar-rows=*)
                 BAR_ROWS="${arg#*=}"
                 ;;
+            --service=*)
+                TARGET_SERVICE="${arg#*=}"
+                ;;
             --verbose)
                 VERBOSE_MODE="true"
                 ;;
         esac
     done
+    
+    # Validate target service if specified
+    if [ -n "$TARGET_SERVICE" ]; then
+        case "$TARGET_SERVICE" in
+            "transactional-supabase-foobar"|"analytical-moose-foobar"|"retrieval-elasticsearch-foobar")
+                # Valid service
+                ;;
+            *)
+                echo "❌ Invalid service: $TARGET_SERVICE"
+                echo "Valid services: transactional-supabase-foobar, analytical-moose-foobar, retrieval-elasticsearch-foobar"
+                return 1
+                ;;
+        esac
+    fi
     
     # Initialize logging
     log_message "=== Data Seeding Started ==="
@@ -193,6 +215,7 @@ seed_all_data() {
     log_message "Clear data: $CLEAR_DATA"
     log_message "Foo rows: $FOO_ROWS"
     log_message "Bar rows: $BAR_ROWS"
+    log_message "Target service: ${TARGET_SERVICE:-all}"
     
     # Get parameters from user if not provided via flags
     if [ "$CLEAR_DATA" != "true" ]; then
@@ -212,6 +235,7 @@ seed_all_data() {
     
     echo ""
     echo "Configuration:"
+    echo "  • Target service: ${TARGET_SERVICE:-all services}"
     echo "  • Clear data: $CLEAR_DATA (drops tables in public schema, then migrates)"
     echo "  • Foo rows: $FOO_ROWS"
     echo "  • Bar rows: $BAR_ROWS"
@@ -241,9 +265,10 @@ seed_all_data() {
     fi
     
     # 1. Seed transactional-supabase-foobar (both foo and bar data)
-    echo "📊 Seeding transactional-supabase-foobar..."
-    log_message "Starting transactional-supabase-foobar seeding"
-    if is_service_running "transactional-supabase-foobar"; then
+    if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "transactional-supabase-foobar" ]; then
+        echo "📊 Seeding transactional-supabase-foobar..."
+        log_message "Starting transactional-supabase-foobar seeding"
+        if is_service_running "transactional-supabase-foobar"; then
         log_message "transactional-supabase-foobar is running, proceeding with seeding"
         
         cd "$PROJECT_ROOT/services/transactional-supabase-foobar" || {
@@ -433,15 +458,20 @@ EOF
         cd "$PROJECT_ROOT"
         echo "✅ transactional-supabase-foobar seeded"
         log_message "transactional-supabase-foobar seeding completed successfully"
+        else
+            echo "⚠️  transactional-supabase-foobar is not running, skipping seeding"
+            log_message "transactional-supabase-foobar is not running, skipping seeding"
+        fi
     else
-        echo "⚠️  transactional-supabase-foobar is not running, skipping seeding"
-        log_message "transactional-supabase-foobar is not running, skipping seeding"
+        echo "⏭️  Skipping transactional-supabase-foobar (not targeted)"
+        log_message "Skipping transactional-supabase-foobar seeding (not targeted)"
     fi
     
     # 2. Seed analytical-moose-foobar (migrate data from transactional) - FAST
-    echo "📈 Seeding analytical-moose-foobar..."
-    log_message "Starting analytical-moose-foobar migration"
-    if is_service_running "analytical-moose-foobar"; then
+    if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "analytical-moose-foobar" ]; then
+        echo "📈 Seeding analytical-moose-foobar..."
+        log_message "Starting analytical-moose-foobar migration"
+        if is_service_running "analytical-moose-foobar"; then
         log_message "analytical-moose-foobar is running, proceeding with data migration"
         
         cd "$PROJECT_ROOT/services/analytical-moose-foobar" || {
@@ -498,15 +528,20 @@ EOF
         cd "$PROJECT_ROOT"
         echo "✅ analytical-moose-foobar migrated"
         log_message "analytical-moose-foobar migration completed successfully"
+        else
+            echo "⚠️  analytical-moose-foobar is not running, skipping migration"
+            log_message "analytical-moose-foobar is not running, skipping migration"
+        fi
     else
-        echo "⚠️  analytical-moose-foobar is not running, skipping migration"
-        log_message "analytical-moose-foobar is not running, skipping migration"
+        echo "⏭️  Skipping analytical-moose-foobar (not targeted)"
+        log_message "Skipping analytical-moose-foobar migration (not targeted)"
     fi
     
     # 3. Start retrieval-elasticsearch-foobar migration in BACKGROUND (slow process)
-    echo "🔍 Starting retrieval-elasticsearch-foobar migration..."
-    log_message "Starting retrieval-elasticsearch-foobar migration in background"
-    if is_service_running "retrieval-elasticsearch-foobar"; then
+    if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "retrieval-elasticsearch-foobar" ]; then
+        echo "🔍 Starting retrieval-elasticsearch-foobar migration..."
+        log_message "Starting retrieval-elasticsearch-foobar migration in background"
+        if is_service_running "retrieval-elasticsearch-foobar"; then
         log_message "retrieval-elasticsearch-foobar is running, starting background data migration"
         
         # Create background migration script
@@ -556,10 +591,14 @@ EOF
         
         echo "✅ retrieval-elasticsearch-foobar migration started (PID: $ES_PID)"
         log_message "Elasticsearch migration started in background (PID: $ES_PID)"
-        
+            
+        else
+            echo "⚠️  retrieval-elasticsearch-foobar is not running, skipping migration"
+            log_message "retrieval-elasticsearch-foobar is not running, skipping migration"
+        fi
     else
-        echo "⚠️  retrieval-elasticsearch-foobar is not running, skipping migration"
-        log_message "retrieval-elasticsearch-foobar is not running, skipping migration"
+        echo "⏭️  Skipping retrieval-elasticsearch-foobar (not targeted)"
+        log_message "Skipping retrieval-elasticsearch-foobar migration (not targeted)"
     fi
     
     # Step 4: Restart workflows to resume real-time synchronization
@@ -570,14 +609,22 @@ EOF
     log_message "=== Data Seeding Completed Successfully ==="
     echo ""
     echo "✅ COMPLETED:"
-    echo "   📊 transactional-supabase-foobar: $FOO_ROWS foo, $BAR_ROWS bar records"
-    echo "   📈 analytical-moose-foobar: Data migrated to ClickHouse"
-    echo "   🔄 workflows: Restarted for real-time sync"
+    if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "transactional-supabase-foobar" ]; then
+        echo "   📊 transactional-supabase-foobar: $FOO_ROWS foo, $BAR_ROWS bar records"
+    fi
+    if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "analytical-moose-foobar" ]; then
+        echo "   📈 analytical-moose-foobar: Data migrated to ClickHouse"
+    fi
+    if [ -z "$TARGET_SERVICE" ]; then
+        echo "   🔄 workflows: Restarted for real-time sync"
+    fi
     echo ""
-    echo "🔄 BACKGROUND: retrieval-elasticsearch-foobar → Elasticsearch (15-30 min)"
-    echo ""
-    echo "📋 Monitor Elasticsearch migration:"
-    echo "   tail -f $PROJECT_ROOT/elasticsearch_migration.log"
+    if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "retrieval-elasticsearch-foobar" ]; then
+        echo "🔄 BACKGROUND: retrieval-elasticsearch-foobar → Elasticsearch (15-30 min)"
+        echo ""
+        echo "📋 Monitor Elasticsearch migration:"
+        echo "   tail -f $PROJECT_ROOT/elasticsearch_migration.log"
+    fi
     echo ""
     echo "📄 Detailed logs: $SEED_LOG"
     echo ""
