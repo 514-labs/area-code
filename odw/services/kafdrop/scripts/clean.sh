@@ -76,7 +76,7 @@ stop_kafdrop() {
 }
 
 main() {
-    print_status "Cleaning up Kafdrop ervice..."
+    print_status "Cleaning up Kafdrop service..."
     stop_kafdrop
     print_success "Kafdrop Service cleanup completed"
 }
