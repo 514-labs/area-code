@@ -82,4 +82,7 @@ USER nodejs
 EXPOSE 8082
 
 # Start the server
-CMD ["sh", "-c", "echo 'Finding server.js files:' && find /app -name 'server.js' -type f 2>/dev/null | head -10 && echo 'Starting server...' && node dist/server.js"]
+CMD ["node", "/app/ufa/services/transactional-supabase-foobar/dist/services/transactional-supabase-foobar/src/server.js"]
+
+
+
