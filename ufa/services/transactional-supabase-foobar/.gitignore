@@ -75,7 +75,6 @@ openapi.json
 prod/volumes/db/data/
 supabase/.branches/
 supabase/.temp/
-supabase/
 
 # Environment files (may contain secrets)
 .env
