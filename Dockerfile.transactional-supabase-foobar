@@ -18,8 +18,8 @@ FROM base AS build
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential pkg-config python-is-python3
 
-# Install pnpm and turbo globally for build
-RUN npm install -g pnpm turbo
+# Install pnpm, turbo, and typescript globally for build
+RUN npm install -g pnpm turbo typescript
 
 # Copy workspace configuration files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
@@ -33,8 +33,15 @@ COPY ufa/services/transactional-supabase-foobar ./ufa/services/transactional-sup
 # Install all dependencies including devDependencies (this will handle workspace linking and provide TypeScript)
 RUN pnpm install --frozen-lockfile
 
-# Build the service and its dependencies using turbo (this properly handles TypeScript)
-RUN npx turbo build --filter="transactional-supabase-foobar"
+# Build workspace dependencies first
+RUN pnpm --filter "@workspace/models" build
+
+# Build TypeScript directly (avoid package.json script issues)
+WORKDIR /app/ufa/services/transactional-supabase-foobar
+RUN npx tsc
+
+# Copy env file if needed
+RUN [ -f .env.production ] && cp .env.production dist/ || echo 'Warning: .env.production file not found'
 
 # Production stage
 FROM base
