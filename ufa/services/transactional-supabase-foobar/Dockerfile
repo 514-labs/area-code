@@ -11,7 +11,7 @@ WORKDIR /app
 # Set production environment
 ENV NODE_ENV="production"
 
-# Throw-away build stage to reduce size of final image
+# Build stage
 FROM base as build
 
 # Install packages needed to build node modules
@@ -21,31 +21,36 @@ RUN apt-get update -qq && \
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package files
-COPY package.json ./
+# Copy workspace files from monorepo root (context is root)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install dependencies (no frozen-lockfile for monorepo)
-RUN pnpm install
+# Copy workspace packages that this service depends on
+COPY ufa/packages/ ./ufa/packages/
 
-# Copy source code
-COPY . .
+# Copy this service
+COPY ufa/services/transactional-supabase-foobar/ ./ufa/services/transactional-supabase-foobar/
 
-# Build the TypeScript application
+# Install all dependencies (including workspace deps)
+RUN pnpm install --frozen-lockfile
+
+# Build the TypeScript
+WORKDIR /app/ufa/services/transactional-supabase-foobar
 RUN pnpm run build
 
-# Remove development dependencies
-RUN pnpm prune --prod
-
-# Final stage for app image
+# Production stage
 FROM base
 
 # Install pnpm for production
 RUN npm install -g pnpm
 
+# Copy package.json
+COPY package.json ./
+
+# Install only production dependencies (without workspace context)
+RUN pnpm install --prod
+
 # Copy built application from build stage
-COPY --from=build /app/dist /app/dist
-COPY --from=build /app/node_modules /app/node_modules
-COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/ufa/services/transactional-supabase-foobar/dist ./dist
 
 # Expose port
 EXPOSE 8082

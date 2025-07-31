@@ -5,8 +5,7 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 
 [build]
-  # Uses the Dockerfile in your project root
-  # Fly will automatically detect and use your Dockerfile
+  dockerfile = "ufa/services/transactional-supabase-foobar/Dockerfile"
 
 [deploy]
   strategy = "rolling"
