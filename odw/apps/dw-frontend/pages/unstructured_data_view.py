@@ -10,7 +10,7 @@ import mimetypes
 
 # Import shared functions
 from utils.api_functions import (
-    fetch_unstructured_data, submit_unstructured_data, trigger_extract
+    trigger_extract, fetch_medical_data
 )
 from utils.constants import CONSUMPTION_API_BASE
 from utils.tooltip_utils import info_icon_with_tooltip, title_with_info_icon, title_with_button
@@ -158,11 +158,53 @@ def prepare_unstructured_display_data(df):
     
     return display_df
 
+def prepare_medical_display_data(df):
+    """Transform medical data for display"""
+    if df.empty:
+        return None
+
+    display_df = df.copy()
+    
+    # Column display mapping for medical data
+    display_columns = {
+        "source_file_path": "Source File Path",
+        "patient_name": "Patient Name",
+        "phone_number": "Phone Number",
+        "scheduled_appointment_date": "Appointment Date",
+        "dental_procedure_name": "Procedure",
+        "doctor": "Doctor",
+        "transform_timestamp": "Transform Timestamp"
+    }
+    
+    # Select and rename columns
+    available_columns = [col for col in display_columns.keys() if col in display_df.columns]
+    display_df = display_df[available_columns]
+    display_df = display_df.rename(columns=display_columns)
+    
+    return display_df
+
 def show():
     try:
         # Header
         st.title("Unstructured Data Connector")
         st.markdown("Trigger and view data processing results")
+        
+        # Add CSS styling for tabs
+        st.markdown("""
+        <style>
+            /* Target active tab */
+            .stTabs [data-baseweb="tab"][aria-selected="true"] {
+                color: #1f77b4 !important; /* Blue text */
+                font-weight: bold !important; /* Bold text */
+                border-bottom: 2px solid #1f77b4 !important; /* Blue underline */
+            }
+
+            /* Target tab on hover */
+            .stTabs [data-baseweb="tab"]:hover {
+                color: #1f77b4 !important; /* Blue text on hover */
+            }
+        </style>
+        """, unsafe_allow_html=True)
         
         # Create tabs for Submit and View
         submit_tab, view_tab = st.tabs(["📤 Process Data", "📊 View Processed Data"])
@@ -178,6 +220,7 @@ def show():
         # S3 Pattern Examples and Help section removed as requested
         
         with st.form("submit_unstructured_data"):
+            
             # S3 Pattern input with validation
             source_file_path = st.text_input(
                 "Data source",
@@ -185,8 +228,18 @@ def show():
                 help="S3 path pattern with wildcards to match multiple files"
             )
             
-            # Hard-coded processing instructions for dental appointments
-            processing_instructions = "Extract the patient's name, phone number, scheduled appointment date, dental procedure name, and the doctor who will be treating the patient."
+            # Schema-specific processing instructions for Medical model
+            processing_instructions = """Extract the following information from this dental appointment document and return it as JSON with these exact field names:
+
+{
+  "patient_name": "[full patient name]",
+  "phone_number": "[patient phone number with any extensions]",
+  "scheduled_appointment_date": "[appointment date in original format]",
+  "dental_procedure_name": "[specific dental procedure or treatment]",
+  "doctor": "[doctor's name including title]"
+}
+
+Return only the JSON object with no additional text or formatting."""
             
             # Add custom CSS to style the submit button like other pages
             st.markdown("""
@@ -222,87 +275,70 @@ def show():
                 # Validate inputs
                 if not source_file_path:
                     st.error("Data source is required")
-                else:
-                    # Validate S3 pattern before submission
+                elif not S3PatternValidator.validate_pattern(source_file_path)[0]:
                     is_valid, error_msg, pattern_info = S3PatternValidator.validate_pattern(source_file_path)
-                    
-                    if not is_valid:
-                        st.error(f"Invalid data source: {error_msg}")
-                    else:
-                        # Process the data
-                        with st.spinner("Processing data source..."):
-                            success, data_id = submit_unstructured_data(
-                                source_file_path=source_file_path,
-                                extracted_data_json=None,  # No longer provided by user
+                    st.error(f"Invalid data source: {error_msg}")
+                else:
+                    # Process the data directly via workflow - no database submission needed
+                    with st.spinner("Processing S3 pattern directly..."):
+                        try:
+                            trigger_extract(
+                                f"{CONSUMPTION_API_BASE}/extractUnstructuredData", 
+                                "Unstructured Data",
+                                source_file_pattern=source_file_path,
                                 processing_instructions=processing_instructions
                             )
-                        
-                        if success:
-                            st.success(f"Data source processed successfully! Batch ID: {data_id}")
-                            
-                            # Trigger async extraction for the newly submitted data
-                            with st.spinner("Triggering extraction workflow for new data..."):
-                                try:
-                                    trigger_extract(f"{CONSUMPTION_API_BASE}/extractUnstructuredData", "Unstructured Data")
-                                    st.info("🔄 Extraction workflow triggered successfully! Processing has started in the background. You can check results in the View Data tab.")
-                                except Exception as e:
-                                    st.warning(f"⚠️ Data processed successfully, but extraction trigger failed: {str(e)}. You can manually trigger extraction from the View Data tab.")
-                            
                             st.session_state["refresh_unstructured"] = True
-                        else:
-                            st.error("Failed to process data source. Check the status messages below.")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Failed to trigger pattern processing: {str(e)}")
+
     
     with view_tab:
-        # Header with refresh button
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.subheader("Unstructured Data Records")
-        with col2:
-            if st.button("🔄 Refresh Data", help="Refresh the data table to show latest processed records"):
-                with st.spinner("Refreshing data..."):
-                    st.session_state["refresh_unstructured"] = True
-                st.rerun()
-        
-        # Removed filter options as requested
+        # Header with refresh button using the same styling as logs page
+        if title_with_button("Structured Data Records", "Refresh Data", "refresh_data_btn", button_size="sm"):
+            with st.spinner("Refreshing data..."):
+                st.session_state["refresh_unstructured"] = True
+            st.rerun()
         
         # Fetch and display data
         if st.session_state.get("refresh_unstructured", False):
             st.session_state["refresh_unstructured"] = False
         
-        # Fetch data with default limit
-        df = fetch_unstructured_data(limit=100)
+        # Fetch medical data with default limit
+        df = fetch_medical_data(limit=100)
         
         if not df.empty:
             # Show metrics
             total_records = len(df)
-            unique_sources = df['source_file_path'].nunique() if 'source_file_path' in df.columns else 0
+            unique_patients = df['patient_name'].nunique() if 'patient_name' in df.columns else 0
+            unique_doctors = df['doctor'].nunique() if 'doctor' in df.columns else 0
             
             col1, col2, col3 = st.columns(3)
             with col1:
                 ui.metric_card(
                     title="Total Records",
                     content=str(total_records),
-                    key="total_unstructured_records"
+                    key="total_medical_records"
                 )
             with col2:
                 ui.metric_card(
-                    title="Unique Sources",
-                    content=str(unique_sources),
-                    key="unique_sources"
+                    title="Unique Patients",
+                    content=str(unique_patients),
+                    key="unique_patients"
                 )
             with col3:
-                has_processing_instructions = df['processing_instructions'].notna().sum() if 'processing_instructions' in df.columns else 0
                 ui.metric_card(
-                    title="With Instructions",
-                    content=str(has_processing_instructions),
-                    key="with_instructions"
+                    title="Unique Doctors",
+                    content=str(unique_doctors),
+                    key="unique_doctors"
                 )
             
             # Store the original data for JSON display
-            st.session_state["unstructured_raw_data"] = df.to_dict('records')
+            st.session_state["medical_raw_data"] = df.to_dict('records')
             
             # Prepare and display data
-            display_df = prepare_unstructured_display_data(df)
+            display_df = prepare_medical_display_data(df)
             if display_df is not None:
                 # Add selection capability to the dataframe
                 selected_rows = st.dataframe(
@@ -316,45 +352,35 @@ def show():
                 # Display JSON for selected row
                 if selected_rows.selection.rows:
                     selected_idx = selected_rows.selection.rows[0]
-                    if selected_idx < len(st.session_state["unstructured_raw_data"]):
+                    if selected_idx < len(st.session_state["medical_raw_data"]):
                         st.markdown("---")
-                        st.subheader(f"Details for Record #{selected_idx + 1}")
+                        st.subheader(f"Medical Record Details #{selected_idx + 1}")
                         
                         # Get the original record from session state
-                        original_record = st.session_state["unstructured_raw_data"][selected_idx]
+                        original_record = st.session_state["medical_raw_data"][selected_idx]
                         
                         # Display file content first
                         source_file_path = original_record.get("source_file_path")
                         if source_file_path:
-                            st.markdown("#### Unstructured Content")
+                            st.markdown("#### Source Document")
                             get_file_content_display(source_file_path)
                         
-                        # Display the extracted data JSON
-                        st.markdown("#### Extracted Structured Data")
-                        if original_record.get("extracted_data_json"):
-                            try:
-                                extracted_data = json.loads(original_record["extracted_data_json"])
-                                st.json(extracted_data)
-                            except:
-                                st.code(original_record["extracted_data_json"], language="json")
-                        else:
-                            st.info("No extracted data available for this record.")
+                        # Display the medical record details
+                        st.markdown("#### Medical Record Data")
+                        # Create a clean display of medical record fields
+                        medical_data = {
+                            "Patient Name": original_record.get("patient_name", "N/A"),
+                            "Phone Number": original_record.get("phone_number", "N/A"),
+                            "Appointment Date": original_record.get("scheduled_appointment_date", "N/A"),
+                            "Dental Procedure": original_record.get("dental_procedure_name", "N/A"),
+                            "Doctor": original_record.get("doctor", "N/A"),
+                            "Transform Timestamp": original_record.get("transform_timestamp", "N/A")
+                        }
+                        st.json(medical_data)
                     else:
                         st.error("Selected record data not available.")
             else:
                 st.info("No data available to display.")
         else:
-            st.info("No unstructured data found. Process some data using the form above!")
-    
-    # Status messages
-    if "submit_status_msg" in st.session_state:
-        if st.session_state.get("submit_status_type") == "success":
-            st.success(st.session_state["submit_status_msg"])
-        else:
-            st.error(st.session_state["submit_status_msg"])
-        
-        # Clear status after showing
-        if time.time() - st.session_state.get("submit_status_time", 0) > 5:
-            del st.session_state["submit_status_msg"]
-            del st.session_state["submit_status_type"]
-            del st.session_state["submit_status_time"] 
+            st.info("No medical data found. Process some unstructured data using the form above to generate medical records!")
+ 

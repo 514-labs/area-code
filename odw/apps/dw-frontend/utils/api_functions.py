@@ -130,7 +130,7 @@ def fetch_data(tag):
                 st.toast("Error fetching data. Check terminal for details.")
             return pd.DataFrame()
 
-def trigger_extract(api_url, label):
+def trigger_extract(api_url, label, source_file_pattern=None, processing_instructions=None):
     batch_size = random.randint(10, 100)
     
     # Special handling for unstructured data workflow
@@ -143,10 +143,21 @@ def trigger_extract(api_url, label):
             # Change to the data warehouse directory
             data_warehouse_dir = "/Users/cjus/dev/area-code/odw/services/data-warehouse"
             
+            # Build workflow input parameters
+            input_params = {}
+            
+            # Add specific pattern (now required)
+            if source_file_pattern:
+                input_params["source_file_pattern"] = source_file_pattern
+                
+            # Add processing instructions if provided
+            if processing_instructions:
+                input_params["processing_instructions"] = processing_instructions
+            
             # Run the workflow using Moose CLI
             result = subprocess.run(
                 ["moose-cli", "workflow", "run", "unstructured-data-workflow", 
-                 "--input", f'{{"batch_size": {batch_size}, "fail_percentage": 0}}'],
+                 "--input", json.dumps(input_params)],
                 cwd=data_warehouse_dir,
                 capture_output=True,
                 text=True,
@@ -154,7 +165,8 @@ def trigger_extract(api_url, label):
             )
             
             if result.returncode == 0:
-                st.session_state["extract_status_msg"] = f"{label} workflow triggered successfully with batch size {batch_size}."
+                pattern_msg = f" for pattern {source_file_pattern}" if source_file_pattern else ""
+                st.session_state["extract_status_msg"] = f"{label} workflow triggered successfully{pattern_msg}."
                 st.session_state["extract_status_type"] = "success"
                 st.session_state["extract_status_time"] = time.time()
             else:
@@ -711,14 +723,18 @@ def fetch_daily_pageviews_data(days_back=14, limit=14):
         st.error(f"Unexpected error fetching daily page views: {str(e)}")
         return pd.DataFrame()
 
-def fetch_unstructured_data(source_file_path=None, limit=100, should_throw=False):
-    """Fetch unstructured data from the getUnstructuredData API"""
-    # Use the correct port (4201) for the unstructured data API
-    api_url = "http://localhost:4201/getUnstructuredData"
+
+def fetch_medical_data(patient_name=None, doctor=None, dental_procedure_name=None, limit=100, should_throw=False):
+    """Fetch medical data from the getMedical API"""
+    api_url = f"{CONSUMPTION_API_BASE}/getMedical"
     params = {"limit": limit}
     
-    if source_file_path:
-        params["source_file_path"] = source_file_path
+    if patient_name:
+        params["patient_name"] = patient_name
+    if doctor:
+        params["doctor"] = doctor
+    if dental_procedure_name:
+        params["dental_procedure_name"] = dental_procedure_name
 
     try:
         response = requests.get(api_url, params=params)
@@ -731,52 +747,9 @@ def fetch_unstructured_data(source_file_path=None, limit=100, should_throw=False
         if should_throw:
             raise e
         else:
-            print(f"Unstructured Data API error: {e}")
-            st.toast("Error fetching unstructured data. Check terminal for details.")
+            print(f"Medical Data API error: {e}")
+            st.toast("Error fetching medical data. Check terminal for details.")
         return pd.DataFrame()
-
-def submit_unstructured_data(source_file_path, extracted_data_json=None, processing_instructions=None):
-    """Submit unstructured data using the correct Moose ingest endpoint"""
-    api_url = f"{INGEST_API_BASE}/UnstructuredDataSource"
-    
-    # Generate unique ID and timestamp for Moose ingest requirements
-    import uuid
-    data_id = str(uuid.uuid4())
-    processed_at = datetime.now().isoformat()
-    
-    payload = {
-        "id": data_id,
-        "source_file_path": source_file_path,
-        "processed_at": processed_at
-    }
-    
-    if extracted_data_json is not None:
-        payload["extracted_data_json"] = extracted_data_json
-    
-    if processing_instructions:
-        payload["processing_instructions"] = processing_instructions
-    
-    try:
-        response = requests.post(api_url, json=payload)
-        response.raise_for_status()
-        
-        # Moose ingest endpoints return different response format
-        if response.status_code == 200:
-            st.session_state["submit_status_msg"] = f"Successfully submitted unstructured data with ID: {data_id}"
-            st.session_state["submit_status_type"] = "success"
-            st.session_state["submit_status_time"] = time.time()
-            return True, data_id
-        else:
-            st.session_state["submit_status_msg"] = f"Failed to submit: HTTP {response.status_code}"
-            st.session_state["submit_status_type"] = "error"
-            st.session_state["submit_status_time"] = time.time()
-            return False, None
-            
-    except Exception as e:
-        st.session_state["submit_status_msg"] = f"Error submitting unstructured data: {str(e)}"
-        st.session_state["submit_status_type"] = "error"
-        st.session_state["submit_status_time"] = time.time()
-        return False, None
 
 def is_data_warehouse_not_ready(error):
     if isinstance(error, ConnectionError):

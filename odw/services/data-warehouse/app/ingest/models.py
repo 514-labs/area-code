@@ -84,13 +84,7 @@ class Event(BaseModel):
     user_agent: Optional[str]
     transform_timestamp: str
 
-class UnstructuredData(BaseModel):
-    id: Key[str]
-    source_file_path: str
-    extracted_data_json: Optional[str] = None
-    processed_at: str
-    transform_timestamp: str
-    processing_instructions: Optional[str] = None
+# UnstructuredData model removed - processing now goes directly to Medical table
 
 
 # Source ingest pipelines
@@ -144,13 +138,6 @@ eventModel = IngestPipeline[Event]("Event", IngestPipelineConfig(
     dead_letter_queue=True
 ))
 
-unstructuredDataModel = IngestPipeline[UnstructuredData]("UnstructuredData", IngestPipelineConfig(
-    ingest=True,
-    stream=True,
-    table=True,
-    dead_letter_queue=True
-))
-
 class Medical(BaseModel):
     id: Key[str]
     patient_name: str
@@ -159,6 +146,7 @@ class Medical(BaseModel):
     dental_procedure_name: str
     doctor: str
     transform_timestamp: str
+    source_file_path: str
 
 medicalModel = IngestPipeline[Medical]("Medical", IngestPipelineConfig(
     ingest=True,

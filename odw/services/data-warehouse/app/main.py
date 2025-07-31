@@ -16,6 +16,6 @@ import app.apis.extract_logs
 import app.apis.extract_events
 import app.apis.get_events
 import app.apis.get_daily_pageviews
-import app.apis.get_unstructured_data
 import app.apis.extract_unstructured_data
+import app.apis.get_medical
 
