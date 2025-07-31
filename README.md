@@ -4,7 +4,7 @@
 
 Area Code is a starter repo with all the necessary building blocks for a production ready repository that can be used to build multi-modal applications.
 
-There are two sample applications: [User Facing Analytics](/UFA) and [Operational Data Warehouse](/odw/). Quickstarts for each of those projects live in the readme of their respective folders ([UFA](/UFA/README.md), [ODW](/odw/README.md)).
+There are two sample applications: [User Facing Analytics](/ufa/) and [Operational Data Warehouse](/odw/). Quickstarts for each of those projects live in the readme of their respective folders ([UFA](/ufa/README.md), [ODW](/odw/README.md)).
 
 ## User Facing Analytics
 
