@@ -9,20 +9,17 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Environment detection
-const isSupabaseCLI = process.env.SUPABASE_CLI === "true";
-const isProduction = process.env.NODE_ENV === "production";
-const isGitHubActions = process.env.GITHUB_ACTIONS === "true";
+// Environment detection - default to CLI for development
+const isSupabaseCLI =
+  process.env.SUPABASE_CLI === "true" ||
+  process.env.NODE_ENV === "development" ||
+  process.env.NODE_ENV !== "production";
 
 // Load environment variables based on setup
-if (isSupabaseCLI || process.env.NODE_ENV === "development") {
+if (isSupabaseCLI) {
   console.log("🚀 Using Supabase CLI for development");
   // CLI uses default connection strings, minimal env needed
   dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
-} else if (isGitHubActions) {
-  console.log("🤖 Running in GitHub Actions - using DATABASE_URL directly");
-  // In GitHub Actions, environment variables are provided directly
-  // No need to load from files
 } else {
   console.log("🏭 Using production database setup");
   // Load from the transactional-supabase-foobar service .env file
@@ -39,7 +36,7 @@ if (isSupabaseCLI || process.env.NODE_ENV === "development") {
 // Database connection configuration
 let connectionString: string;
 
-if (isSupabaseCLI || process.env.NODE_ENV === "development") {
+if (isSupabaseCLI) {
   // Supabase CLI standard connection strings
   const isMigrationScript = process.argv.some((arg) => arg.includes("migrate"));
 
@@ -56,15 +53,28 @@ if (isSupabaseCLI || process.env.NODE_ENV === "development") {
       "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
     console.log("🔗 Connecting to Supabase CLI database (runtime)");
   }
-} else if (isGitHubActions || (isProduction && process.env.DATABASE_URL)) {
-  // GitHub Actions or production with DATABASE_URL provided
-  connectionString = process.env.DATABASE_URL!;
-  console.log("🔗 Connecting to hosted Supabase database");
-  if (isGitHubActions) {
-    console.log("🤖 Running migration in GitHub Actions");
-  }
 } else {
-  throw new Error("No database connection string provided");
+  // Production setup with Supavisor
+  const password =
+    process.env.POSTGRES_PASSWORD ||
+    "your-super-secret-and-long-postgres-password";
+  const tenantId = process.env.POOLER_TENANT_ID || "dev";
+  const isMigrationScript = process.argv.some((arg) => arg.includes("migrate"));
+
+  const DIRECT_PORT = process.env.POSTGRES_PORT || "5432";
+  const POOLER_PORT = process.env.POOLER_PROXY_PORT_TRANSACTION || "6543";
+
+  connectionString = isMigrationScript
+    ? `postgresql://postgres.${tenantId}:${password}@localhost:${DIRECT_PORT}/postgres`
+    : `postgresql://postgres.${tenantId}:${password}@localhost:${POOLER_PORT}/postgres`;
+
+  const userType = `postgres.${tenantId}`;
+  const portType = isMigrationScript
+    ? "Supavisor session mode (5432)"
+    : "Supavisor transaction mode (6543)";
+
+  console.log(`🔗 Connecting as ${userType} via ${portType} connection`);
+  console.log(`🏗️  Database service: supabase`);
 }
 
 const pool = new Pool({
