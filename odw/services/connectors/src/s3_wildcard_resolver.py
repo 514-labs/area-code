@@ -331,4 +331,4 @@ class S3WildcardResolver:
                 'success': False,
                 'bucket_name': bucket_name,
                 'error_message': error_msg
-            } 
+            }

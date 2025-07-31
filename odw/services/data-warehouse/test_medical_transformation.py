@@ -12,11 +12,11 @@ from datetime import datetime
 # Add the app directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
 
-from app.ingest.models import UnstructuredData, Medical
-from app.ingest.transforms import unstructured_data_to_medical
+from app.ingest.models import UnstructuredDataSource, Medical
+from app.ingest.transforms import unstructured_data_source_to_medical
 
 def test_medical_transformation():
-    """Test the transformation from UnstructuredData to Medical model."""
+    """Test the transformation from UnstructuredDataSource to Medical model."""
     
     print("🧪 Testing Medical Model Transformation")
     print("=" * 50)
@@ -33,18 +33,17 @@ def test_medical_transformation():
         "doctor": "Dr. Hall"
     })
     
-    # Create UnstructuredData record
-    unstructured_data = UnstructuredData(
+    # Create UnstructuredDataSource record
+    unstructured_data = UnstructuredDataSource(
         id="test_001",
         source_file_path="s3://bucket/memo_001.txt",
         extracted_data_json=sample_extracted_json,
         processed_at="2024-01-15T10:00:00Z",
-        transform_timestamp=datetime.now().isoformat(),
         processing_instructions="Extract dental appointment info"
     )
     
     # Test transformation
-    medical_record = unstructured_data_to_medical(unstructured_data)
+    medical_record = unstructured_data_source_to_medical(unstructured_data)
     
     if medical_record:
         print(f"   ✅ Medical record created successfully!")
@@ -66,16 +65,15 @@ def test_medical_transformation():
         # Missing appointment date, procedure, and doctor
     })
     
-    incomplete_data = UnstructuredData(
+    incomplete_data = UnstructuredDataSource(
         id="test_002",
         source_file_path="s3://bucket/memo_002.txt",
         extracted_data_json=incomplete_json,
         processed_at="2024-01-15T10:01:00Z",
-        transform_timestamp=datetime.now().isoformat(),
         processing_instructions="Extract dental appointment info"
     )
     
-    medical_record_2 = unstructured_data_to_medical(incomplete_data)
+    medical_record_2 = unstructured_data_source_to_medical(incomplete_data)
     
     if medical_record_2 is None:
         print("   ✅ Correctly skipped incomplete data")
@@ -85,16 +83,15 @@ def test_medical_transformation():
     # Test case 3: Invalid JSON (should be skipped)
     print("\n🚫 Test 3: Invalid JSON data")
     
-    invalid_data = UnstructuredData(
+    invalid_data = UnstructuredDataSource(
         id="test_003",
         source_file_path="s3://bucket/memo_003.txt",
         extracted_data_json="invalid json {",
         processed_at="2024-01-15T10:02:00Z",
-        transform_timestamp=datetime.now().isoformat(),
         processing_instructions="Extract dental appointment info"
     )
     
-    medical_record_3 = unstructured_data_to_medical(invalid_data)
+    medical_record_3 = unstructured_data_source_to_medical(invalid_data)
     
     if medical_record_3 is None:
         print("   ✅ Correctly handled invalid JSON")
@@ -111,16 +108,15 @@ def test_medical_transformation():
         "summary": "Discussed project timeline"
     })
     
-    non_medical_data = UnstructuredData(
+    non_medical_data = UnstructuredDataSource(
         id="test_004",
         source_file_path="s3://bucket/meeting_notes.txt",
         extracted_data_json=non_medical_json,
         processed_at="2024-01-15T10:03:00Z",
-        transform_timestamp=datetime.now().isoformat(),
         processing_instructions="Extract meeting information"
     )
     
-    medical_record_4 = unstructured_data_to_medical(non_medical_data)
+    medical_record_4 = unstructured_data_source_to_medical(non_medical_data)
     
     if medical_record_4 is None:
         print("   ✅ Correctly skipped non-medical data")

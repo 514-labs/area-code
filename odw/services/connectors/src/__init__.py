@@ -1,1 +1,1 @@
-from .unstructured_data_connector import UnstructuredDataConnector, UnstructuredDataConnectorConfig
+from .s3_connector import S3Connector, S3ConnectorConfig, S3FileContent

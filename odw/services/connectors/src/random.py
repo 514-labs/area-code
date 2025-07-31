@@ -47,13 +47,6 @@ class EventSource(BaseModel):
     ip_address: Optional[str]
     user_agent: Optional[str]
 
-class UnstructuredDataSource(BaseModel):
-    id: str
-    source_file_path: str
-    extracted_data_json: Optional[str] = None
-    processed_at: str
-    processing_instructions: Optional[str] = None
-
 def random_string(length: int) -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 

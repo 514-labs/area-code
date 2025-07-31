@@ -112,7 +112,7 @@ eventSourceModel = IngestPipeline[EventSource]("EventSource", IngestPipelineConf
 unstructuredDataSourceModel = IngestPipeline[UnstructuredDataSource]("UnstructuredDataSource", IngestPipelineConfig(
     ingest=True,
     stream=True,
-    table=False,
+    table=False,  # No table needed - only for DLQ processing
     dead_letter_queue=True
 ))
 

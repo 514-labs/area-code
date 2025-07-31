@@ -1,13 +1,10 @@
 from app.ingest.models import Medical, UnstructuredDataSource
-from app.utils.simulator import simulate_failures
-from app.utils.file_reader import FileReader
-from app.utils.batch_workflow_manager import BatchWorkflowManager
-from app.utils.s3_pattern_validator import S3PatternValidator
 from app.utils.llm_service import get_llm_service
-# Connector imports removed - no longer using connector-based processing
+from connectors.connector_factory import ConnectorFactory, ConnectorType
+from connectors.s3_connector import S3ConnectorConfig, S3FileContent
 from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from datetime import datetime
 import requests
 import json
@@ -20,165 +17,166 @@ class UnstructuredDataExtractParams(BaseModel):
     source_file_pattern: str  # Required S3 pattern to process
     processing_instructions: Optional[str] = "Extract dental appointment information from this document"
 
-def create_medical_record_from_extracted_data(source_file_path: str, extracted_data: Dict[str, Any]) -> Optional[Medical]:
+def create_medical_record_from_extracted_data(source_file_path: str, extracted_data: dict) -> Medical:
     """
-    Create a Medical record directly from extracted data
+    Create a Medical record from extracted data, using empty strings for missing fields.
     
     Args:
         source_file_path: Path to the source file
         extracted_data: Dictionary containing extracted medical data
         
     Returns:
-        Medical record or None if validation fails
+        Medical record with empty strings for missing fields
     """
-    try:
-        # Validate that this contains medical appointment data
-        required_fields = ["patient_name", "phone_number", "scheduled_appointment_date", 
-                          "dental_procedure_name", "doctor"]
+    # Generate unique ID for medical record
+    medical_id = f"med_{str(uuid.uuid4())}"
+    
+    # Create Medical record using empty strings for missing fields (no skipping)
+    return Medical(
+        id=medical_id,
+        patient_name=extracted_data.get("patient_name", ""),
+        phone_number=extracted_data.get("phone_number", ""), 
+        scheduled_appointment_date=extracted_data.get("scheduled_appointment_date", ""),
+        dental_procedure_name=extracted_data.get("dental_procedure_name", ""),
+        doctor=extracted_data.get("doctor", ""),
+        transform_timestamp=datetime.now().isoformat(),
+        source_file_path=source_file_path
+    )
+
+def create_dlq_record(file_path: str, error_message: str) -> UnstructuredDataSource:
+    """
+    Create an UnstructuredDataSource record for DLQ with [DLQ] prefix.
+    
+    Args:
+        file_path: Path to the file that failed
+        error_message: Error message describing the failure
         
-        # Check if at least 4 of 5 medical fields are present and non-empty
-        present_fields = sum(1 for field in required_fields 
-                           if field in extracted_data and extracted_data[field])
-        
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"Medical validation for {source_file_path}: {present_fields}/5 fields present. Fields: {list(extracted_data.keys())}",
-            message_type="Info"
-        ))
-        
-        if present_fields < 4:
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Skipping {source_file_path}: insufficient medical data ({present_fields}/5 fields)",
-                message_type="Warning"
-            ))
-            return None  # Skip incomplete medical data
-        
-        # Generate unique ID for medical record
-        medical_id = f"med_{str(uuid.uuid4())}"
-        
-        return Medical(
-            id=medical_id,
-            patient_name=extracted_data.get("patient_name", ""),
-            phone_number=extracted_data.get("phone_number", ""), 
-            scheduled_appointment_date=extracted_data.get("scheduled_appointment_date", ""),
-            dental_procedure_name=extracted_data.get("dental_procedure_name", ""),
-            doctor=extracted_data.get("doctor", ""),
-            transform_timestamp=datetime.now().isoformat(),
-            source_file_path=source_file_path
-        )
-        
-    except Exception as e:
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"Medical record creation failed for {source_file_path}: {e}",
-            message_type="Error"
-        ))
-        return None
+    Returns:
+        UnstructuredDataSource record marked for DLQ
+    """
+    dlq_id = f"dlq_{str(uuid.uuid4())}"
+    
+    return UnstructuredDataSource(
+        id=dlq_id,
+        source_file_path=f"[DLQ]{file_path}",  # Mark for DLQ with prefix
+        extracted_data_json=json.dumps({"error": error_message}),
+        processed_at=datetime.now().isoformat(),
+        processing_instructions=f"Failed: {error_message}"
+    )
 
 def run_task(input: UnstructuredDataExtractParams) -> None:
     """
-    Simplified workflow: Process S3 pattern directly and output Medical records
+    Unstructured data workflow following the same pattern as blob/logs/events workflows.
+    Uses S3 connector to get files, processes each with LLM, creates Medical records.
     """
     cli_log(CliLogData(
         action="UnstructuredDataWorkflow", 
-        message=f"Processing S3 pattern: {input.source_file_pattern}", 
+        message="Running Unstructured Data task...", 
         message_type="Info"
     ))
 
-    # Initialize batch workflow manager for S3 pattern processing
-    batch_manager = BatchWorkflowManager()
-    medical_records = []
+    # Create S3 connector to extract files from pattern
+    connector = ConnectorFactory[S3FileContent].create(
+        ConnectorType.S3,
+        S3ConnectorConfig(s3_pattern=input.source_file_pattern)
+    )
 
-    try:
-        # Process the S3 pattern directly
-        batch_result = batch_manager.process_s3_pattern(
-            s3_pattern=input.source_file_pattern,
-            processing_instructions=input.processing_instructions,
-            batch_id=str(uuid.uuid4())
-        )
-        
-        if batch_result['success']:
+    # Extract files from S3
+    files = connector.extract()
+
+    cli_log(CliLogData(
+        action="UnstructuredDataWorkflow",
+        message=f"Extracted {len(files)} files from S3",
+        message_type="Info"
+    ))
+
+    # Process each file individually
+    medical_records = []
+    dlq_records = []
+    llm_service = get_llm_service()
+
+    for file_content in files:
+        try:
+            # Use LLM to extract structured data from file content
+            extracted_data = llm_service.extract_structured_data(
+                file_content=file_content.content,
+                file_type=file_content.content_type,
+                instruction=input.processing_instructions,
+                file_path=file_content.file_path
+            )
+            
+            # Create Medical record (no skipping, use "" for missing fields)
+            medical_record = create_medical_record_from_extracted_data(
+                source_file_path=file_content.file_path,
+                extracted_data=extracted_data
+            )
+            
+            medical_records.append(medical_record)
+            
             cli_log(CliLogData(
                 action="UnstructuredDataWorkflow",
-                message=f"Successfully processed pattern {input.source_file_pattern}: {batch_result['summary']['files_succeeded']} files",
+                message=f"Successfully processed file: {file_content.file_path}",
                 message_type="Info"
             ))
             
-            # Convert successful results to Medical records
-            for result in batch_manager._last_processing_results if hasattr(batch_manager, '_last_processing_results') else []:
-                if result['success'] and 'record' in result:
-                    try:
-                        # Extract data from the UnstructuredDataSource record
-                        unstructured_record = result['record']
-                        source_file_path = unstructured_record.source_file_path
-                        
-                        # Parse the extracted data JSON
-                        extracted_data = json.loads(unstructured_record.extracted_data_json) if unstructured_record.extracted_data_json else {}
-                        
-                        medical_record = create_medical_record_from_extracted_data(
-                            source_file_path=source_file_path,
-                            extracted_data=extracted_data
-                        )
-                        if medical_record:
-                            medical_records.append(medical_record)
-                    except Exception as e:
-                        cli_log(CliLogData(
-                            action="UnstructuredDataWorkflow",
-                            message=f"Failed to create medical record from {result.get('file_path', 'unknown')}: {e}",
-                            message_type="Error"
-                        ))
-        else:
+        except Exception as e:
+            # Create DLQ record for failed file processing
+            dlq_record = create_dlq_record(file_content.file_path, str(e))
+            dlq_records.append(dlq_record)
+            
             cli_log(CliLogData(
                 action="UnstructuredDataWorkflow",
-                message=f"Pattern processing failed: {batch_result.get('error_message', 'Unknown error')}",
+                message=f"Failed to process file {file_content.file_path}: {str(e)}",
                 message_type="Error"
             ))
-            return
-            
-    except Exception as e:
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"Failed to process pattern {input.source_file_pattern}: {str(e)}",
-            message_type="Error"
-        ))
-        return
 
-    # Send Medical records directly to ingest API
+    # Send Medical records to ingest API (same pattern as other workflows)
     if medical_records:
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"Sending {len(medical_records)} medical records to ingest API",
-            message_type="Info"
-        ))
-        
-        ingest_url = "http://localhost:4200/ingest/Medical"
+        medical_dicts = [record.model_dump() for record in medical_records]
         
         try:
-            for medical_record in medical_records:
-                # Convert Pydantic model to dict for JSON serialization
-                record_dict = medical_record.model_dump() if hasattr(medical_record, 'model_dump') else medical_record.__dict__
-                response = requests.post(ingest_url, json=record_dict)
-                response.raise_for_status()
+            response = requests.post(
+                "http://localhost:4200/ingest/Medical",
+                json=medical_dicts,
+                headers={"Content-Type": "application/json"}
+            )
+            response.raise_for_status()
             
             cli_log(CliLogData(
                 action="UnstructuredDataWorkflow",
                 message=f"Successfully sent {len(medical_records)} medical records to ingest API",
                 message_type="Info"
             ))
-            
         except Exception as e:
             cli_log(CliLogData(
                 action="UnstructuredDataWorkflow",
                 message=f"Failed to send medical records to ingest API: {str(e)}",
                 message_type="Error"
             ))
-    else:
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message="No medical records were created from the processed files",
-            message_type="Info"
-        ))
+
+    # Send DLQ records to ingest API for error handling
+    if dlq_records:
+        dlq_dicts = [record.model_dump() for record in dlq_records]
+        
+        try:
+            response = requests.post(
+                "http://localhost:4200/ingest/UnstructuredDataSource",
+                json=dlq_dicts,
+                headers={"Content-Type": "application/json"}
+            )
+            response.raise_for_status()
+            
+            cli_log(CliLogData(
+                action="UnstructuredDataWorkflow",
+                message=f"Successfully sent {len(dlq_records)} failed records to DLQ",
+                message_type="Info"
+            ))
+        except Exception as e:
+            cli_log(CliLogData(
+                action="UnstructuredDataWorkflow",
+                message=f"Failed to send DLQ records to ingest API: {str(e)}",
+                message_type="Error"
+            ))
 
 unstructured_data_task = Task[UnstructuredDataExtractParams, None](
     name="unstructured-data-task",

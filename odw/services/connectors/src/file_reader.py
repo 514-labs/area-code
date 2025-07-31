@@ -59,4 +59,4 @@ class FileReader:
         """Check if file type is supported based on extension."""
         from pathlib import Path
         file_extension = Path(file_path).suffix.lower()
-        return file_extension in FileReader.get_supported_extensions() 
+        return file_extension in FileReader.get_supported_extensions()

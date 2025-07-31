@@ -1,7 +1,7 @@
 from app.ingest.models import (
-    blobSourceModel, logSourceModel, eventSourceModel, unstructuredDataSourceModel, 
+    blobSourceModel, logSourceModel, eventSourceModel,
     blobModel, logModel, eventModel, medicalModel,
-    BlobSource, LogSource, EventSource, UnstructuredDataSource, 
+    BlobSource, LogSource, EventSource,
     Blob, Log, Event, Medical
 )
 from moose_lib import DeadLetterModel, TransformConfig
@@ -90,6 +90,10 @@ eventSourceModel.get_stream().add_transform(
         dead_letter_queue=eventSourceModel.get_dead_letter_queue()
     )
 )
+
+# Note: UnstructuredDataSource streaming transformation removed
+# The unstructured data workflow now processes files directly to Medical records
+# without using the UnstructuredDataSource intermediate step
 
 
 # Dead letter queue recovery for BlobSource

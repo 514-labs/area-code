@@ -397,4 +397,4 @@ class S3FileReader:
                 message=f"Error listing objects from bucket {bucket_name}: {str(e)}",
                 message_type="Error"
             ))
-            raise 
+            raise
