@@ -23,8 +23,11 @@ COPY ufa/packages ./ufa/packages
 # Set working directory to the service
 WORKDIR /app/ufa/services/transactional-supabase-foobar
 
+# Set production environment
+ENV NODE_ENV=production
+
 # Expose port
 EXPOSE 8082
 
-# Use the development script (which we know works)
+# Use tsx in production mode (should work and not show dev mode messages)
 CMD ["pnpm", "tsx", "src/server.ts"]
