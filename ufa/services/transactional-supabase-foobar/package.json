@@ -12,7 +12,6 @@
     "dev": "./scripts/dev-startup.sh",
     "dev:fastify": "SUPABASE_CLI=true pnpm tsx watch src/server.ts",
     "dev:migrate": "SUPABASE_CLI=true pnpm run db:migrate",
-    "start": "node dist/services/transactional-supabase-foobar/src/server.js",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate:pg",

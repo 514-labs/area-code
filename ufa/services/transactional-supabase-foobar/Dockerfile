@@ -43,11 +43,17 @@ FROM base
 # Install pnpm for production
 RUN npm install -g pnpm
 
-# Copy package.json
-COPY package.json ./
+# Copy workspace configuration for production dependencies
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install only production dependencies (without workspace context)
-RUN pnpm install --prod
+# Copy workspace packages that this service depends on (for production)
+COPY ufa/packages/ ./ufa/packages/
+
+# Copy service package.json
+COPY ufa/services/transactional-supabase-foobar/package.json ./ufa/services/transactional-supabase-foobar/
+
+# Install only production dependencies (with workspace context)
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy built application from build stage
 COPY --from=build /app/ufa/services/transactional-supabase-foobar/dist ./dist
@@ -56,4 +62,4 @@ COPY --from=build /app/ufa/services/transactional-supabase-foobar/dist ./dist
 EXPOSE 8082
 
 # Start the server
-CMD ["pnpm", "run", "start"]
+CMD ["node", "dist/src/server.js"]
