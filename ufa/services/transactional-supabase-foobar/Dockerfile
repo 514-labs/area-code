@@ -22,10 +22,10 @@ RUN apt-get update -qq && \
 RUN npm install -g pnpm
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json ./
 
-# Install dependencies (including dev dependencies for building)
-RUN pnpm install --frozen-lockfile
+# Install dependencies (no frozen-lockfile for monorepo)
+RUN pnpm install
 
 # Copy source code
 COPY . .
