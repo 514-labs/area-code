@@ -15,7 +15,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "pnpm tsx src/scripts/migrate.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "SUPABASE_CLI=true pnpm tsx src/scripts/seed-foo-data.ts",
+    "db:seed:prod": "pnpm tsx src/scripts/seed-foo-data.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
