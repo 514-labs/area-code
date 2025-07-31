@@ -26,14 +26,15 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.31.8
 
       - name: Lint migration files
         run: |
           echo "🔍 Linting migration files..."
-          supabase db lint --workdir database/supabase --project-ref "$PROJECT_REF"
+          cd database/supabase
+          supabase db lint --db-url "$DATABASE_URL"
         env:
-          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Validate migrations (dry run)
@@ -81,7 +82,7 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.31.8
 
       - name: Deploy migrations to production
         run: |
