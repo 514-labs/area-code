@@ -118,46 +118,59 @@ export async function barRoutes(fastify: FastifyInstance) {
 
       const startTime = Date.now();
 
-      // Build ORDER BY clause for bar table only
-      let orderByClause = "created_at DESC"; // default
+      // Build ORDER BY clause with table aliases
+      let orderByClause = "b.created_at DESC"; // default
       if (sortBy) {
         const direction = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
         switch (sortBy) {
           case "label":
-            orderByClause = `label ${direction}`;
+            orderByClause = `b.label ${direction}`;
             break;
           case "value":
-            orderByClause = `value ${direction}`;
+            orderByClause = `b.value ${direction}`;
             break;
           case "is_enabled":
-            orderByClause = `is_enabled ${direction}`;
+            orderByClause = `b.is_enabled ${direction}`;
             break;
           case "created_at":
-            orderByClause = `created_at ${direction}`;
+            orderByClause = `b.created_at ${direction}`;
             break;
           case "updated_at":
-            orderByClause = `updated_at ${direction}`;
+            orderByClause = `b.updated_at ${direction}`;
             break;
           default:
-            orderByClause = "created_at DESC";
+            orderByClause = "b.created_at DESC";
         }
       }
 
       console.log(`Bar query: limit=${limit}, offset=${offset}, orderBy=${orderByClause}`);
 
-      // Use literal values in SQL to test if parameterization is the issue
+      // Query with JOIN to include foo data (matching BarWithFoo type)
       const dataResult = await executeQuery<any>(
         `USE sqlCDC; 
          SELECT 
-           id,
-           foo_id,
-           value,
-           label,
-           notes,
-           is_enabled,
-           created_at,
-           updated_at
-         FROM bar 
+           b.id,
+           b.foo_id,
+           b.value,
+           b.label,
+           b.notes,
+           b.is_enabled,
+           b.created_at,
+           b.updated_at,
+           f.id as foo_id_inner,
+           f.name as foo_name,
+           f.description as foo_description,
+           f.status as foo_status,
+           f.priority as foo_priority,
+           f.is_active as foo_is_active,
+           f.metadata as foo_metadata,
+           f.tags as foo_tags,
+           f.created_at as foo_created_at,
+           f.updated_at as foo_updated_at,
+           f.score as foo_score,
+           f.large_text as foo_large_text
+         FROM bar b
+         INNER JOIN foo f ON b.foo_id = f.id
          ORDER BY ${orderByClause}
          OFFSET ${offset} ROWS 
          FETCH NEXT ${limit} ROWS ONLY`
@@ -165,9 +178,35 @@ export async function barRoutes(fastify: FastifyInstance) {
 
       console.log(`Bar query returned ${dataResult.length} rows`);
 
-      // Get total count for pagination metadata
+      // Transform joined data into BarWithFoo format
+      const transformedData: BarWithFoo[] = dataResult.map((row: any) => ({
+        id: row.id,
+        foo_id: row.foo_id,
+        value: row.value,
+        label: row.label,
+        notes: row.notes,
+        is_enabled: row.is_enabled,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        foo: {
+          id: row.foo_id_inner,
+          name: row.foo_name,
+          description: row.foo_description,
+          status: row.foo_status,
+          priority: row.foo_priority,
+          is_active: row.foo_is_active,
+          metadata: row.foo_metadata ? JSON.parse(row.foo_metadata) : {},
+          tags: row.foo_tags ? JSON.parse(row.foo_tags) : [],
+          created_at: row.foo_created_at,
+          updated_at: row.foo_updated_at,
+          score: row.foo_score,
+          large_text: row.foo_large_text,
+        },
+      }));
+
+      // Get total count for pagination metadata (with same JOIN)
       const totalResult = await executeQuery<{ count: number }>(
-        "USE sqlCDC; SELECT COUNT(*) as count FROM bar"
+        "USE sqlCDC; SELECT COUNT(*) as count FROM bar b INNER JOIN foo f ON b.foo_id = f.id"
       );
 
       const queryTime = Date.now() - startTime;
@@ -175,7 +214,7 @@ export async function barRoutes(fastify: FastifyInstance) {
       const hasMore = offset + limit < total;
 
       return reply.send({
-        data: dataResult,
+        data: transformedData,
         pagination: {
           limit,
           offset,

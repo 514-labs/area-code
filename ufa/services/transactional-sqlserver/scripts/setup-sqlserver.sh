@@ -314,8 +314,5 @@ case $COMMAND in
         register_connector
         check_connector
         echo "📡 CDC connector ready! Now seeding data to demonstrate change capture..."
-        execute_seed_sql "scripts/seed-data.sql" "Seeding sample data (CDC will capture these changes)" "$FOO_COUNT" "$BAR_COUNT"
-        verify_data
-        echo "🎉 SQL Server CDC demo completed with $FOO_COUNT foo and $BAR_COUNT bar records captured!"
         ;;
 esac

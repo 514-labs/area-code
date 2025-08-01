@@ -447,4 +447,43 @@ export async function fooRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: "Failed to delete foo" });
     }
   });
+
+  // Bulk delete foo items
+  fastify.delete<{
+    Body: { ids: string[] };
+    Reply: { success: boolean; deletedCount: number } | { error: string };
+  }>("/foo", async (request, reply) => {
+    try {
+      const { ids } = request.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return reply.status(400).send({ error: "Invalid or empty ids array" });
+      }
+
+      // Validate that all IDs are strings
+      if (!ids.every((id) => typeof id === "string")) {
+        return reply.status(400).send({ error: "All IDs must be strings" });
+      }
+
+      // Build parameterized query for bulk delete
+      const placeholders = ids.map((_, index) => `@id${index}`).join(",");
+      const params: Record<string, string> = {};
+      ids.forEach((id, index) => {
+        params[`id${index}`] = id;
+      });
+
+      const result = await executeQuery<FooRecord>(
+        `USE sqlCDC; DELETE FROM foo OUTPUT DELETED.* WHERE id IN (${placeholders})`,
+        params
+      );
+
+      return reply.send({
+        success: true,
+        deletedCount: result.length,
+      });
+    } catch (error) {
+      fastify.log.error("Error in bulk delete:", error);
+      return reply.status(500).send({ error: "Failed to delete foo items" });
+    }
+  });
 }
