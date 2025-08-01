@@ -385,12 +385,12 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
         ))
         return
 
-    # Process each UnstructuredData record with LLM
+    # Process UnstructuredData records with batch LLM processing
     medical_records = []
     
     cli_log(CliLogData(
         action="UnstructuredDataWorkflow",
-        message="DEBUG: Initializing LLM service for processing",
+        message="DEBUG: Initializing LLM service for batch processing",
         message_type="Info"
     ))
     
@@ -409,72 +409,224 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
         ))
         return
 
+    cli_log(CliLogData(
+        action="UnstructuredDataWorkflow",
+        message=f"Processing {len(unprocessed_records)} records using optimized batch processing",
+        message_type="Info"
+    ))
+    
+    # Prepare all records for batch processing (LLMService will handle optimal batching)
+    batch_for_llm = []
+    processing_instructions = None
+    
     for record in unprocessed_records:
-        try:
-            # Extract data from the record
-            record_id = record.get('id')
-            source_file_path = record.get('source_file_path')
-            file_content = record.get('extracted_data')  # Raw file content stored from Stage 1
-            processing_instructions = record.get('processing_instructions')
-            
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Processing record {record_id} from {source_file_path}",
-                message_type="Info"
-            ))
+        record_id = record.get('id')
+        source_file_path = record.get('source_file_path')
+        file_content = record.get('extracted_data')  # Raw file content stored from Stage 1
+        processing_instructions = record.get('processing_instructions')  # Use last one (should be same for all)
+        
+        batch_for_llm.append({
+            'record_id': record_id,
+            'file_content': file_content,
+            'file_type': 'text',  # Assume text for now, could be enhanced later
+            'file_path': source_file_path
+        })
+    
+    cli_log(CliLogData(
+        action="UnstructuredDataWorkflow",
+        message=f"Prepared {len(batch_for_llm)} records for optimized batch LLM processing",
+        message_type="Info"
+    ))
 
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"DEBUG: File content length: {len(file_content) if file_content else 0} chars, Instructions: {processing_instructions[:50] if processing_instructions else 'None'}...",
-                message_type="Info"
-            ))
+    try:
+        # Use optimized batch LLM processing (handles chunking automatically)
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"DEBUG: Calling optimized batch LLM service for all {len(batch_for_llm)} records",
+            message_type="Info"
+        ))
+        
+        batch_results = llm_service.extract_structured_data_batch(
+            batch_records=batch_for_llm,
+            instruction=processing_instructions
+        )
+        
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"DEBUG: Optimized batch LLM extraction completed. Got {len(batch_results)} results",
+            message_type="Info"
+        ))
+        
+        # Process all results and create Medical records
+        for i, extracted_data in enumerate(batch_results):
+            try:
+                # Get corresponding original record
+                if i < len(unprocessed_records):
+                    original_record = unprocessed_records[i]
+                    record_id = original_record.get('id')
+                    source_file_path = original_record.get('source_file_path')
+                    
+                    # Log extraction results
+                    cli_log(CliLogData(
+                        action="UnstructuredDataWorkflow",
+                        message=f"DEBUG: Processing result {i+1} for record {record_id}. Extracted keys: {list(extracted_data.keys()) if extracted_data else 'None'}",
+                        message_type="Info"
+                    ))
+                    
+                    # Check if this result contains an error
+                    if "extraction_error" in extracted_data:
+                        cli_log(CliLogData(
+                            action="UnstructuredDataWorkflow",
+                            message=f"Extraction error for record {record_id}: {extracted_data.get('extraction_error')}",
+                            message_type="Error"
+                        ))
+                        continue  # Skip this record, don't create a Medical record
+                    
+                    # Create Medical record with SAME ID as UnstructuredData record
+                    medical_record = Medical(
+                        id=record_id,  # Use same ID to maintain relationship!
+                        patient_name=extracted_data.get("patient_name", ""),
+                        phone_number=extracted_data.get("phone_number", ""),
+                        scheduled_appointment_date=extracted_data.get("scheduled_appointment_date", ""),
+                        dental_procedure_name=extracted_data.get("dental_procedure_name", ""),
+                        doctor=extracted_data.get("doctor", ""),
+                        transform_timestamp=datetime.now().isoformat(),
+                        source_file_path=source_file_path
+                    )
+                    
+                    medical_records.append(medical_record)
+                    
+                    cli_log(CliLogData(
+                        action="UnstructuredDataWorkflow",
+                        message=f"Successfully processed UnstructuredData record {record_id} to Medical record",
+                        message_type="Info"
+                    ))
+                else:
+                    cli_log(CliLogData(
+                        action="UnstructuredDataWorkflow",
+                        message=f"WARNING: Got more results ({len(batch_results)}) than input records ({len(unprocessed_records)})",
+                        message_type="Info"
+                    ))
+                    
+            except Exception as e:
+                record_id = unprocessed_records[i].get('id', 'unknown') if i < len(unprocessed_records) else f'result_{i}'
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"Failed to create Medical record for {record_id}: {str(e)}",
+                    message_type="Error"
+                ))
+        
+    except Exception as e:
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"Optimized batch processing failed: {str(e)} - attempting individual fallback processing",
+            message_type="Error"
+        ))
+        
+        # Fallback to individual processing for all records
+        fallback_success_count = 0
+        fallback_dlq_records = []
+        
+        for record in unprocessed_records:
+            try:
+                record_id = record.get('id')
+                source_file_path = record.get('source_file_path')
+                file_content = record.get('extracted_data')
+                processing_instructions = record.get('processing_instructions')
+                
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"Attempting individual fallback processing for record {record_id}",
+                    message_type="Info"
+                ))
+                
+                # Use individual LLM processing as fallback
+                extracted_data = llm_service.extract_structured_data(
+                    file_content=file_content,
+                    file_type="text",
+                    instruction=processing_instructions,
+                    file_path=source_file_path
+                )
+                
+                # Check if extraction was successful
+                if "extraction_error" in extracted_data:
+                    cli_log(CliLogData(
+                        action="UnstructuredDataWorkflow",
+                        message=f"Individual fallback also failed for record {record_id}: {extracted_data.get('extraction_error')}",
+                        message_type="Error"
+                    ))
+                    
+                    # Send to DLQ
+                    dlq_record = create_dlq_record(source_file_path, f"Batch and individual processing failed: {extracted_data.get('extraction_error')}")
+                    fallback_dlq_records.append(dlq_record)
+                    continue
+                
+                # Create Medical record from successful individual processing
+                medical_record = Medical(
+                    id=record_id,
+                    patient_name=extracted_data.get("patient_name", ""),
+                    phone_number=extracted_data.get("phone_number", ""),
+                    scheduled_appointment_date=extracted_data.get("scheduled_appointment_date", ""),
+                    dental_procedure_name=extracted_data.get("dental_procedure_name", ""),
+                    doctor=extracted_data.get("doctor", ""),
+                    transform_timestamp=datetime.now().isoformat(),
+                    source_file_path=source_file_path
+                )
+                
+                medical_records.append(medical_record)
+                fallback_success_count += 1
+                
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"Individual fallback successful for record {record_id}",
+                    message_type="Info"
+                ))
+                
+            except Exception as individual_error:
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"Individual fallback failed for record {record.get('id', 'unknown')}: {str(individual_error)}",
+                    message_type="Error"
+                ))
+                
+                # Send to DLQ
+                dlq_record = create_dlq_record(
+                    record.get('source_file_path', 'unknown_path'), 
+                    f"Both batch and individual processing failed: {str(individual_error)}"
+                )
+                fallback_dlq_records.append(dlq_record)
+        
+        # Log fallback results
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"Global fallback processing completed: {fallback_success_count} successes, {len(fallback_dlq_records)} sent to DLQ",
+            message_type="Info"
+        ))
+        
+        # Send DLQ records if any
+        if fallback_dlq_records:
+            try:
+                dlq_dicts = [record.model_dump() for record in fallback_dlq_records]
+                response = requests.post(
+                    "http://localhost:4200/ingest/UnstructuredDataSource",
+                    json=dlq_dicts,
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"Successfully sent {len(fallback_dlq_records)} failed records to DLQ",
+                    message_type="Info"
+                ))
+            except Exception as dlq_error:
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"Failed to send DLQ records: {str(dlq_error)}",
+                    message_type="Error"
+                ))
 
-            # Use LLM to extract structured data from file content
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"DEBUG: Calling LLM service for record {record_id}",
-                message_type="Info"
-            ))
-            
-            extracted_data = llm_service.extract_structured_data(
-                file_content=file_content,
-                file_type="text",  # Assume text for now, could be enhanced later
-                instruction=processing_instructions,
-                file_path=source_file_path
-            )
-            
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"DEBUG: LLM extraction completed for {record_id}. Extracted keys: {list(extracted_data.keys()) if extracted_data else 'None'}",
-                message_type="Info"
-            ))
-            
-            # Create Medical record with SAME ID as UnstructuredData record
-            medical_record = Medical(
-                id=record_id,  # Use same ID to maintain relationship!
-                patient_name=extracted_data.get("patient_name", ""),
-                phone_number=extracted_data.get("phone_number", ""),
-                scheduled_appointment_date=extracted_data.get("scheduled_appointment_date", ""),
-                dental_procedure_name=extracted_data.get("dental_procedure_name", ""),
-                doctor=extracted_data.get("doctor", ""),
-                transform_timestamp=datetime.now().isoformat(),
-                source_file_path=source_file_path
-            )
-            
-            medical_records.append(medical_record)
-            
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Successfully processed UnstructuredData record {record_id} to Medical record",
-                message_type="Info"
-            ))
-            
-        except Exception as e:
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Failed to process UnstructuredData record {record.get('id', 'unknown')}: {str(e)}",
-                message_type="Error"
-            ))
+
 
     # Send Medical records to ingest API
     if medical_records:

@@ -67,6 +67,142 @@ class LLMService:
             self.client = None
             self.enabled = False
     
+    def extract_structured_data_batch(
+        self,
+        batch_records: List[Dict[str, Any]],
+        instruction: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Extract structured data from multiple files in a single LLM call for improved performance.
+        
+        Args:
+            batch_records: List of record dictionaries, each containing:
+                - file_content: Raw content from the file
+                - file_type: Type of file (text, pdf, image, etc.)
+                - file_path: File path for context
+                - record_id: Unique identifier for mapping results back
+            instruction: Natural language instruction for what to extract
+            
+        Returns:
+            List of dictionaries with extracted structured data, maintaining order of input records
+        """
+        
+        if not self.enabled:
+            cli_log(CliLogData(
+                action="LLMService",
+                message="LLM service disabled - using fallback extraction for batch",
+                message_type="Info"
+            ))
+            
+            # Return basic extraction for each record without LLM
+            return [
+                {
+                    "record_id": record.get("record_id", f"batch_{i}"),
+                    "extraction_method": "fallback_no_llm",
+                    "file_type": record.get("file_type", "unknown"),
+                    "extraction_instruction": instruction,
+                    "extracted_at": datetime.now().isoformat(),
+                    "note": "LLM service not available - set ANTHROPIC_API_KEY to enable intelligent extraction"
+                }
+                for i, record in enumerate(batch_records)
+            ]
+        
+        if not batch_records:
+            return []
+            
+        # Dynamic batch sizing based on content length
+        optimized_batch_size = self._calculate_optimal_batch_size(batch_records)
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"Processing batch of {len(batch_records)} records with instruction: {instruction[:100]}...",
+            message_type="Info"
+        ))
+        
+        try:
+            # Check if any records contain image/document content that needs special handling
+            has_visual_content = any(
+                self._is_image_content(record.get('file_content', '')) or 
+                self._is_document_content(record.get('file_content', ''))
+                for record in batch_records
+            )
+            
+            if has_visual_content:
+                cli_log(CliLogData(
+                    action="LLMService",
+                    message="Batch contains visual content - falling back to individual processing",
+                    message_type="Info"
+                ))
+                # Fall back to individual processing for visual content
+                return self._process_batch_individually(batch_records, instruction)
+            
+            # Check if we need to process this batch in smaller chunks
+            if len(batch_records) > optimized_batch_size:
+                cli_log(CliLogData(
+                    action="LLMService",
+                    message=f"Batch too large ({len(batch_records)} records), processing in chunks of {optimized_batch_size}",
+                    message_type="Info"
+                ))
+                
+                # Process in smaller chunks
+                all_results = []
+                for i in range(0, len(batch_records), optimized_batch_size):
+                    chunk = batch_records[i:i + optimized_batch_size]
+                    chunk_results = self.extract_structured_data_batch(chunk, instruction)
+                    all_results.extend(chunk_results)
+                
+                return all_results
+            
+            # Validate token count before processing
+            estimated_tokens = self._estimate_prompt_tokens(batch_records, instruction)
+            max_tokens_per_request = int(os.getenv('LLM_MAX_TOKENS_PER_REQUEST', '4000'))
+            
+            if estimated_tokens > max_tokens_per_request:
+                cli_log(CliLogData(
+                    action="LLMService",
+                    message=f"Estimated tokens ({estimated_tokens}) exceed limit ({max_tokens_per_request}), falling back to individual processing",
+                    message_type="Info"
+                ))
+                return self._process_batch_individually(batch_records, instruction)
+            
+            # Build the batch prompt for text-based content
+            prompt = self._build_batch_extraction_prompt(batch_records, instruction)
+            
+            # Call Anthropic API
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+            
+            # Parse the batch response
+            response_text = response.content[0].text
+            batch_results = self._parse_batch_extraction_response(response_text, batch_records, instruction)
+            
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"Successfully processed batch of {len(batch_records)} records, got {len(batch_results)} results",
+                message_type="Info"
+            ))
+            
+            return batch_results
+            
+        except Exception as e:
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"Batch LLM extraction failed: {str(e)} - falling back to individual processing",
+                message_type="Error"
+            ))
+            
+            # Fall back to individual processing
+            return self._process_batch_individually(batch_records, instruction)
+
     def extract_structured_data(
         self, 
         file_content: str, 
@@ -1053,6 +1189,286 @@ Think step by step:
 - What specific information is the user asking for?
 - What field names best represent their request?
 - What information is actually present in the image?"""
+
+    def _build_batch_extraction_prompt(self, batch_records: List[Dict[str, Any]], instruction: str) -> str:
+        """Build prompt for batch data extraction."""
+        
+        # Limit content length per file to manage token usage
+        max_content_per_file = int(os.getenv('LLM_MAX_CONTENT_PER_FILE', '2000'))
+        
+        files_section = ""
+        for i, record in enumerate(batch_records, 1):
+            file_content = record.get('file_content', '')
+            file_path = record.get('file_path', f'file_{i}')
+            record_id = record.get('record_id', f'record_{i}')
+            
+            # Truncate content if too long
+            if len(file_content) > max_content_per_file:
+                file_content = file_content[:max_content_per_file] + "..."
+            
+            files_section += f"""
+FILE {i}:
+Record ID: {record_id}
+Path: {file_path}
+Content:
+{file_content}
+
+"""
+        
+        return f"""You are a data extraction specialist. I will provide you with {len(batch_records)} files to process. For each file, extract the requested information according to the instruction below.
+
+INSTRUCTION: {instruction}
+
+{files_section}
+
+CRITICAL REQUIREMENTS:
+1. Process ALL {len(batch_records)} files provided above
+2. For each file, extract the information according to the instruction
+3. Use descriptive field names that clearly represent what is being asked for
+4. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
+5. If certain requested information is not available in a file, omit those fields entirely
+6. Do NOT guess or add placeholder values for missing information
+
+RESPONSE FORMAT: Return a JSON array with exactly {len(batch_records)} objects, one for each file in order:
+[
+  {{"file_index": 1, "record_id": "{batch_records[0].get('record_id', 'record_1')}", "extracted_field1": "value1", "extracted_field2": "value2"}},
+  {{"file_index": 2, "record_id": "{batch_records[1].get('record_id', 'record_2') if len(batch_records) > 1 else 'record_2'}", "extracted_field1": "value1", "extracted_field2": "value2"}},
+  ...
+]
+
+Return ONLY the JSON array, no additional text or formatting."""
+
+    def _parse_batch_extraction_response(self, response_text: str, batch_records: List[Dict[str, Any]], instruction: str) -> List[Dict[str, Any]]:
+        """Parse LLM batch extraction response into structured data."""
+        try:
+            # Clean the response text - remove markdown code blocks if present
+            cleaned_text = response_text.strip()
+            
+            if cleaned_text.startswith("```json") and cleaned_text.endswith("```"):
+                json_start = cleaned_text.find("```json") + 7
+                json_end = cleaned_text.rfind("```")
+                if json_start < json_end:
+                    cleaned_text = cleaned_text[json_start:json_end].strip()
+            elif cleaned_text.startswith("```") and cleaned_text.endswith("```"):
+                json_start = cleaned_text.find("```") + 3
+                json_end = cleaned_text.rfind("```")
+                if json_start < json_end:
+                    cleaned_text = cleaned_text[json_start:json_end].strip()
+            
+            # Parse as JSON array
+            batch_results = json.loads(cleaned_text)
+            
+            if not isinstance(batch_results, list):
+                raise ValueError("Expected JSON array response")
+            
+            # Process and filter each result
+            filtered_results = []
+            for i, result in enumerate(batch_results):
+                if not isinstance(result, dict):
+                    # Create error result for invalid response
+                    filtered_results.append({
+                        "record_id": batch_records[i].get("record_id", f"batch_{i}") if i < len(batch_records) else f"batch_{i}",
+                        "extraction_error": "Invalid result format in batch response",
+                        "extraction_instruction": instruction,
+                        "extracted_at": datetime.now().isoformat()
+                    })
+                    continue
+                
+                # Filter out unwanted system fields
+                filtered_data = {}
+                for key, value in result.items():
+                    if key not in self.unwanted_fields:
+                        filtered_data[key] = value
+                
+                # Ensure record_id is preserved
+                if "record_id" not in filtered_data and i < len(batch_records):
+                    filtered_data["record_id"] = batch_records[i].get("record_id", f"batch_{i}")
+                
+                filtered_results.append(filtered_data)
+            
+            # Handle case where we got fewer results than expected
+            while len(filtered_results) < len(batch_records):
+                missing_index = len(filtered_results)
+                filtered_results.append({
+                    "record_id": batch_records[missing_index].get("record_id", f"batch_{missing_index}"),
+                    "extraction_error": "Missing result in batch response",
+                    "extraction_instruction": instruction,
+                    "extracted_at": datetime.now().isoformat()
+                })
+            
+            return filtered_results[:len(batch_records)]  # Ensure we don't return more than we sent
+            
+        except json.JSONDecodeError as e:
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"Failed to parse batch response as JSON: {str(e)}",
+                message_type="Error"
+            ))
+            
+            # Return error results for all records
+            return [
+                {
+                    "record_id": record.get("record_id", f"batch_{i}"),
+                    "extraction_error": f"Batch JSON parsing failed: {str(e)}",
+                    "raw_response": response_text[:500],
+                    "extraction_instruction": instruction,
+                    "extracted_at": datetime.now().isoformat()
+                }
+                for i, record in enumerate(batch_records)
+            ]
+        except Exception as e:
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"Failed to process batch response: {str(e)}",
+                message_type="Error"
+            ))
+            
+            # Return error results for all records
+            return [
+                {
+                    "record_id": record.get("record_id", f"batch_{i}"),
+                    "extraction_error": f"Batch processing failed: {str(e)}",
+                    "extraction_instruction": instruction,
+                    "extracted_at": datetime.now().isoformat()
+                }
+                for i, record in enumerate(batch_records)
+            ]
+
+    def _process_batch_individually(self, batch_records: List[Dict[str, Any]], instruction: str) -> List[Dict[str, Any]]:
+        """Fall back to individual processing when batch processing fails."""
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"Processing {len(batch_records)} records individually as fallback",
+            message_type="Info"
+        ))
+        
+        results = []
+        for i, record in enumerate(batch_records):
+            try:
+                # Extract individual record data
+                file_content = record.get('file_content', '')
+                file_type = record.get('file_type', 'text')
+                file_path = record.get('file_path')
+                record_id = record.get('record_id', f'fallback_{i}')
+                
+                # Process individual record
+                extracted_data = self.extract_structured_data(
+                    file_content=file_content,
+                    file_type=file_type,
+                    instruction=instruction,
+                    file_path=file_path
+                )
+                
+                # Ensure record_id is included
+                extracted_data["record_id"] = record_id
+                results.append(extracted_data)
+                
+            except Exception as e:
+                # Create error result for failed individual processing
+                results.append({
+                    "record_id": record.get("record_id", f"fallback_{i}"),
+                    "extraction_error": f"Individual processing failed: {str(e)}",
+                    "extraction_instruction": instruction,
+                    "extracted_at": datetime.now().isoformat()
+                })
+        
+        return results
+
+    def _calculate_optimal_batch_size(self, batch_records: List[Dict[str, Any]]) -> int:
+        """
+        Calculate optimal batch size based on content length and token limits.
+        
+        Args:
+            batch_records: List of records to be processed
+            
+        Returns:
+            Optimal batch size for the given records
+        """
+        # Get configuration from environment variables
+        max_batch_size = int(os.getenv('LLM_MAX_BATCH_SIZE', '10'))
+        min_batch_size = int(os.getenv('LLM_MIN_BATCH_SIZE', '1'))
+        max_tokens_per_request = int(os.getenv('LLM_MAX_TOKENS_PER_REQUEST', '4000'))
+        max_content_per_file = int(os.getenv('LLM_MAX_CONTENT_PER_FILE', '2000'))
+        
+        # If we have fewer records than max batch size, use all records
+        if len(batch_records) <= max_batch_size:
+            return len(batch_records)
+        
+        # Calculate average content length
+        total_content_length = 0
+        valid_records = 0
+        
+        for record in batch_records:
+            content = record.get('file_content', '')
+            if content:
+                total_content_length += len(content)
+                valid_records += 1
+        
+        if valid_records == 0:
+            return min_batch_size
+        
+        avg_content_length = total_content_length / valid_records
+        
+        # Rough estimation: 1 token ≈ 4 characters for English text
+        # Add overhead for instruction and formatting (approximately 500 tokens)
+        estimated_tokens_per_file = (min(avg_content_length, max_content_per_file) / 4) + 100
+        instruction_overhead = 500
+        
+        # Calculate how many files we can fit in one request
+        available_tokens = max_tokens_per_request - instruction_overhead
+        estimated_max_files = max(1, int(available_tokens / estimated_tokens_per_file))
+        
+        # Use the smaller of max_batch_size and estimated_max_files
+        optimal_size = min(max_batch_size, estimated_max_files)
+        
+        # Ensure we don't go below minimum
+        optimal_size = max(min_batch_size, optimal_size)
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"Calculated optimal batch size: {optimal_size} (avg content: {avg_content_length:.0f} chars, estimated tokens per file: {estimated_tokens_per_file:.0f})",
+            message_type="Info"
+        ))
+        
+        return optimal_size
+
+    def _estimate_prompt_tokens(self, batch_records: List[Dict[str, Any]], instruction: str) -> int:
+        """
+        Estimate the total number of tokens for a batch prompt.
+        
+        Args:
+            batch_records: List of records to be processed
+            instruction: Processing instruction
+            
+        Returns:
+            Estimated token count
+        """
+        max_content_per_file = int(os.getenv('LLM_MAX_CONTENT_PER_FILE', '2000'))
+        
+        # Estimate instruction tokens
+        instruction_tokens = len(instruction) / 4
+        
+        # Estimate content tokens
+        content_tokens = 0
+        for record in batch_records:
+            content = record.get('file_content', '')
+            # Truncate content as we would in the actual prompt
+            truncated_content = content[:max_content_per_file] if len(content) > max_content_per_file else content
+            content_tokens += len(truncated_content) / 4
+        
+        # Add overhead for formatting, file headers, JSON structure, etc.
+        formatting_overhead = len(batch_records) * 50  # ~50 tokens per file for headers and structure
+        
+        total_estimated_tokens = instruction_tokens + content_tokens + formatting_overhead
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"Estimated token usage: {total_estimated_tokens:.0f} tokens for {len(batch_records)} files",
+            message_type="Info"
+        ))
+        
+        return int(total_estimated_tokens)
 
 # Singleton instance
 _llm_service_instance = None
