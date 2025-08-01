@@ -1,4 +1,4 @@
-from moose_lib import ConsumptionApi, EgressConfig
+from moose_lib import ConsumptionApi, EgressConfig, cli_log, CliLogData
 from pydantic import BaseModel
 from typing import Optional
 
@@ -38,6 +38,14 @@ def extract_unstructured_data(client, params: ExtractUnstructuredDataQueryParams
     "source_file_pattern": params.source_file_pattern,
     "processing_instructions": params.processing_instructions
   }
+
+  # Log the parameters being passed to the workflow
+  cli_log(CliLogData(
+      action="ExtractUnstructuredData",
+      message=f"Starting unstructured data workflow with params: {workflow_params}",
+      message_type="Info"
+  ))
+    
   result = client.workflow.execute("unstructured-data-workflow", workflow_params)
   
   # Return a standard response to prevent any fallback to automatic extract

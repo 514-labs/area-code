@@ -466,76 +466,15 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
 def run_task(input: UnstructuredDataExtractParams) -> None:
     cli_log(CliLogData(action="UnstructuredDataWorkflow", message="Running UnstructuredData task...", message_type="Info"))
 
-    # Create S3 connector to extract files matching the pattern
-    connector = ConnectorFactory[S3FileContent].create(
-        ConnectorType.S3,
-        S3ConnectorConfig(s3_pattern=input.source_file_pattern)
-    )
-
-    # Extract files from S3
-    files = connector.extract()
-
-    cli_log(CliLogData(
-        action="UnstructuredDataWorkflow",
-        message=f"Extracted {len(files)} files from S3",
-        message_type="Info"
-    ))
-
-    # Create UnstructuredDataSource records and send to ingest API (following standard pattern)
-    unstructured_source_records = []
+    # Stage 1: Extract files from S3 and create UnstructuredData staging records
+    cli_log(CliLogData(action="UnstructuredDataWorkflow", message="🔵 Starting Stage 1: S3 to UnstructuredData", message_type="Info"))
+    record_ids_created = stage_1_s3_to_unstructured(input)
     
-    for file_content in files:
-        try:
-            # Generate unique ID
-            record_id = f"unstr_{str(uuid.uuid4())}"
-            
-            # Create UnstructuredDataSource record (source model, like other workflows)
-            source_record = UnstructuredDataSource(
-                id=record_id,
-                source_file_path=file_content.file_path,
-                extracted_data_json=file_content.content,  # Store raw file content
-                processed_at=datetime.now().isoformat(),
-                processing_instructions=input.processing_instructions or ""
-            )
-            
-            unstructured_source_records.append(source_record)
-            
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Prepared source record for: {file_content.file_path}",
-                message_type="Info"
-            ))
-            
-        except Exception as e:
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Failed to prepare source record for {file_content.file_path}: {str(e)}",
-                message_type="Error"
-            ))
-
-    # Send UnstructuredDataSource records to ingest API (standard pattern)
-    if unstructured_source_records:
-        source_data_dicts = [record.model_dump() for record in unstructured_source_records]
-        
-        try:
-            response = requests.post(
-                "http://localhost:4200/ingest/UnstructuredDataSource",
-                json=source_data_dicts,
-                headers={"Content-Type": "application/json"}
-            )
-            response.raise_for_status()
-            
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Successfully sent {len(unstructured_source_records)} items to ingest API",
-                message_type="Info"
-            ))
-        except Exception as e:
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"Failed to send data to ingest API: {str(e)}",
-                message_type="Error"
-            ))
+    # Stage 2: Process UnstructuredData records to create Medical records using LLM
+    cli_log(CliLogData(action="UnstructuredDataWorkflow", message="🟢 Starting Stage 2: UnstructuredData to Medical", message_type="Info"))
+    stage_2_unstructured_to_medical(input, record_ids_created)
+    
+    cli_log(CliLogData(action="UnstructuredDataWorkflow", message="✅ Completed both stages of UnstructuredData workflow", message_type="Info"))
 
 # Standard task following project pattern
 unstructured_data_task = Task[UnstructuredDataExtractParams, None](
