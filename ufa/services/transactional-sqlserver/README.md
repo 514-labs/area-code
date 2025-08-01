@@ -59,15 +59,49 @@ See `.env.example` for configuration options. Default port is **8082**.
 
 # Individual steps
 ./scripts/setup-sqlserver.sh setup     # Database + CDC + tables
-./scripts/setup-sqlserver.sh seed      # Sample data  
+./scripts/setup-sqlserver.sh seed      # Sample data (default: 100 foo, 500 bar)
 ./scripts/setup-sqlserver.sh connector # Register Debezium connector
 ./scripts/setup-sqlserver.sh verify    # Check data counts + connector status
 ./scripts/setup-sqlserver.sh clean     # Remove connector + clear all data
 ```
 
-**Legacy Python script (deprecated):**
+**Dynamic seeding with custom record counts:**
 ```bash
-python3 seed-sqlserver.py setup --clear-data
-python3 seed-sqlserver.py seed --foo-rows 5 --bar-rows 100
-python3 seed-sqlserver.py verify
+# Seed with custom counts
+./scripts/setup-sqlserver.sh seed --foo-count 1000 --bar-count 5000
+
+# Complete CDC demonstration setup (RECOMMENDED for CDC testing)
+./scripts/setup-sqlserver.sh all --foo-count 10000 --bar-count 50000
+
+# Small test dataset
+./scripts/setup-sqlserver.sh seed --foo-count 10 --bar-count 20
+
+# View help for all options
+./scripts/setup-sqlserver.sh --help
 ```
+
+**CDC Demonstration Workflow:**
+```bash
+# Main development workflow - sets up CDC BEFORE seeding data
+pnpm ufa:dev
+
+# Quick CDC demo (assumes setup is already done)
+pnpm ufa:dev:demo-cdc
+
+# Step-by-step CDC demonstration
+./scripts/setup-sqlserver.sh setup      # 1. Setup database + tables
+./scripts/setup-sqlserver.sh connector  # 2. Register CDC connector  
+./scripts/setup-sqlserver.sh seed --foo-count 1000 --bar-count 3000  # 3. Insert data (CDC captures!)
+```
+
+**Features of the dynamic seeding:**
+- **Random data generation** similar to PostgreSQL version
+- **Configurable record counts** via command line flags
+- **Foreign key relationships** properly maintained between foo and bar
+- **Batch processing** for performance with large datasets
+- **Progress reporting** during seeding process
+- **Performance metrics** showing records/second throughput
+- **Sample data preview** in verification step
+
+
+For in depth/production ready understanding of the debezium connector look at the docs https://debezium.io/documentation/reference/stable/connectors/sqlserver.html

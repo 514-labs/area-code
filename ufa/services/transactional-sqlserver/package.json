@@ -12,20 +12,30 @@
     "start": "node dist/server.js",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
-    "ufa:dev": "pnpm sqlserver:start && pnpm dev:server",
-    "ufa:dev:clean": "pnpm sqlserver:stop",
+    
+    "ufa:dev": "docker compose up -d && ./scripts/setup-sqlserver.sh all && pnpm dev:server",
+    "ufa:dev:setup": "echo '⏳ Waiting for analytical-base network...' && pnpm ufa:dev:wait-for-network",
+    "ufa:dev:seed": "./scripts/setup-sqlserver.sh seed --foo-count 10000 --bar-count 30000",
+    "ufa:dev:clean": "docker compose down && docker volume prune -f",
+    "ufa:dev:reset": "pnpm ufa:dev:clean && pnpm ufa:dev",
+    "ufa:dev:verify": "./scripts/setup-sqlserver.sh verify",
+    "ufa:dev:demo-cdc": "./scripts/setup-sqlserver.sh connector && ./scripts/setup-sqlserver.sh seed --foo-count 1000 --bar-count 3000 && echo '🎉 CDC Demo: 1000 foo + 3000 bar records inserted and captured!'",
+    "ufa:dev:wait-for-network": "i=0; while [ $i -lt 30 ]; do if docker network ls | grep -q analytical-base_default; then echo '✅ Network ready!'; exit 0; else echo \"  Waiting... ($((i+1))/30)\"; sleep 2; i=$((i+1)); fi; done; echo '❌ Network not found after 60s'; exit 1",
+    
     "sqlserver:start": "docker compose up -d",
     "sqlserver:stop": "docker compose down",
     "sqlserver:restart": "docker compose restart",
     "sqlserver:reset": "docker compose down -v && docker compose up -d",
     "sqlserver:logs": "docker compose logs -f",
     "sqlserver:status": "docker compose ps",
+    "sqlserver:setup": "./scripts/setup-sqlserver.sh all",
+    "sqlserver:setup:custom": "./scripts/setup-sqlserver.sh all --foo-count",
+    "sqlserver:clean": "./scripts/setup-sqlserver.sh clean",
+    
     "connector:register": "curl -X POST -H 'Content-Type: application/json' --data @register-sqlserver.json http://localhost:8084/connectors",
     "connector:status": "curl -X GET http://localhost:8084/connectors/SQLServerToMooseConnector/status",
     "connector:delete": "curl -X DELETE http://localhost:8084/connectors/SQLServerToMooseConnector",
-    "connector:list": "curl -X GET http://localhost:8084/connectors",
-    "sqlserver:sqlCDCdb ": "docker exec -it transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -No -Q 'USE sqlCDC; DROP TABLE IF EXISTS foo; DROP TABLE IF EXISTS bar; DROP TABLE IF EXISTS foo_bar;' -N -C",
-    "sqlserver:count": "docker exec -it transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -No -Q 'USE sqlCDC; SELECT COUNT(*) FROM foo; SELECT COUNT(*) FROM bar;' -N -C"
+    "connector:list": "curl -X GET http://localhost:8084/connectors"
   },
   "dependencies": {
     "fastify": "^5.4.0",

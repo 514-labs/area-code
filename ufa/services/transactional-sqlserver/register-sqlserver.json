@@ -17,6 +17,6 @@
     	"transforms": "route",
     	"transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
     	"transforms.route.regex": "([^.]+)\\.([^.]+)\\.([^.]+)\\.([^.]+)",
-    	"transforms.route.replacement": "SqlServerDebeziumPayload"
+    	"transforms.route.replacement": "SqlServerDebeziumPayloadRedpandaTopic"
 	}
 }

@@ -9,6 +9,8 @@ services:
      - MSSQL_PID=Standard
      - SA_PASSWORD=Password!
      - MSSQL_AGENT_ENABLED=true
+
+  # Kafka Connect - waits for analytical-base network to be created
   connect:
     image: quay.io/debezium/connect:3.0
     platform: linux/amd64
@@ -25,6 +27,7 @@ services:
     networks:
      - default
      - analytical-base_default
+    restart: unless-stopped
 
 networks:
   analytical-base_default:
