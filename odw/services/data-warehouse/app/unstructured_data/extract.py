@@ -279,60 +279,109 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
         return
 
     # Query UnstructuredData table for the specific records we need to process
-    try:
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"DEBUG: Querying UnstructuredData table for records: {record_ids_to_process}",
-            message_type="Info"
-        ))
-        
-        # Get all UnstructuredData records and filter to our specific IDs
-        response = requests.get(
-            "http://localhost:4200/consumption/getUnstructuredData?limit=1000",
-            headers={"Content-Type": "application/json"}
-        )
-        response.raise_for_status()
-        
-        unstructured_data = response.json()
-        all_records = unstructured_data.get('items', [])
-        
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"DEBUG: Retrieved {len(all_records)} total UnstructuredData records from API",
-            message_type="Info"
-        ))
-        
-        # Filter to only the records we want to process
-        unprocessed_records = [record for record in all_records if record.get('id') in record_ids_to_process]
-        
-        cli_log(CliLogData(
-            action="UnstructuredDataWorkflow",
-            message=f"Found {len(unprocessed_records)} of {len(record_ids_to_process)} target records to process",
-            message_type="Info"
-        ))
-        
-        if len(unprocessed_records) == 0:
+    # Add retry logic to handle eventual consistency between write and read
+    import time
+    max_retries = 3
+    retry_delay = 2  # seconds
+    
+    target_records = []
+    all_records = []
+    
+    for attempt in range(max_retries):
+        try:
             cli_log(CliLogData(
                 action="UnstructuredDataWorkflow",
-                message=f"WARNING: No records found matching target IDs.",
-                message_type="Warning"
-            ))
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"DEBUG: Target IDs: {record_ids_to_process}",
+                message=f"DEBUG: Querying UnstructuredData table for records (attempt {attempt + 1}/{max_retries}): {record_ids_to_process}",
                 message_type="Info"
             ))
-            cli_log(CliLogData(
-                action="UnstructuredDataWorkflow",
-                message=f"DEBUG: Available IDs: {[r.get('id') for r in all_records[:10]]}",
-                message_type="Info"
-            ))
-        
-    except Exception as e:
+            
+            # Get all UnstructuredData records and filter to our specific IDs
+            response = requests.get(
+                "http://localhost:4200/consumption/getUnstructuredData?limit=1000",
+                headers={"Content-Type": "application/json"}
+            )
+            response.raise_for_status()
+            
+            unstructured_data = response.json()
+            all_records = unstructured_data.get('items', [])
+            
+            # Check if we found our target records
+            target_records = [record for record in all_records if record.get('id') in record_ids_to_process]
+            
+            if len(target_records) == len(record_ids_to_process):
+                # Found all records, break out of retry loop
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"✅ Found all {len(target_records)} target records on attempt {attempt + 1}",
+                    message_type="Info"
+                ))
+                break
+            elif len(target_records) > 0:
+                # Found some but not all records
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"⚠️ Found {len(target_records)}/{len(record_ids_to_process)} records on attempt {attempt + 1}, retrying...",
+                    message_type="Info"
+                ))
+            else:
+                # Found no records
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"⚠️ Found 0/{len(record_ids_to_process)} records on attempt {attempt + 1}, retrying...",
+                    message_type="Info"
+                ))
+            
+            # If not last attempt, wait before retrying
+            if attempt < max_retries - 1:
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"⏳ Waiting {retry_delay} seconds before retry...",
+                    message_type="Info"
+                ))
+                time.sleep(retry_delay)
+                
+        except Exception as e:
+            if attempt == max_retries - 1:
+                # Last attempt failed, re-raise the exception
+                raise e
+            else:
+                cli_log(CliLogData(
+                    action="UnstructuredDataWorkflow",
+                    message=f"❌ API query failed on attempt {attempt + 1}: {str(e)}, retrying...",
+                    message_type="Info"
+                ))
+                time.sleep(retry_delay)
+    
+    cli_log(CliLogData(
+        action="UnstructuredDataWorkflow",
+        message=f"DEBUG: Retrieved {len(all_records)} total UnstructuredData records from API",
+        message_type="Info"
+    ))
+    
+    # Use target_records from the retry loop (already filtered)
+    unprocessed_records = target_records
+    
+    cli_log(CliLogData(
+        action="UnstructuredDataWorkflow",
+        message=f"Found {len(unprocessed_records)} of {len(record_ids_to_process)} target records to process",
+        message_type="Info"
+    ))
+    
+    if len(unprocessed_records) == 0:
         cli_log(CliLogData(
             action="UnstructuredDataWorkflow",
-            message=f"Could not query UnstructuredData table: {str(e)}",
+            message=f"❌ STAGE 2 ISSUE: No records found matching target IDs after {max_retries} attempts.",
             message_type="Error"
+        ))
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"DEBUG: Target IDs: {record_ids_to_process}",
+            message_type="Info"
+        ))
+        cli_log(CliLogData(
+            action="UnstructuredDataWorkflow",
+            message=f"DEBUG: Available IDs: {[r.get('id') for r in all_records[:10]]}",
+            message_type="Info"
         ))
         return
 
