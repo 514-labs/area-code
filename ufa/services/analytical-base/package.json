@@ -6,7 +6,6 @@
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
     "ufa:dev": "moose-cli dev",
-    "ufa:dev:setup": "echo '🚀 Starting analytical-base infrastructure...' && (moose-cli dev &) && sleep 10 && docker network ls | grep analytical-base_default && echo '✅ Analytical-base network ready!'",
     "ufa:dev:clean": "moose-cli clean"
   },
   "dependencies": {
