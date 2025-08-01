@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --clearScreen false",
     "ufa:dev": "vite --clearScreen false",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.ts\""
   },

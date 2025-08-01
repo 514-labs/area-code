@@ -1,5 +1,10 @@
 {
   "$schema": "https://turborepo.com/schema.json",
+  "globalEnv": [
+    "VITE_TRANSACTIONAL_API_BASE",
+    "VITE_ANALYTICAL_CONSUMPTION_API_BASE",
+    "VITE_RETRIEVAL_API_BASE"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
