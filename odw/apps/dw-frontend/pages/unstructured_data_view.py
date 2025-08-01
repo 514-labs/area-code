@@ -190,15 +190,16 @@ def show():
         st.markdown("Process unstructured data and view results")
         
         # Process Data Section
-        st.subheader("📤 Process Unstructured Data")
-        st.markdown("Use this form to process unstructured data")
+        st.subheader("Process Unstructured Data")
+        st.markdown("Use this form to process unstructured data. You can use S3 resource patterns with wildcards to limit the range of data processed (e.g., `s3://unstructured-data/memo_000*.txt`, `s3://unstructured-data/memo_001*.txt`, `s3://unstructured-data/memo_004*.txt`).")
+        st.markdown("Specifying a pattern that processes a large range will take longer due to LLM remote processing.")
         
         with st.form("submit_unstructured_data"):
             
             # S3 Pattern input with validation
             source_file_path = st.text_input(
                 "Data source",
-                placeholder="e.g., s3://bucket/*/reports/*.txt",
+                placeholder="e.g., s3://unstructured-data/memo_000*.txt",
                 help="S3 path pattern with wildcards to match multiple files"
             )
             
@@ -272,7 +273,7 @@ Return only the JSON object with no additional text or formatting."""
         
         # View Data Section
         # Header with refresh button using the same styling as logs page
-        if title_with_button("📊 Structured Data Records", "Refresh Data", "refresh_data_btn", button_size="sm"):
+        if title_with_button("Structured Data Records", "Refresh Data", "refresh_data_btn", button_size="sm"):
             with st.spinner("Refreshing data..."):
                 st.session_state["refresh_unstructured"] = True
             st.rerun()
