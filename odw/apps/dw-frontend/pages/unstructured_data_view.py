@@ -186,7 +186,7 @@ def prepare_medical_display_data(df):
 def show():
     try:
         # Header
-        st.title("Unstructured Data Connector")
+        st.markdown("## Unstructured Data Connector")
         st.markdown("Process unstructured data and view results")
         
         # Process Data Section

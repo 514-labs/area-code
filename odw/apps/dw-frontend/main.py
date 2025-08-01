@@ -13,6 +13,61 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Additional CSS to remove top spacing - placed early in execution
+st.markdown("""
+<style>
+    /* Universal reset for all potential spacing elements */
+    .main, .main > div, .main > div > div, 
+    section.main, section.main > div, section.main > div > div,
+    .block-container, .element-container {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    /* Target all possible Streamlit containers */
+    [data-testid="stAppViewContainer"],
+    [data-testid="stAppViewContainer"] > .main,
+    [data-testid="stAppViewContainer"] > .main > div,
+    [data-testid="stMainBlockContainer"] {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    /* Target title elements directly */
+    h1, .stTitle {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    /* Wide layout specific adjustments */
+    .main .block-container {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    /* Remove header if present */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    /* Catch-all for emotion cache classes */
+    [class*="st-emotion-cache"] {
+        padding-top: 0 !important;
+    }
+    
+    /* Body and root adjustments */
+    body {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    #root > div {
+        padding-top: 0 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 def set_sidebar_min_width():
     st.markdown(
         """
@@ -30,6 +85,54 @@ def set_sidebar_min_width():
         .stAppDeployButton,
         [data-testid="stAppDeployButton"] {
             display: none !important;
+        }
+
+        /* Aggressive top spacing reduction */
+        .block-container {
+            padding-top: 0rem !important;
+            padding-bottom: 1rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Remove default Streamlit header spacing */
+        .stApp > header {
+            height: 0rem !important;
+            background: transparent !important;
+            display: none !important;
+        }
+        
+        /* Target main content area directly */
+        .main {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Remove spacing from app container */
+        .stApp {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Target specific content containers */
+        div[data-testid="stAppViewContainer"] {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        div[data-testid="stAppViewContainer"] > .main {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Remove toolbar spacing if present */
+        div[data-testid="stToolbar"] {
+            display: none !important;
+        }
+        
+        /* Remove any top spacing from first elements */
+        .element-container:first-child {
+            margin-top: 0rem !important;
+            padding-top: 0rem !important;
         }
 
         </style>
