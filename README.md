@@ -2,13 +2,13 @@
 
 # User-Facing Analytics Starter Application
 
-Area Code is a starter repo with all the necessary building blocks for a production ready repository that demonstrate how to create a CDC pipeline from an OLTP -> OLAP. This started pack sets up SQL Server as the source OLTP system, a Moose powered analytical backend — Redpanda & Clickhouse — as the destination OLAP system, and a Debezium Connector as the real time change data capture (CDC) gateway.
+Area Code is a starter repo with all the necessary building blocks for a production ready repository that demonstrate how to create a mirror data in real time from your transcational database(s) to an analytical database.
 
 
 This demo sets up:
-- A sample app with user mock foo/bar data (using SQL Server)
-- Real-time data sync (captures every change automatically)  
-- Analytics database (for fast queries and dashboards) 
+- A sample app with user mock foo/bar data — SQL Server
+- Real-time data sync (captures every change automatically) — [Debezium](https://debezium.io/) & Redpanda
+- Analytics database (for fast queries and dashboards)  - Clickhouse
 - Search database (for finding anything instantly)
 - Sample dashboard (see it all working together)
 
@@ -29,7 +29,7 @@ pnpm ufa:dev:seed
 open http://localhost:5173/
 ```
 
-You'll see a dashboard that updates in real-time with CRUD endpoints so you see how changes are propegated from your transaction database (OLTP) to your analytical database (OLAP) system. 
+You'll see a dashboard that updates in real-time with CRUD endpoints so you see how changes are propegated from your transactional database (OLTP) to your analytical database (OLAP) system. 
 
 1. SQL Server Database (`sqlCDC`)
    - Creates and configures two tables (`foo` and `bar`) with Change Data Capture (CDC) enabled
