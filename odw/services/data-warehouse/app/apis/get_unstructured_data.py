@@ -27,20 +27,10 @@ def get_unstructured_data(client, params: GetUnstructuredDataQuery) -> GetUnstru
         params: Contains pagination parameters and optional filters
         
     Returns:
-        GetUnstructuredDataResponse object containing UnstructuredData items and count
+        GetUnstructuredDataResponse object containing UnstructuredData items and total count
     """
     
-    query = """
-        SELECT
-            id,
-            source_file_path,
-            extracted_data,
-            processed_at,
-            processing_instructions,
-            transform_timestamp
-        FROM UnstructuredData
-    """
-    
+    # Build WHERE clause and params (shared between count and data queries)
     query_params = {}
     where_clauses = []
     
@@ -49,32 +39,50 @@ def get_unstructured_data(client, params: GetUnstructuredDataQuery) -> GetUnstru
         where_clauses.append("source_file_path LIKE {source_file_path}")
         query_params["source_file_path"] = f"%{params.source_file_path}%"
     
-    # Add WHERE clause if any filters are specified
+    # Build WHERE clause
+    where_clause = ""
     if where_clauses:
-        query += " WHERE " + " AND ".join(where_clauses)
+        where_clause = " WHERE " + " AND ".join(where_clauses)
     
-    query += " ORDER BY transform_timestamp DESC"
+    # First, get the total count of records (without LIMIT/OFFSET)
+    count_query = f"SELECT COUNT(*) as total FROM UnstructuredData{where_clause}"
+    count_result = client.query.execute(count_query, query_params)
+    total_count = count_result[0]["total"] if count_result else 0
     
-    # Only add LIMIT if specified
+    # Then, get the actual data with pagination
+    data_query = f"""
+        SELECT
+            id,
+            source_file_path,
+            extracted_data,
+            processed_at,
+            processing_instructions,
+            transform_timestamp
+        FROM UnstructuredData{where_clause}
+        ORDER BY transform_timestamp DESC
+    """
+    
+    # Add pagination to data query
+    data_params = query_params.copy()
     if params.limit is not None:
-        query += " LIMIT {limit}"
-        query_params["limit"] = params.limit
+        data_query += " LIMIT {limit}"
+        data_params["limit"] = params.limit
+        
+        # Only add OFFSET if limit is specified and offset > 0
+        if params.offset > 0:
+            data_query += " OFFSET {offset}"
+            data_params["offset"] = params.offset
     
-    # Only add OFFSET if limit is specified and offset > 0
-    if params.limit is not None and params.offset > 0:
-        query += " OFFSET {offset}"
-        query_params["offset"] = params.offset
-    
-    # Execute query
-    result = client.query.execute(query, query_params)
+    # Execute data query
+    result = client.query.execute(data_query, data_params)
     
     # Convert results to UnstructuredData objects
     items = [UnstructuredData(**item) for item in result]
     
-    # Return the response
+    # Return the response with actual total count from database
     return GetUnstructuredDataResponse(
         items=items,
-        total=len(items)
+        total=total_count
     )
 
 # Create the consumption API
