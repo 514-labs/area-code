@@ -1,7 +1,7 @@
 import streamlit as st
 
 # Import pages
-from pages import overview, blobs_view, logs_view, events_view, analytics
+from pages import overview, blobs_view, logs_view, events_view, analytics, unstructured_data_view
 from utils.status_handler import display_status_messages, cleanup_old_status_messages
 from utils.tooltip_utils import add_tooltip_css
 
@@ -30,6 +30,54 @@ def set_sidebar_min_width():
         .stAppDeployButton,
         [data-testid="stAppDeployButton"] {
             display: none !important;
+        }
+
+        /* Aggressive top spacing reduction */
+        .block-container {
+            padding-top: 0rem !important;
+            padding-bottom: 1rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Remove default Streamlit header spacing */
+        .stApp > header {
+            height: 0rem !important;
+            background: transparent !important;
+            display: none !important;
+        }
+        
+        /* Target main content area directly */
+        .main {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Remove spacing from app container */
+        .stApp {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Target specific content containers */
+        div[data-testid="stAppViewContainer"] {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        div[data-testid="stAppViewContainer"] > .main {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
+        }
+        
+        /* Remove toolbar spacing if present */
+        div[data-testid="stToolbar"] {
+            display: none !important;
+        }
+        
+        /* Remove any top spacing from first elements */
+        .element-container:first-child {
+            margin-top: 0rem !important;
+            padding-top: 0rem !important;
         }
 
         </style>
@@ -181,6 +229,14 @@ def create_navigation():
         url_path="events"
     )
     
+    unstructured_data_page = st.Page(
+        unstructured_data_view.show,
+        title="Unstructured",
+        icon="📄",
+        url_path="unstructured-data",
+        default=False
+    )
+    
     analytics_page = st.Page(
         analytics.show,
         title="Connector Analytics",
@@ -192,7 +248,7 @@ def create_navigation():
     # Create navigation with grouped sections
     nav = st.navigation({
         "Data Warehouse": [analytics_page],
-        "Connectors": [overview_page, blob_page, logs_page, events_page]
+        "Connectors": [overview_page, blob_page, logs_page, events_page, unstructured_data_page]
     })
     
     return nav
@@ -201,7 +257,11 @@ def create_navigation():
 nav = create_navigation()
 
 # Run the navigation (this will render the navigation menu in the sidebar)
-nav.run()
+try:
+    nav.run()
+except Exception as e:
+    st.error(f"Navigation error: {e}")
+    st.info("Please try refreshing the page or navigating to a different section.")
 
 # Display status messages at the bottom of the sidebar
 with st.sidebar:

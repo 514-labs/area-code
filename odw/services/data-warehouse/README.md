@@ -10,6 +10,102 @@
 - Node.js 20+
 - Docker 2.23.1+
 
+## LLM Configuration
+
+This project includes **LLM-powered unstructured data extraction** using Anthropic's Claude API. To enable this feature:
+
+### Required Environment Variables
+
+- `ANTHROPIC_API_KEY`: Your Anthropic API key for Claude LLM integration
+
+### Setup Instructions
+
+1. **Get an Anthropic API key**: Sign up at [console.anthropic.com](https://console.anthropic.com) and create an API key
+2. **Set the environment variable**:
+   ```bash
+   export ANTHROPIC_API_KEY="your-api-key-here"
+   ```
+   Or add it to your shell profile (`.bashrc`, `.zshrc`, etc.)
+
+3. **Verify setup**: The LLM service will be automatically initialized when processing unstructured data
+
+### LLM Features
+
+- **Extraction**: Convert unstructured documents (text, PDFs, images) to structured JSON using natural language instructions
+- **Validation**: Validate extracted data against business rules specified in plain English
+- **Transformation**: Modify and enrich extracted data using natural language transformations
+- **Routing**: Intelligently route data based on content analysis
+
+**Note**: LLM features are optional. The system will work without the API key, but unstructured data processing will use default extraction methods.
+
+## S3/MinIO Configuration
+
+This project now supports **S3-compatible storage** for unstructured data files, allowing you to read documents, images, and other files directly from S3 buckets or MinIO instances instead of local filesystem paths.
+
+### Configuration in `moose.config.toml`
+
+The S3 configuration section has been added to `moose.config.toml`:
+
+```toml
+[s3_config]
+# S3/MinIO configuration for unstructured data storage
+endpoint_url = "http://localhost:9500"  # MinIO endpoint, set to empty string for AWS S3
+access_key_id = "minioadmin"
+secret_access_key = "minioadmin"
+region_name = "us-east-1"
+bucket_name = "unstructured-data"
+signature_version = "s3v4"
+```
+
+### Setup for Different Storage Types
+
+**For MinIO (Development/Testing):**
+- Set `endpoint_url` to your MinIO server (e.g., `http://localhost:9500`)
+- Use MinIO admin credentials or create specific access keys
+- Ensure the bucket exists in MinIO
+
+**For AWS S3 (Production):**
+- Set `endpoint_url` to an empty string `""` 
+- Use your AWS access key and secret key
+- Set the appropriate AWS region
+- Ensure the S3 bucket exists and your credentials have read access
+
+### Supported Path Formats
+
+The system now accepts multiple path formats for unstructured data:
+
+```bash
+# Local filesystem (existing functionality)
+/path/to/local/file.txt
+
+# S3 paths
+s3://bucket-name/path/to/file.txt
+
+# MinIO paths  
+minio://bucket-name/path/to/file.txt
+```
+
+### File Type Support
+
+The S3 integration supports the same file types as local filesystem:
+- **Text files**: `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html`
+- **PDF files**: `.pdf` (placeholder - requires PDF library integration)
+- **Images**: `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp` (placeholder - requires OCR integration)
+- **Word documents**: `.doc`, `.docx` (placeholder - requires python-docx integration)
+
+### Usage in APIs
+
+When submitting unstructured data via the `submitUnstructuredData` API, you can now use S3 paths:
+
+```json
+{
+  "source_file_path": "minio://unstructured-data/memo_001.txt",
+  "extracted_data": "{\"extracted\": \"data\"}"
+}
+```
+
+**Note**: S3 configuration is optional. The system maintains full backward compatibility with local file paths.
+
 ## Quick Start
 
 (If you haven't already, navigate here `cd odw/services/data-warehouse`, and make sure Docker Desktop is running)

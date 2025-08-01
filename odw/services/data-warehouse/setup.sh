@@ -45,6 +45,13 @@ DW_FRONTEND_PORT=8501
 KAFDROP_CONTAINER_NAME="data-warehouse-kafdrop"
 KAFDROP_PORT=9999
 
+# MinIO container configuration
+MINIO_CONTAINER_NAME="data-warehouse-minio"
+MINIO_API_PORT=9500
+MINIO_CONSOLE_PORT=9501
+MINIO_ROOT_USER="minioadmin"
+MINIO_ROOT_PASSWORD="minioadmin"
+
 # Function to show usage
 show_usage() {
     echo "Usage: $0 [OPTION]"
@@ -84,6 +91,8 @@ show_services() {
     echo "  • Management: http://localhost:5001"
     echo "  • Temporal UI: http://localhost:8080"
     echo "  • Kafdrop UI: http://localhost:$KAFDROP_PORT"
+    echo "  • MinIO API: http://localhost:$MINIO_API_PORT"
+    echo "  • MinIO Console: http://localhost:$MINIO_CONSOLE_PORT"
     echo "  • Redpanda: localhost:19092"
     echo "  • ClickHouse: localhost:18123"
     echo "  • Redis: localhost:6379"
@@ -367,6 +376,92 @@ stop_kafdrop() {
     done
 
     print_error "Failed to stop Kafdrop gracefully"
+    return 1
+}
+
+# Check if MinIO container is running
+is_minio_running() {
+    if ! check_docker; then
+        return 1
+    fi
+    docker ps --filter "name=$MINIO_CONTAINER_NAME" --format "{{.Names}}" | grep -q "$MINIO_CONTAINER_NAME"
+}
+
+# Start MinIO
+start_minio() {
+    if ! check_docker; then
+        print_warning "Docker not available, skipping MinIO startup"
+        return 0
+    fi
+
+    if is_minio_running; then
+        print_warning "MinIO is already running"
+        return 0
+    fi
+
+    # Check if ports are in use
+    if is_port_in_use $MINIO_API_PORT; then
+        print_port_conflict_instructions $MINIO_API_PORT
+        return 1
+    fi
+    
+    if is_port_in_use $MINIO_CONSOLE_PORT; then
+        print_port_conflict_instructions $MINIO_CONSOLE_PORT
+        return 1
+    fi
+
+    print_status "Starting MinIO..."
+
+    # Start MinIO container
+    docker run -d \
+        --name "$MINIO_CONTAINER_NAME" \
+        --rm \
+        -p $MINIO_API_PORT:9000 \
+        -p $MINIO_CONSOLE_PORT:9001 \
+        -e MINIO_ROOT_USER="$MINIO_ROOT_USER" \
+        -e MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD" \
+        -v minio_data:/data \
+        minio/minio server /data --console-address ":9001" > /dev/null 2>&1
+
+    # Wait and verify
+    sleep 5
+    if is_minio_running; then
+        print_success "MinIO started successfully"
+        print_success "  API: http://localhost:$MINIO_API_PORT"
+        print_success "  Console: http://localhost:$MINIO_CONSOLE_PORT"
+        print_success "  Credentials: $MINIO_ROOT_USER / $MINIO_ROOT_PASSWORD"
+    else
+        print_error "Failed to start MinIO"
+        return 1
+    fi
+}
+
+# Stop MinIO
+stop_minio() {
+    if ! check_docker; then
+        return 0
+    fi
+
+    if ! is_minio_running; then
+        print_warning "MinIO is not running (container: $MINIO_CONTAINER_NAME)"
+        return 0
+    fi
+
+    print_status "Stopping MinIO..."
+
+    # Stop the container (--rm flag will auto-remove it)
+    docker stop "$MINIO_CONTAINER_NAME" &> /dev/null
+
+    # Wait for it to stop
+    for i in {1..10}; do
+        if ! is_minio_running; then
+            print_success "MinIO stopped successfully"
+            return 0
+        fi
+        sleep 1
+    done
+
+    print_error "Failed to stop MinIO gracefully"
     return 1
 }
 
@@ -845,6 +940,9 @@ start_service() {
     start_data_warehouse_service
     echo ""
 
+    start_minio
+    echo ""
+
     start_kafdrop
     echo ""
 
@@ -930,6 +1028,9 @@ stop_service() {
     stop_dw_frontend_service
     echo ""
 
+    stop_minio
+    echo ""
+
     stop_kafdrop
     echo ""
 }
@@ -979,6 +1080,20 @@ show_status() {
         fi
     else
         print_error "dw-frontend service is not running"
+    fi
+    
+    # Check MinIO status
+    if is_minio_running; then
+        print_success "MinIO is running (container: $MINIO_CONTAINER_NAME)"
+
+        # Check if services are responding
+        if curl -s http://localhost:$MINIO_API_PORT/minio/health/live > /dev/null 2>&1; then
+            print_success "MinIO API is responding to requests"
+        else
+            print_warning "MinIO is running but API not responding to requests"
+        fi
+    else
+        print_error "MinIO is not running"
     fi
     
     # Check Kafdrop status
