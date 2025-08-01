@@ -4,9 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
-    "ufa:dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
-    "dev:server-only": "SKIP_ES_WAIT=true PORT=8083 tsx watch src/server.ts",
+    "dev": "pnpm es:start && PORT=8086 pnpm exec tsx watch src/server.ts",
+    "ufa:dev": "pnpm es:start && PORT=8086 pnpm exec tsx watch src/server.ts",
+    "dev:server-only": "SKIP_ES_WAIT=true PORT=8086 pnpm exec tsx watch src/server.ts",
+    "dev:quick": "PORT=8086 pnpm exec tsx src/server.ts",
+    "dev:8083": "PORT=8083 pnpm exec tsx src/server.ts",
+    "start": "PORT=8086 pnpm exec tsx src/server.ts",
     "ufa:dev:clean": "pnpm es:stop",
     "build": "tsc",
     "lint": "eslint src/",
@@ -14,7 +17,8 @@
     "es:stop": "docker compose down",
     "es:reset": "docker compose down -v && docker compose up -d && ./scripts/es-wait.sh && pnpm es:init-indices",
     "es:status": "./scripts/es-status.sh",
-    "es:init-indices": "tsx src/scripts/init-indices.ts"
+    "es:init-indices": "pnpm exec tsx src/scripts/init-indices.ts",
+    "kill-port": "lsof -ti :8086 | xargs kill -9 || echo 'No process on port 8086'"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.15.0",

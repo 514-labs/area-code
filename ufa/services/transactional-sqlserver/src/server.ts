@@ -131,7 +131,7 @@ const start = async () => {
     // Setup all plugins and routes first
     await setupServer();
     
-    const port = parseInt(process.env.PORT || "8085");
+    const port = 8085;
     const host = process.env.HOST || "0.0.0.0";
 
     // Ensure all routes are registered so Swagger captures them

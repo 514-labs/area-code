@@ -1,6 +1,49 @@
 import { FooWithCDC, BarWithCDC, FooStatus } from "@workspace/models";
 import { SqlServerDebeziumPayload } from "../models/debeziumPayload";
 
+type CDCOperation = "INSERT" | "UPDATE" | "DELETE";
+
+// HTTP client for sending data to Elasticsearch via retrieval service
+const RETRIEVAL_BASE_URL = process.env.RETRIEVAL_BASE_URL || "http://localhost:8086";
+
+const sendDataToElasticsearch = async (
+    type: "foo" | "bar",
+    action: "index" | "delete",
+    data: Record<string, unknown>
+  ) => {
+    console.log("Sending data to Elasticsearch:", type, action, data);
+    const retrievalUrl = RETRIEVAL_BASE_URL;
+    const url = `${retrievalUrl}/api/ingest/${type}`;
+  
+    try {
+      console.log(`🔍 Sending ${type} ${action} to Elasticsearch: ${url}`);
+  
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action, data }),
+      });
+  
+      if (response.ok) {
+        console.log(`✅ Successfully sent ${type} ${action} to Elasticsearch`);
+      } else {
+        console.error(
+          `❌ Failed to send ${type} ${action} to Elasticsearch:`,
+          response.status,
+          response.statusText
+        );
+        const errorText = await response.text();
+        console.error("Response:", errorText);
+      }
+    } catch (error) {
+      console.error(
+        `❌ Error sending ${type} ${action} to Elasticsearch:`,
+        error
+      );
+    }
+  };
 
 export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWithCDC | null => {
     if (payload.payload.source.table !== "foo") {
@@ -45,7 +88,7 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
           tags = [];
         }
   
-        return {
+        const transformedData = {
           id: after.id,
           name: after.name,
           description: after.description || null,
@@ -60,9 +103,14 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
           updated_at: after.updated_at ? new Date(after.updated_at / 1000000) : new Date(),
           // CDC metadata
           cdc_id: `${source.table}_${after.id}_${payload.payload.ts_ms}`,
-          cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE"),
+          cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE") as CDCOperation,
           cdc_timestamp: new Date(payload.payload.ts_ms)
         };
+
+        // Send to Elasticsearch for search indexing (non-blocking)
+        sendDataToElasticsearch("foo", "index", transformedData);
+
+        return transformedData;
         
       case "d": // Delete
         if (!before) {
@@ -94,7 +142,7 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
   
         
         // For deletes, use before data with DELETE operation
-        return {
+        const deletedData = {
           id: before.id,
           name: before.name,
           description: before.description || null,
@@ -109,9 +157,14 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
           updated_at: before.updated_at ? new Date(before.updated_at / 1000000) : new Date(),
           // CDC metadata
           cdc_id: `${source.table}_${before.id}_${payload.payload.ts_ms}`,
-          cdc_operation: "DELETE",
+          cdc_operation: "DELETE" as CDCOperation,
           cdc_timestamp: new Date(payload.payload.ts_ms)
         };
+
+        // Send delete to Elasticsearch for search indexing (non-blocking)
+        sendDataToElasticsearch("foo", "delete", { id: before.id });
+
+        return deletedData;
         
       default:
         console.log(`Unknown foo operation: ${op}`);
@@ -144,7 +197,7 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
           return null;
         }
   
-        return {
+        const transformedData = {
           id: after.id,
           foo_id: after.foo_id,
           value: after.value || 0,
@@ -155,9 +208,14 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
           updated_at: after.updated_at ? new Date(after.updated_at / 1000000) : new Date(),
           // CDC metadata
           cdc_id: `${source.table}_${after.id}_${payload.payload.ts_ms}`,
-          cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE"),
+          cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE") as CDCOperation,
           cdc_timestamp: new Date(payload.payload.ts_ms)
         };
+
+        // Send to Elasticsearch for search indexing (non-blocking)
+        sendDataToElasticsearch("bar", "index", transformedData);
+
+        return transformedData;
         
       case "d": // Delete
         if (!before) {
@@ -166,7 +224,7 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
         }
   
         // For deletes, use before data with DELETE operation
-        return {
+        const deletedData = {
           id: before.id,
           foo_id: before.foo_id,
           value: before.value || 0,
@@ -177,15 +235,18 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
           updated_at: before.updated_at ? new Date(before.updated_at / 1000000) : new Date(),
           // CDC metadata
           cdc_id: `${source.table}_${before.id}_${payload.payload.ts_ms}`,
-          cdc_operation: "DELETE",
+          cdc_operation: "DELETE" as CDCOperation,
           cdc_timestamp: new Date(payload.payload.ts_ms)
         };
+
+        // Send delete to Elasticsearch for search indexing (non-blocking)
+        sendDataToElasticsearch("bar", "delete", { id: before.id });
+
+        return deletedData;
         
       default:
         console.log(`Unknown bar operation: ${op}`);
         return null;
     }
   };
-  
-  
   

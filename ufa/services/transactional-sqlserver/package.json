@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "pnpm sqlserver:start",
-    "dev:server": "tsx watch src/server.ts",
+    "dev:server": "pnpm exec tsx watch src/server.ts",
     "dev:full": "pnpm sqlserver:start && pnpm dev:server",
     "start": "node dist/server.js",
     "clean": "rm -rf dist",
