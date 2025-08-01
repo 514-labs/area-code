@@ -1,9 +1,26 @@
 {
   "name": "@workspace/models",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./foo": "./src/foo/index.ts",
-    "./bar": "./src/bar/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./foo": {
+      "types": "./dist/foo/index.d.ts",
+      "default": "./dist/foo/index.js"
+    },
+    "./bar": {
+      "types": "./dist/bar/index.d.ts",
+      "default": "./dist/bar/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc --watch",
+    "ufa:dev": "tsc --watch",
+    "build": "tsc",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@514labs/moose-lib": "latest"
