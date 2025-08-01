@@ -4,7 +4,7 @@ A Fastify-based REST API service for interacting with SQL Server using the Tedio
 
 **Runs on port 8082** (same as transactional-base, as this service replaces it)
 
-## Quick Start
+## Manual Start (for when you want to set up the infra step by step)
 
 1. **Start SQL Server and setup database:**
    ```bash
@@ -104,4 +104,9 @@ pnpm ufa:dev:demo-cdc
 - **Sample data preview** in verification step
 
 
-For in depth/production ready understanding of the debezium connector look at the docs https://debezium.io/documentation/reference/stable/connectors/sqlserver.html
+For in depth/production ready understanding of the debezium connector look at the docs https://debezium.io/documentation/reference/stable/connectors/sqlserver.html. To view the setup for the connector, view register-sqlserver.json inside the `services/
+
+
+## TODO/WIP: 
+
+- MCP server integration with SQL Server (frontend + backend) - https://devblogs.microsoft.com/azure-sql/introducing-mssql-mcp-server/
