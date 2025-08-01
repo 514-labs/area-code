@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build:components": "tsc",
-    "build": "pnpm run build:styles && pnpm run build:components",
+    "build": "pnpm run build:components",
     "dev:components": "tsc --watch",
     "dev": "pnpm run dev:styles & pnpm run dev:components",
     "lint": "eslint . --max-warnings 0",
