@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --clearScreen false",
     "ufa:dev": "vite --clearScreen false",
+    "ufa:dev:setup": "echo '✅ Frontend ready to start!'",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.ts\""
