@@ -5,30 +5,52 @@
 Area Code is a starter repo with all the necessary building blocks for a production ready repository that demonstrate how to create a CDC pipeline from an OLTP -> OLAP. This started pack sets up SQL Server as the source OLTP system, a Moose powered analytical backend — Redpanda & Clickhouse — as the destination OLAP system, and a Debezium Connector as the real time change data capture (CDC) gateway.
 
 
-### Quick Start
+This demo sets up:
+- A sample app with user mock foo/bar data (using SQL Server)
+- Real-time data sync (captures every change automatically)  
+- Analytics database (for fast queries and dashboards) 
+- Search database (for finding anything instantly)
+- Sample dashboard (see it all working together)
 
-Follow these commands in order to set up and run the application:
+
+### Try it yourself (5 minutes)
 
 ```bash
-# 1. Install dependencies
+# Install everything
 pnpm i
 
-# 2. Start development environment
+# Start all services (takes ~30 seconds)
 pnpm ufa:dev
 
-# 3. Seed databases with sample data (in a new terminal once eveything has started up.. this may take around 30 seconds)
+# Add sample data (run this in a new terminal)
 pnpm ufa:dev:seed
 
-# 4. Open front-end
-http://localhost:5173/
+# See it working
+open http://localhost:5173/
 ```
 
-This will:
-- Set up a SQL Server Database called `sqlCDC`, initia two tables `foo` and `bar` configure CDC on the database and tables
-- Set up your Moose application, with the pipleine to transform streamed CDC events into your OLAP table and forward them to your retrieval service in stream
-- Set up a Debezium connector to read SQL Server transaction logs and forward logs to your topic created in Redpanda by Moose
-- Seed transactional database with SQL Server with 100,000 Foo records and 100,000 bar records
-- Set up an Elastic Search retrieval database for full text search
+You'll see a dashboard that updates in real-time with CRUD endpoints so you see how changes are propegated from your transaction database (OLTP) to your analytical database (OLAP) system. 
+
+1. SQL Server Database (`sqlCDC`)
+   - Creates and configures two tables (`foo` and `bar`) with Change Data Capture (CDC) enabled
+   - Seeds 100,000 sample records in each table
+
+2. Moose Analytics Pipeline
+   - Configures real-time data transformation from CDC events to OLAP tables
+   - Streams transformed data to the retrieval service
+   - Leverages Redpanda for high-performance event streaming
+
+3. Debezium CDC Connector
+   - Monitors SQL Server transaction logs in real-time
+   - Forwards captured changes to Redpanda topics
+   - Ensures zero data loss during replication
+
+4. Elasticsearch Search Engine
+   - Provides fast full-text search capabilities
+   - Automatically indexes all data from the pipeline
+   - Enables complex search queries across all entities
+
+This creates an end-to-end data pipeline that automatically captures, transforms, and makes searchable every change in your transactional database.
 
 All running inside docker! 
 
@@ -82,18 +104,6 @@ The application uses a multi-database architecture:
 2. **ClickHouse** (Analytical)
 3. **Elasticsearch** (Search)
 
-# Demo Working
-
-
-### Reset Environment
-
-```bash
-# Clean all services
-pnpm ufa:dev:clean
-
-# Restart development
-pnpm ufa:dev
-```
 
 ### 🏗️ **Area Code Demo Support**
 
