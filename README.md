@@ -66,12 +66,13 @@ area-code/
 │   ├── scripts
 │   ├── index.ts # Where all objects are instantiated as analytical infrastructure 
 
-### Commands
+```
 
 ```bash
 # Clean
 pnpm ufa:dev:clean
 ```
+
 
 ## 📊 Data Architecture
 
