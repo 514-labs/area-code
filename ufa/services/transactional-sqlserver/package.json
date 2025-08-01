@@ -21,8 +21,8 @@
     "sqlserver:logs": "docker compose logs -f",
     "sqlserver:status": "docker compose ps",
     "connector:register": "curl -X POST -H 'Content-Type: application/json' --data @register-sqlserver.json http://localhost:8084/connectors",
-    "connector:status": "curl -X GET http://localhost:8084/connectors/inventory-connector/status",
-    "connector:delete": "curl -X DELETE http://localhost:8084/connectors/inventory-connector",
+    "connector:status": "curl -X GET http://localhost:8084/connectors/SQLServerToMooseConnector/status",
+    "connector:delete": "curl -X DELETE http://localhost:8084/connectors/SQLServerToMooseConnector",
     "connector:list": "curl -X GET http://localhost:8084/connectors",
     "sqlserver:sqlCDCdb ": "docker exec -it transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -No -Q 'USE sqlCDC; DROP TABLE IF EXISTS foo; DROP TABLE IF EXISTS bar; DROP TABLE IF EXISTS foo_bar;' -N -C",
     "sqlserver:count": "docker exec -it transactional-sqlserver-sqlserver-1 /opt/mssql-tools18/bin/sqlcmd -U sa -P Password! -No -Q 'USE sqlCDC; SELECT COUNT(*) FROM foo; SELECT COUNT(*) FROM bar;' -N -C"

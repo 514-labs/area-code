@@ -29,8 +29,3 @@ services:
 networks:
   analytical-base_default:
     external: true
-
-# For testing newer connector versions, unpack the connector archive into this
-# directory and uncomment the lines below
-#    volumes:
-#     - ./debezium-connector-sqlserver:/kafka/connect/debezium-connector-sqlserver

@@ -8,9 +8,8 @@ A Fastify-based REST API service for interacting with SQL Server using the Tedio
 
 1. **Start SQL Server and setup database:**
    ```bash
-   pnpm sqlserver:start
-   python3 seed-sqlserver.py setup --clear-data
-   python3 seed-sqlserver.py seed --foo-rows 1000 --bar-rows 500 --clear-data
+   docker compose up -d
+   ./scripts/setup-sqlserver.sh  # Complete setup
    ```
 
 2. **Start the API server:**
@@ -22,13 +21,19 @@ A Fastify-based REST API service for interacting with SQL Server using the Tedio
    - Swagger docs: `http://localhost:8082/docs`
    - Health check: `http://localhost:8082/health`
 
-## CDC Setup (Optional)
+## CDC & Connector Management
 
-Add the Debezium connector for streaming changes:
+The setup script automatically handles Debezium connector registration. For manual management:
 
 ```bash
+# Automatic (recommended)
+./scripts/setup-sqlserver.sh connector
+
+# Manual using pnpm scripts
 pnpm connector:list
 pnpm connector:register
+pnpm connector:status
+pnpm connector:delete
 ```
 
 ## Key Features
@@ -43,3 +48,26 @@ pnpm connector:register
 ## Environment Configuration
 
 See `.env.example` for configuration options. Default port is **8082**.
+
+
+## Database Setup Commands
+
+**Simple script approach (recommended):**
+```bash
+# Complete setup (database + tables + CDC + sample data + connector)
+./scripts/setup-sqlserver.sh
+
+# Individual steps
+./scripts/setup-sqlserver.sh setup     # Database + CDC + tables
+./scripts/setup-sqlserver.sh seed      # Sample data  
+./scripts/setup-sqlserver.sh connector # Register Debezium connector
+./scripts/setup-sqlserver.sh verify    # Check data counts + connector status
+./scripts/setup-sqlserver.sh clean     # Remove connector + clear all data
+```
+
+**Legacy Python script (deprecated):**
+```bash
+python3 seed-sqlserver.py setup --clear-data
+python3 seed-sqlserver.py seed --foo-rows 5 --bar-rows 100
+python3 seed-sqlserver.py verify
+```
