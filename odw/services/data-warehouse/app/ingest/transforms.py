@@ -100,7 +100,7 @@ def unstructured_data_source_to_unstructured_data(source: UnstructuredDataSource
     return UnstructuredData(
         id=source.id,
         source_file_path=source.source_file_path,
-        extracted_data_json=source.extracted_data_json,
+        extracted_data=source.extracted_data,
         processed_at=source.processed_at,
         processing_instructions=source.processing_instructions,
         transform_timestamp=datetime.now().isoformat()
@@ -203,7 +203,7 @@ def invalid_unstructured_data_source_to_unstructured_data(dead_letter: DeadLette
         return UnstructuredData(
             id=original_source.id,
             source_file_path=corrected_file_path,
-            extracted_data_json=original_source.extracted_data_json,
+            extracted_data=original_source.extracted_data,
             processed_at=original_source.processed_at,
             processing_instructions=original_source.processing_instructions,
             transform_timestamp=datetime.now().isoformat()

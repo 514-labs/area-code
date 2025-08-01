@@ -34,7 +34,7 @@ def get_unstructured_data(client, params: GetUnstructuredDataQuery) -> GetUnstru
         SELECT
             id,
             source_file_path,
-            extracted_data_json,
+            extracted_data,
             processed_at,
             processing_instructions,
             transform_timestamp

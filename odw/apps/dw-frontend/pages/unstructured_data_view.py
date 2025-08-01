@@ -139,8 +139,8 @@ def prepare_unstructured_display_data(df):
     if "processing_instructions" in display_df.columns:
         display_df["Processing Instructions"] = display_df["processing_instructions"].apply(format_processing_instructions)
     
-    if "extracted_data_json" in display_df.columns:
-        display_df["Structured Data"] = display_df["extracted_data_json"].apply(format_stringified_json)
+    if "extracted_data" in display_df.columns:
+        display_df["Structured Data"] = display_df["extracted_data"].apply(format_stringified_json)
     
     # Column display mapping
     display_columns = {

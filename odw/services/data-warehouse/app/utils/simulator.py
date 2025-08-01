@@ -43,7 +43,7 @@ def simulate_failures(data: List[T], fail_percentage: int) -> int:
                 item.distinct_id = f"[DLQ]{item.distinct_id}"
 
         # Handle UnstructuredDataSource models (using source_file_path as the failure marker)
-        elif hasattr(item, 'source_file_path') and hasattr(item, 'extracted_data_json'):
+        elif hasattr(item, 'source_file_path') and hasattr(item, 'extracted_data'):
             if "[DLQ]" not in item.source_file_path:
                 item.source_file_path = f"[DLQ]{item.source_file_path}"
 

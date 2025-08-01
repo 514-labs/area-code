@@ -100,7 +100,7 @@ When submitting unstructured data via the `submitUnstructuredData` API, you can 
 ```json
 {
   "source_file_path": "minio://unstructured-data/memo_001.txt",
-  "extracted_data_json": "{\"extracted\": \"data\"}"
+  "extracted_data": "{\"extracted\": \"data\"}"
 }
 ```
 

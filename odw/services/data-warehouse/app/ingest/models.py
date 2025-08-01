@@ -47,7 +47,7 @@ class EventSource(BaseModel):
 class UnstructuredDataSource(BaseModel):
     id: Key[str]
     source_file_path: str
-    extracted_data_json: Optional[str] = None
+    extracted_data: Optional[str] = None
     processed_at: str
     processing_instructions: Optional[str] = None
 
@@ -87,7 +87,7 @@ class Event(BaseModel):
 class UnstructuredData(BaseModel):
     id: Key[str]
     source_file_path: str
-    extracted_data_json: Optional[str] = None
+    extracted_data: Optional[str] = None
     processed_at: str
     processing_instructions: Optional[str] = None
     transform_timestamp: str

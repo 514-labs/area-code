@@ -69,7 +69,7 @@ def create_dlq_record(file_path: str, error_message: str) -> UnstructuredDataSou
     return UnstructuredDataSource(
         id=dlq_id,
         source_file_path=f"[DLQ]{file_path}",  # Mark for DLQ with prefix
-        extracted_data_json=json.dumps({"error": error_message}),
+        extracted_data=json.dumps({"error": error_message}),
         processed_at=datetime.now().isoformat(),
         processing_instructions=f"Failed: {error_message}"
     )
@@ -159,7 +159,7 @@ def stage_1_s3_to_unstructured(input: UnstructuredDataExtractParams) -> List[str
             unstructured_record = UnstructuredData(
                 id=record_id,
                 source_file_path=file_content.file_path,
-                extracted_data_json=file_content.content,  # Store raw file content for LLM processing
+                extracted_data=file_content.content,  # Store raw file content for LLM processing
                 processed_at=datetime.now().isoformat(),
                 processing_instructions=input.processing_instructions,
                 transform_timestamp=datetime.now().isoformat()
@@ -414,7 +414,7 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
             # Extract data from the record
             record_id = record.get('id')
             source_file_path = record.get('source_file_path')
-            file_content = record.get('extracted_data_json')  # Raw file content stored from Stage 1
+            file_content = record.get('extracted_data')  # Raw file content stored from Stage 1
             processing_instructions = record.get('processing_instructions')
             
             cli_log(CliLogData(
