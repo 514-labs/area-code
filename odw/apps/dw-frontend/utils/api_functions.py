@@ -133,64 +133,37 @@ def fetch_data(tag):
 def trigger_extract(api_url, label, source_file_pattern=None, processing_instructions=None):
     batch_size = random.randint(10, 100)
     
-    # Special handling for unstructured data workflow
-    if "extract-unstructured-data" in api_url:
-        try:
-            # Use subprocess to run the Moose CLI workflow command
-            import subprocess
-            import os
-            
-            # Change to the data warehouse directory
-            data_warehouse_dir = "/Users/cjus/dev/area-code/odw/services/data-warehouse"
-            
-            # Build workflow input parameters
-            input_params = {}
-            
-            # Add specific pattern (now required)
-            if source_file_pattern:
-                input_params["source_file_pattern"] = source_file_pattern
-                
-            # Add processing instructions if provided
-            if processing_instructions:
-                input_params["processing_instructions"] = processing_instructions
-            
-            # Run the workflow using Moose CLI
-            result = subprocess.run(
-                ["moose-cli", "workflow", "run", "unstructured-data-workflow", 
-                 "--input", json.dumps(input_params)],
-                cwd=data_warehouse_dir,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            if result.returncode == 0:
-                pattern_msg = f" for pattern {source_file_pattern}" if source_file_pattern else ""
-                st.session_state["extract_status_msg"] = f"{label} workflow triggered successfully{pattern_msg}."
-                st.session_state["extract_status_type"] = "success"
-                st.session_state["extract_status_time"] = time.time()
-            else:
-                st.session_state["extract_status_msg"] = f"Failed to trigger {label} workflow: {result.stderr}"
-                st.session_state["extract_status_type"] = "error"
-                st.session_state["extract_status_time"] = time.time()
-                
-        except Exception as e:
-            st.session_state["extract_status_msg"] = f"Failed to trigger {label} workflow: {str(e)}"
-            st.session_state["extract_status_type"] = "error"
-            st.session_state["extract_status_time"] = time.time()
-    else:
-        # Original method for other workflows
-        url = f"{api_url}?batch_size={batch_size}"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
+    # Build URL with parameters
+    url = f"{api_url}?batch_size={batch_size}"
+    
+    # Add unstructured data specific parameters if provided
+    if source_file_pattern:
+        url += f"&source_file_pattern={source_file_pattern}"
+    if processing_instructions:
+        # URL encode the processing instructions to handle special characters
+        from urllib.parse import quote
+        url += f"&processing_instructions={quote(processing_instructions)}"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        
+        # Create appropriate success message
+        if source_file_pattern:
+            pattern_msg = f" for pattern {source_file_pattern}"
+            st.session_state["extract_status_msg"] = f"{label} extract triggered{pattern_msg}."
+        else:
             st.session_state["extract_status_msg"] = f"{label} extract triggered with batch size {batch_size}."
-            st.session_state["extract_status_type"] = "success"
-            st.session_state["extract_status_time"] = time.time()
-        except Exception as e:
+        
+        st.session_state["extract_status_type"] = "success"
+        st.session_state["extract_status_time"] = time.time()
+    except Exception as e:
+        if source_file_pattern:
+            st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract: {e}"
+        else:
             st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract (batch size {batch_size}): {e}"
-            st.session_state["extract_status_type"] = "error"
-            st.session_state["extract_status_time"] = time.time()
+        st.session_state["extract_status_type"] = "error"
+        st.session_state["extract_status_time"] = time.time()
 
 def trigger_all_extracts():
     trigger_extract(f"{CONSUMPTION_API_BASE}/extract-blob", "Blob")
