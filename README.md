@@ -16,7 +16,7 @@ pnpm i
 # 2. Start development environment
 pnpm ufa:dev
 
-# 3. Seed databases with sample data (in a new terminal)
+# 3. Seed databases with sample data (in a new terminal once eveything has started up.. this may take around 30 seconds)
 pnpm ufa:dev:seed
 
 # 4. Open front-end
@@ -28,7 +28,9 @@ This will:
 - Set up your Moose application, with the pipleine to transform streamed CDC events into your OLAP table and forward them to your retrieval service in stream
 - Set up a Debezium connector to read SQL Server transaction logs and forward logs to your topic created in Redpanda by Moose
 - Seed transactional database with SQL Server with 100,000 Foo records and 100,000 bar records
+- Set up an Elastic Search retrieval database for full text search
 
+All running inside docker! 
 
 ## 📁 Project Structure
 
@@ -51,6 +53,8 @@ area-code/
 ```
 
 ## Moose App Structure
+
+```
 ├── app
 │   ├── apis # APIs on Clickhouse Tables
 │   │   ├── bar 
