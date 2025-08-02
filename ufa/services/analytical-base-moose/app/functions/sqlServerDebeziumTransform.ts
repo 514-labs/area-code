@@ -43,7 +43,7 @@ const sendDataToElasticsearch = async (
         error
       );
     }
-  };
+};
 
 export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumPayload): FooWithCDC | null => {
     if (payload.payload.source.table !== "foo") {
@@ -176,77 +176,77 @@ export const transformDebeziumPayloadToFooWithCDC = (payload: SqlServerDebeziumP
    * Transform function to convert SQL Server Debezium CDC events for 'bar' table
    * into BarWithCDC format for the existing Bar pipeline
    */
-  export const transformDebeziumPayloadToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWithCDC | null => {
-    if (payload.payload.source.table !== "bar") {
-      console.log("Skipping non-bar table");
-      return null;
-    }
+export const transformDebeziumPayloadToBarWithCDC = (payload: SqlServerDebeziumPayload): BarWithCDC | null => {
+  if (payload.payload.source.table !== "bar") {
+    console.log("Skipping non-bar table");
+    return null;
+  }
+
+  const after = payload.payload.after;
+  const before = payload.payload.before;
+  const op = payload.payload.op;
+  const source = payload.payload.source;
   
-    const after = payload.payload.after;
-    const before = payload.payload.before;
-    const op = payload.payload.op;
-    const source = payload.payload.source;
-    
-    // Handle different CDC operations
-    switch (op) {
-      case "r": // Read (initial snapshot)
-      case "c": // Create (insert)
-      case "u": // Update
-        if (!after) {
-          console.log(`No 'after' data for bar operation ${op}, skipping`);
-          return null;
-        }
-  
-        const transformedData = {
-          id: after.id,
-          foo_id: after.foo_id,
-          value: after.value || 0,
-          label: after.label || null,
-          notes: after.notes || null,
-          is_enabled: after.is_enabled || false,
-          created_at: after.created_at ? new Date(after.created_at / 1000000) : new Date(), // Convert nanoseconds to milliseconds
-          updated_at: after.updated_at ? new Date(after.updated_at / 1000000) : new Date(),
-          // CDC metadata
-          cdc_id: `${source.table}_${after.id}_${payload.payload.ts_ms}`,
-          cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE") as CDCOperation,
-          cdc_timestamp: new Date(payload.payload.ts_ms)
-        };
-
-        // Send to Elasticsearch for search indexing (non-blocking)
-        sendDataToElasticsearch("bar", "index", transformedData);
-
-        return transformedData;
-        
-      case "d": // Delete
-        if (!before) {
-          console.log("No 'before' data for bar delete operation, skipping");
-          return null;
-        }
-  
-        // For deletes, use before data with DELETE operation
-        const deletedData = {
-          id: before.id,
-          foo_id: before.foo_id,
-          value: before.value || 0,
-          label: before.label || null,
-          notes: before.notes || null,
-          is_enabled: before.is_enabled || false,
-          created_at: before.created_at ? new Date(before.created_at / 1000000) : new Date(),
-          updated_at: before.updated_at ? new Date(before.updated_at / 1000000) : new Date(),
-          // CDC metadata
-          cdc_id: `${source.table}_${before.id}_${payload.payload.ts_ms}`,
-          cdc_operation: "DELETE" as CDCOperation,
-          cdc_timestamp: new Date(payload.payload.ts_ms)
-        };
-
-        // Send delete to Elasticsearch for search indexing (non-blocking)
-        sendDataToElasticsearch("bar", "delete", { id: before.id });
-
-        return deletedData;
-        
-      default:
-        console.log(`Unknown bar operation: ${op}`);
+  // Handle different CDC operations
+  switch (op) {
+    case "r": // Read (initial snapshot)
+    case "c": // Create (insert)
+    case "u": // Update
+      if (!after) {
+        console.log(`No 'after' data for bar operation ${op}, skipping`);
         return null;
-    }
-  };
+      }
+
+      const transformedData = {
+        id: after.id,
+        foo_id: after.foo_id,
+        value: after.value || 0,
+        label: after.label || null,
+        notes: after.notes || null,
+        is_enabled: after.is_enabled || false,
+        created_at: after.created_at ? new Date(after.created_at / 1000000) : new Date(), // Convert nanoseconds to milliseconds
+        updated_at: after.updated_at ? new Date(after.updated_at / 1000000) : new Date(),
+        // CDC metadata
+        cdc_id: `${source.table}_${after.id}_${payload.payload.ts_ms}`,
+        cdc_operation: op === "r" ? "INSERT" : (op === "c" ? "INSERT" : "UPDATE") as CDCOperation,
+        cdc_timestamp: new Date(payload.payload.ts_ms)
+      };
+
+      // Send to Elasticsearch for search indexing (non-blocking)
+      sendDataToElasticsearch("bar", "index", transformedData);
+
+      return transformedData;
+      
+    case "d": // Delete
+      if (!before) {
+        console.log("No 'before' data for bar delete operation, skipping");
+        return null;
+      }
+
+      // For deletes, use before data with DELETE operation
+      const deletedData = {
+        id: before.id,
+        foo_id: before.foo_id,
+        value: before.value || 0,
+        label: before.label || null,
+        notes: before.notes || null,
+        is_enabled: before.is_enabled || false,
+        created_at: before.created_at ? new Date(before.created_at / 1000000) : new Date(),
+        updated_at: before.updated_at ? new Date(before.updated_at / 1000000) : new Date(),
+        // CDC metadata
+        cdc_id: `${source.table}_${before.id}_${payload.payload.ts_ms}`,
+        cdc_operation: "DELETE" as CDCOperation,
+        cdc_timestamp: new Date(payload.payload.ts_ms)
+      };
+
+      // Send delete to Elasticsearch for search indexing (non-blocking)
+      sendDataToElasticsearch("bar", "delete", { id: before.id });
+
+      return deletedData;
+      
+    default:
+      console.log(`Unknown bar operation: ${op}`);
+      return null;
+  }
+};
   
