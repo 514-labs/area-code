@@ -12,11 +12,13 @@ showEmailPrompt = false
 headless = true
 runOnSave = false
 maxUploadSize = 200
+# Keep default CORS and XSRF settings for security
+enableStaticServing = true
 
 [client]
 showErrorDetails = "full"
-# Hides developer options, like the Deploy advertisement
-toolbarMode = "viewer"
+# Allow navigation while hiding deploy buttons
+toolbarMode = "minimal"
 
 [runner]
 magicEnabled = true
@@ -24,3 +26,9 @@ fastReruns = true
 
 [browser]
 gatherUsageStats = false  # Disable telemetry
+
+[logger]
+# Set logging level to reduce verbosity (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+level = "ERROR"
+# Custom message format for cleaner logs
+messageFormat = "%(asctime)s.%(msecs)03d %(name)s: %(levelname)s: %(message)s"

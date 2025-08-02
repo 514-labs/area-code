@@ -1,7 +1,12 @@
 import streamlit as st
+import logging
+
+# Disable HTTP access logs
+logging.getLogger('tornado.access').disabled = True
+logging.getLogger('streamlit').setLevel(logging.ERROR)
 
 # Import pages
-from pages import overview, blobs_view, logs_view, events_view, analytics
+from pages import overview, blobs_view, logs_view, events_view, analytics, unstructured_data_view
 from utils.status_handler import display_status_messages, cleanup_old_status_messages
 from utils.tooltip_utils import add_tooltip_css
 
@@ -13,25 +18,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
+
 def set_sidebar_min_width():
     st.markdown(
         """
         <style>
-        section[data-testid="stSidebar"] {
-            min-width: 200px !important;
-            max-width: 200px !important;
-            width: 200px !important;
+        /* Aggressive top spacing reduction */
+        .block-container {
+            padding-top: 0.5rem !important;
+            padding-bottom: 1rem !important;
+            margin-top: 0rem !important;
         }
-        section[data-testid="stSidebar"] .block-container {
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-        }
-        /* Hide the deploy button */
-        .stAppDeployButton,
-        [data-testid="stAppDeployButton"] {
-            display: none !important;
-        }
-
         </style>
         """,
         unsafe_allow_html=True,
@@ -43,112 +41,8 @@ set_sidebar_min_width()
 # Apply tooltip CSS for faster appearance
 add_tooltip_css()
 
-# Add CSS to hide permalink icons and style View Queues button
-st.markdown("""
-<style>
-[data-testid="stHeaderActionElements"] {
-    display: none;
-}
+# Add CSS to hide specific elements while preserving navigation
 
-/* Comprehensive styling for View Queues button hover state */
-/* Target all possible Streamlit button variations */
-.stButton > button:hover,
-.stButton > a:hover,
-.stButton button:hover,
-.stButton a:hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* Specific targeting for secondary buttons */
-.stButton > button[kind="secondary"]:hover,
-.stButton > button[data-testid="baseButton-secondary"]:hover,
-.stButton > a[data-testid="baseButton-secondary"]:hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* Target link buttons specifically */
-.stButton a[href*="localhost:9999"]:hover,
-.stButton a[href*="9999"]:hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* Additional selectors for Streamlit's button structure */
-div[data-testid="stButton"] > button:hover,
-div[data-testid="stButton"] > a:hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* Target buttons with specific text content */
-.stButton button:contains("View Queues"):hover,
-.stButton a:contains("View Queues"):hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* More specific selectors for Streamlit link buttons */
-.stButton a[target="_blank"]:hover,
-.stButton a[rel="noopener"]:hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* Target all buttons in the DLQ section */
-.stButton:has(a[href*="9999"]) a:hover,
-.stButton:has(button:contains("View Queues")) button:hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* Universal button hover override */
-button:hover, a:hover {
-    background-color: #F5F5F5 !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-
-/* Number input control styling for DLQ section */
-/* Target the plus and minus buttons in number inputs */
-.stNumberInput > div > button:hover,
-.stNumberInput button:hover,
-[data-testid="stNumberInput"] > div > button:hover,
-[data-testid="stNumberInput"] button:hover {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-    border-color: #000000 !important;
-}
-
-/* More specific targeting for number input controls */
-.stNumberInput > div > div > button:hover,
-.stNumberInput > div > div > div > button:hover {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-    border-color: #000000 !important;
-}
-
-/* Target the increment/decrement buttons specifically */
-.stNumberInput button[aria-label*="increment"]:hover,
-.stNumberInput button[aria-label*="decrement"]:hover,
-.stNumberInput button[aria-label*="Increment"]:hover,
-.stNumberInput button[aria-label*="Decrement"]:hover {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-    border-color: #000000 !important;
-}
-
-
-</style>
-""", unsafe_allow_html=True)
 
 # Define navigation pages
 def create_navigation():
@@ -181,6 +75,14 @@ def create_navigation():
         url_path="events"
     )
     
+    unstructured_data_page = st.Page(
+        unstructured_data_view.show,
+        title="Unstructured",
+        icon="📄",
+        url_path="unstructured-data",
+        default=False
+    )
+    
     analytics_page = st.Page(
         analytics.show,
         title="Connector Analytics",
@@ -192,7 +94,7 @@ def create_navigation():
     # Create navigation with grouped sections
     nav = st.navigation({
         "Data Warehouse": [analytics_page],
-        "Connectors": [overview_page, blob_page, logs_page, events_page]
+        "Connectors": [overview_page, blob_page, logs_page, events_page, unstructured_data_page]
     })
     
     return nav
@@ -201,7 +103,11 @@ def create_navigation():
 nav = create_navigation()
 
 # Run the navigation (this will render the navigation menu in the sidebar)
-nav.run()
+try:
+    nav.run()
+except Exception as e:
+    st.error(f"Navigation error: {e}")
+    st.info("Please try refreshing the page or navigating to a different section.")
 
 # Display status messages at the bottom of the sidebar
 with st.sidebar:

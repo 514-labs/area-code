@@ -8,7 +8,7 @@ import streamlit_shadcn_ui as ui
 from datetime import datetime, timedelta
 from requests.exceptions import ConnectionError
 
-from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE
+from .constants import CONSUMPTION_API_BASE, WORKFLOW_API_BASE, INGEST_API_BASE
 
 def normalize_for_display(blob_df, log_df, events_df=None):
     """Convert blob, log, and events data to a unified display format for 'All' view"""
@@ -130,17 +130,38 @@ def fetch_data(tag):
                 st.toast("Error fetching data. Check terminal for details.")
             return pd.DataFrame()
 
-def trigger_extract(api_url, label):
+def trigger_extract(api_url, label, source_file_pattern=None, processing_instructions=None):
     batch_size = random.randint(10, 100)
+    
+    # Build URL with parameters
     url = f"{api_url}?batch_size={batch_size}"
+    
+    # Add unstructured data specific parameters if provided
+    if source_file_pattern:
+        url += f"&source_file_pattern={source_file_pattern}"
+    if processing_instructions:
+        # URL encode the processing instructions to handle special characters
+        from urllib.parse import quote
+        url += f"&processing_instructions={quote(processing_instructions)}"
+    
     try:
         response = requests.get(url)
         response.raise_for_status()
-        st.session_state["extract_status_msg"] = f"{label} extract triggered with batch size {batch_size}."
+        
+        # Create appropriate success message
+        if source_file_pattern:
+            pattern_msg = f" for pattern {source_file_pattern}"
+            st.session_state["extract_status_msg"] = f"{label} extract triggered{pattern_msg}."
+        else:
+            st.session_state["extract_status_msg"] = f"{label} extract triggered with batch size {batch_size}."
+        
         st.session_state["extract_status_type"] = "success"
         st.session_state["extract_status_time"] = time.time()
     except Exception as e:
-        st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract (batch size {batch_size}): {e}"
+        if source_file_pattern:
+            st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract: {e}"
+        else:
+            st.session_state["extract_status_msg"] = f"Failed to trigger {label} extract (batch size {batch_size}): {e}"
         st.session_state["extract_status_type"] = "error"
         st.session_state["extract_status_time"] = time.time()
 
@@ -673,6 +694,34 @@ def fetch_daily_pageviews_data(days_back=14, limit=14):
         return pd.DataFrame()
     except Exception as e:
         st.error(f"Unexpected error fetching daily page views: {str(e)}")
+        return pd.DataFrame()
+
+
+def fetch_medical_data(patient_name=None, doctor=None, dental_procedure_name=None, limit=100, should_throw=False):
+    """Fetch medical data from the getMedical API"""
+    api_url = f"{CONSUMPTION_API_BASE}/getMedical"
+    params = {"limit": limit}
+    
+    if patient_name:
+        params["patient_name"] = patient_name
+    if doctor:
+        params["doctor"] = doctor
+    if dental_procedure_name:
+        params["dental_procedure_name"] = dental_procedure_name
+
+    try:
+        response = requests.get(api_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        items = data.get("items", [])
+        df = pd.DataFrame(items)
+        return df
+    except Exception as e:
+        if should_throw:
+            raise e
+        else:
+            print(f"Medical Data API error: {e}")
+            st.toast("Error fetching medical data. Check terminal for details.")
         return pd.DataFrame()
 
 def is_data_warehouse_not_ready(error):

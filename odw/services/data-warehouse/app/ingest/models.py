@@ -44,6 +44,13 @@ class EventSource(BaseModel):
     ip_address: Optional[str]
     user_agent: Optional[str]
 
+class UnstructuredDataSource(BaseModel):
+    id: Key[str]
+    source_file_path: str
+    extracted_data: Optional[str] = None
+    processed_at: str
+    processing_instructions: Optional[str] = None
+
 # Final models - processed data with transformations
 class Blob(BaseModel):
     id: Key[str]
@@ -77,6 +84,15 @@ class Event(BaseModel):
     user_agent: Optional[str]
     transform_timestamp: str
 
+class UnstructuredData(BaseModel):
+    id: Key[str]
+    source_file_path: str
+    extracted_data: Optional[str] = None
+    processed_at: str
+    processing_instructions: Optional[str] = None
+    transform_timestamp: str
+
+
 # Source ingest pipelines
 blobSourceModel = IngestPipeline[BlobSource]("BlobSource", IngestPipelineConfig(
     ingest=True,
@@ -99,6 +115,13 @@ eventSourceModel = IngestPipeline[EventSource]("EventSource", IngestPipelineConf
     dead_letter_queue=True
 ))
 
+unstructuredDataSourceModel = IngestPipeline[UnstructuredDataSource]("UnstructuredDataSource", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=False,  # No table needed - only for DLQ processing
+    dead_letter_queue=True
+))
+
 # Final processed pipelines
 blobModel = IngestPipeline[Blob]("Blob", IngestPipelineConfig(
     ingest=True,
@@ -115,6 +138,30 @@ logModel = IngestPipeline[Log]("Log", IngestPipelineConfig(
 ))
 
 eventModel = IngestPipeline[Event]("Event", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=True,
+    dead_letter_queue=True
+))
+
+class Medical(BaseModel):
+    id: Key[str]
+    patient_name: str
+    phone_number: str
+    scheduled_appointment_date: str
+    dental_procedure_name: str
+    doctor: str
+    transform_timestamp: str
+    source_file_path: str
+
+unstructuredDataModel = IngestPipeline[UnstructuredData]("UnstructuredData", IngestPipelineConfig(
+    ingest=True,
+    stream=True,
+    table=True,  # Creates the staging table that automatic extraction expects
+    dead_letter_queue=True
+))
+
+medicalModel = IngestPipeline[Medical]("Medical", IngestPipelineConfig(
     ingest=True,
     stream=True,
     table=True,
