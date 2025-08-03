@@ -1,6 +1,6 @@
 {
   "name": "analytical-moose-foobar",
-  "version": "0.0",
+  "version": "0.0.0",
   "scripts": {
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
