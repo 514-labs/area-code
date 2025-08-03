@@ -2,7 +2,7 @@
 
 # Starter Applications
 
-Area Code is a starter repo with all the necessary building blocks for a production ready repository that demonstrate how to create a mirror data in real time from your transcational database(s) to an analytical database.
+Area Code is a starter repo with all the necessary building blocks for a production ready repository that can be used to build multi-modal applications.
 
 There are two sample applications: [User Facing Analytics](/ufa/) and [Operational Data Warehouse](/odw/). Quickstarts for each of those projects live in the readme of their respective folders ([UFA](/ufa/README.md), [ODW](/odw/README.md)).
 

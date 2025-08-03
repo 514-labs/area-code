@@ -230,7 +230,7 @@ const start = async () => {
     await fastify.listen({ port, host });
 
     fastify.log.info(
-      `🚀 Transactional SQL Server service is running on http://${host}:${port} (replacing transactional-base)`
+      `🚀 Transactional SQL Server service is running on http://${host}:${port}`
     );
     fastify.log.info("📊 Available endpoints:");
     fastify.log.info("  GET  / - API information");

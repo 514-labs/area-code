@@ -15,9 +15,10 @@
     "ufa:dev:clean": "turbo run ufa:dev:clean",
     "ufa:dev:seed": "./ufa/scripts/dev-seed.sh",
     "ufa:dev:seed:transactional-supabase-foobar": "./ufa/scripts/dev-seed.sh --service=transactional-supabase-foobar",
-    "ufa:dev:seed:transactional-sqlserver": "./ufa/scripts/dev-seed.sh --service=transactional-sqlserver",
     "ufa:dev:seed:analytical-moose-foobar": "./ufa/scripts/dev-seed.sh --service=analytical-moose-foobar",
-    "ufa:dev:seed:retrieval-elasticsearch-foobar": "./ufa/scripts/dev-seed.sh --service=retrieval-elasticsearch-foobar"
+    "ufa:dev:seed:retrieval-elasticsearch-foobar": "./ufa/scripts/dev-seed.sh --service=retrieval-elasticsearch-foobar",
+    "ufa:sqlserver:dev": "turbo run ufa:dev --ui=tui --filter='!transactional-supabase-foobar' --filter='!sync-supabase-moose-foobar'",
+    "ufa:sqlserver:dev:seed": "./ufa/scripts/dev-seed.sh --service=transactional-sqlserver"
   },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",

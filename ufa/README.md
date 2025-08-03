@@ -47,19 +47,44 @@ This will:
 - Start Elasticsearch migration for search capabilities
 - Restart workflows for real-time synchronization
 
+## Alternative: SQL Server Backend
+
+For SQL Server with Debezium CDC instead of Supabase:
+
+```bash
+# 1. Install dependencies
+pnpm install
+
+# 2. Start SQL Server development environment
+pnpm ufa:sqlserver:dev
+
+# 3. Seed SQL Server with sample data (in a new terminal)
+pnpm ufa:sqlserver:dev:seed
+
+# 4. Open front-end
+http://localhost:5173/
+```
+
+This uses `transactional-sqlserver` with Debezium CDC for real-time data capture instead of the default Supabase setup. Both backends use the same analytical and search services.
+
 ## 🛠️ Available Scripts
 
 ```bash
-# Development
+# Development (Supabase - Default)
 pnpm ufa:dev              # Start all services
 pnpm ufa:dev:clean        # Clean all services
 pnpm ufa:dev:seed         # Seed databases with sample data
 
+# Development (SQL Server Alternative)
+pnpm ufa:sqlserver:dev         # Start SQL Server services
+pnpm ufa:sqlserver:dev:seed    # Seed SQL Server with sample data
+
 # Individual services
-pnpm --filter vite-web-base dev          # Frontend only
-pnpm --filter transactional-base dev      # Transactional API only
-pnpm --filter analytical-base dev         # Analytical API only
-pnpm --filter retrieval-base dev          # Search API only
+pnpm --filter web-frontend-foobar dev                    # Frontend only
+pnpm --filter transactional-supabase-foobar dev          # Supabase transactional API only
+pnpm --filter transactional-sqlserver dev                # SQL Server transactional API only
+pnpm --filter analytical-moose-foobar dev                # Analytical API only
+pnpm --filter retrieval-elasticsearch-foobar dev         # Search API only
 ```
 
 ## 🏗️ Tech Stack
