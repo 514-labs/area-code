@@ -16,7 +16,7 @@
     "ufa:dev": "docker compose up -d && ./scripts/setup-sqlserver.sh all && pnpm dev:server",
     "ufa:dev:setup": "echo '⏳ Waiting for analytical-base network...' && pnpm ufa:dev:wait-for-network",
     "ufa:dev:seed": "./scripts/setup-sqlserver.sh seed --foo-count 100000 --bar-count 10000",
-    "ufa:dev:clean": "pnpm connector:delete && docker compose down && docker volume prune -f",
+    "ufa:dev:clean": "(pnpm connector:delete || true) && docker compose down && docker volume prune -f",
     "ufa:dev:reset": "pnpm ufa:dev:clean && pnpm ufa:dev",
     "ufa:dev:verify": "./scripts/setup-sqlserver.sh verify",
     "ufa:dev:demo-cdc": "./scripts/setup-sqlserver.sh connector && ./scripts/setup-sqlserver.sh seed --foo-count 1000 --bar-count 3000 && echo '🎉 CDC Demo: 1000 foo + 3000 bar records inserted and captured!'",
