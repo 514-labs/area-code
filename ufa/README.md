@@ -78,6 +78,7 @@ pnpm ufa:dev:seed         # Seed databases with sample data
 # Development (SQL Server Alternative)
 pnpm ufa:sqlserver:dev         # Start SQL Server services  
 pnpm ufa:sqlserver:dev:seed    # Seed SQL Server with 100K foo + 10K bar records
+pnpm ufa:sqlserver:dev:clean   # Clean SQL Server: stop containers, remove volumes, delete connector
 
 # Individual services
 pnpm --filter web-frontend-foobar dev                    # Frontend only
