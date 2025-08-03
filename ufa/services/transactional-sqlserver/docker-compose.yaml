@@ -1,0 +1,34 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    ports:
+     - 1433:1433
+    environment:
+     - ACCEPT_EULA=Y
+     - MSSQL_PID=Standard
+     - SA_PASSWORD=Password!
+     - MSSQL_AGENT_ENABLED=true
+
+  # Kafka Connect - waits for analytical-base network to be created
+  connect:
+    image: quay.io/debezium/connect:3.0
+    platform: linux/amd64
+    ports:
+     - 8084:8083
+    environment:
+     - BOOTSTRAP_SERVERS=redpanda:9092
+     - GROUP_ID=1
+     - CONFIG_STORAGE_TOPIC=my_connect_configs
+     - OFFSET_STORAGE_TOPIC=my_connect_offsets
+     - STATUS_STORAGE_TOPIC=my_connect_statuses
+    depends_on:
+     - sqlserver
+    networks:
+     - default
+     - analytical-base_default
+    restart: unless-stopped
+
+networks:
+  analytical-base_default:
+    external: true

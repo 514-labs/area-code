@@ -140,7 +140,7 @@ async function waitForElasticsearch(maxRetries = 30, delay = 1000) {
 // Start server
 const start = async () => {
   try {
-    const port = parseInt(process.env.PORT || "8083");
+    const port = 8086;
     const host = process.env.HOST || "0.0.0.0";
 
     // Wait for Elasticsearch (unless in server-only mode)

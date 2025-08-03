@@ -31,3 +31,18 @@ export type GetBarsAverageValueResponse = {
   queryTime: number;
   count: number;
 };
+
+export type BulkDeleteBarsRequest = {
+  ids: string[];
+};
+
+export type BulkDeleteBarsResponse = {
+  success: boolean;
+  deletedCount: number;
+};
+
+export type DeleteBarResponse = {
+  success: boolean;
+};
+
+export type GetBarsByFooIdResponse = Bar[];
