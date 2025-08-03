@@ -22,7 +22,7 @@ The UFA application includes AI-powered chat functionality that requires an Anth
 
 This enables the Aurora MCP (Model Context Protocol) which provides AI tools for intelligent data analysis and querying across your multi-modal backend.
 
-## 🚀 Quick Start (Supabase Backend) (Supabase Backend)
+## 🚀 Quick Start (Supabase Backend)
 
 Get up and running in minutes with our automated setup:
 
@@ -76,8 +76,8 @@ pnpm ufa:dev:clean        # Clean all services
 pnpm ufa:dev:seed         # Seed databases with sample data
 
 # Development (SQL Server Alternative)
-pnpm ufa:sqlserver:dev         # Start SQL Server services
-pnpm ufa:sqlserver:dev:seed    # Seed SQL Server with sample data
+pnpm ufa:sqlserver:dev         # Start SQL Server services  
+pnpm ufa:sqlserver:dev:seed    # Seed SQL Server with 100K foo + 10K bar records
 
 # Individual services
 pnpm --filter web-frontend-foobar dev                    # Frontend only
