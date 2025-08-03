@@ -1,112 +1,73 @@
-# Transactional SQL Server Service
+# SQL Server Transactional Backend
 
-A Fastify-based REST API service for interacting with SQL Server using the Tedious driver. This service provides CRUD operations for `foo` and `bar` entities with Change Data Capture (CDC) enabled.
+This service demonstrates real-time data synchronization from SQL Server to analytical and search databases using Change Data Capture (CDC) and Debezium.
 
-**Runs on port 8082** (same as transactional-base, as this service replaces it)
+## Overview
 
-## Manual Start (for when you want to set up the infra step by step)
+This demo sets up:
+- A sample app with user mock foo/bar data — SQL Server
+- Real-time data sync (captures every change automatically) — [Debezium](https://debezium.io/) & Redpanda
+- Analytics database (for fast queries and dashboards) - ClickHouse
+- Search database (for finding anything instantly) - Elasticsearch
+- Sample dashboard (see it all working together)
 
-1. **Start SQL Server and setup database:**
-   ```bash
-   docker compose up -d
-   ./scripts/setup-sqlserver.sh  # Complete setup
-   ```
+## Architecture
 
-2. **Start the API server:**
-   ```bash
-   pnpm dev:server
-   ```
+You'll see a dashboard that updates in real-time with CRUD endpoints so you see how changes are propagated from your transactional database (OLTP) to your analytical database (OLAP) system.
 
-3. **API will be available at:** `http://localhost:8082`
-   - Swagger docs: `http://localhost:8082/docs`
-   - Health check: `http://localhost:8082/health`
+1. **SQL Server Database** (`sqlCDC`)
+   - Creates and configures two tables (`foo` and `bar`) with Change Data Capture (CDC) enabled
+   - Seeds 100,000 sample records in each table
 
-## CDC & Connector Management
+2. **Moose Analytics Pipeline**
+   - Configures real-time data transformation from CDC events to OLAP tables
+   - Streams transformed data to the retrieval service
+   - Leverages Redpanda for high-performance event streaming
 
-The setup script automatically handles Debezium connector registration. For manual management:
+3. **Debezium CDC Connector**
+   - Monitors SQL Server transaction logs in real-time
+   - Forwards captured changes to Redpanda topics
+   - Ensures zero data loss during replication
 
-```bash
-# Automatic (recommended)
-./scripts/setup-sqlserver.sh connector
+4. **Elasticsearch Search Engine**
+   - Provides fast full-text search capabilities
+   - Automatically indexes all data from the pipeline
+   - Enables complex search queries across all entities
 
-# Manual using pnpm scripts
-pnpm connector:list
-pnpm connector:register
-pnpm connector:status
-pnpm connector:delete
+This creates an end-to-end data pipeline that automatically captures, transforms, and makes searchable every change in your transactional database.
+
+All running inside docker!
+
+## Moose App Structure
+
+```
+├── app
+│   ├── apis # APIs on ClickHouse Tables
+│   │   ├── bar 
+│   │   └── foo
+│   ├── functions
+│   │   └── sqlServerDebeziumTransform.ts # Stream processing logic from CDC event to table 
+│   ├── models
+│   │   └── debeziumPayload.ts # Data model of JSON CDC payloads written to the Redpanda topic
+│   ├── scripts
+│   ├── index.ts # Where all objects are instantiated as analytical infrastructure 
 ```
 
-## Key Features
+## Data Architecture
 
-- **Fastify** web framework with TypeScript
-- **Tedious** SQL Server driver with connection pooling
-- **Swagger/OpenAPI** documentation
-- **CRUD operations** for foo and bar entities
-- **CDC-enabled** tables for streaming changes
-- **Same API patterns** as transactional-base
+The application uses a multi-database architecture:
 
-## Environment Configuration
+1. **SQL Server** (Transactional)
+2. **ClickHouse** (Analytical)
+3. **Elasticsearch** (Search)
 
-See `.env.example` for configuration options. Default port is **8082**.
+## Built with Moose
 
+This service demonstrates Moose's capabilities for building production-ready applications with:
 
-## Database Setup Commands
+- **Real-time analytics** with ClickHouse
+- **Event streaming** with Redpanda
+- **CDC** with Debezium Connect
+- **Multi-database architectures** (SQL Server + ClickHouse + Elasticsearch)
 
-**Simple script approach (recommended):**
-```bash
-# Complete setup (database + tables + CDC + sample data + connector)
-./scripts/setup-sqlserver.sh
-
-# Individual steps
-./scripts/setup-sqlserver.sh setup     # Database + CDC + tables
-./scripts/setup-sqlserver.sh seed      # Sample data (default: 100 foo, 500 bar)
-./scripts/setup-sqlserver.sh connector # Register Debezium connector
-./scripts/setup-sqlserver.sh verify    # Check data counts + connector status
-./scripts/setup-sqlserver.sh clean     # Remove connector + clear all data
-```
-
-**Dynamic seeding with custom record counts:**
-```bash
-# Seed with custom counts
-./scripts/setup-sqlserver.sh seed --foo-count 1000 --bar-count 5000
-
-# Complete CDC demonstration setup (RECOMMENDED for CDC testing)
-./scripts/setup-sqlserver.sh all --foo-count 10000 --bar-count 50000
-
-# Small test dataset
-./scripts/setup-sqlserver.sh seed --foo-count 10 --bar-count 20
-
-# View help for all options
-./scripts/setup-sqlserver.sh --help
-```
-
-**CDC Demonstration Workflow:**
-```bash
-# Main development workflow - sets up CDC BEFORE seeding data
-pnpm ufa:dev
-
-# Quick CDC demo (assumes setup is already done)
-pnpm ufa:dev:demo-cdc
-
-# Step-by-step CDC demonstration
-./scripts/setup-sqlserver.sh setup      # 1. Setup database + tables
-./scripts/setup-sqlserver.sh connector  # 2. Register CDC connector  
-./scripts/setup-sqlserver.sh seed --foo-count 1000 --bar-count 3000  # 3. Insert data (CDC captures!)
-```
-
-**Features of the dynamic seeding:**
-- **Random data generation** similar to PostgreSQL version
-- **Configurable record counts** via command line flags
-- **Foreign key relationships** properly maintained between foo and bar
-- **Batch processing** for performance with large datasets
-- **Progress reporting** during seeding process
-- **Performance metrics** showing records/second throughput
-- **Sample data preview** in verification step
-
-
-For in depth/production ready understanding of the debezium connector look at the docs https://debezium.io/documentation/reference/stable/connectors/sqlserver.html. To view the setup for the connector, view register-sqlserver.json inside the `services/
-
-
-## TODO/WIP: 
-
-- MCP server integration with SQL Server (frontend + backend) - https://devblogs.microsoft.com/azure-sql/introducing-mssql-mcp-server/
+**[🚀 Get Started with Moose](https://github.com/514-labs/moose)** | **[📚 Moose Documentation](https://docs.fiveonefour.com/moose)**

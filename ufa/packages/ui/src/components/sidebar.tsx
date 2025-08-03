@@ -6,6 +6,7 @@ import { cva, VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
+import { useSaveInLocalStorage } from "@workspace/ui/hooks/use-save-in-local-storage";
 import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -25,8 +26,7 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip";
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state";
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const SIDEBAR_STORAGE_KEY = "sidebar_state";
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
@@ -67,11 +67,17 @@ function SidebarProvider({
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
+  const saveToLocalStorage = useSaveInLocalStorage(SIDEBAR_STORAGE_KEY, 300);
   const [openMobile, setOpenMobile] = React.useState(false);
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen);
+  const [_open, _setOpen] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : defaultOpen;
+    }
+    return defaultOpen;
+  });
+
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -82,10 +88,9 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      saveToLocalStorage(openState);
     },
-    [setOpenProp, open]
+    [setOpenProp, open, saveToLocalStorage]
   );
 
   // Helper to toggle the sidebar.

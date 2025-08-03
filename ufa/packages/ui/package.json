@@ -13,12 +13,8 @@
     "./styles.css": "./src/styles/globals.css"
   },
   "scripts": {
-    "build:components": "tsc",
-    "build": "pnpm run build:styles && pnpm run build:components",
-    "dev:components": "tsc --watch",
-    "dev": "pnpm run dev:styles & pnpm run dev:components",
-    "lint": "eslint . --max-warnings 0",
-    "generate:component": "turbo gen react-component"
+    "ui": "pnpm dlx shadcn@latest",
+    "lint": "eslint . --max-warnings 0"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
