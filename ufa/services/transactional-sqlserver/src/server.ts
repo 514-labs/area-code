@@ -8,15 +8,6 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { fooRoutes } from "./routes/foo";
 import { barRoutes } from "./routes/bar";
-import { chatRoutes } from "./routes/chat";
-import {
-  bootstrapAuroraMCPClient,
-  shutdownAuroraMCPClient,
-} from "./ai/mcp/aurora-mcp-client";
-import {
-  bootstrapSupabaseLocalMCPClient,
-  shutdownSupabaseLocalMCPClient,
-} from "./ai/mcp/supabase-mcp-client";
 
 // Load environment variables from .env file in parent directory
 import { config as dotenvConfig } from "dotenv";
@@ -25,49 +16,8 @@ import path from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env files in order of precedence
+// Load environment variables from .env file in parent directory
 dotenvConfig({ path: path.resolve(__dirname, "../.env") });
-// .env.development (base development config)
-dotenvConfig({ path: path.resolve(__dirname, "../.env.development") });
-// .env.local (local overrides)
-dotenvConfig({ path: path.resolve(__dirname, "../.env.local") });
-
-// Watch for .env file changes in development
-if (
-  process.env.NODE_ENV === "development" ||
-  process.env.SUPABASE_CLI === "true"
-) {
-  import("fs").then(({ watch, utimes }) => {
-    const envFiles = [".env", ".env.development", ".env.local"];
-
-    envFiles.forEach((file) => {
-      const envPath = path.resolve(__dirname, `../${file}`);
-      try {
-        watch(envPath, (eventType) => {
-          if (eventType === "change") {
-            console.log(
-              `🔄 Environment file ${file} changed, triggering server restart...`
-            );
-            // Touch the server.ts file to trigger tsx restart
-            const serverPath = path.resolve(__dirname, "server.ts");
-            const now = new Date();
-            utimes(serverPath, now, now, (err) => {
-              if (err) {
-                console.log(
-                  "⚠️  Could not trigger restart, manually restart server"
-                );
-              }
-            });
-          }
-        });
-        console.log(`👀 Watching ${file} for changes...`);
-      } catch (err) {
-        // File might not exist, that's ok
-        console.log(`⚠️  ${file} not found, skipping watch...`);
-      }
-    });
-  });
-}
 
 const fastify = Fastify({
   logger: {
@@ -117,19 +67,13 @@ fastify.get("/health", async (request, reply) => {
 // API info route
 fastify.get("/", async (request, reply) => {
   return {
-<<<<<<<< HEAD:ufa/services/transactional-sqlserver/src/server.ts
     name: "Transactional SQL Server Service API",
     version: "1.0.0", 
-========
-    name: "Transactional supabase foobar Service API",
-    version: "1.0.0",
->>>>>>>> main:ufa/services/transactional-supabase-foobar/src/server.ts
     description:
       "Transactional service with foo and bar entities using SQL Server and Tedious driver (replaces transactional-base)",
     endpoints: {
       foo: "/api/foo",
       bar: "/api/bar",
-      chat: "/api/chat",
       health: "/health",
       dbInfo: "/db-info",
       docs: "/docs",
@@ -137,7 +81,6 @@ fastify.get("/", async (request, reply) => {
   };
 });
 
-<<<<<<<< HEAD:ufa/services/transactional-sqlserver/src/server.ts
 // Database info route (since tables are created by seed script)
 fastify.get("/db-info", async (request, reply) => {
   return {
@@ -146,12 +89,6 @@ fastify.get("/db-info", async (request, reply) => {
     timestamp: new Date().toISOString()
   };
 });
-========
-// Register route plugins
-await fastify.register(fooRoutes, { prefix: "/api" });
-await fastify.register(barRoutes, { prefix: "/api" });
-await fastify.register(chatRoutes, { prefix: "/api" });
->>>>>>>> main:ufa/services/transactional-supabase-foobar/src/server.ts
 
 // Manual OpenAPI documentation endpoints
 fastify.get("/documentation/json", async (request, reply) => {
@@ -188,24 +125,6 @@ fastify.setErrorHandler((error, request, reply) => {
   });
 });
 
-// Bootstrap MCP clients during startup
-async function bootstrapMCPClients() {
-  try {
-    fastify.log.info("🔧 Bootstrapping MCP clients...");
-
-    // Bootstrap both MCP clients in parallel
-    await Promise.all([
-      bootstrapAuroraMCPClient(),
-      bootstrapSupabaseLocalMCPClient(),
-    ]);
-
-    fastify.log.info("✅ All MCP clients successfully bootstrapped");
-  } catch (error) {
-    fastify.log.error("❌ Failed to bootstrap MCP clients:", error);
-    throw error;
-  }
-}
-
 // Start server
 const start = async () => {
   try {
@@ -214,9 +133,6 @@ const start = async () => {
     
     const port = 8085;
     const host = process.env.HOST || "0.0.0.0";
-
-    // Bootstrap MCP clients before starting the server
-    await bootstrapMCPClients();
 
     // Ensure all routes are registered so Swagger captures them
     await fastify.ready();
@@ -243,8 +159,6 @@ const start = async () => {
     fastify.log.info("  POST /api/foo - Create foo item");
     fastify.log.info("  GET  /api/bar - List all bar items");
     fastify.log.info("  POST /api/bar - Create bar item");
-    fastify.log.info("  GET  /api/chat/status - AI chat status check");
-    fastify.log.info("  POST /api/chat - AI chat endpoint");
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -257,15 +171,6 @@ start();
 const gracefulShutdown = async (signal: string) => {
   fastify.log.info(`Received ${signal}, shutting down gracefully...`);
   try {
-    // Shutdown MCP clients first
-    fastify.log.info("🔧 Shutting down MCP clients...");
-    await Promise.all([
-      shutdownAuroraMCPClient(),
-      shutdownSupabaseLocalMCPClient(),
-    ]);
-    fastify.log.info("✅ All MCP clients successfully shut down");
-
-    // Then close the Fastify server
     await fastify.close();
     fastify.log.info("Server closed successfully");
     process.exit(0);

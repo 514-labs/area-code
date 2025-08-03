@@ -22,7 +22,7 @@ The UFA application includes AI-powered chat functionality that requires an Anth
 
 This enables the Aurora MCP (Model Context Protocol) which provides AI tools for intelligent data analysis and querying across your multi-modal backend.
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Supabase Backend) (Supabase Backend)
 
 Get up and running in minutes with our automated setup:
 

@@ -8,17 +8,19 @@ There are two sample applications: [User Facing Analytics](/ufa/) and [Operation
 
 ## User Facing Analytics
 
-The UFA monorepo is a starter kit for building applications with a multi-modal backend that combines transactional (PostgreSQL), analytical (ClickHouse), and search (Elasticsearch) capabilities. The stack is configured for real-time data synchronization across services.
+The UFA monorepo is a starter kit for building applications with a multi-modal backend that combines transactional (PostgreSQL/SQLServer), analytical (ClickHouse), and search (Elasticsearch) capabilities. The stack is configured for real-time data synchronization across services. 
 
 ### UFA Stack:
 
 Backend & Data:
 
-- Transactional: PostgreSQL | Fastify | Drizzle ORM
+- Transactional: PostgreSQL or SQLServer | Fastify | Drizzle ORM
 - Analytical: ClickHouse | Moose (API & Ingest)
 - Search: Elasticsearch
 
-Sync & Streaming: Moose Workflows (with Temporal) | Moose Stream (with Redpanda) | Supabase Realtime
+Supabase Sync & Streaming: Moose Workflows (with Temporal) | Moose Stream (with Redpanda) | Supabase Realtime
+SQLServer Sync & Streaming: Debezium Connect | Moose Stream (with Redpanda)
+
 Frontend: Vite | React 19 | TypeScript | TanStack (Router, Query, Form) | Tailwind CSS
 
 ## Operational Data Warehouse
