@@ -26,9 +26,9 @@ services:
      - sqlserver
     networks:
      - default
-     - analytical-base_default
+     - analytical-sqlserver-moose-foobar_default
     restart: unless-stopped
 
 networks:
-  analytical-base_default:
+  analytical-sqlserver-moose-foobar_default:
     external: true

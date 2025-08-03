@@ -1,5 +1,5 @@
 {
-  "name": "@workspace/transactional-sqlserver",
+  "name": "transactional-sqlserver",
   "version": "1.0.0",
   "description": "SQL Server with Debezium CDC infrastructure and fastify API for streaming transactional data changes",
   "private": true,
@@ -13,14 +13,13 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     
-    "ufa:dev": "docker compose up -d && ./scripts/setup-sqlserver.sh all && pnpm dev:server",
-    "ufa:dev:setup": "echo '⏳ Waiting for analytical-base network...' && pnpm ufa:dev:wait-for-network",
+    "ufa:dev": "echo '⏳ Waiting for analytical-sqlserver-moose-foobar network...' && pnpm ufa:dev:wait-for-network && docker compose up -d && echo '⏳ Waiting for containers to be ready...' && sleep 5 && ./scripts/setup-sqlserver.sh all && pnpm dev:server",
+    "ufa:dev:wait-for-network": "i=0; while [ $i -lt 30 ]; do if docker network ls | grep -q analytical-sqlserver-moose-foobar_default; then echo '✅ Network ready!'; exit 0; else echo \"  Waiting... ($((i+1))/30)\"; sleep 2; i=$((i+1)); fi; done; echo '❌ Network not found after 60s'; exit 1",
     "ufa:dev:seed": "./scripts/setup-sqlserver.sh seed --foo-count 100000 --bar-count 10000",
-    "ufa:dev:clean": "(pnpm connector:delete || true) && docker compose down && docker volume prune -f",
+    "ufa:dev:clean": "pnpm connector:delete:safe && docker compose down && docker volume prune -f",
     "ufa:dev:reset": "pnpm ufa:dev:clean && pnpm ufa:dev",
     "ufa:dev:verify": "./scripts/setup-sqlserver.sh verify",
     "ufa:dev:demo-cdc": "./scripts/setup-sqlserver.sh connector && ./scripts/setup-sqlserver.sh seed --foo-count 1000 --bar-count 3000 && echo '🎉 CDC Demo: 1000 foo + 3000 bar records inserted and captured!'",
-    "ufa:dev:wait-for-network": "i=0; while [ $i -lt 30 ]; do if docker network ls | grep -q analytical-base_default; then echo '✅ Network ready!'; exit 0; else echo \"  Waiting... ($((i+1))/30)\"; sleep 2; i=$((i+1)); fi; done; echo '❌ Network not found after 60s'; exit 1",
     
     "sqlserver:start": "docker compose up -d",
     "sqlserver:stop": "docker compose down",
@@ -35,6 +34,7 @@
     "connector:register": "curl -X POST -H 'Content-Type: application/json' --data @register-sqlserver.json http://localhost:8084/connectors",
     "connector:status": "curl -X GET http://localhost:8084/connectors/SQLServerToMooseConnector/status",
     "connector:delete": "curl -X DELETE http://localhost:8084/connectors/SQLServerToMooseConnector",
+    "connector:delete:safe": "echo '🧹 Attempting to delete connector (ignore if fails)...' && (curl -X DELETE http://localhost:8084/connectors/SQLServerToMooseConnector --max-time 5 --fail-with-body 2>/dev/null && echo '✅ Connector deleted successfully') || echo '⚠️  Connector deletion failed or connector not found (continuing anyway)'",
     "connector:list": "curl -X GET http://localhost:8084/connectors"
   },
   "dependencies": {

@@ -38,7 +38,10 @@ export * from "./components/slider";
 export * from "./components/switch";
 export * from "./components/tabs";
 export * from "./components/toggle";
+export * from "./components/toggle-group";
 export * from "./components/tooltip";
+export * from "./components/drawer";
+export * from "./components/chart";
 
 // Export sidebar components
 export * from "./components/sidebar";
