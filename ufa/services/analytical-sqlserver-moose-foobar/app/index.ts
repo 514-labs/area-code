@@ -21,47 +21,10 @@
 // Need help? Check out the quickstart guide:
 // → docs.fiveonefour.com/moose/getting-started/quickstart
 
-import { Stream, IngestPipeline} from "@514labs/moose-lib"; // Moose library for building analytical pipelines
-import { FooWithCDC, BarWithCDC } from "@workspace/models"; // Models for the CDC tables
-import { SqlServerDebeziumPayload } from "./models/debeziumPayload"; // Interface for the CDC Debezium payload
-import { transformDebeziumPayloadToFooWithCDC, transformDebeziumPayloadToBarWithCDC } from "./functions/sqlServerDebeziumTransform"; // Functions to transform the CDC Debezium payload to the models
+// CDC Pipeline
+export * from "./pipelines/cdcPipeline";
 
-
-// CDC TABLES
-
-// 1. Pipeline objects in Moose to process and store CDC Debezium payloads from source tables 
-export const FooPipeline = new IngestPipeline<FooWithCDC>("Foo", {
-  table: {
-    orderByFields: ["cdc_id", "cdc_timestamp"],
-    deduplicate: true,
-  },
-  stream: true, 
-  ingest: false,
-});
-
-export const BarPipeline = new IngestPipeline<BarWithCDC>("Bar", {
-  table: {
-    orderByFields: ["cdc_id", "cdc_timestamp"],
-    deduplicate: true,
-  },
-  stream: true,
-  ingest: false,
-});
-
-
-// Stream Processing to transform CDC Debezium payloads to CDC tables
-
-// 1. Create the topic for the Debezium connector to write to
-export const sqlServerDebeziumPayloadStream = new Stream<SqlServerDebeziumPayload>("SqlServerDebeziumPayloadRedpandaTopic", {});
-
-// 2. Connect stream processing function to transform CDC Debezium payload to FooWithCDC
-sqlServerDebeziumPayloadStream.addTransform(FooPipeline.stream!, transformDebeziumPayloadToFooWithCDC);
-
-// 3. Connect stream processing function to transform CDC Debezium payload to BarWithCDC
-sqlServerDebeziumPayloadStream.addTransform(BarPipeline.stream!, transformDebeziumPayloadToBarWithCDC);
-
-
-// 5. Expose APIs built on top of the CDC tables for blazing fast analytics
+// Expose APIs built on top of the CDC tables for blazing fast analytics
 export * from "./apis/bar/consumption/bar-average-value";
 export * from "./apis/bar/consumption/bar-base";
 export * from "./apis/foo/consumption/foo-average-score";
