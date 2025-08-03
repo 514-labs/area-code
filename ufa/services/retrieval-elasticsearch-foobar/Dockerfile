@@ -20,10 +20,6 @@ RUN pnpm install
 COPY ufa/services/retrieval-elasticsearch-foobar ./ufa/services/retrieval-elasticsearch-foobar
 COPY ufa/packages ./ufa/packages
 
-# Build the models package first
-WORKDIR /app/ufa/packages/models
-RUN pnpm build
-
 # Set working directory to the service
 WORKDIR /app/ufa/services/retrieval-elasticsearch-foobar
 
