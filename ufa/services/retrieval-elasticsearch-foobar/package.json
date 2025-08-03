@@ -11,7 +11,7 @@
     "build": "tsc",
     "lint": "eslint src/",
     "es:start": "docker compose up -d && ./scripts/es-wait.sh && pnpm es:init-indices",
-    "es:stop": "docker compose down",
+    "es:stop": "docker compose down || echo 'Note: docker compose down failed (may not be running)'",
     "es:reset": "docker compose down -v && docker compose up -d && ./scripts/es-wait.sh && pnpm es:init-indices",
     "es:status": "./scripts/es-status.sh",
     "es:init-indices": "tsx src/scripts/init-indices.ts"
