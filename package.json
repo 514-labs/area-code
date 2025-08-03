@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "ufa:dev": "turbo run ufa:dev --ui=tui",
-    "ufa:dev:clean": "turbo run ufa:dev:clean",
+    "ufa:dev:clean": "turbo run ufa:dev:clean && find . -name 'node_modules' -type d -exec rm -rf {} + && find . -name '.moose' -type d -exec rm -rf {} + && find . -name '.ts-node' -type d -exec rm -rf {} +",
     "ufa:dev:seed": "./ufa/scripts/dev-seed.sh",
     "ufa:dev:seed:transactional-supabase-foobar": "./ufa/scripts/dev-seed.sh --service=transactional-supabase-foobar",
     "ufa:dev:seed:analytical-moose-foobar": "./ufa/scripts/dev-seed.sh --service=analytical-moose-foobar",

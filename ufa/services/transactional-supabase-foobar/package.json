@@ -18,7 +18,7 @@
     "db:migrate": "pnpm tsx src/scripts/migrate.ts",
     "db:migrate:check": "drizzle-kit check",
     "db:start": "pnpm supabase start",
-    "db:stop": "pnpm supabase stop",
+    "db:stop": "pnpm supabase stop || echo 'Note: supabase stop failed (may not be running)'",
     "db:reset": "pnpm supabase db reset",
     "db:status": "pnpm supabase status",
     "setup:replication": "pnpm tsx database/scripts/setup-replication.ts",
