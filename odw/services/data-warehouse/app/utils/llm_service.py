@@ -1191,12 +1191,13 @@ Think step by step:
 - What information is actually present in the image?"""
 
     def _build_batch_extraction_prompt(self, batch_records: List[Dict[str, Any]], instruction: str) -> str:
-        """Build prompt for batch data extraction."""
+        """Build prompt for batch data extraction using structured JSON input."""
         
         # Limit content length per file to manage token usage
         max_content_per_file = int(os.getenv('LLM_MAX_CONTENT_PER_FILE', '2000'))
         
-        files_section = ""
+        # Build structured JSON array for input files
+        files_array = []
         for i, record in enumerate(batch_records, 1):
             file_content = record.get('file_content', '')
             file_path = record.get('file_path', f'file_{i}')
@@ -1206,30 +1207,34 @@ Think step by step:
             if len(file_content) > max_content_per_file:
                 file_content = file_content[:max_content_per_file] + "..."
             
-            files_section += f"""
-FILE {i}:
-Record ID: {record_id}
-Path: {file_path}
-Content:
-{file_content}
-
-"""
+            files_array.append({
+                "file_index": i,
+                "record_id": record_id,
+                "file_path": file_path,
+                "content": file_content
+            })
         
-        return f"""You are a data extraction specialist. I will provide you with {len(batch_records)} files to process. For each file, extract the requested information according to the instruction below.
+        # Convert to formatted JSON string for the prompt
+        files_json = json.dumps(files_array, indent=2)
+        
+        return f"""You are a data extraction specialist. I will provide you with {len(batch_records)} files as a JSON array. Process each file independently according to the instruction below.
 
 INSTRUCTION: {instruction}
 
-{files_section}
+INPUT FILES (JSON Array):
+{files_json}
 
 CRITICAL REQUIREMENTS:
-1. Process ALL {len(batch_records)} files provided above
-2. For each file, extract the information according to the instruction
-3. Use descriptive field names that clearly represent what is being asked for
-4. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
-5. If certain requested information is not available in a file, omit those fields entirely
-6. Do NOT guess or add placeholder values for missing information
+1. Process each object in the array as a separate, independent file
+2. Do NOT mix or cross-reference information between array elements
+3. For each file object, extract only the information present in that specific file's content
+4. Use descriptive field names that clearly represent what is being asked for
+5. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
+6. If certain requested information is not available in a file, omit those fields entirely
+7. Do NOT guess or add placeholder values for missing information
+8. Maintain the same order as the input array
 
-RESPONSE FORMAT: Return a JSON array with exactly {len(batch_records)} objects, one for each file in order:
+RESPONSE FORMAT: Return a JSON array with exactly {len(batch_records)} objects, one for each input file in the same order:
 [
   {{"file_index": 1, "record_id": "{batch_records[0].get('record_id', 'record_1')}", "extracted_field1": "value1", "extracted_field2": "value2"}},
   {{"file_index": 2, "record_id": "{batch_records[1].get('record_id', 'record_2') if len(batch_records) > 1 else 'record_2'}", "extracted_field1": "value1", "extracted_field2": "value2"}},
