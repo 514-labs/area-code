@@ -24,6 +24,14 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
+  odw/apps/dw-frontend: {}
+
+  odw/services/data-warehouse: {}
+
+  odw/services/kafdrop: {}
+
+  odw/services/minio: {}
+
   ufa/apps/web-frontend-foobar:
     dependencies:
       '@ai-sdk/react':
