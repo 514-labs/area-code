@@ -19,7 +19,7 @@ source "$ENV_FILE"
 
 # Configuration
 DUMP_DIR="/tmp/es_migration"
-CHUNK_SIZE=${CHUNK_SIZE:-100000}  # Larger chunks since we're processing locally
+CHUNK_SIZE=${CHUNK_SIZE:-200000}  # Large chunks for efficient AWK processing
 TABLE_NAME="foo"
 INDEX_NAME="foos"
 
@@ -33,20 +33,149 @@ mkdir -p "$DUMP_DIR"
 
 # Step 1: Dump the data
 echo -e "${YELLOW}📦 Step 1: Dumping data from Supabase...${NC}"
-DUMP_FILE="$DUMP_DIR/foo_data.sql"
+SQL_DUMP_FILE="$DUMP_DIR/foo_data.sql"
+TSV_DUMP_FILE="$DUMP_DIR/foo_data.tsv"
 
-# Use pg_dump which handles large datasets and timeouts better
-# Extract just the foo table data in INSERT format
-echo "Using pg_dump to export data (handles timeouts better)..."
-pg_dump "$PG_CONNECTION_STRING" \
-    --table=foo \
-    --data-only \
-    --column-inserts \
-    --no-owner \
-    --no-privileges \
-    --no-sync \
-    --file="$DUMP_FILE" \
-    2>/dev/null || {
+# Check if we have existing dumps to reuse
+DUMP_FILE=""
+SKIP_DUMP=false
+
+if [ -f "$TSV_DUMP_FILE" ]; then
+    # Check if TSV dump is recent (less than 1 hour old)
+    TSV_AGE=$(find "$TSV_DUMP_FILE" -mmin +60 2>/dev/null)
+    if [ -z "$TSV_AGE" ]; then
+        echo -e "${GREEN}♻️  Found recent TSV dump, using it directly${NC}"
+        DUMP_FILE="$TSV_DUMP_FILE"
+        SKIP_DUMP=true
+    fi
+elif [ -f "$SQL_DUMP_FILE" ]; then
+    # Check if SQL dump exists (our 2.1GB file)
+    SQL_AGE=$(find "$SQL_DUMP_FILE" -mmin +60 2>/dev/null)
+    if [ -z "$SQL_AGE" ]; then
+        echo -e "${GREEN}♻️  Found existing SQL dump (2.1GB), converting to TSV format...${NC}"
+        
+        # Convert SQL INSERT statements to TSV format locally (much faster than re-dumping)
+        echo "Converting SQL dump to TSV for efficient processing..."
+        
+        # Convert SQL INSERT statements to TSV format using proper parsing
+        grep "^INSERT INTO public.foo" "$SQL_DUMP_FILE" | \
+        sed 's/INSERT INTO public\.foo ([^)]*) VALUES (//' | \
+        sed 's/);$//' | \
+        awk '
+        {
+            # Parse CSV-like values with proper quote handling
+            result = "";
+            field = "";
+            in_quotes = 0;
+            field_count = 0;
+            
+            for (i = 1; i <= length($0); i++) {
+                char = substr($0, i, 1);
+                next_char = substr($0, i+1, 1);
+                
+                if (char == "'"'"'" && !in_quotes) {
+                    # Start of quoted field
+                    in_quotes = 1;
+                } else if (char == "'"'"'" && in_quotes && next_char != "'"'"'") {
+                    # End of quoted field (not escaped quote)
+                    in_quotes = 0;
+                } else if (char == "'"'"'" && in_quotes && next_char == "'"'"'") {
+                    # Escaped quote within field
+                    field = field char;
+                    i++; # Skip the next quote
+                } else if (char == "," && !in_quotes && next_char == " ") {
+                    # Field separator (, followed by space)
+                    field_count++;
+                    if (field == "NULL") field = "";
+                    if (field == "true") field = "t";
+                    if (field == "false") field = "f";
+                    result = result field "\t";
+                    field = "";
+                    i++; # Skip the space after comma
+                } else if (!(char == "," && !in_quotes)) {
+                    # Regular character (not a field separator)
+                    field = field char;
+                }
+            }
+            
+            # Handle the last field
+            if (field == "NULL") field = "";
+            if (field == "true") field = "t";
+            if (field == "false") field = "f";
+            result = result field;
+            
+            print result;
+        }' > "$TSV_DUMP_FILE"
+        
+        if [ -f "$TSV_DUMP_FILE" ] && [ -s "$TSV_DUMP_FILE" ]; then
+            echo -e "${GREEN}✅ SQL dump converted to TSV format${NC}"
+            DUMP_FILE="$TSV_DUMP_FILE"
+            SKIP_DUMP=true
+        else
+            echo -e "${RED}❌ Failed to convert SQL dump to TSV${NC}"
+            exit 1
+        fi
+    fi
+fi
+
+if [ "$SKIP_DUMP" = true ]; then
+    DUMP_SIZE=$(du -h "$DUMP_FILE" | cut -f1)
+    INSERT_COUNT=$(wc -l < "$DUMP_FILE")
+    echo -e "${GREEN}📊 Using existing dump: $INSERT_COUNT records, $DUMP_SIZE${NC}"
+    
+    # Skip to processing - set up index
+    if [ "$CLEAR_DATA" = "true" ]; then
+        echo -e "${YELLOW}🗑️  Step 2: Clearing existing Elasticsearch data...${NC}"
+        curl -s -H "Authorization: ApiKey $ES_API_KEY" -X DELETE "$ES_URL/$INDEX_NAME" >/dev/null 2>&1 || true
+    fi
+    
+    echo -e "${YELLOW}🔧 Step 3: Creating Elasticsearch index...${NC}"
+    curl -s -H "Authorization: ApiKey $ES_API_KEY" -H "Content-Type: application/json" -X PUT "$ES_URL/$INDEX_NAME" -d '{
+      "mappings": {
+        "properties": {
+          "id": { "type": "keyword" },
+          "name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+          "description": { "type": "text" },
+          "status": { "type": "keyword" },
+          "priority": { "type": "integer" },
+          "isActive": { "type": "boolean" },
+          "metadata": { "type": "object" },
+          "tags": { "type": "keyword" },
+          "score": { "type": "float" },
+          "largeText": { "type": "text" },
+          "createdAt": { "type": "date" },
+          "updatedAt": { "type": "date" }
+        }
+      }
+    }' >/dev/null 2>&1
+fi
+
+if [ "$SKIP_DUMP" != "true" ]; then
+    echo -e "${YELLOW}⚠️  No existing dumps found, creating new TSV dump...${NC}"
+    
+    # Use COPY TO STDOUT for TSV format (much faster to parse than SQL INSERTs)
+    echo "Using COPY TO STDOUT for efficient TSV export..."
+    DUMP_FILE="$TSV_DUMP_FILE"
+    
+    psql "$PG_CONNECTION_STRING" -c "
+    COPY (
+        SELECT 
+            id::text as id,
+            name,
+            COALESCE(description, '') as description,
+            COALESCE(status, 'active') as status,
+            COALESCE(priority, 0) as priority,
+            COALESCE(is_active, false) as is_active,
+            COALESCE(metadata::text, '{}') as metadata,
+            COALESCE(array_to_string(tags, ','), '') as tags,
+            COALESCE(score, 0) as score,
+            COALESCE(large_text, '') as large_text,
+            to_char(created_at, 'YYYY-MM-DD\"T\"HH24:MI:SS.000\"Z\"') as created_at,
+            to_char(updated_at, 'YYYY-MM-DD\"T\"HH24:MI:SS.000\"Z\"') as updated_at
+        FROM foo 
+        ORDER BY created_at
+    ) TO STDOUT WITH (FORMAT CSV, DELIMITER E'\t', HEADER false, QUOTE E'\b')
+    " > "$DUMP_FILE" 2>/dev/null || {
         echo -e "${YELLOW}⚠️  pg_dump version mismatch detected, trying alternative approach...${NC}"
         
         # Fallback: Use chunked COPY approach to avoid timeouts
@@ -100,52 +229,50 @@ pg_dump "$PG_CONNECTION_STRING" \
         echo -e "${GREEN}✅ Downloaded all chunks successfully${NC}"
     }
 
-if [ ! -f "$DUMP_FILE" ]; then
-    echo -e "${RED}❌ Dump failed - file not created${NC}"
-    exit 1
+    if [ ! -f "$DUMP_FILE" ]; then
+        echo -e "${RED}❌ Dump failed - file not created${NC}"
+        exit 1
+    fi
+
+    DUMP_SIZE=$(du -h "$DUMP_FILE" | cut -f1)
+    INSERT_COUNT=$(wc -l < "$DUMP_FILE")
+    echo -e "${GREEN}✅ Dump completed: $INSERT_COUNT records, $DUMP_SIZE${NC}"
 fi
 
-DUMP_SIZE=$(du -h "$DUMP_FILE" | cut -f1)
-INSERT_COUNT=$(grep -c "^INSERT INTO" "$DUMP_FILE")
-echo -e "${GREEN}✅ Dump completed: $INSERT_COUNT records, $DUMP_SIZE${NC}"
+# Step 2-3: Clear data and create index (only if not already done in reuse logic)
+if [ "$SKIP_DUMP" != "true" ]; then
+    if [ "$CLEAR_DATA" = "true" ]; then
+        echo -e "${YELLOW}🗑️  Step 2: Clearing existing Elasticsearch data...${NC}"
+        curl -s -H "Authorization: ApiKey $ES_API_KEY" -X DELETE "$ES_URL/$INDEX_NAME" >/dev/null 2>&1 || true
+    fi
 
-# Step 2: Clear existing data if requested
-if [ "$CLEAR_DATA" = "true" ]; then
-    echo -e "${YELLOW}🗑️  Step 2: Clearing existing Elasticsearch data...${NC}"
-    curl -s -H "Authorization: ApiKey $ES_API_KEY" -X DELETE "$ES_URL/$INDEX_NAME" >/dev/null 2>&1 || true
+    echo -e "${YELLOW}🔧 Step 3: Creating Elasticsearch index...${NC}"
+    curl -s -H "Authorization: ApiKey $ES_API_KEY" -H "Content-Type: application/json" -X PUT "$ES_URL/$INDEX_NAME" -d '{
+      "mappings": {
+        "properties": {
+          "id": { "type": "keyword" },
+          "name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+          "description": { "type": "text" },
+          "status": { "type": "keyword" },
+          "priority": { "type": "integer" },
+          "isActive": { "type": "boolean" },
+          "metadata": { "type": "object" },
+          "tags": { "type": "keyword" },
+          "score": { "type": "float" },
+          "largeText": { "type": "text" },
+          "createdAt": { "type": "date" },
+          "updatedAt": { "type": "date" }
+        }
+      }
+    }' >/dev/null 2>&1
 fi
 
-# Step 3: Create index
-echo -e "${YELLOW}🔧 Step 3: Creating Elasticsearch index...${NC}"
-curl -s -H "Authorization: ApiKey $ES_API_KEY" -H "Content-Type: application/json" -X PUT "$ES_URL/$INDEX_NAME" -d '{
-  "mappings": {
-    "properties": {
-      "id": { "type": "keyword" },
-      "name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
-      "description": { "type": "text" },
-      "status": { "type": "keyword" },
-      "priority": { "type": "integer" },
-      "isActive": { "type": "boolean" },
-      "metadata": { "type": "object" },
-      "tags": { "type": "keyword" },
-      "score": { "type": "float" },
-      "largeText": { "type": "text" },
-      "createdAt": { "type": "date" },
-      "updatedAt": { "type": "date" }
-    }
-  }
-}' >/dev/null 2>&1
-
-# Step 4: Process dump in chunks and send to Elasticsearch
-echo -e "${YELLOW}⚡ Step 4: Processing SQL dump and uploading to Elasticsearch...${NC}"
+# Step 4: Process TSV dump in chunks and send to Elasticsearch
+echo -e "${YELLOW}⚡ Step 4: Processing TSV dump and uploading to Elasticsearch...${NC}"
 
 # Use the INSERT_COUNT already calculated above
 TOTAL_CHUNKS=$(( (INSERT_COUNT + CHUNK_SIZE - 1) / CHUNK_SIZE ))
-echo "Processing $INSERT_COUNT INSERT statements in $TOTAL_CHUNKS chunks of $CHUNK_SIZE"
-
-# Extract all INSERT statements to a temporary file for easier processing
-INSERT_FILE="$DUMP_DIR/inserts_only.sql"
-grep "^INSERT INTO" "$DUMP_FILE" > "$INSERT_FILE"
+echo "Processing $INSERT_COUNT records in $TOTAL_CHUNKS chunks of $CHUNK_SIZE"
 
 for ((chunk=0; chunk<TOTAL_CHUNKS; chunk++)); do
     start_line=$((chunk * CHUNK_SIZE + 1))
@@ -158,84 +285,52 @@ for ((chunk=0; chunk<TOTAL_CHUNKS; chunk++)); do
     current_chunk_size=$((end_line - start_line + 1))
     progress=$((chunk * 100 / TOTAL_CHUNKS))
     
-    echo -e "${BLUE}Processing chunk $((chunk + 1))/$TOTAL_CHUNKS (${progress}%) - statements $start_line-$end_line ($current_chunk_size records)${NC}"
+    echo -e "${BLUE}Processing chunk $((chunk + 1))/$TOTAL_CHUNKS (${progress}%) - lines $start_line-$end_line ($current_chunk_size records)${NC}"
     
-    # Extract chunk from INSERT statements and convert to Elasticsearch bulk format
+    # Extract chunk from TSV file and convert to Elasticsearch bulk format
     BULK_FILE="$DUMP_DIR/bulk_chunk_$chunk.ndjson"
     
-    # Use sed to extract statements and convert to JSON
-    sed -n "${start_line},${end_line}p" "$INSERT_FILE" | \
-    python3 -c "
-import sys
-import re
-import json
-
-index_name = '$INDEX_NAME'
-
-for line in sys.stdin:
-    line = line.strip()
-    if not line.startswith('INSERT INTO'):
-        continue
-    
-    # Extract VALUES part
-    values_match = re.search(r'VALUES \((.*)\);', line)
-    if not values_match:
-        continue
-    
-    values_str = values_match.group(1)
-    
-    # Simple CSV-like parsing (this is a basic approach)
-    # Note: This assumes PostgreSQL's format with single quotes
-    values = []
-    current_val = ''
-    in_quotes = False
-    i = 0
-    
-    while i < len(values_str):
-        char = values_str[i]
-        if char == \"'\" and (i == 0 or values_str[i-1] != '\\\\'):
-            in_quotes = not in_quotes
-        elif char == ',' and not in_quotes:
-            values.append(current_val.strip())
-            current_val = ''
-            i += 1
-            continue
+    # Process TSV format
+    sed -n "${start_line},${end_line}p" "$DUMP_FILE" | awk -F'\t' -v index_name="$INDEX_NAME" '
+    {
+        # Debug: check field count
+        if (NR == 1) {
+            print "Debug: First line has " NF " fields" > "/dev/stderr"
+            for (i = 1; i <= NF && i <= 5; i++) {
+                print "Field " i ": [" $i "]" > "/dev/stderr"
+            }
+        }
+    }
+    NR > 0 && NF >= 12 {
+        # Store metadata before escaping (field 7 is already valid JSON)
+        metadata_json = $7;
         
-        current_val += char
-        i += 1
-    
-    if current_val:
-        values.append(current_val.strip())
-    
-    if len(values) >= 12:
-        # Clean up values
-        for i in range(len(values)):
-            val = values[i].strip()
-            if val.startswith(\"'\") and val.endswith(\"'\"):
-                val = val[1:-1]  # Remove quotes
-            values[i] = val.replace(\"''\", \"'\")  # Unescape quotes
-        
-        # Create Elasticsearch document
-        doc_id = values[0]
-        doc = {
-            'id': values[0],
-            'name': values[1],
-            'description': values[2] if values[2] != 'NULL' else '',
-            'status': values[3] if values[3] != 'NULL' else 'active',
-            'priority': int(values[4]) if values[4] != 'NULL' else 0,
-            'isActive': values[5].lower() == 't' or values[5].lower() == 'true',
-            'metadata': json.loads(values[6]) if values[6] != 'NULL' and values[6] != '{}' else {},
-            'tags': values[7] if values[7] != 'NULL' else '',
-            'score': float(values[8]) if values[8] != 'NULL' else 0,
-            'largeText': values[9] if values[9] != 'NULL' else '',
-            'createdAt': values[10] if values[10] != 'NULL' else '',
-            'updatedAt': values[11] if values[11] != 'NULL' else ''
+        # Escape quotes and backslashes in text fields (except metadata)
+        for (i = 1; i <= NF; i++) {
+            if (i != 7) {  # Skip metadata field
+                gsub(/\\/, "\\\\", $i);
+                gsub(/"/, "\\\"", $i);
+            }
         }
         
-        # Output bulk format
-        print(json.dumps({'index': {'_index': index_name, '_id': doc_id}}))
-        print(json.dumps(doc))
-" > "$BULK_FILE"
+        # Convert PostgreSQL boolean to JSON boolean
+        is_active_val = ($6 == "t") ? "true" : "false";
+        
+        # Create Elasticsearch document
+        doc = "{\"id\":\"" $1 "\",\"name\":\"" $2 "\",\"description\":\"" $3 "\",\"status\":\"" $4 "\",\"priority\":" $5 ",\"isActive\":" is_active_val ",\"metadata\":" metadata_json ",\"tags\":\"" $8 "\",\"score\":" $9 ",\"largeText\":\"" $10 "\",\"createdAt\":\"" $11 "\",\"updatedAt\":\"" $12 "\"}";
+        
+        # Output bulk format: action + document
+        print "{\"index\":{\"_index\":\"" index_name "\",\"_id\":\"" $1 "\"}}";
+        print doc;
+    }' > "$BULK_FILE"
+    
+    # Debug: check if bulk file was created and has content
+    if [ ! -s "$BULK_FILE" ]; then
+        echo -e "${RED}⚠️  Bulk file is empty for chunk $((chunk + 1))${NC}"
+        echo "First few lines of source data for this chunk:"
+        sed -n "${start_line},$((start_line + 2))p" "$DUMP_FILE"
+        exit 1
+    fi
     
     # Send to Elasticsearch
     response=$(curl -s -w "%{http_code}" -H "Authorization: ApiKey $ES_API_KEY" -H "Content-Type: application/x-ndjson" -X POST "$ES_URL/$INDEX_NAME/_bulk" --data-binary "@$BULK_FILE" 2>&1)
@@ -246,14 +341,13 @@ for line in sys.stdin:
     else
         echo -e "${RED}❌ Chunk $((chunk + 1)) failed (HTTP $http_code)${NC}"
         echo "Response: ${response%???}"
+        echo -e "${RED}💥 Migration failed - stopping here${NC}"
+        exit 1
     fi
     
     # Clean up chunk file
     rm -f "$BULK_FILE"
 done
-
-# Clean up INSERT file
-rm -f "$INSERT_FILE"
 
 # Step 5: Refresh and verify
 echo -e "${YELLOW}🔄 Step 5: Refreshing index and verifying...${NC}"
@@ -267,10 +361,12 @@ echo -e "${GREEN}🎉 Dump-based migration completed!${NC}"
 echo "Source records: $INSERT_COUNT"
 echo "Elasticsearch records: $FINAL_COUNT"
 
-# Cleanup
-echo -e "${YELLOW}🧹 Cleaning up dump files...${NC}"
-rm -f "$DUMP_FILE"
-rm -rf "$DUMP_DIR"
+# Cleanup (but keep the dumps for potential reuse)
+echo -e "${YELLOW}🧹 Cleaning up temporary files...${NC}"
+rm -f "$DUMP_DIR"/bulk_chunk_*.ndjson
+echo -e "${GREEN}📁 Keeping dump files for potential reuse:${NC}"
+echo "  - SQL dump: $SQL_DUMP_FILE"
+echo "  - TSV dump: $TSV_DUMP_FILE"
 
 if [ "$FINAL_COUNT" = "$INSERT_COUNT" ]; then
     echo -e "${GREEN}✅ Migration successful - all records transferred!${NC}"
