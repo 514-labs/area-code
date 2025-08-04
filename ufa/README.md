@@ -6,7 +6,7 @@
 
 > ⚠️ **ALPHA RELEASE** - This is an early alpha version under active development. We are actively testing on different machines and adding production deployment capabilities. Use at your own risk and expect breaking changes.
 
-Area Code is a production-ready starter repository with all the necessary building blocks for building multi-modal applications with real-time analytics, transactional data, and search capabilities.
+Area Code is a production-ready starter repository with all the necessary building blocks for building multi-modal applications with real-time analytics, transactional data, and search capabilities. This branch demonstrates how you can set up a transcation backend (SQL Server) with a Debezium/Moose powered CDC pipeline. 
 
 ## Prerequisites
 
@@ -15,39 +15,14 @@ Area Code is a production-ready starter repository with all the necessary buildi
 The UFA application includes AI-powered chat functionality that requires an Anthropic API key:
 
 1. **Get an API key**: Visit [console.anthropic.com](https://console.anthropic.com) to create an account and generate an API key
-2. **Create a `.env.local` file** in the transactional service directory (`services/transactional-supabase-foobar/`):
+2. **Create a `.env.local` file** in the transactional service directory (`services/transactional-sqlserver-foobar/`):
    ```bash
    ANTHROPIC_API_KEY=your-api-key-here
    ```
 
 This enables the Aurora MCP (Model Context Protocol) which provides AI tools for intelligent data analysis and querying across your multi-modal backend.
 
-## 🚀 Quick Start (Supabase Backend)
-
-Get up and running in minutes with our automated setup:
-
-```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Start development environment
-pnpm ufa:dev
-
-# 3. Seed databases with sample data (in a new terminal)
-pnpm ufa:dev:seed
-
-# 4. Open front-end
-http://localhost:5173/
-```
-
-This will:
-
-- Seed transactional database with 1M foo records and 100K bar records
-- Migrate data to analytical database (ClickHouse)
-- Start Elasticsearch migration for search capabilities
-- Restart workflows for real-time synchronization
-
-## Alternative: SQL Server Backend
+## SQL Server Backend
 
 For SQL Server with Debezium CDC instead of Supabase:
 
@@ -65,26 +40,17 @@ pnpm ufa:sqlserver:dev:seed
 http://localhost:5173/
 ```
 
-This uses `transactional-sqlserver` with Debezium CDC for real-time data capture instead of the default Supabase setup. Both backends use the same analytical and search services.
-
 ## 🛠️ Available Scripts
 
 ```bash
-# Development (Supabase - Default)
-pnpm ufa:dev              # Start all services
-pnpm ufa:dev:clean        # Clean all services
-pnpm ufa:dev:seed         # Seed databases with sample data
 
-# Development (SQL Server Alternative)
 pnpm ufa:sqlserver:dev         # Start SQL Server services  
 pnpm ufa:sqlserver:dev:seed    # Seed SQL Server with 100K foo + 10K bar records
 pnpm ufa:sqlserver:dev:clean   # Clean SQL Server: delete connector (if exists), stop containers, remove volumes
 
 # Individual services
 pnpm --filter web-frontend-foobar dev                    # Frontend only
-pnpm --filter transactional-supabase-foobar dev          # Supabase transactional API only
-pnpm --filter transactional-sqlserver dev                # SQL Server transactional API only
-pnpm --filter analytical-supabase-moose-foobar dev       # Analytical API only
+pnpm --filter analytical-sqlserver-moose-foobar dev       # Analytical API only
 pnpm --filter retrieval-elasticsearch-foobar dev         # Search API only
 ```
 
@@ -96,10 +62,9 @@ pnpm --filter retrieval-elasticsearch-foobar dev         # Search API only
 | **Styling**          | Tailwind CSS v4, shadcn/ui, Lucide Icons            |
 | **State Management** | TanStack Query, TanStack Form                       |
 | **Database**         | PostgreSQL (transactional), ClickHouse (analytical) |
-| **ORM**              | Drizzle ORM                                         |
-| **API Framework**    | Fastify (transactional), Moose (analytical)         |
+| **API Framework**    | Tedioous (transactional), Moose (analytical)         |
 | **Search**           | Elasticsearch                                       |
-| **Real-time**        | Supabase Realtime                                   |
+| **Real-time**        | Debezium                                 |
 | **Build Tool**       | Turborepo, pnpm                                     |
 
 ## 📁 Project Structure
@@ -110,11 +75,9 @@ area-code/
 │   ├── apps/              # Frontend applications
 │   │   └── vite-web-base/ # React + Vite frontend
 │   ├── services/          # Backend services
-│   │   ├── transactional-base/  # PostgreSQL + Fastify API
-│   │   ├── analytical-base/     # ClickHouse + Moose API
-│   │   ├── retrieval-base/      # Elasticsearch search API
-│   │   ├── sync-base/           # Data synchronization
-│   │   └── transactional-database/ # PostgreSQL setup
+│   │   ├── transactional-sqlserver-foobar/  # SQL Server + Fastify API + Debezium Connector
+│   │   ├── analytical-sqlserver-foobar/     # ClickHouse + Moose API
+│   │   ├── retrieval-elasticsearch-foobar/  # Elasticsearch search API
 │   ├── packages/          # Shared packages
 │   │   ├── models/        # Shared data models
 │   │   ├── ui/            # Shared UI components
@@ -133,14 +96,6 @@ area-code/
 - Form handling with TanStack Form
 - Data tables with TanStack Table
 
-### Transactional Base
-
-- Fastify-based REST API
-- PostgreSQL database with Drizzle ORM
-- Real-time subscriptions via Supabase
-- OpenAPI/Swagger documentation
-- Transactional business logic
-
 ### Analytical Base
 
 - [Moose analytical APIs + ClickHouse](https://docs.fiveonefour.com/moose/building/consumption-apis) with automatic OpenAPI/Swagger docs
@@ -152,16 +107,11 @@ area-code/
 - Full-text search capabilities
 - Real-time indexing
 
-### Sync Base
-
-- [Moose workflows + Temporal](https://docs.fiveonefour.com/moose/building/workflows) for durable long-running data synchronization
-- Real-time replication with Supabase Realtime
-
 ## 📊 Data Architecture
 
 The application uses a multi-database architecture:
 
-1. **Supabase** (Transactional)
+1. **SQLServe** (Transactional)
 2. **ClickHouse** (Analytical)
 3. **Elasticsearch** (Search)
 
@@ -191,10 +141,10 @@ We're working on a production deployment strategy that will be available soon.
 
 ```bash
 # Clean all services
-pnpm ufa:dev:clean
+pnpm ufa:sqlserver:dev:clean
 
 # Restart development
-pnpm ufa:dev
+pnpm ufa:sqlserver:dev
 ```
 
 ## 📚 Resources
