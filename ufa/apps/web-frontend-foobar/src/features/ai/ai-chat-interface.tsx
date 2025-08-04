@@ -9,6 +9,7 @@ import ChatOutputArea from "./chat-output-area";
 import { SuggestedPrompt } from "./suggested-prompt";
 import ChatInput from "./chat-input";
 import { useAnthropicStatus } from "./use-anthropic-status";
+import { useState } from "react";
 
 function MissingKeyMessage() {
   return (
@@ -33,10 +34,27 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
   const { data: anthropicStatus, isLoading: isStatusLoading } =
     useAnthropicStatus();
 
+  // Store timing data for tool calls
+  const [toolTimings, setToolTimings] = useState<Record<string, number>>({});
+
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: `${getTransactionApiBase()}/chat`,
     }),
+    onData: (data: any) => {
+      // Handle timing data streamed from the backend
+      if (data.type === "data-tool-timing") {
+        const { toolCallId, duration } = data.data as {
+          toolCallId: string;
+          duration: number;
+        };
+        setToolTimings((prev) => ({
+          ...prev,
+          [toolCallId]: duration,
+        }));
+        console.log(`Received timing for ${toolCallId}: ${duration}ms`);
+      }
+    },
   });
 
   const handleSuggestedPromptClick = (prompt: string) => {
@@ -77,7 +95,11 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
 
       <div className="flex-1 min-h-0 overflow-hidden py-3">
         <div className="max-w-full overflow-y-auto h-full pl-2.5 pr-4">
-          <ChatOutputArea messages={messages} status={status} />
+          <ChatOutputArea
+            messages={messages}
+            status={status}
+            toolTimings={toolTimings}
+          />
         </div>
       </div>
 

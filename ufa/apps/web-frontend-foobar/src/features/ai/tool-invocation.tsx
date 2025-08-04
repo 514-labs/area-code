@@ -14,6 +14,17 @@ import {
 } from "lucide-react";
 import { CodeBlock } from "./code-block";
 import { useState } from "react";
+import ms from "ms";
+
+// Format duration from milliseconds to human-readable format using the ms library
+function formatDuration(milliseconds: number): string {
+  if (milliseconds < 1000) {
+    return `${Math.round(milliseconds)}ms`;
+  }
+
+  // Use the ms library for durations >= 1 second
+  return ms(milliseconds);
+}
 
 // Correct AI SDK 5 ToolUIPart structure
 // to get better type inference, we need to define for each tool
@@ -33,7 +44,10 @@ type ToolInvocationProps = {
   };
 };
 
-export function ToolInvocation({ part }: ToolInvocationProps) {
+export function ToolInvocation({
+  part,
+  timing,
+}: ToolInvocationProps & { timing?: number }) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Extract tool name from type (e.g., "tool-weatherTool" -> "weatherTool")
@@ -99,6 +113,14 @@ export function ToolInvocation({ part }: ToolInvocationProps) {
             </span>
 
             <div className="flex-1" />
+
+            {/* Timing information - show when tool execution is complete */}
+            {part.state === "output-available" && timing && (
+              <Badge variant="secondary" className="text-xs mr-2">
+                {formatDuration(timing)}
+              </Badge>
+            )}
+
             {getStatusIcon()}
           </div>
         </CollapsibleTrigger>
