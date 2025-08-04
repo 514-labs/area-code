@@ -21,7 +21,7 @@ importers:
         specifier: ^2.5.4
         version: 2.5.5
       typescript:
-        specifier: ^5.8.3
+        specifier: 5.8.3
         version: 5.8.3
 
   odw/apps/dw-frontend: {}
