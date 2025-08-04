@@ -7,6 +7,7 @@
   "scripts": {
     "ufa:dev": "./scripts/dev-startup.sh",
     "ufa:dev:clean": "pnpm db:stop",
+    "ufa:prod:seed": "./database/scripts/run-sql-seed-external.sh",
     "build": "pnpm clean && tsc && pnpm build:copy-env",
     "build:copy-env": "[ -f .env.production ] && cp .env.production dist/ || echo 'Warning: .env.production file is missing. Ensure it exists if required.'",
     "dev": "./scripts/dev-startup.sh",
