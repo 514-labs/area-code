@@ -758,9 +758,7 @@ Return only the JSON array, no additional text."""
         # Only fix obvious typos, don't force specific field names
         corrections = {
             "patient's phone name": "patient's name",  # Common typo
-            "patient phone name": "patient's name",    # Common typo
-            "patient's phone number": "patient's phone number",  # Ensure correct phone reference
-            "patient phone number": "patient's phone number"     # Ensure correct phone reference
+            "patient phone name": "patient's name"     # Common typo
         }
         
         processed_instruction = instruction
