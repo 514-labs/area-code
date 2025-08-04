@@ -231,12 +231,33 @@ class LLMService:
                     message_type="Info"
                 ))
                 
-                # Process in smaller chunks
+                # Process in smaller chunks using direct batch processing (non-recursive)
                 all_results = []
                 for i in range(0, len(batch_records), optimized_batch_size):
                     chunk = batch_records[i:i + optimized_batch_size]
-                    chunk_results = self.extract_structured_data_batch(chunk, instruction)
-                    all_results.extend(chunk_results)
+                    
+                    # Validate chunk size to prevent infinite loops
+                    if len(chunk) == 0:
+                        cli_log(CliLogData(
+                            action="LLMService",
+                            message="Empty chunk detected, skipping to prevent infinite loop",
+                            message_type="Error"
+                        ))
+                        continue
+                    
+                    # Process chunk directly without recursion
+                    try:
+                        chunk_results = self._process_batch_directly(chunk, instruction)
+                        all_results.extend(chunk_results)
+                    except Exception as e:
+                        cli_log(CliLogData(
+                            action="LLMService",
+                            message=f"Chunk processing failed: {str(e)} - falling back to individual processing",
+                            message_type="Error"
+                        ))
+                        # Fall back to individual processing for this chunk
+                        individual_results = self._process_batch_individually(chunk, instruction)
+                        all_results.extend(individual_results)
                 
                 return all_results
             
@@ -289,6 +310,46 @@ class LLMService:
             
             # Fall back to individual processing
             return self._process_batch_individually(batch_records, instruction)
+
+    def _process_batch_directly(self, batch_records: List[Dict[str, Any]], instruction: str) -> List[Dict[str, Any]]:
+        """
+        Process a batch of records directly with LLM without size validation or recursion.
+        This is the core batch processing logic extracted to prevent infinite recursion.
+        
+        Args:
+            batch_records: List of records to process (should already be appropriately sized)
+            instruction: Processing instruction
+            
+        Returns:
+            List of processed results
+        """
+        # Build the batch prompt using JSON array structure for text-based content
+        prompt = self._build_batch_extraction_prompt(batch_records, instruction)
+        
+        # Call Anthropic API
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        
+        # Parse the batch response
+        response_text = response.content[0].text
+        batch_results = self._parse_batch_extraction_response(response_text, batch_records, instruction)
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"Successfully processed batch chunk of {len(batch_records)} records, got {len(batch_results)} results",
+            message_type="Info"
+        ))
+        
+        return batch_results
 
     def extract_structured_data(
         self, 
