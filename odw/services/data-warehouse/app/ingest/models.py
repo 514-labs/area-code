@@ -147,6 +147,7 @@ eventModel = IngestPipeline[Event]("Event", IngestPipelineConfig(
 class Medical(BaseModel):
     id: Key[str]
     patient_name: str
+    patient_age: str
     phone_number: str
     scheduled_appointment_date: str
     dental_procedure_name: str

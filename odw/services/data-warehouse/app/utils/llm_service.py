@@ -110,98 +110,15 @@ class LLMService:
         if not batch_records:
             return []
             
-        # Dynamic batch sizing based on content length
-        optimized_batch_size = self._calculate_optimal_batch_size(batch_records)
-        
+        # Use individual processing to prevent LLM hallucination issues observed in batch mode
         cli_log(CliLogData(
             action="LLMService",
-            message=f"Processing batch of {len(batch_records)} records with instruction: {instruction[:100]}...",
+            message=f"Processing {len(batch_records)} records individually to ensure accuracy",
             message_type="Info"
         ))
         
-        try:
-            # Check if any records contain image/document content that needs special handling
-            has_visual_content = any(
-                self._is_image_content(record.get('file_content', '')) or 
-                self._is_document_content(record.get('file_content', ''))
-                for record in batch_records
-            )
-            
-            if has_visual_content:
-                cli_log(CliLogData(
-                    action="LLMService",
-                    message="Batch contains visual content - falling back to individual processing",
-                    message_type="Info"
-                ))
-                # Fall back to individual processing for visual content
-                return self._process_batch_individually(batch_records, instruction)
-            
-            # Check if we need to process this batch in smaller chunks
-            if len(batch_records) > optimized_batch_size:
-                cli_log(CliLogData(
-                    action="LLMService",
-                    message=f"Batch too large ({len(batch_records)} records), processing in chunks of {optimized_batch_size}",
-                    message_type="Info"
-                ))
-                
-                # Process in smaller chunks
-                all_results = []
-                for i in range(0, len(batch_records), optimized_batch_size):
-                    chunk = batch_records[i:i + optimized_batch_size]
-                    chunk_results = self.extract_structured_data_batch(chunk, instruction)
-                    all_results.extend(chunk_results)
-                
-                return all_results
-            
-            # Validate token count before processing
-            estimated_tokens = self._estimate_prompt_tokens(batch_records, instruction)
-            max_tokens_per_request = int(os.getenv('LLM_MAX_TOKENS_PER_REQUEST', '4000'))
-            
-            if estimated_tokens > max_tokens_per_request:
-                cli_log(CliLogData(
-                    action="LLMService",
-                    message=f"Estimated tokens ({estimated_tokens}) exceed limit ({max_tokens_per_request}), falling back to individual processing",
-                    message_type="Info"
-                ))
-                return self._process_batch_individually(batch_records, instruction)
-            
-            # Build the batch prompt for text-based content
-            prompt = self._build_batch_extraction_prompt(batch_records, instruction)
-            
-            # Call Anthropic API
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            )
-            
-            # Parse the batch response
-            response_text = response.content[0].text
-            batch_results = self._parse_batch_extraction_response(response_text, batch_records, instruction)
-            
-            cli_log(CliLogData(
-                action="LLMService",
-                message=f"Successfully processed batch of {len(batch_records)} records, got {len(batch_results)} results",
-                message_type="Info"
-            ))
-            
-            return batch_results
-            
-        except Exception as e:
-            cli_log(CliLogData(
-                action="LLMService",
-                message=f"Batch LLM extraction failed: {str(e)} - falling back to individual processing",
-                message_type="Error"
-            ))
-            
-            # Fall back to individual processing
-            return self._process_batch_individually(batch_records, instruction)
+        # Process each record individually to prevent hallucination and data mixing
+        return self._process_batch_individually(batch_records, instruction)
 
     def extract_structured_data(
         self, 
@@ -576,20 +493,25 @@ CRITICAL REQUIREMENTS:
 1. Carefully analyze the user's instruction to understand what information they want extracted
 2. Use descriptive field names that clearly represent what the user is asking for
 3. Extract ALL information that matches what the user is requesting
-4. If the user asks for something like "the doctor who will be treating the patient", extract that information and use an appropriate field name like "treating_doctor" or "doctor_name"
-5. If the user asks for "scheduled appointment date", look for any date/time information related to appointments
-6. Be thorough - if you see related information that the user likely wants (like patient age when extracting patient info), include it
-7. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
-8. If certain requested information is not available in the content, omit those fields entirely
-9. Do NOT guess or add placeholder values for missing information
-10. Return a clean JSON object with the extracted data
+4. For patient information, be especially careful to extract:
+   - Full patient names (including first and last names)
+   - Patient ages (look for numbers followed by "years", "yrs", "age", or similar)
+   - Complete phone numbers (including area codes and extensions if present)
+5. If the user asks for something like "the doctor who will be treating the patient", extract that information and use an appropriate field name
+6. If the user asks for "scheduled appointment date", look for any date/time information related to appointments
+7. Be thorough - if you see related information that the user likely wants, include it
+8. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
+9. If certain requested information is not available in the content, omit those fields entirely
+10. Do NOT guess or add placeholder values for missing information
+11. Return a clean JSON object with the extracted data
 
 RESPONSE FORMAT: Return ONLY a valid JSON object containing the extracted information, nothing else.
 
 Think step by step:
 - What specific information is the user asking for?
 - What field names best represent their request?
-- What information is actually present in the content?"""
+- What information is actually present in the content?
+- For patient data: Are there clear names, ages, and contact information visible?"""
     
     def _build_validation_prompt(self, data_json: str, instruction: str) -> str:
         """Build prompt for data validation."""
@@ -1143,20 +1065,25 @@ CRITICAL REQUIREMENTS:
 1. Carefully analyze the user's instruction to understand what information they want extracted
 2. Use descriptive field names that clearly represent what the user is asking for
 3. Extract ALL information that matches what the user is requesting
-4. If the user asks for something like "the doctor who will be treating the patient", extract that information and use an appropriate field name
-5. If the user asks for "scheduled appointment date", look for any date/time information related to appointments
-6. Be thorough - if you see related information that the user likely wants, include it
-7. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
-8. If certain requested information is not available in the document, omit those fields entirely
-9. Do NOT guess or add placeholder values for missing information
-10. Return a clean JSON object with the extracted data
+4. For patient information, be especially careful to extract:
+   - Full patient names (including first and last names)
+   - Patient ages (look for numbers followed by "years", "yrs", "age", or similar)
+   - Complete phone numbers (including area codes and extensions if present)
+5. If the user asks for something like "the doctor who will be treating the patient", extract that information and use an appropriate field name
+6. If the user asks for "scheduled appointment date", look for any date/time information related to appointments
+7. Be thorough - if you see related information that the user likely wants, include it
+8. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
+9. If certain requested information is not available in the document, omit those fields entirely
+10. Do NOT guess or add placeholder values for missing information
+11. Return a clean JSON object with the extracted data
 
 RESPONSE FORMAT: Return ONLY a valid JSON object containing the extracted information, nothing else.
 
 Think step by step:
 - What specific information is the user asking for?
 - What field names best represent their request?
-- What information is actually present in the document?"""
+- What information is actually present in the document?
+- For patient data: Are there clear names, ages, and contact information visible?"""
     
     def _build_vision_extraction_prompt(self, instruction: str, file_path: Optional[str] = None) -> str:
         """Build prompt for vision-based data extraction."""
@@ -1175,20 +1102,25 @@ CRITICAL REQUIREMENTS:
 1. Carefully analyze the user's instruction to understand what information they want extracted
 2. Use descriptive field names that clearly represent what the user is asking for
 3. Extract ALL information that matches what the user is requesting
-4. If the user asks for something like "the doctor who will be treating the patient", extract that information and use an appropriate field name
-5. If the user asks for "scheduled appointment date", look for any date/time information related to appointments
-6. Be thorough - if you see related information that the user likely wants, include it
-7. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
-8. If certain requested information is not available in the image, omit those fields entirely
-9. Do NOT guess or add placeholder values for missing information
-10. Return a clean JSON object with the extracted data
+4. For patient information, be especially careful to extract:
+   - Full patient names (including first and last names)
+   - Patient ages (look for numbers followed by "years", "yrs", "age", or similar)
+   - Complete phone numbers (including area codes and extensions if present)
+5. If the user asks for something like "the doctor who will be treating the patient", extract that information and use an appropriate field name
+6. If the user asks for "scheduled appointment date", look for any date/time information related to appointments
+7. Be thorough - if you see related information that the user likely wants, include it
+8. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
+9. If certain requested information is not available in the image, omit those fields entirely
+10. Do NOT guess or add placeholder values for missing information
+11. Return a clean JSON object with the extracted data
 
 RESPONSE FORMAT: Return ONLY a valid JSON object containing the extracted information, nothing else.
 
 Think step by step:
 - What specific information is the user asking for?
 - What field names best represent their request?
-- What information is actually present in the image?"""
+- What information is actually present in the image?
+- For patient data: Are there clear names, ages, and contact information visible?"""
 
     def _build_batch_extraction_prompt(self, batch_records: List[Dict[str, Any]], instruction: str) -> str:
         """Build prompt for batch data extraction."""
