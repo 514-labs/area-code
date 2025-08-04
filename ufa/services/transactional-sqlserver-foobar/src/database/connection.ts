@@ -25,8 +25,8 @@ const config: ConnectionConfiguration = {
     port: parseInt(process.env.SQLSERVER_PORT || "1433"),
     trustServerCertificate: true,
     encrypt: false,
-    connectTimeout: 5000, // 5 seconds timeout
-    requestTimeout: 5000, // 5 seconds timeout for requests
+    connectTimeout: 10000, // 10 seconds timeout
+    requestTimeout: 10000, // 10 seconds timeout for requests
   },
 };
 
