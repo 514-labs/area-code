@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
     "ufa:dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
-    "ufa:prod:seed": "./database/scripts/run-prod-migration.sh",
+    "ufa:prod:seed": "./database/scripts/dump-migration.sh",
     "dev:server-only": "SKIP_ES_WAIT=true PORT=8083 tsx watch src/server.ts",
     "ufa:dev:clean": "pnpm es:stop",
     "build": "tsc",
