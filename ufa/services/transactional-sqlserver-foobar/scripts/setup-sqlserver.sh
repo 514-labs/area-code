@@ -7,6 +7,8 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     echo "  setup      - Create database, tables, and enable CDC"
     echo "  seed       - Add sample data (clears existing)"
     echo "  connector  - Register Debezium connector"
+    echo "  deleteconnector - Delete connector only (keep data)"
+    echo "  resetconnector - Delete and re-register connector"
     echo "  clean      - Remove connector and all data"
     echo "  verify     - Check data counts and connector status"
     echo "Default: setup + seed + connector"
@@ -29,7 +31,7 @@ BAR_COUNT=500
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        setup|seed|connector|clean|verify|all)
+        setup|seed|connector|resetconnector|clean|verify|all|deleteconnector)
             COMMAND="$1"
             shift
             ;;
@@ -53,7 +55,7 @@ done
 COMMAND=${COMMAND:-"all"}
 
 # Parameters
-CONTAINER_NAME="transactional-sqlserver-sqlserver-1"
+CONTAINER_NAME="transactional-sqlserver-foobar-sqlserver-1"
 CONNECT_URL="http://localhost:8084"
 CONNECTOR_NAME="SQLServerToMooseConnector"
 
@@ -298,6 +300,11 @@ case $COMMAND in
         register_connector
         check_connector
         ;;
+    "resetconnector")
+        delete_connector
+        register_connector
+        check_connector
+        ;;
     "clean")
         delete_connector
         clean_data
@@ -305,6 +312,9 @@ case $COMMAND in
         ;;
     "verify")
         verify_data
+        ;;
+    "deleteconnector")
+        delete_connector
         ;;
     "all"|*)
         delete_connector

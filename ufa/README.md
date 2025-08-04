@@ -84,7 +84,7 @@ pnpm ufa:sqlserver:dev:clean   # Clean SQL Server: delete connector (if exists),
 pnpm --filter web-frontend-foobar dev                    # Frontend only
 pnpm --filter transactional-supabase-foobar dev          # Supabase transactional API only
 pnpm --filter transactional-sqlserver dev                # SQL Server transactional API only
-pnpm --filter analytical-moose-foobar dev                # Analytical API only
+pnpm --filter analytical-supabase-moose-foobar dev       # Analytical API only
 pnpm --filter retrieval-elasticsearch-foobar dev         # Search API only
 ```
 

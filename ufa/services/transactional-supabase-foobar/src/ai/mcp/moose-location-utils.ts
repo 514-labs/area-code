@@ -50,7 +50,7 @@ export function searchForAnalyticalService(
 
           if (fs.existsSync(configPath)) {
             // Check if this is specifically the analytical service
-            if (subdir.includes("analytical")) {
+            if (subdir.includes("analytical-supabase")) {
               return servicePath;
             }
           }
@@ -71,9 +71,9 @@ export function findAnalyticalMooseServicePath(currentDir: string): string {
 
   // Look for analytical Moose service
   const possiblePaths = [
-    path.resolve(workspaceRoot, "ufa/services/analytical-moose-foobar"),
+    path.resolve(workspaceRoot, "ufa/services/analytical-supabase-moose-foobar"),
     // Add other possible locations if the service gets moved
-    path.resolve(workspaceRoot, "services/analytical-moose-foobar"),
+    path.resolve(workspaceRoot, "services/analytical-supabase-moose-foobar"),
   ];
 
   for (const analyticalServicePath of possiblePaths) {

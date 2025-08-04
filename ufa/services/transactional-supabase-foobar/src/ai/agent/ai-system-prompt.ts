@@ -29,7 +29,7 @@ export function getAISystemPrompt(): string {
 • Use clear formatting (bullet points, tables, sections) to organize complex information
 
 **AVAILABLE DATA & SERVICES:**
-- UFA services: analytical-moose-foobar, sync-supabase-moose-foobar, transactional-supabase-foobar
+- UFA services: analytical-supabase-moose-foobar, sync-supabase-moose-foobar, transactional-supabase-foobar
 - ClickHouse analytics database (local.Foo, local.Bar, local.foo_current_state) via Aurora MCP
 - Local Supabase PostgreSQL database (foo, bar, foo_bar tables) via PostgreSQL MCP  
 - Moose data pipelines and materialized views

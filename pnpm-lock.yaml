@@ -498,7 +498,7 @@ importers:
         specifier: ^20.12.12
         version: 20.19.5
 
-  ufa/services/transactional-sqlserver:
+  ufa/services/transactional-sqlserver-foobar:
     dependencies:
       '@fastify/cors':
         specifier: ^10.0.1

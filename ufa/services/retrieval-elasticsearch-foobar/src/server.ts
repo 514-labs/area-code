@@ -140,7 +140,7 @@ async function waitForElasticsearch(maxRetries = 30, delay = 1000) {
 // Start server
 const start = async () => {
   try {
-    const port = 8086;
+    const port = process.env.RETRIEVAL_ELASTICSEARCH_FOOBAR_PORT || 8083;
     const host = process.env.HOST || "0.0.0.0";
 
     // Wait for Elasticsearch (unless in server-only mode)
@@ -161,7 +161,7 @@ const start = async () => {
     writeFileSync(outputPath, openapiYaml);
     fastify.log.info(`📄 OpenAPI specification generated at ${outputPath}`);
 
-    await fastify.listen({ port, host });
+    await fastify.listen({ port: Number(port), host });
 
     fastify.log.info(
       `🚀 Retrieval Base service is running on http://${host}:${port}`

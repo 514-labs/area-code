@@ -5,10 +5,8 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "ufa:dev": "moose-cli dev",
-    "ufa:dev:clean": "cd .moose && docker compose down --volumes --remove-orphans",
     "ufa:sqlserver:dev": "moose-cli dev",
-    "ufa:sqlserver:dev:clean": "cd .moose && docker compose down --volumes --remove-orphans"
+    "ufa:sqlserver:dev:clean": "moose-cli clean && docker volume rm $(docker volume ls -q | grep analytical-sqlserver)"
   },
   "dependencies": {
     "axios": "^1.7.7",

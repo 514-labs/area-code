@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --clearScreen false",
     "ufa:dev": "vite --clearScreen false",
+    "ufa:sqlserver:dev": "vite --clearScreen false",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.ts\""

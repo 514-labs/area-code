@@ -131,7 +131,7 @@ const start = async () => {
     // Setup all plugins and routes first
     await setupServer();
     
-    const port = 8085;
+    const port = process.env.TRANSACTIONAL_SQLSERVER_FOOBAR_PORT || 8082;
     const host = process.env.HOST || "0.0.0.0";
 
     // Ensure all routes are registered so Swagger captures them
@@ -143,7 +143,7 @@ const start = async () => {
     writeFileSync(outputPath, openapiYaml);
     fastify.log.info(`📄 OpenAPI specification generated at ${outputPath}`);
 
-    await fastify.listen({ port, host });
+    await fastify.listen({ port: Number(port), host });
 
     fastify.log.info(
       `🚀 Transactional SQL Server service is running on http://${host}:${port}`

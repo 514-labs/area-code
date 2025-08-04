@@ -20,6 +20,11 @@
       "persistent": true,
       "dependsOn": ["ufa:dev:setup"]
     },
+    "ufa:sqlserver:dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["ufa:dev:setup"]
+    },
 
     "ufa:dev:setup": {
       "cache": false,
@@ -29,7 +34,15 @@
       "cache": false,
       "persistent": true
     },
+    "ufa:sqlserver:dev:clean": {
+      "cache": false,
+      "persistent": true
+    },
     "ufa:dev:seed": {
+      "cache": false,
+      "persistent": true
+    },
+    "ufa:sqlserver:dev:seed": {
       "cache": false,
       "persistent": true
     }
