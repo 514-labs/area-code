@@ -13,13 +13,13 @@ Area Code ODW is a production-ready starter repository with all the necessary bu
 Get up and running in minutes with our automated setup:
 
 ```bash
-# 1. Navigate to the data warehouse service directory
-cd odw/services/data-warehouse
+# 1. Ensure Docker Desktop is running
 
-# 2. Ensure Docker Desktop is running
+# 2. Install dependencies & start development environment
+pnpm odw:dev
 
-# 3. Run full setup (recommended for first-time users)
-./setup.sh setup
+# 3. Seed databases with sample data
+pnpm odw:dev:seed
 
 # 4. Open the data warehouse frontend
 http://localhost:8501/
@@ -37,14 +37,13 @@ This will:
 
 ```bash
 # Development
-./setup.sh setup              # Full setup (install, start service)
-./setup.sh start              # Start the data warehouse service
-./setup.sh stop               # Stop the data warehouse service
-./setup.sh restart            # Restart the data warehouse service
-./setup.sh reset              # Full reset (stop service, restart)
-./setup.sh status             # Check service status
-./setup.sh env:check          # Verify environment configuration
-./setup.sh help               # Display available commands and usage
+pnpm odw:dev              # Start all services
+pnpm odw:dev:clean        # Clean all services
+
+# Individual services
+pnpm --filter dw-frontend dev           # Frontend only
+pnpm --filter data-warehouse dev        # Data Warehouse only
+pnpm --filter kafdrop dev               # Kafdrop only
 ```
 
 ## 🏗️ Tech Stack

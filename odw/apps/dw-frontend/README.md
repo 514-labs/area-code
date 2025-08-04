@@ -23,7 +23,7 @@ The Data Warehouse Front-end is a Streamlit-based web application for interactin
 
 ## Setup & Running
 
-> Refer to the instructions in the repo's instructions.  See: services/data-warehouse/README.md
+See: [../../services/data-warehouse/README.md](../../services/data-warehouse/README.md)
 
 ## Usage
 - Use the sidebar to navigate between reports and data views.
@@ -33,7 +33,7 @@ The Data Warehouse Front-end is a Streamlit-based web application for interactin
 ## Requirements
 - Python 3.12+
 - Streamlit
-- Backend data warehouse APIs running and accessible: See: services/data-warehouse/README.md
+- Backend data warehouse APIs running and accessible: See: [../../services/data-warehouse/README.md](../../services/data-warehouse/README.md)
 
 ## Learn More
 - [Moose Documentation](https://docs.fiveonefour.com/moose)
