@@ -23,11 +23,14 @@ COPY ufa/packages ./ufa/packages
 # Set working directory to the service
 WORKDIR /app/ufa/services/transactional-supabase-foobar
 
+# Build the TypeScript code
+RUN pnpm build
+
 # Set production environment
 ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 8082
 
-# Use tsx in production mode (should work and not show dev mode messages)
-CMD ["pnpm", "tsx", "src/server.ts"]
+# Run the bundled JavaScript
+CMD ["node", "dist/server.js"]
