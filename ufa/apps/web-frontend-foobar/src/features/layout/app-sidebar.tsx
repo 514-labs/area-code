@@ -54,9 +54,6 @@ export function AppSidebar({
           className="mt-auto"
         />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter>
     </Sidebar>
   );
 }
