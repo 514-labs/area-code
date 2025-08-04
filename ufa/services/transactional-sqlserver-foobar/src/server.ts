@@ -8,12 +8,18 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { fooRoutes } from "./routes/foo";
 import { barRoutes } from "./routes/bar";
+import { chatRoutes } from "./routes/chat";
+import {
+  bootstrapAuroraMCPClient,
+  shutdownAuroraMCPClient,
+} from "./ai/mcp/aurora-mcp-client";
 
 // Load environment variables from .env file in parent directory
 import { config as dotenvConfig } from "dotenv";
 import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
+console.log("anthropic", process.env.ANTHROPIC_API_KEY);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables from .env file in parent directory
@@ -57,6 +63,7 @@ async function setupServer() {
   // Register route plugins
   await fastify.register(fooRoutes, { prefix: "/api" });
   await fastify.register(barRoutes, { prefix: "/api" });
+  await fastify.register(chatRoutes, { prefix: "/api" });
 }
 
 // Health check route
@@ -74,6 +81,7 @@ fastify.get("/", async (request, reply) => {
     endpoints: {
       foo: "/api/foo",
       bar: "/api/bar",
+      chat: "/api/chat",
       health: "/health",
       dbInfo: "/db-info",
       docs: "/docs",
@@ -125,6 +133,21 @@ fastify.setErrorHandler((error, request, reply) => {
   });
 });
 
+// Bootstrap MCP clients during startup
+async function bootstrapMCPClients() {
+  try {
+    fastify.log.info("🔧 Bootstrapping MCP clients...");
+
+    // Bootstrap Aurora MCP client
+    await bootstrapAuroraMCPClient();
+
+    fastify.log.info("✅ Aurora MCP client successfully bootstrapped");
+  } catch (error) {
+    fastify.log.error("❌ Failed to bootstrap MCP clients:", error);
+    throw error;
+  }
+}
+
 // Start server
 const start = async () => {
   try {
@@ -133,6 +156,9 @@ const start = async () => {
     
     const port = process.env.TRANSACTIONAL_SQLSERVER_FOOBAR_PORT || 8082;
     const host = process.env.HOST || "0.0.0.0";
+
+    // Bootstrap MCP clients before starting the server
+    await bootstrapMCPClients();
 
     // Ensure all routes are registered so Swagger captures them
     await fastify.ready();
@@ -159,6 +185,8 @@ const start = async () => {
     fastify.log.info("  POST /api/foo - Create foo item");
     fastify.log.info("  GET  /api/bar - List all bar items");
     fastify.log.info("  POST /api/bar - Create bar item");
+    fastify.log.info("  GET  /api/chat/status - AI chat status check");
+    fastify.log.info("  POST /api/chat - AI chat endpoint");
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
@@ -171,6 +199,12 @@ start();
 const gracefulShutdown = async (signal: string) => {
   fastify.log.info(`Received ${signal}, shutting down gracefully...`);
   try {
+    // Shutdown MCP clients first
+    fastify.log.info("🔧 Shutting down MCP clients...");
+    await shutdownAuroraMCPClient();
+    fastify.log.info("✅ Aurora MCP client successfully shut down");
+
+    // Then close the Fastify server
     await fastify.close();
     fastify.log.info("Server closed successfully");
     process.exit(0);

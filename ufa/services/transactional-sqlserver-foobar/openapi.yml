@@ -136,3 +136,13 @@ paths:
       responses:
         "200":
           description: Default Response
+  /api/chat/status:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /api/chat:
+    post:
+      responses:
+        "200":
+          description: Default Response

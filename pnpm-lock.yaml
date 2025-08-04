@@ -500,6 +500,9 @@ importers:
 
   ufa/services/transactional-sqlserver-foobar:
     dependencies:
+      '@ai-sdk/anthropic':
+        specifier: 2.0.0-beta.10
+        version: 2.0.0-beta.10(zod@3.25.76)
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0
@@ -512,6 +515,9 @@ importers:
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
+      ai:
+        specifier: 5.0.0-beta.28
+        version: 5.0.0-beta.28(zod@3.25.76)
       dotenv:
         specifier: ^16.3.1
         version: 16.6.1
