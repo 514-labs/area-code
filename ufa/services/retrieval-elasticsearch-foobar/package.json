@@ -8,7 +8,7 @@
     "ufa:dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
     "dev:server-only": "SKIP_ES_WAIT=true PORT=8083 tsx watch src/server.ts",
     "ufa:dev:clean": "pnpm es:stop",
-    "build": "tsc",
+    "build": "tsup src/server.ts --format esm --clean --out-dir dist",
     "lint": "eslint src/",
     "es:start": "docker compose up -d && ./scripts/es-wait.sh && pnpm es:init-indices",
     "es:stop": "docker compose down || echo 'Note: docker compose down failed (may not be running)'",
@@ -31,6 +31,7 @@
     "@types/node": "^20.10.4",
     "eslint": "^8.57.0",
     "tsx": "^4.6.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "tsup": "^8.0.0"
   }
 }
