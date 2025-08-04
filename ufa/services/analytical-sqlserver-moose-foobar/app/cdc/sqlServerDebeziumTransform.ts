@@ -4,7 +4,7 @@ import { SqlServerDebeziumPayload } from "../models/debeziumPayload";
 type CDCOperation = "INSERT" | "UPDATE" | "DELETE";
 
 // HTTP client for sending data to Elasticsearch via retrieval service
-const RETRIEVAL_BASE_URL = process.env.RETRIEVAL_BASE_URL || "http://localhost:8086";
+const RETRIEVAL_BASE_URL = process.env.RETRIEVAL_BASE_URL || "http://localhost:8083";
 
 const sendDataToElasticsearch = async (
     type: "foo" | "bar",
