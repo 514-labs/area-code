@@ -9,6 +9,14 @@ services:
      - MSSQL_PID=Standard
      - SA_PASSWORD=Password!
      - MSSQL_AGENT_ENABLED=true
+    deploy:
+      resources:
+        limits:
+          memory: 4.5G
+          cpus: '1.5'
+        reservations:
+          memory: 2G
+          cpus: '0.75'
 
   # Kafka Connect - waits for analytical-base network to be created
   connect:
@@ -28,6 +36,14 @@ services:
      - default
      - analytical-sqlserver-moose-foobar_default
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '0.75'
+        reservations:
+          memory: 768M
+          cpus: '0.35'
 
 networks:
   analytical-sqlserver-moose-foobar_default:
