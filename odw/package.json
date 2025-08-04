@@ -1,0 +1,14 @@
+{
+  "name": "area-code-odw",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "odw:dev": "cd .. && pnpm odw:dev",
+    "odw:dev:clean": "cd .. && pnpm odw:dev:clean",
+    "odw:dev:seed": "cd .. && pnpm odw:dev:seed"
+  },
+  "packageManager": "pnpm@9.9.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
