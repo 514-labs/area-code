@@ -81,19 +81,15 @@ clean_streamlit_by_process() {
 
     # ps aux: show all processes with detailed info
     # grep streamlit: find lines containing 'streamlit'
-    # grep -v grep: exclude the grep command itself from results
-    # awk '{print $2}': extract PID (2nd column) from matching processes
-    local pid=$(ps aux | grep streamlit | grep -v grep | awk '{print $2}' | head -1)
+    # grep server.port 8501: filter to processes using our specific port
+    # grep -v grep: exclude grep command itself from results
+    # awk '{print $2}': extract PID (2nd column)
+    local pid=$(ps aux | grep streamlit | grep "server.port $DW_FRONTEND_PORT" | grep -v grep | awk '{print $2}' | head -1)
 
     if [ -n "$pid" ]; then
-        # Verify this Streamlit process is actually using our port
-        if lsof -p "$pid" 2>/dev/null | grep -q ":$DW_FRONTEND_PORT"; then
-            terminate_process_gracefully "$pid"
-        else
-            print_warning "Found Streamlit process $pid but it's not using port $DW_FRONTEND_PORT"
-        fi
+        terminate_process_gracefully "$pid"
     else
-        print_success "No Streamlit processes found"
+        print_success "No Streamlit processes found using port $DW_FRONTEND_PORT"
     fi
 }
 
