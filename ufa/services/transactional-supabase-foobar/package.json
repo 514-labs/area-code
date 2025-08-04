@@ -7,7 +7,7 @@
   "scripts": {
     "ufa:dev": "./scripts/dev-startup.sh",
     "ufa:dev:clean": "pnpm db:stop",
-    "build": "pnpm clean && tsc && pnpm build:copy-env",
+    "build": "tsup src/server.ts --format esm --clean --out-dir dist",
     "build:copy-env": "[ -f .env.production ] && cp .env.production dist/ || echo 'Warning: .env.production file is missing. Ensure it exists if required.'",
     "dev": "./scripts/dev-startup.sh",
     "dev:fastify": "SUPABASE_CLI=true pnpm tsx watch src/server.ts",
@@ -53,6 +53,7 @@
     "supabase": "^2.31.8",
     "drizzle-kit": "^0.20.7",
     "tsx": "^4.7.0",
+    "tsup": "^8.0.0",
     "typescript": "^5.3.0"
   },
   "keywords": [
