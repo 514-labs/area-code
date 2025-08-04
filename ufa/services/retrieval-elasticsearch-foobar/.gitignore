@@ -12,6 +12,9 @@ build/
 .env.development
 .env.production
 
+# Migration script environment files (contain sensitive credentials)
+database/scripts/prod-migration.env
+
 # Logs
 logs/
 *.log
