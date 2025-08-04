@@ -89,7 +89,7 @@ main() {
     # Run the seed data script
     print_status "Running seed data script..."
     if [ ! -f "$ODW_ROOT/scripts/seed-data.py" ]; then
-        print_error "Seed data script not found: $ODW_ROOT/seed-data.py"
+        print_error "Seed data script not found: $ODW_ROOT/scripts/seed-data.py"
         exit 1
     fi
 
