@@ -18,7 +18,10 @@ Get up and running in minutes with our automated setup:
 # 2. Install dependencies & start development environment
 pnpm odw:dev
 
-# 3. Open the data warehouse frontend
+# 3. Seed databases with sample data
+pnpm odw:dev:seed
+
+# 4. Open the data warehouse frontend
 http://localhost:8501/
 ```
 
