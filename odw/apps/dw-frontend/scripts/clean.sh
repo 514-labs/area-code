@@ -79,12 +79,8 @@ terminate_process_gracefully() {
 clean_streamlit_by_process() {
     print_status "Searching for Streamlit processes..."
 
-    # ps aux: show all processes with detailed info
-    # grep streamlit: find lines containing 'streamlit'
-    # grep server.port 8501: filter to processes using our specific port
-    # grep -v grep: exclude grep command itself from results
-    # awk '{print $2}': extract PID (2nd column)
-    local pid=$(ps aux | grep streamlit | grep "server.port $DW_FRONTEND_PORT" | grep -v grep | awk '{print $2}' | head -1)
+    # pgrep -f: search full command line for pattern matching streamlit + our port
+    local pid=$(pgrep -f "streamlit.*server\.port[= ]$DW_FRONTEND_PORT" | head -1)
 
     if [ -n "$pid" ]; then
         terminate_process_gracefully "$pid"
