@@ -108,16 +108,16 @@ When submitting unstructured data via the `submitUnstructuredData` API, you can 
 
 ## Quick Start
 
-(If you haven't already, navigate here `cd odw/services/data-warehouse`, and make sure Docker Desktop is running)
+(If you haven't already, navigate to odw root directory `cd ../..`, and make sure Docker Desktop is running)
 
-**Full Setup** (recommended for first-time users):
+**Full Setup**:
    ```bash
-   ./setup.sh setup
+   pnpm odw:dev
    ```
    This will:
    - Install all dependencies
    - Start the data warehouse service (moose app)
-   - Start the data warehouse frontend (streamlit in apps/dw-frontend) and open it in your browser
+   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
 
 
 ## Presenter - walkthrough docs
@@ -202,14 +202,9 @@ For a high-level architectural overview of the system, see [high-level-overview.
 
 ## Other Commands
 
-| Command | Description |
-|---------|-------------|
-| `./setup.sh help` | Display available commands and usage |
-| `./setup.sh stop` | Stop the data warehouse service |
-| `./setup.sh start` | Start the service (not required after initial setup) |
-| `./setup.sh reset` | Perform a full reset of the system |
-| `./setup.sh status` | Check the current status of services |
-| `./setup.sh env:check` | Verify environment configuration |
+| Command              | Description        |
+|----------------------|--------------------|
+| `pnpm odw:dev:clean` | Clean all services |
 
 ## Installing Aurora AI Support
 

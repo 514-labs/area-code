@@ -26,6 +26,14 @@
     "ufa:dev:seed": {
       "cache": false,
       "persistent": true
+    },
+    "odw:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "odw:dev:clean": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

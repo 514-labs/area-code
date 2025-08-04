@@ -55,4 +55,4 @@ cover
 # OS specific
 .DS_Store
 
-app/seed-data/memo_*
+app/unstructured_data/memo_*
