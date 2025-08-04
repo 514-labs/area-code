@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@514labs/moose-cli": "latest",
-    "@types/node": "^20.12.12"
+    "@types/node": "^20.12.12",
+    "typescript": "5.8.3"
   }
 }

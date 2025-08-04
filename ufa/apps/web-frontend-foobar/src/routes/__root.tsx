@@ -14,7 +14,7 @@ export const Route = createRootRoute({
           </Layout>
         </FrontendCachingContextProvider>
       </OriginHighlightsContextProvider>
-      <TanStackRouterDevtools />
+      {import.meta.env.DEV && <TanStackRouterDevtools />}
     </>
   ),
 });
