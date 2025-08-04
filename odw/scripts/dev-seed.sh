@@ -88,19 +88,12 @@ main() {
 
     # Run the seed data script
     print_status "Running seed data script..."
-    DW_UNSTRUCTURED_DIR="$ODW_ROOT/services/data-warehouse/app/unstructured_data"
-
-    if [ ! -d "$DW_UNSTRUCTURED_DIR" ]; then
-        print_error "Unstructured data directory not found: $DW_UNSTRUCTURED_DIR"
+    if [ ! -f "$ODW_ROOT/scripts/seed-data.py" ]; then
+        print_error "Seed data script not found: $ODW_ROOT/scripts/seed-data.py"
         exit 1
     fi
 
-    if [ ! -f "$DW_UNSTRUCTURED_DIR/seed-data.py" ]; then
-        print_error "Seed data script not found: $DW_UNSTRUCTURED_DIR/seed-data.py"
-        exit 1
-    fi
-
-    cd "$DW_UNSTRUCTURED_DIR"
+    cd "$ODW_ROOT/scripts"
     ./seed-data.py
 
     print_success "ODW data seeding completed successfully!"
