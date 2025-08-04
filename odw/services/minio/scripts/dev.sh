@@ -121,7 +121,7 @@ start_minio() {
         -p $MINIO_CONSOLE_PORT:9001 \
         -e MINIO_ROOT_USER="$MINIO_ROOT_USER" \
         -e MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD" \
-        -v data-warehouse-minio-data:/data \
+        -v data-warehouse_minio-data:/data \
         minio/minio server /data --console-address ":9001" > /dev/null 2>&1
 
     sleep 5
