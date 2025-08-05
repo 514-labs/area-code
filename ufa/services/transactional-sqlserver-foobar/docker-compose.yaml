@@ -12,10 +12,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4.5G
+          memory: 3.5G
           cpus: '1.5'
         reservations:
-          memory: 2G
+          memory: 1.75G
           cpus: '0.75'
 
   # Kafka Connect - waits for analytical-base network to be created
@@ -39,11 +39,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1.5G
-          cpus: '0.75'
+          memory: 1G
+          cpus: '0.5'
         reservations:
-          memory: 768M
-          cpus: '0.35'
+          memory: 512M
+          cpus: '0.25'
 
 networks:
   analytical-sqlserver-moose-foobar_default:
