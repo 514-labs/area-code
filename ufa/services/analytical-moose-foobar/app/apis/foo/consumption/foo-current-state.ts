@@ -35,7 +35,6 @@ interface FooCurrentStateResponse {
   };
 }
 
-// Main consumption API for current state foo data
 export const fooCurrentStateApi = new ConsumptionApi<
   QueryParams,
   FooCurrentStateResponse
