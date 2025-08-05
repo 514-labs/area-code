@@ -1,38 +1,195 @@
 <img width="1074" height="120" alt="Area Code starter repo powered by Moose — Automated setup with Turborepo" src="https://github.com/user-attachments/assets/a860328a-cb75-41a2-ade4-b9a0624918e0" />
 
-# Starter Applications
+# Area Code - User-Facing Analytics Starter Application
 
-Area Code is a starter repo with all the necessary building blocks for a production ready repository that can be used to build multi-modal applications.
+---
 
-There are two sample applications: [User Facing Analytics](/ufa/) and [Operational Data Warehouse](/odw/). Quickstarts for each of those projects live in the readme of their respective folders ([UFA](/ufa/README.md), [ODW](/odw/README.md)).
+Area Code is a production-ready starter repository with all the necessary building blocks for building multi-modal applications with real-time analytics, transactional data, and search capabilities. This branch demonstrates how you can set up a transcation backend (SQL Server) with a Debezium/Moose powered CDC pipeline. 
 
-## User Facing Analytics
+## Prerequisites
 
-The UFA monorepo is a starter kit for building applications with a multi-modal backend that combines transactional (PostgreSQL/SQLServer), analytical (ClickHouse), and search (Elasticsearch) capabilities. The stack is configured for real-time data synchronization across services. 
+### Anthropic API Key Setup
 
-### UFA Stack:
+The UFA application includes AI-powered chat functionality that requires an Anthropic API key:
 
-Backend & Data:
+1. **Get an API key**: Visit [console.anthropic.com](https://console.anthropic.com) to create an account and generate an API key
+2. **Create a `.env.local` file** in the transactional service directory (`services/transactional-sqlserver-foobar/`):
+   ```bash
+   ANTHROPIC_API_KEY=your-api-key-here
+   ```
 
-- Transactional: PostgreSQL or SQLServer | Fastify | Drizzle ORM
-- Analytical: ClickHouse | Moose (API & Ingest)
-- Search: Elasticsearch
+This enables the Aurora MCP (Model Context Protocol) which provides AI tools for intelligent data analysis and querying across your multi-modal backend.
 
-Supabase Sync & Streaming: Moose Workflows (with Temporal) | Moose Stream (with Redpanda) | Supabase Realtime
-SQLServer Sync & Streaming: Debezium Connect | Moose Stream (with Redpanda)
+## SQL Server Backend
 
-Frontend: Vite | React 19 | TypeScript | TanStack (Router, Query, Form) | Tailwind CSS
+For SQL Server with Debezium CDC instead of Supabase:
 
-## Operational Data Warehouse
+```bash
+# 1. Install dependencies
+pnpm install
 
-The odw project is a starter kit for an operational data warehouse, using the Moose framework to ingest data from various sources (Blobs, Events, Logs) into an analytical backend (ClickHouse).
+# 2. Start SQL Server development environment
+pnpm ufa:sqlserver:dev
 
-### ODW Stack:
+# 3. Seed SQL Server with sample data (in a new terminal)
+pnpm ufa:sqlserver:dev:seed
 
-Backend & Data:
+# 4. Open front-end
+http://localhost:5173/
 
-- Framework: Moose (Python)
-- Data Platform: ClickHouse (Warehouse) | RedPanda (Streaming)
-- Ingestion: Moose connectors for Blobs, Events, and Logs
+# 5. Clean up
+Ctrl+C   # Stop services by pressing Ctrl+C in terminal running dev
+pnpm ufa:sqlserver:dev:clean   # Clean SQL Server: delete connector (if exists), stop containers, remove volumes
 
-Frontend: Streamlit
+```
+
+## 🛠️ Available Scripts
+
+```bash
+
+pnpm ufa:sqlserver:dev         # Start SQL Server services  
+pnpm ufa:sqlserver:dev:seed    # Seed SQL Server with 100K foo + 10K bar records
+pnpm ufa:sqlserver:dev:clean   # Clean SQL Server: delete connector (if exists), stop containers, remove volumes
+
+```
+
+## 🏗️ Tech Stack
+
+| Category             | Technologies                                        |
+| -------------------- | --------------------------------------------------- |
+| **Frontend**         | Vite, React 19, TypeScript 5.5, TanStack Router     |
+| **Styling**          | Tailwind CSS v4, shadcn/ui, Lucide Icons            |
+| **State Management** | TanStack Query, TanStack Form                       |
+| **Database**         | SQLServer (transactional), ClickHouse (analytical) |
+| **API Framework**    | Tedious (transactional), Moose (analytical)         |
+| **Search**           | Elasticsearch                                       |
+| **Real-time**        | Debezium                                 |
+| **Build Tool**       | Turborepo, pnpm                                     |
+
+## 📁 Project Structure
+
+```
+area-code/
+├── ufa/                    # User-Facing Analytics
+│   ├── apps/              # Frontend applications
+│   │   └── vite-web-base/ # React + Vite frontend
+│   ├── services/          # Backend services
+│   │   ├── transactional-sqlserver-foobar/  # SQL Server + Fastify API + Debezium Connector
+│   │   ├── analytical-sqlserver-foobar/     # ClickHouse + Moose API
+│   │   ├── retrieval-elasticsearch-foobar/  # Elasticsearch search API
+│   ├── packages/          # Shared packages
+│   │   ├── models/        # Shared data models
+│   │   ├── ui/            # Shared UI components
+│   │   ├── eslint-config/ # ESLint configuration
+│   │   ├── typescript-config/ # TypeScript configuration
+│   │   └── tailwind-config/   # Tailwind configuration
+│   └── scripts/           # Development scripts
+```
+
+## 🔧 Services Overview
+
+### Frontend (vite-web-base)
+
+- Modern React application with TanStack Router
+- Real-time data visualization with Recharts
+- Form handling with TanStack Form
+- Data tables with TanStack Table
+
+### Analytical Base
+
+- [Moose analytical APIs + ClickHouse](https://docs.fiveonefour.com/moose/building/consumption-apis) with automatic OpenAPI/Swagger docs
+- [Moose streaming Ingest Pipelines + Redpanda](https://docs.fiveonefour.com/moose/building/ingestion) for routing change data events from PostgreSQL to ClickHouse
+
+### Retrieval Base
+
+- Elasticsearch search API
+- Full-text search capabilities
+- Real-time indexing
+
+## 📊 Data Architecture
+
+The application uses a multi-database architecture:
+
+1. **SQLServe** (Transactional)
+2. **ClickHouse** (Analytical)
+3. **Elasticsearch** (Search)
+
+## 🚀 Production Deployment (Coming Soon)
+
+> 🚧 **UNDER DEVELOPMENT** - Production deployment capabilities are actively being developed and tested. The current focus is on stability and compatibility across different machine configurations.
+
+We're working on a production deployment strategy that will be available soon.
+
+## 🐛 Troubleshooting
+
+> 🔬 **TESTING STATUS** - We are actively testing on various machine configurations. Currently tested on Mac M3 Pro (18GB RAM), M4 Pro, and M4 Max. We're expanding testing to more configurations.
+
+### Common Issues
+
+1. **Node Version**: Ensure you're using Node 20+ (required for Moose)
+2. **Memory Issues**: Elasticsearch requires significant memory (4GB+ recommended)
+
+**Tested Configurations:**
+
+- ✅ Mac M3 Pro (18GB RAM)
+- ✅ Mac M4 Pro
+- ✅ Mac M4 Max
+- 🔄 More configurations being tested
+
+### Reset Environment
+
+```bash
+# Clean all services
+pnpm ufa:sqlserver:dev:clean
+
+# Restart development
+pnpm ufa:sqlserver:dev
+```
+
+## 📚 Resources
+
+### 🦌 **Moose Resources**
+
+- **[🚀 Moose Repository](https://github.com/514-labs/moose)** - The framework that powers this demo
+- **[📚 Moose Documentation](https://docs.fiveonefour.com/moose)** - Complete guide to building with Moose
+- **[💬 Moose Community Slack](https://join.slack.com/t/moose-community/shared_invite/zt-210000000000000000000000000000000000000000)** - Join the discussion
+
+### 🛠️ **Other Technologies**
+
+- [Fastify](https://www.fastify.io/)
+- [Supabase Realtime](https://supabase.com/docs/guides/realtime)
+- [Turborepo Documentation](https://turborepo.com/docs)
+- [Drizzle ORM](https://orm.drizzle.team/)
+- [TanStack Router](https://tanstack.com/router)
+- [shadcn/ui](https://ui.shadcn.com/)
+
+## 🆘 Support
+
+> 📋 **ALPHA FEEDBACK** - We welcome feedback and bug reports during this alpha phase. Please include your machine configuration when reporting issues.
+
+### 🦌 **Moose Support**
+
+- **[💬 Moose Discussions](https://github.com/514-labs/moose/discussions)** - Get help with Moose
+- **[🐛 Moose Issues](https://github.com/514-labs/moose/issues)** - Report Moose-related bugs
+- **[📚 Moose Documentation](https://docs.fiveonefour.com/moose)** - Comprehensive guides
+
+### 🏗️ **Area Code Demo Support**
+
+For issues and questions about this demo:
+
+1. Check the troubleshooting section above
+2. Open an issue on GitHub with your machine configuration
+3. Join our development discussions for alpha testing feedback
+
+---
+
+## 🦌 **Built with Moose**
+
+This repository demonstrates Moose's capabilities for building production-ready applications with:
+
+- **Real-time analytics** with ClickHouse
+- **Event streaming** with Redpanda
+- **Reliable workflows** with Temporal
+- **Multi-database architectures** (PostgreSQL + ClickHouse + Elasticsearch)
+
+**[🚀 Get Started with Moose](https://github.com/514-labs/moose)** | **[📚 Moose Documentation](https://docs.fiveonefour.com/moose)**

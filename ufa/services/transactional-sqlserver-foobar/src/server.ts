@@ -14,16 +14,19 @@ import {
   shutdownAuroraMCPClient,
 } from "./ai/mcp/aurora-mcp-client";
 
-// Load environment variables from .env file in parent directory
+// Load environment variables from .env files in parent directory
 import { config as dotenvConfig } from "dotenv";
 import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
-console.log("anthropic", process.env.ANTHROPIC_API_KEY);
+console.log("anthropic", );
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env file in parent directory
+// Load .env first (base configuration)
 dotenvConfig({ path: path.resolve(__dirname, "../.env") });
+// Load .env.local second (local overrides) - will override any duplicate keys
+dotenvConfig({ path: path.resolve(__dirname, "../.env.local") });
+
 
 const fastify = Fastify({
   logger: {
@@ -142,6 +145,8 @@ async function bootstrapMCPClients() {
     await bootstrapAuroraMCPClient();
 
     fastify.log.info("✅ Aurora MCP client successfully bootstrapped");
+    console.log("process.env.ANTHROPIC_API_KEY", process.env.ANTHROPIC_API_KEY);
+
   } catch (error) {
     fastify.log.error("❌ Failed to bootstrap MCP clients:", error);
     throw error;
