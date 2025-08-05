@@ -255,4 +255,4 @@ ORDER BY tablename;
 -- Final success message
 SELECT 'Automated replication setup completed successfully!' as status;
 SELECT 'All tables in public schema are now configured for realtime replication.' as info;
-SELECT 'You can now use the realtime client to listen to changes.' as next_steps; 
+SELECT 'You can now use the realtime client to listen to changes.' as next_steps;

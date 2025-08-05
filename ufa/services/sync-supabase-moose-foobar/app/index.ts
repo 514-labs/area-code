@@ -1,5 +1,5 @@
 import { Task, Workflow } from "@514labs/moose-lib";
-import { createSupabaseClient } from "./supabase-client";
+import { SupabaseManager } from "./supabase/supabase-manager";
 import { FooWithCDC, BarWithCDC, FooStatus } from "@workspace/models";
 
 // Additional environment variables for service integrations
@@ -347,12 +347,12 @@ async function handleBarChange(payload: RealtimePayload) {
 // Global reference to channel for cleanup
 let globalChannel: any = null;
 
-async function run() {
+async function run(supabaseManager: SupabaseManager) {
   console.log("🚀 Starting Supabase realtime listener...");
-  console.log("Initializing Supabase client...");
 
-  // Create Supabase client and get configuration
-  const { client: supabase, config: supabaseConfig } = createSupabaseClient();
+  // Get the initialized client and config
+  const supabase = supabaseManager.getClient();
+  const supabaseConfig = supabaseManager.getConfig();
 
   console.log("Configuration summary:");
   console.log("- supabaseUrl:", supabaseConfig.supabaseUrl);
@@ -512,15 +512,24 @@ async function onCancel() {
   console.log("🧹 Cleanup complete");
 }
 
+// Combined task that initializes database and then runs the listener
+async function runWithInitialization() {
+  console.log("🔧 Initializing Supabase database and realtime replication...");
+  const supabaseManager = await SupabaseManager.createInitialized();
+
+  console.log("✅ Database initialization completed, starting listener...");
+  return await run(supabaseManager);
+}
+
 // Long-running Supabase listener task
 export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
-  run,
+  run: runWithInitialization,
   onCancel,
   // Set a longer timeout for the long-running task
   timeout: "24h",
 });
 
-// Create the workflow with the long-running listener task
+// Create the workflow with the combined task
 export const supabaseListenerWorkflow = new Workflow("supabase-listener", {
   startingTask: supabaseListenerTask,
   // Run indefinitely until manually stopped

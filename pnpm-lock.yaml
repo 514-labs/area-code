@@ -479,6 +479,9 @@ importers:
       dotenv:
         specifier: ^16.3.1
         version: 16.6.1
+      pg:
+        specifier: ^8.11.3
+        version: 8.16.3
       ts-patch:
         specifier: ^3.3.0
         version: 3.3.0
@@ -492,6 +495,9 @@ importers:
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.9
+      '@types/pg':
+        specifier: ^8.10.0
+        version: 8.15.5
       typescript:
         specifier: 5.8.3
         version: 5.8.3

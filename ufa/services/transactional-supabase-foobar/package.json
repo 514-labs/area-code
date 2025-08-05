@@ -21,10 +21,7 @@
     "db:start": "pnpm supabase start",
     "db:stop": "pnpm supabase stop || echo 'Note: supabase stop failed (may not be running)'",
     "db:reset": "pnpm supabase db reset",
-    "db:status": "pnpm supabase status",
-    "setup:replication": "pnpm tsx database/scripts/setup-replication.ts",
-    "setup:replication:status": "pnpm tsx database/scripts/setup-replication.ts --status",
-    "replication:stop": "pnpm tsx database/scripts/teardown-replication.ts"
+    "db:status": "pnpm supabase status"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "2.0.0-beta.10",

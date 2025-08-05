@@ -29,9 +29,12 @@ wait_for_moose() {
 }
 
 # Wait for moose to be ready, then start workflow
+# Note: Database initialization is now handled by the workflow itself
 if wait_for_moose; then
+    echo "✅ Moose dev server is ready!"
     echo "🔄 Starting supabase-listener workflow..."
-    pnpm dev:workflow:start
+    echo "   (Database initialization will be handled by the workflow)"
+    pnpm dev:workflow
 else
     echo "❌ Failed to connect to moose dev server"
     exit 1
