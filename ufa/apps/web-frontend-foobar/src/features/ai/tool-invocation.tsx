@@ -16,8 +16,10 @@ import { CodeBlock } from "./code-block";
 import { useState } from "react";
 import ms from "ms";
 
+const MILLISECONDS_THRESHOLD = 5000;
+
 function formatDuration(milliseconds: number): string {
-  if (milliseconds < 5000) {
+  if (milliseconds < MILLISECONDS_THRESHOLD) {
     return `${Math.round(milliseconds)}ms`;
   }
 
