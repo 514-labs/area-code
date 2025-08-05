@@ -26,6 +26,7 @@ export default [
       ...tseslint.configs.recommended.rules,
       "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   prettier,

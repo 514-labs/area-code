@@ -14,6 +14,17 @@ import {
 } from "lucide-react";
 import { CodeBlock } from "./code-block";
 import { useState } from "react";
+import ms from "ms";
+
+const MILLISECONDS_THRESHOLD = 5000;
+
+function formatDuration(milliseconds: number): string {
+  if (milliseconds < MILLISECONDS_THRESHOLD) {
+    return `${Math.round(milliseconds)}ms`;
+  }
+
+  return ms(milliseconds);
+}
 
 // Correct AI SDK 5 ToolUIPart structure
 // to get better type inference, we need to define for each tool
@@ -33,10 +44,12 @@ type ToolInvocationProps = {
   };
 };
 
-export function ToolInvocation({ part }: ToolInvocationProps) {
+export function ToolInvocation({
+  part,
+  timing,
+}: ToolInvocationProps & { timing?: number }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Extract tool name from type (e.g., "tool-weatherTool" -> "weatherTool")
   const toolName = part.type.startsWith("tool-")
     ? part.type.slice(5)
     : part.type;
@@ -99,6 +112,13 @@ export function ToolInvocation({ part }: ToolInvocationProps) {
             </span>
 
             <div className="flex-1" />
+
+            {part.state === "output-available" && timing && (
+              <Badge variant="secondary" className="text-xs mr-2">
+                {formatDuration(timing)}
+              </Badge>
+            )}
+
             {getStatusIcon()}
           </div>
         </CollapsibleTrigger>
@@ -122,7 +142,6 @@ export function ToolInvocation({ part }: ToolInvocationProps) {
               </div>
             )}
 
-            {/* Input */}
             {part.input && (
               <div
                 className={part.providerExecuted === undefined ? "pt-3" : ""}
@@ -134,7 +153,6 @@ export function ToolInvocation({ part }: ToolInvocationProps) {
               </div>
             )}
 
-            {/* Output */}
             {part.output && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -151,7 +169,6 @@ export function ToolInvocation({ part }: ToolInvocationProps) {
               </div>
             )}
 
-            {/* Error */}
             {part.errorText && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
