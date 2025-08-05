@@ -1,4 +1,4 @@
-import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { getAuroraMCPClient } from "../mcp/aurora-mcp-client";
 import { getSupabaseLocalMCPClient } from "../mcp/supabase-mcp-client";
@@ -15,10 +15,8 @@ export async function getAnthropicAgentStreamTextOptions(
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
-  // Get Aurora MCP client (fault-tolerant - won't throw)
   const { tools: auroraTools } = await getAuroraMCPClient();
 
-  // Get Supabase MCP client (may throw - handle gracefully)
   let supabaseTools = {};
   try {
     const { tools } = await getSupabaseLocalMCPClient();
@@ -31,7 +29,6 @@ export async function getAnthropicAgentStreamTextOptions(
     console.error("Full Supabase MCP error:", error);
   }
 
-  // Combine tools from both MCP servers
   const allTools = {
     ...auroraTools,
     ...supabaseTools,

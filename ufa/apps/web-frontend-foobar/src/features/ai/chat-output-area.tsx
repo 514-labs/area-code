@@ -10,6 +10,7 @@ type ChatOutputAreaProps = {
   messages: UIMessage[];
   status?: ChatStatus;
   className?: string;
+  toolTimings?: Record<string, number>;
 };
 
 function getTextFromParts(parts: any[]): string {
@@ -69,7 +70,13 @@ function UserOutput({ message }: { message: UIMessage }) {
   );
 }
 
-function AIOutput({ message }: { message: UIMessage }) {
+function AIOutput({
+  message,
+  toolTimings = {},
+}: {
+  message: UIMessage;
+  toolTimings?: Record<string, number>;
+}) {
   return (
     <div className="space-y-3">
       {message.parts && message.parts.length > 0 ? (
@@ -103,7 +110,12 @@ function AIOutput({ message }: { message: UIMessage }) {
             default:
               // Handle tool calls (tool-*)
               if (part.type.startsWith("tool-")) {
-                return <ToolInvocation key={index} part={part} />;
+                const timing = part.toolCallId
+                  ? toolTimings[part.toolCallId]
+                  : undefined;
+                return (
+                  <ToolInvocation key={index} part={part} timing={timing} />
+                );
               }
 
               // Fallback for unknown part types
@@ -155,6 +167,7 @@ export default function ChatOutputArea({
   messages,
   status,
   className,
+  toolTimings = {},
 }: ChatOutputAreaProps) {
   const showLoading =
     (status === "submitted" || status === "streaming") && messages.length > 0;
@@ -169,7 +182,14 @@ export default function ChatOutputArea({
             const OutputComponent = roleOutputMap[message.role];
             return (
               <div key={message.id} className="space-y-3">
-                <OutputComponent message={message} />
+                {message.role === "user" ? (
+                  <OutputComponent message={message} />
+                ) : (
+                  <OutputComponent
+                    message={message}
+                    toolTimings={toolTimings}
+                  />
+                )}
               </div>
             );
           })}
