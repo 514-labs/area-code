@@ -33,9 +33,6 @@ import { IconLoader } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
 import { GetFoosScoreOverTimeResponse } from "@workspace/models/foo";
 
-export const description = "An interactive score over time chart";
-
-// API Functions
 const fetchChartData = async (
   fetchApiEndpoint: string,
   days: number = 90
@@ -71,7 +68,6 @@ export function FooScoreOverTimeGraph({
   const isMobile = useIsMobile();
   const [days, setDays] = React.useState(90);
 
-  // Use React Query to fetch chart data
   const {
     data: chartResponse,
     isLoading,
@@ -89,7 +85,6 @@ export function FooScoreOverTimeGraph({
   const chartData = chartResponse?.data || [];
   const queryTime = chartResponse?.queryTime;
 
-  // Memoized Y-axis domain calculation
   const yAxisDomain = React.useMemo(() => {
     if (chartData.length === 0) return [0, 10];
 
@@ -106,7 +101,6 @@ export function FooScoreOverTimeGraph({
     return [domainMin, domainMax];
   }, [chartData]);
 
-  // Memoized functions to prevent unnecessary rerenders
   const tickFormatter = React.useCallback((value: any) => {
     const date = new Date(value);
     return date.toLocaleDateString("en-US", {
@@ -148,7 +142,6 @@ export function FooScoreOverTimeGraph({
     [labelFormatter, valueFormatter]
   );
 
-  // Get the time range description for display
   const getTimeRangeDescription = (days: number) => {
     if (days === 7) return "Last 7 days";
     if (days === 30) return "Last 30 days";
@@ -158,7 +151,7 @@ export function FooScoreOverTimeGraph({
   };
 
   return (
-    <Card className="@container/card">
+    <Card>
       <CardHeader>
         <CardTitle>
           <span className="inline-flex items-baseline gap-2">
@@ -228,7 +221,7 @@ export function FooScoreOverTimeGraph({
           </Select>
         </CardAction>
       </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-[250px]">
             <div className="flex items-center gap-2">
@@ -252,6 +245,7 @@ export function FooScoreOverTimeGraph({
           <ChartContainer
             config={chartConfig}
             className="aspect-auto h-[250px] w-full"
+            debounce={300}
           >
             <AreaChart data={chartData}>
               <defs>

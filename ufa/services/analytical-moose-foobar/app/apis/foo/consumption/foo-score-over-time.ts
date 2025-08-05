@@ -55,25 +55,14 @@ export const scoreOverTimeApi = new ConsumptionApi<
 
     const queryTime = Date.now() - startTime;
 
-    // Fill in missing dates with zero values
-    const filledData: FoosScoreOverTimeDataPoint[] = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split("T")[0];
-      const existingData = results.find((r) => r.date === dateStr);
-
-      filledData.push({
-        date: dateStr,
-        averageScore: Math.round((existingData?.averageScore || 0) * 100) / 100, // Round to 2 decimal places
-        totalCount: existingData?.totalCount || 0,
-      });
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
+    const data: FoosScoreOverTimeDataPoint[] = results.map((result) => ({
+      date: result.date,
+      averageScore: Math.round(result.averageScore * 100) / 100, // Round to 2 decimal places
+      totalCount: result.totalCount,
+    }));
 
     return {
-      data: filledData,
+      data,
       queryTime,
     };
   }
