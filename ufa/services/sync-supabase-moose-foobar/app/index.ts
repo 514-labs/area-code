@@ -344,146 +344,178 @@ async function handleBarChange(payload: RealtimePayload) {
   }
 }
 
-// Long-running Supabase listener task
-export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
-  run: async () => {
-    console.log("🚀 Starting Supabase realtime listener...");
-    console.log("Initializing Supabase client...");
+// Global reference to channel for cleanup
+let globalChannel: any = null;
 
-    // Create Supabase client and get configuration
-    const { client: supabase, config: supabaseConfig } = createSupabaseClient();
+async function run() {
+  console.log("🚀 Starting Supabase realtime listener...");
+  console.log("Initializing Supabase client...");
 
-    console.log("Configuration summary:");
-    console.log("- supabaseUrl:", supabaseConfig.supabaseUrl);
-    console.log("- schema:", supabaseConfig.dbSchema);
-    console.log("✅ Supabase client ready and configured");
+  // Create Supabase client and get configuration
+  const { client: supabase, config: supabaseConfig } = createSupabaseClient();
 
-    // Set up a single channel for all table changes
-    const channel = supabase
-      .channel("db-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: supabaseConfig.dbSchema,
-          table: "foo",
-        },
-        async (payload) => {
-          logEvent("FOO CHANGE", "foo", payload);
-          await handleFooChange(payload);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: supabaseConfig.dbSchema,
-          table: "bar",
-        },
-        async (payload) => {
-          logEvent("BAR CHANGE", "bar", payload);
-          await handleBarChange(payload);
-        }
-      )
-      .subscribe((status, error) => {
-        // Log status with appropriate emoji/level based on status type
-        const timestamp = new Date().toISOString();
+  console.log("Configuration summary:");
+  console.log("- supabaseUrl:", supabaseConfig.supabaseUrl);
+  console.log("- schema:", supabaseConfig.dbSchema);
+  console.log("✅ Supabase client ready and configured");
 
-        if (status === "SUBSCRIBED") {
-          console.log(
-            `✅ [${timestamp}] Database changes listener status: ${status}`
-          );
-          console.log("🎉 Successfully connected to all database tables!");
-          console.log("   - foo table: ✅");
-          console.log("   - bar table: ✅");
-        } else if (status === "CLOSED") {
-          console.warn(
-            `❌ [${timestamp}] Database changes listener status: ${status}`
-          );
-          console.warn("Connection to database tables closed");
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.error(
-            `❌ [${timestamp}] Database changes listener ERROR: ${status}`
-          );
-          console.error("🚨 Realtime connection failed!");
-          console.error("Debugging information:");
-          console.error("- Status:", status);
-          console.error("- Supabase URL:", supabaseConfig.supabaseUrl);
-          console.error("- Database schema:", supabaseConfig.dbSchema);
-          console.error("- Tables being monitored: foo, bar");
+  // Set up a single channel for all table changes
+  const channel = supabase
+    .channel("db-changes")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: supabaseConfig.dbSchema,
+        table: "foo",
+      },
+      async (payload) => {
+        logEvent("FOO CHANGE", "foo", payload);
+        await handleFooChange(payload);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: supabaseConfig.dbSchema,
+        table: "bar",
+      },
+      async (payload) => {
+        logEvent("BAR CHANGE", "bar", payload);
+        await handleBarChange(payload);
+      }
+    )
+    .subscribe((status, error) => {
+      // Log status with appropriate emoji/level based on status type
+      const timestamp = new Date().toISOString();
 
-          if (error) {
-            console.error("- Error details:", error);
-            console.error(
-              "- Error message:",
-              error.message || "No message available"
-            );
-            // Safely access extended error properties
-            const errorWithDetails = error as Error & {
-              code?: string;
-              details?: string;
-              hint?: string;
-            };
-            console.error(
-              "- Error code:",
-              errorWithDetails.code || "No code available"
-            );
-          } else {
-            console.error("- No additional error details...");
-          }
-        } else {
-          // Handle other statuses (CONNECTING, etc.)
-          console.log(
-            `🔄 [${timestamp}] Database changes listener status: ${status}`
-          );
-        }
+      if (status === "SUBSCRIBED") {
+        console.log(
+          `✅ [${timestamp}] Database changes listener status: ${status}`
+        );
+        console.log("🎉 Successfully connected to all database tables!");
+        console.log("   - foo table: ✅");
+        console.log("   - bar table: ✅");
+      } else if (status === "CLOSED") {
+        console.warn(
+          `❌ [${timestamp}] Database changes listener status: ${status}`
+        );
+        console.warn("Connection to database tables closed");
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.error(
+          `❌ [${timestamp}] Database changes listener ERROR: ${status}`
+        );
+        console.error("🚨 Realtime connection failed!");
+        console.error("Debugging information:");
+        console.error("- Status:", status);
+        console.error("- Supabase URL:", supabaseConfig.supabaseUrl);
+        console.error("- Database schema:", supabaseConfig.dbSchema);
+        console.error("- Tables being monitored: foo, bar");
 
-        // Always log error details if provided
         if (error) {
-          console.error(`❌ [${timestamp}] Subscription error:`, error);
-          if (error.message) {
-            console.error("Error message:", error.message);
-          }
+          console.error("- Error details:", error);
+          console.error(
+            "- Error message:",
+            error.message || "No message available"
+          );
           // Safely access extended error properties
           const errorWithDetails = error as Error & {
+            code?: string;
             details?: string;
             hint?: string;
           };
-          if (errorWithDetails.details) {
-            console.error("Error details:", errorWithDetails.details);
-          }
-          if (errorWithDetails.hint) {
-            console.error("Error hint:", errorWithDetails.hint);
-          }
+          console.error(
+            "- Error code:",
+            errorWithDetails.code || "No code available"
+          );
+        } else {
+          console.error("- No additional error details...");
         }
-      });
-
-    // Handle graceful shutdown
-    const cleanup = () => {
-      console.log("\n🔄 Cleaning up Supabase subscription...");
-      if (channel) {
-        channel.unsubscribe();
+      } else {
+        // Handle other statuses (CONNECTING, etc.)
+        console.log(
+          `🔄 [${timestamp}] Database changes listener status: ${status}`
+        );
       }
-      console.log("✅ Cleanup complete");
-    };
 
-    process.on("SIGINT", cleanup);
-    process.on("SIGTERM", cleanup);
-
-    console.log("\n🎯 Supabase realtime listeners are now active!");
-    console.log("Listening for changes on tables: foo, bar");
-    console.log("The task will run indefinitely until stopped...");
-
-    // Wait a bit to see initial connection status
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("📊 Initial connection setup complete");
-
-    // Keep the task running indefinitely
-    return new Promise<void>(() => {
-      // This promise never resolves, keeping the task alive
-      // The task will only end when the workflow is terminated
+      // Always log error details if provided
+      if (error) {
+        console.error(`❌ [${timestamp}] Subscription error:`, error);
+        if (error.message) {
+          console.error("Error message:", error.message);
+        }
+        // Safely access extended error properties
+        const errorWithDetails = error as Error & {
+          details?: string;
+          hint?: string;
+        };
+        if (errorWithDetails.details) {
+          console.error("Error details:", errorWithDetails.details);
+        }
+        if (errorWithDetails.hint) {
+          console.error("Error hint:", errorWithDetails.hint);
+        }
+      }
     });
-  },
+
+  // Store channel reference for cleanup
+  globalChannel = channel;
+
+  // Handle graceful shutdown
+  const cleanup = () => {
+    console.log("\n🔄 Cleaning up Supabase subscription...");
+    if (channel) {
+      channel.unsubscribe();
+    }
+    console.log("✅ Cleanup complete");
+  };
+
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
+
+  console.log("\n🎯 Supabase realtime listeners are now active!");
+  console.log("Listening for changes on tables: foo, bar");
+  console.log("The task will run indefinitely until stopped...");
+
+  // Wait a bit to see initial connection status
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  console.log("📊 Initial connection setup complete");
+
+  // Keep the task running indefinitely
+  return new Promise<void>(() => {
+    // This promise never resolves, keeping the task alive
+    // The task will only end when the workflow is terminated
+  });
+}
+
+async function onCancel() {
+  console.log(
+    "🛑 Workflow cancellation requested - cleaning up Supabase subscriptions..."
+  );
+
+  if (globalChannel) {
+    try {
+      console.log("📡 Unsubscribing from Supabase realtime channel...");
+      await globalChannel.unsubscribe();
+      console.log(
+        "✅ Successfully unsubscribed from Supabase realtime channel"
+      );
+      globalChannel = null;
+    } catch (error) {
+      console.error("❌ Error during Supabase channel cleanup:", error);
+    }
+  } else {
+    console.log("ℹ️  No active Supabase channel to clean up");
+  }
+
+  console.log("🧹 Cleanup complete");
+}
+
+// Long-running Supabase listener task
+export const supabaseListenerTask = new Task<null, void>("supabase-listener", {
+  run,
+  onCancel,
   // Set a longer timeout for the long-running task
   timeout: "24h",
 });
