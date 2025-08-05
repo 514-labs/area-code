@@ -56,7 +56,6 @@ import { NumericFormat } from "react-number-format";
 import { format } from "date-fns";
 import { createCDCColumns } from "../cdc/cdc-utils";
 
-// Add a sortable header component
 const SortableHeader = ({
   column,
   children,
@@ -113,7 +112,6 @@ const fetchFoos = async (
   return response.json();
 };
 
-// Create columns with CDC support
 const createColumns = (): ColumnDef<FooWithCDC>[] => {
   const baseColumns: ColumnDef<FooWithCDC>[] = [
     {
@@ -146,11 +144,9 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
     },
   ];
 
-  // Add CDC columns using shared utility
   const cdcColumns = createCDCColumns<FooWithCDC>();
   baseColumns.push(...cdcColumns);
 
-  // Add main data columns
   baseColumns.push(
     {
       accessorKey: "name",
@@ -320,10 +316,8 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
 
 export default function FooAnalyticalDataTable({
   disableCache = false,
-  selectableRows = false,
 }: {
   disableCache?: boolean;
-  selectableRows?: boolean;
 }) {
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -380,15 +374,9 @@ export default function FooAnalyticalDataTable({
   const data = fooResponse?.data || [];
   const serverPagination = fooResponse?.pagination;
 
-  // Get columns with CDC support
   const columns = createColumns();
 
-  // Analytical tables are read-only, no actions needed
-
-  // Conditionally include columns based on props
-  let availableColumns = selectableRows
-    ? columns
-    : columns.filter((col) => col.id !== "select");
+  let availableColumns = columns.filter((col) => col.id !== "select");
 
   const table = useReactTable({
     data,
@@ -401,7 +389,7 @@ export default function FooAnalyticalDataTable({
       pagination,
     },
     getRowId: (row) => row.id,
-    enableRowSelection: selectableRows,
+    enableRowSelection: false,
     onRowSelectionChange: setRowSelection,
     onSortingChange: (updater) => {
       setSorting(updater);
@@ -430,7 +418,7 @@ export default function FooAnalyticalDataTable({
           {queryTime !== null && (
             <div className="inline-flex items-baseline gap-2">
               <span className="leading-none font-semibold text-card-foreground text-[16px]">
-                Foo Analytical
+                Foo CDC Table
               </span>
               <span className="text-xs font-normal text-green-500">
                 Latest query:{" "}
@@ -550,25 +538,7 @@ export default function FooAnalyticalDataTable({
           </Table>
         </div>
         <div className="flex items-center justify-between px-2">
-          {selectableRows && (
-            <div className="flex-1 text-sm text-muted-foreground">
-              <NumericFormat
-                value={table.getFilteredSelectedRowModel().rows.length}
-                displayType="text"
-                thousandSeparator
-              />{" "}
-              of{" "}
-              <NumericFormat
-                value={table.getFilteredRowModel().rows.length}
-                displayType="text"
-                thousandSeparator
-              />{" "}
-              row(s) selected.
-            </div>
-          )}
-          <div
-            className={`flex items-center space-x-6 lg:space-x-8 ${!selectableRows ? "w-full justify-end" : ""}`}
-          >
+          <div className={`flex items-center space-x-6 lg:space-x-8`}>
             <div className="flex items-center space-x-2">
               <p className="text-sm font-medium">Rows per page</p>
               <Select
