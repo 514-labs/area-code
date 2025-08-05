@@ -1,8 +1,8 @@
 import { cn } from "@workspace/ui";
 
 const SUGGESTED_PROMPTS = [
-  "Perform heavy aggregation analysis: count, sum, and average foo scores grouped by month and origin across 100,000+ records on both databases",
   "Compute statistical analysis: rolling averages, percentiles, and standard deviations across 50,000+ foo records on both databases",
+  "Perform heavy aggregation analysis: count, sum, and average foo scores grouped by month and origin across 100,000+ records on both databases",
 ];
 
 type SuggestedPromptProps = {

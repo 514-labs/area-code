@@ -35,9 +35,10 @@ export async function chatRoutes(fastify: FastifyInstance) {
       let stepStartTime = Date.now();
       let stepCount = 0;
 
-      // Create a UIMessage stream for streaming timing data
       const stream = createUIMessageStream({
         execute: async ({ writer }) => {
+          stepStartTime = Date.now();
+
           const result = streamText({
             ...streamTextOptions,
             onStepFinish: async (stepResult) => {
