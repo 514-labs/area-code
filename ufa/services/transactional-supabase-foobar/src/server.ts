@@ -5,7 +5,7 @@ import swaggerUi from "@fastify/swagger-ui";
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
-import { dirname } from "path";
+
 import { fooRoutes } from "./routes/foo";
 import { barRoutes } from "./routes/bar";
 import { chatRoutes } from "./routes/chat";
@@ -61,7 +61,7 @@ if (
           }
         });
         console.log(`👀 Watching ${file} for changes...`);
-      } catch (err) {
+      } catch {
         // File might not exist, that's ok
         console.log(`⚠️  ${file} not found, skipping watch...`);
       }
@@ -103,12 +103,12 @@ await fastify.register(swaggerUi, {
 });
 
 // Health check route
-fastify.get("/health", async (request, reply) => {
+fastify.get("/health", async () => {
   return { status: "ok", timestamp: new Date().toISOString() };
 });
 
 // API info route
-fastify.get("/", async (request, reply) => {
+fastify.get("/", async () => {
   return {
     name: "Transactional supabase foobar Service API",
     version: "1.0.0",
@@ -130,7 +130,7 @@ await fastify.register(barRoutes, { prefix: "/api" });
 await fastify.register(chatRoutes, { prefix: "/api" });
 
 // Manual OpenAPI documentation endpoints
-fastify.get("/documentation/json", async (request, reply) => {
+fastify.get("/documentation/json", async () => {
   return fastify.swagger();
 });
 

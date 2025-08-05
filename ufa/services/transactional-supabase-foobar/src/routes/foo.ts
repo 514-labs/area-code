@@ -164,31 +164,14 @@ export async function fooRoutes(fastify: FastifyInstance) {
       const endTime = Date.now();
       const queryTime = endTime - startTime;
 
-      // Fill in missing dates with zero values
-      const filledData: {
-        date: string;
-        averageScore: number;
-        totalCount: number;
-      }[] = [];
-
-      const currentDate = new Date(startDate);
-
-      while (currentDate <= endDate) {
-        const dateStr = currentDate.toISOString().split("T")[0];
-        const existingData = result.find((r) => r.date === dateStr);
-
-        filledData.push({
-          date: dateStr,
-          averageScore:
-            Math.round((Number(existingData?.averageScore) || 0) * 100) / 100, // Round to 2 decimal places
-          totalCount: Number(existingData?.totalCount) || 0,
-        });
-
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
+      const data = result.map((row) => ({
+        date: row.date,
+        averageScore: Math.round(Number(row.averageScore) * 100) / 100, // Round to 2 decimal places
+        totalCount: Number(row.totalCount),
+      }));
 
       return reply.send({
-        data: filledData,
+        data,
         queryTime,
       });
     } catch (error) {
