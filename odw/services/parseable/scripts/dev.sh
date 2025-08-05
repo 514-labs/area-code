@@ -130,16 +130,6 @@ stop_existing_container() {
 start_parseable() {
     print_status "Starting Parseable container..."
     
-    # Get the network that MinIO is running on
-    local minio_network=$(docker inspect "$MINIO_CONTAINER" --format='{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' | head -1)
-    
-    if [ -z "$minio_network" ]; then
-        print_error "Could not determine MinIO network"
-        return 1
-    fi
-    
-    print_status "Using Docker network: $minio_network"
-    
     if docker run -d \
         --name "$PARSEABLE_CONTAINER_NAME" \
         -p "$PARSEABLE_PORT:8000" \
