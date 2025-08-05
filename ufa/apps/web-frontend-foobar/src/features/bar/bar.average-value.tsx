@@ -45,7 +45,7 @@ export default function BarAverageValue({
   };
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-2">
