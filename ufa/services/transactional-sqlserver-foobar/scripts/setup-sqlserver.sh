@@ -166,55 +166,113 @@ verify_data() {
 register_connector() {
     echo "🔌 Registering Debezium connector..."
     
-    # Wait for Kafka Connect to be ready
+    # Wait for Kafka Connect to be ready for up to 2 minutes
     echo "⏳ Waiting for Kafka Connect to be ready..."
-    for i in {1..30}; do
-        if curl -s "$CONNECT_URL" >/dev/null 2>&1; then
-            echo "✅ Kafka Connect is ready"
+    for i in {1..120}; do
+        health_response=$(curl -s "$CONNECT_URL/health" 2>/dev/null)
+        if [ $? -eq 0 ] && echo "$health_response" | grep -q '"status":"healthy"'; then
+            echo "✅ Kafka Connect is ready and healthy"
+            echo "  Health status: $(echo "$health_response" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)"
             break
         fi
-        if [ $i -eq 30 ]; then
-            echo "❌ Kafka Connect not ready after 30 seconds"
-            return 1
+        if [ $i -eq 120 ]; then
+            echo "❌ CRITICAL ERROR: Kafka Connect not ready/healthy after 2 minutes at $CONNECT_URL/health"
+            echo "❌ Last health response: $health_response"
+            echo "❌ Cannot proceed without healthy Kafka Connect - this will break the CDC demo"
+            echo "💡 Check if Kafka Connect is running with: docker ps | grep connect"
+            echo "💡 Check Kafka Connect logs for startup issues"
+            exit 1
         fi
+        echo "  Waiting for Kafka Connect health... ($i/120) - Status: $(echo "$health_response" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "unreachable")"
         sleep 1
     done
     
     # Check if connector already exists
     if curl -s "$CONNECT_URL/connectors/$CONNECTOR_NAME" >/dev/null 2>&1; then
-        echo "⚠️  Connector already exists, checking status..."
+        echo "⚠️  Connector '$CONNECTOR_NAME' already exists, checking status..."
         state=$(curl -s "$CONNECT_URL/connectors/$CONNECTOR_NAME/status" 2>/dev/null | grep -o '"state":"[^"]*"' | cut -d'"' -f4 | head -1)
         if [ "$state" = "RUNNING" ]; then
             echo "✅ Existing connector is already running"
             return 0
         else
             echo "🔄 Existing connector is in state: $state, deleting and recreating..."
-            delete_connector
+            echo "🗑️  Forcing deletion of existing connector before registering new one..."
+            if ! delete_connector; then
+                echo "❌ CRITICAL ERROR: Failed to delete existing connector '$CONNECTOR_NAME'"
+                echo "❌ Cannot proceed with registration - this will break the CDC demo"
+                echo "💡 Try manually deleting with: curl -X DELETE $CONNECT_URL/connectors/$CONNECTOR_NAME"
+                exit 1
+            fi
+            echo "✅ Successfully deleted existing connector"
         fi
     fi
     
-    # Register connector
-    echo "📡 Registering new connector..."
-    response=$(curl -s -X POST -H 'Content-Type: application/json' --data @register-sqlserver.json "$CONNECT_URL/connectors" 2>&1)
-    if [ $? -eq 0 ]; then
-        echo "✅ Connector registered successfully"
-        
-        # Wait a moment for connector to initialize
-        sleep 2
-        check_connector
-    else
-        echo "❌ Failed to register connector"
-        echo "Response: $response"
-        return 1
+    # Verify connector config file exists
+    if [ ! -f "register-sqlserver.json" ]; then
+        echo "❌ CRITICAL ERROR: Connector configuration file 'register-sqlserver.json' not found"
+        echo "❌ Cannot register connector without configuration - this will break the CDC demo"
+        echo "💡 Make sure you're running this script from the correct directory"
+        exit 1
     fi
+    
+    # Register connector
+    echo "📡 Registering new connector '$CONNECTOR_NAME'..."
+    response=$(curl -s -X POST -H 'Content-Type: application/json' --data @register-sqlserver.json "$CONNECT_URL/connectors" 2>&1)
+    curl_exit_code=$?
+    
+    if [ $curl_exit_code -ne 0 ]; then
+        echo "❌ CRITICAL ERROR: Failed to register connector (curl failed with exit code $curl_exit_code)"
+        echo "❌ Response: $response"
+        echo "❌ Cannot proceed without connector - this will break the CDC demo"
+        echo "💡 Check Kafka Connect logs and ensure register-sqlserver.json is valid"
+        exit 1
+    fi
+    
+    # Check if registration was actually successful by verifying response
+    if echo "$response" | grep -q '"name"'; then
+        echo "✅ Connector registered successfully"
+    else
+        echo "❌ CRITICAL ERROR: Connector registration failed - unexpected response"
+        echo "❌ Response: $response"
+        echo "❌ Cannot proceed without connector - this will break the CDC demo"
+        exit 1
+    fi
+    
+    # Wait a moment for connector to initialize and verify it's running
+    echo "⏳ Waiting for connector to initialize..."
+    sleep 3
+    
+    # Verify the connector is actually running
+    for i in {1..10}; do
+        state=$(curl -s "$CONNECT_URL/connectors/$CONNECTOR_NAME/status" 2>/dev/null | grep -o '"state":"[^"]*"' | cut -d'"' -f4 | head -1)
+        if [ "$state" = "RUNNING" ]; then
+            echo "✅ Connector is now running and ready for CDC"
+            return 0
+        elif [ "$state" = "FAILED" ]; then
+            echo "❌ CRITICAL ERROR: Connector failed to start (state: FAILED)"
+            echo "❌ This will break the CDC demo"
+            echo "💡 Check connector logs with: curl -s $CONNECT_URL/connectors/$CONNECTOR_NAME/status"
+            exit 1
+        fi
+        echo "  Waiting for connector to start... (state: $state, attempt $i/10)"
+        sleep 2
+    done
+    
+    echo "❌ CRITICAL ERROR: Connector did not reach RUNNING state within 20 seconds"
+    echo "❌ Current state: $state"
+    echo "❌ This will break the CDC demo"
+    echo "💡 Check connector status with: curl -s $CONNECT_URL/connectors/$CONNECTOR_NAME/status"
+    exit 1
 }
 
 # Function to check connector status
 check_connector() {
     echo "🔍 Checking connector status..."
     
-    if ! curl -s "$CONNECT_URL" >/dev/null 2>&1; then
-        echo "❌ Kafka Connect not available"
+    health_response=$(curl -s "$CONNECT_URL/health" 2>/dev/null)
+    if [ $? -ne 0 ] || ! echo "$health_response" | grep -q '"status":"healthy"'; then
+        echo "❌ Kafka Connect not healthy at $CONNECT_URL/health"
+        echo "    Health response: $health_response"
         return 1
     fi
     
@@ -238,37 +296,51 @@ check_connector() {
 
 # Function to delete connector
 delete_connector() {
-    echo "🗑️  Deleting Debezium connector..."
+    echo "🗑️  Deleting Debezium connector '$CONNECTOR_NAME'..."
     
-    if ! curl -s "$CONNECT_URL" >/dev/null 2>&1; then
-        echo "⚠️  Kafka Connect not available, skipping connector deletion"
+    health_response=$(curl -s "$CONNECT_URL/health" 2>/dev/null)
+    if [ $? -ne 0 ] || ! echo "$health_response" | grep -q '"status":"healthy"'; then
+        echo "⚠️  Kafka Connect not healthy at $CONNECT_URL/health, skipping connector deletion"
+        echo "    Health response: $health_response"
         return 0
     fi
     
-    # Check if connector exists first
-    if curl -s "$CONNECT_URL/connectors/$CONNECTOR_NAME" >/dev/null 2>&1; then
-        echo "🔍 Found existing connector, deleting..."
-        
-        if curl -s -X DELETE "$CONNECT_URL/connectors/$CONNECTOR_NAME" >/dev/null; then
-            echo "🔄 Connector deletion initiated, waiting for confirmation..."
-            
-            # Wait for connector to be fully deleted
-            for i in {1..10}; do
-                if ! curl -s "$CONNECT_URL/connectors/$CONNECTOR_NAME" >/dev/null 2>&1; then
-                    echo "✅ Connector deleted successfully"
-                    return 0
-                fi
-                echo "  Waiting for deletion to complete... ($i/10)"
-                sleep 1
-            done
-            
-            echo "⚠️  Connector deletion may not be complete, but proceeding..."
-        else
-            echo "❌ Failed to delete connector"
-            return 1
+    # Always attempt to delete the connector (whether it exists or not)
+    echo "🔍 Attempting to delete connector '$CONNECTOR_NAME'..."
+    
+    delete_response=$(curl -s -X DELETE "$CONNECT_URL/connectors/$CONNECTOR_NAME" 2>&1)
+    delete_exit_code=$?
+    
+    if [ $delete_exit_code -eq 0 ]; then
+        # Check if the response indicates the connector didn't exist (404)
+        if echo "$delete_response" | grep -q '"error_code":404' || echo "$delete_response" | grep -q "not found"; then
+            echo "✅ Connector '$CONNECTOR_NAME' was already deleted (404 - not found)"
+            return 0
         fi
+        
+        echo "🔄 Connector deletion initiated, waiting for confirmation..."
+        
+        # Wait for connector to be fully deleted
+        for i in {1..15}; do
+            check_response=$(curl -s "$CONNECT_URL/connectors/$CONNECTOR_NAME" 2>&1)
+            # If we get 404 or connection fails, connector is gone
+            if echo "$check_response" | grep -q '"error_code":404' || echo "$check_response" | grep -q "not found" || ! curl -s "$CONNECT_URL/connectors/$CONNECTOR_NAME" >/dev/null 2>&1; then
+                echo "✅ Connector '$CONNECTOR_NAME' deleted successfully"
+                return 0
+            fi
+            echo "  Waiting for deletion to complete... ($i/15)"
+            sleep 1
+        done
+        
+        echo "❌ ERROR: Connector deletion timeout after 15 seconds"
+        echo "❌ Connector '$CONNECTOR_NAME' may still exist"
+        echo "💡 Check manually with: curl -s $CONNECT_URL/connectors/$CONNECTOR_NAME"
+        return 1
     else
-        echo "📊 No existing connector found, nothing to delete"
+        echo "❌ ERROR: Failed to delete connector '$CONNECTOR_NAME' (curl failed)"
+        echo "❌ Delete response: $delete_response"
+        echo "💡 Try manually with: curl -X DELETE $CONNECT_URL/connectors/$CONNECTOR_NAME"
+        return 1
     fi
 }
 
@@ -298,15 +370,22 @@ case $COMMAND in
         ;;
     "connector")
         register_connector
-        check_connector
+        echo "✅ Connector registration completed successfully"
         ;;
     "resetconnector")
-        delete_connector
+        echo "🔄 Resetting connector (delete + register)..."
+        if ! delete_connector; then
+            echo "❌ CRITICAL ERROR: Failed to delete existing connector during reset"
+            exit 1
+        fi
         register_connector
-        check_connector
+        echo "✅ Connector reset completed successfully"
         ;;
     "clean")
-        delete_connector
+        echo "🧹 Cleaning connector and data..."
+        if ! delete_connector; then
+            echo "⚠️  Warning: Connector deletion failed, but continuing with data cleanup"
+        fi
         clean_data
         verify_data
         ;;
@@ -314,15 +393,28 @@ case $COMMAND in
         verify_data
         ;;
     "deleteconnector")
-        delete_connector
+        if ! delete_connector; then
+            echo "❌ ERROR: Failed to delete connector"
+            exit 1
+        fi
+        echo "✅ Connector deletion completed successfully"
         ;;
     "all"|*)
-        delete_connector
+        echo "🚀 Running complete setup (delete + clean + setup + register)..."
+        
+        # Delete existing connector (don't fail if it doesn't exist)
+        if ! delete_connector; then
+            echo "⚠️  Warning: Connector deletion failed, but continuing with setup"
+        fi
+        
         clean_data
         execute_sql "scripts/setup-database.sql" "Setting up database and CDC"
         execute_sql "scripts/setup-tables.sql" "Creating tables with CDC"
+        
+        # Critical: connector registration must succeed
         register_connector
-        check_connector
-        echo "📡 CDC connector ready! Now seeding data to demonstrate change capture..."
+        
+        echo "✅ Complete setup finished successfully!"
+        echo "📡 CDC connector is ready! Now seeding data to demonstrate change capture..."
         ;;
 esac
