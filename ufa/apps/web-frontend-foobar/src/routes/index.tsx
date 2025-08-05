@@ -110,7 +110,7 @@ function IndexPage() {
   const { cacheEnabled } = useFrontendCaching();
 
   return (
-    <div className="grid grid-cols-12 px-4 lg:px-6 gap-5 h-full overflow-auto">
+    <div className="grid grid-cols-12 px-4 lg:px-6 gap-5 h-full overflow-auto pt-0.5">
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
