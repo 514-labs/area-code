@@ -4,6 +4,8 @@ from typing import Dict, Any, Optional, List
 from moose_lib import cli_log, CliLogData
 import anthropic
 from datetime import datetime
+from dotenv import load_dotenv
+from pathlib import Path
 
 class LLMService:
     """
@@ -12,25 +14,97 @@ class LLMService:
     """
     
     def __init__(self):
-        """Initialize the LLM service with Anthropic client."""
-        self.api_key = os.getenv('ANTHROPIC_API_KEY')
-        if not self.api_key:
+        """Initialize the LLM service with Anthropic client using .env file configuration."""
+        # Check for .env file existence in the data-warehouse directory
+        # Get the directory where this file is located, then go up to data-warehouse root
+        current_dir = Path(__file__).parent  # app/utils/
+        data_warehouse_dir = current_dir.parent.parent  # go up two levels to data-warehouse/
+        env_file = data_warehouse_dir / '.env'
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"🔍 Looking for .env file at: {env_file}",
+            message_type="Info"
+        ))
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"🔍 .env file exists: {env_file.exists()}",
+            message_type="Info"
+        ))
+        
+        if not env_file.exists():
             cli_log(CliLogData(
                 action="LLMService",
-                message="ANTHROPIC_API_KEY not found. LLM features will be disabled. Set ANTHROPIC_API_KEY environment variable to enable LLM integration.",
+                message="❌ .env file not found. LLM features will be disabled.",
+                message_type="Error"
+            ))
+            cli_log(CliLogData(
+                action="LLMService",
+                message="📝 To enable LLM processing:",
                 message_type="Info"
             ))
-            self.client = None
-            self.enabled = False
-            # Define unwanted system fields even when disabled for consistency
-            self.unwanted_fields = {
-                'extraction_method', 'file_type', 'processed_at', 'extracted_at',
-                'source_file_path', 'content_preview', 'extraction_instruction',
-                'note', 'error', 'raw_response', 'extraction_error',
-                'validation_message', 'transformation_note', 'transformation_instruction',
-                'transformation_error', 'transformed_at', 'batch_id', 'processing_info'
-            }
-            self.strict_field_validation = False
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"   1. Copy env.example to .env: cp {data_warehouse_dir}/env.example {data_warehouse_dir}/.env",
+                message_type="Info"
+            ))
+            cli_log(CliLogData(
+                action="LLMService",
+                message="   2. Edit .env and set your ANTHROPIC_API_KEY",
+                message_type="Info"
+            ))
+            cli_log(CliLogData(
+                action="LLMService",
+                message="   3. Optionally configure other LLM settings as needed",
+                message_type="Info"
+            ))
+            cli_log(CliLogData(
+                action="LLMService",
+                message="   4. Restart the service to continue",
+                message_type="Info"
+            ))            
+            self._init_disabled_service()
+            return
+        
+        # Load configuration from .env file only
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"📁 Loading configuration from: {env_file}",
+            message_type="Info"
+        ))
+        load_dotenv(dotenv_path=env_file, override=True)
+        
+        # Log what configuration was loaded
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"⚙️ LLM_ENABLE_BATCH_PROCESSING from .env: '{os.getenv('LLM_ENABLE_BATCH_PROCESSING')}'",
+            message_type="Info"
+        ))
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"⚙️ ANTHROPIC_MODEL from .env: '{os.getenv('ANTHROPIC_MODEL')}'",
+            message_type="Info"
+        ))
+        
+        # Get API key from .env file
+        self.api_key = os.getenv('ANTHROPIC_API_KEY')
+        if not self.api_key or self.api_key == 'your-anthropic-api-key-here':
+            cli_log(CliLogData(
+                action="LLMService",
+                message="❌ ANTHROPIC_API_KEY not set in .env file. LLM features will be disabled.",
+                message_type="Error"
+            ))
+            cli_log(CliLogData(
+                action="LLMService",
+                message="📝 Please edit your .env file and set a valid ANTHROPIC_API_KEY",
+                message_type="Info"
+            ))
+            cli_log(CliLogData(
+                action="LLMService",
+                message="   Get your API key at: https://console.anthropic.com",
+                message_type="Info"
+            ))
+            self._init_disabled_service()
             return
         
         try:
@@ -109,16 +183,178 @@ class LLMService:
         
         if not batch_records:
             return []
-            
-        # Use individual processing to prevent LLM hallucination issues observed in batch mode
+        
+        # Check if batch processing is enabled (configurable to prevent hallucinations)
+        batch_processing_raw = os.getenv('LLM_ENABLE_BATCH_PROCESSING', 'true')
+        batch_processing_enabled = batch_processing_raw.lower() == 'true'
+        
         cli_log(CliLogData(
             action="LLMService",
-            message=f"Processing {len(batch_records)} records individually to ensure accuracy",
+            message=f"🔄 Batch processing check - raw value: '{batch_processing_raw}', enabled: {batch_processing_enabled}",
             message_type="Info"
         ))
         
-        # Process each record individually to prevent hallucination and data mixing
-        return self._process_batch_individually(batch_records, instruction)
+        if not batch_processing_enabled:
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"Batch processing disabled - processing {len(batch_records)} records individually to ensure accuracy",
+                message_type="Info"
+            ))
+            return self._process_batch_individually(batch_records, instruction)
+            
+        # Dynamic batch sizing based on content length
+        optimized_batch_size = self._calculate_optimal_batch_size(batch_records)
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"Processing batch of {len(batch_records)} records with JSON array structure and instruction: {instruction[:100]}...",
+            message_type="Info"
+        ))
+        
+        try:
+            # Check if any records contain image/document content that needs special handling
+            has_visual_content = any(
+                self._is_image_content(record.get('file_content', '')) or 
+                self._is_document_content(record.get('file_content', ''))
+                for record in batch_records
+            )
+            
+            if has_visual_content:
+                cli_log(CliLogData(
+                    action="LLMService",
+                    message="Batch contains visual content - falling back to individual processing",
+                    message_type="Info"
+                ))
+                # Fall back to individual processing for visual content
+                return self._process_batch_individually(batch_records, instruction)
+            
+            # Check if we need to process this batch in smaller chunks
+            if len(batch_records) > optimized_batch_size:
+                cli_log(CliLogData(
+                    action="LLMService",
+                    message=f"Batch too large ({len(batch_records)} records), processing in chunks of {optimized_batch_size}",
+                    message_type="Info"
+                ))
+                
+                # Process in smaller chunks using direct batch processing (non-recursive)
+                all_results = []
+                for i in range(0, len(batch_records), optimized_batch_size):
+                    chunk = batch_records[i:i + optimized_batch_size]
+                    
+                    # Validate chunk size to prevent infinite loops
+                    if len(chunk) == 0:
+                        cli_log(CliLogData(
+                            action="LLMService",
+                            message="Empty chunk detected, skipping to prevent infinite loop",
+                            message_type="Error"
+                        ))
+                        continue
+                    
+                    # Process chunk directly without recursion
+                    try:
+                        chunk_results = self._process_batch_directly(chunk, instruction)
+                        all_results.extend(chunk_results)
+                    except Exception as e:
+                        cli_log(CliLogData(
+                            action="LLMService",
+                            message=f"Chunk processing failed: {str(e)} - falling back to individual processing",
+                            message_type="Error"
+                        ))
+                        # Fall back to individual processing for this chunk
+                        individual_results = self._process_batch_individually(chunk, instruction)
+                        all_results.extend(individual_results)
+                
+                return all_results
+            
+            # Validate token count before processing
+            estimated_tokens = self._estimate_prompt_tokens(batch_records, instruction)
+            max_tokens_per_request = int(os.getenv('LLM_MAX_TOKENS_PER_REQUEST', '4000'))
+            
+            if estimated_tokens > max_tokens_per_request:
+                cli_log(CliLogData(
+                    action="LLMService",
+                    message=f"Estimated tokens ({estimated_tokens}) exceed limit ({max_tokens_per_request}), falling back to individual processing",
+                    message_type="Info"
+                ))
+                return self._process_batch_individually(batch_records, instruction)
+            
+            # Build the batch prompt using JSON array structure for text-based content
+            prompt = self._build_batch_extraction_prompt(batch_records, instruction)
+            
+            # Call Anthropic API
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+            
+            # Parse the batch response
+            response_text = response.content[0].text
+            batch_results = self._parse_batch_extraction_response(response_text, batch_records, instruction)
+            
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"Successfully processed batch of {len(batch_records)} records with JSON array structure, got {len(batch_results)} results",
+                message_type="Info"
+            ))
+            
+            return batch_results
+            
+        except Exception as e:
+            cli_log(CliLogData(
+                action="LLMService",
+                message=f"Batch LLM extraction failed: {str(e)} - falling back to individual processing",
+                message_type="Error"
+            ))
+            
+            # Fall back to individual processing
+            return self._process_batch_individually(batch_records, instruction)
+
+    def _process_batch_directly(self, batch_records: List[Dict[str, Any]], instruction: str) -> List[Dict[str, Any]]:
+        """
+        Process a batch of records directly with LLM without size validation or recursion.
+        This is the core batch processing logic extracted to prevent infinite recursion.
+        
+        Args:
+            batch_records: List of records to process (should already be appropriately sized)
+            instruction: Processing instruction
+            
+        Returns:
+            List of processed results
+        """
+        # Build the batch prompt using JSON array structure for text-based content
+        prompt = self._build_batch_extraction_prompt(batch_records, instruction)
+        
+        # Call Anthropic API
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+        
+        # Parse the batch response
+        response_text = response.content[0].text
+        batch_results = self._parse_batch_extraction_response(response_text, batch_records, instruction)
+        
+        cli_log(CliLogData(
+            action="LLMService",
+            message=f"Successfully processed batch chunk of {len(batch_records)} records, got {len(batch_results)} results",
+            message_type="Info"
+        ))
+        
+        return batch_results
 
     def extract_structured_data(
         self, 
@@ -463,6 +699,20 @@ class LLMService:
             
             # Return original path if routing fails
             return current_path
+    
+    def _init_disabled_service(self):
+        """Initialize service in disabled state with consistent configuration."""
+        self.client = None
+        self.enabled = False
+        # Define unwanted system fields even when disabled for consistency
+        self.unwanted_fields = {
+            'extraction_method', 'file_type', 'processed_at', 'extracted_at',
+            'source_file_path', 'content_preview', 'extraction_instruction',
+            'note', 'error', 'raw_response', 'extraction_error',
+            'validation_message', 'transformation_note', 'transformation_instruction',
+            'transformation_error', 'transformed_at', 'batch_id', 'processing_info'
+        }
+        self.strict_field_validation = False
     
     def _build_extraction_prompt(
         self, 
@@ -1123,12 +1373,13 @@ Think step by step:
 - For patient data: Are there clear names, ages, and contact information visible?"""
 
     def _build_batch_extraction_prompt(self, batch_records: List[Dict[str, Any]], instruction: str) -> str:
-        """Build prompt for batch data extraction."""
+        """Build prompt for batch data extraction using structured JSON input."""
         
         # Limit content length per file to manage token usage
         max_content_per_file = int(os.getenv('LLM_MAX_CONTENT_PER_FILE', '2000'))
         
-        files_section = ""
+        # Build structured JSON array for input files
+        files_array = []
         for i, record in enumerate(batch_records, 1):
             file_content = record.get('file_content', '')
             file_path = record.get('file_path', f'file_{i}')
@@ -1138,30 +1389,34 @@ Think step by step:
             if len(file_content) > max_content_per_file:
                 file_content = file_content[:max_content_per_file] + "..."
             
-            files_section += f"""
-FILE {i}:
-Record ID: {record_id}
-Path: {file_path}
-Content:
-{file_content}
-
-"""
+            files_array.append({
+                "file_index": i,
+                "record_id": record_id,
+                "file_path": file_path,
+                "content": file_content
+            })
         
-        return f"""You are a data extraction specialist. I will provide you with {len(batch_records)} files to process. For each file, extract the requested information according to the instruction below.
+        # Convert to formatted JSON string for the prompt
+        files_json = json.dumps(files_array, indent=2)
+        
+        return f"""You are a data extraction specialist. I will provide you with {len(batch_records)} files as a JSON array. Process each file independently according to the instruction below.
 
 INSTRUCTION: {instruction}
 
-{files_section}
+INPUT FILES (JSON Array):
+{files_json}
 
 CRITICAL REQUIREMENTS:
-1. Process ALL {len(batch_records)} files provided above
-2. For each file, extract the information according to the instruction
-3. Use descriptive field names that clearly represent what is being asked for
-4. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
-5. If certain requested information is not available in a file, omit those fields entirely
-6. Do NOT guess or add placeholder values for missing information
+1. Process each object in the array as a separate, independent file
+2. Do NOT mix or cross-reference information between array elements
+3. For each file object, extract only the information present in that specific file's content
+4. Use descriptive field names that clearly represent what is being asked for
+5. Do NOT add system metadata like "extraction_method", "file_type", "processed_at", etc.
+6. If certain requested information is not available in a file, omit those fields entirely
+7. Do NOT guess or add placeholder values for missing information
+8. Maintain the same order as the input array
 
-RESPONSE FORMAT: Return a JSON array with exactly {len(batch_records)} objects, one for each file in order:
+RESPONSE FORMAT: Return a JSON array with exactly {len(batch_records)} objects, one for each input file in the same order:
 [
   {{"file_index": 1, "record_id": "{batch_records[0].get('record_id', 'record_1')}", "extracted_field1": "value1", "extracted_field2": "value2"}},
   {{"file_index": 2, "record_id": "{batch_records[1].get('record_id', 'record_2') if len(batch_records) > 1 else 'record_2'}", "extracted_field1": "value1", "extracted_field2": "value2"}},
@@ -1409,16 +1664,32 @@ def get_llm_service() -> LLMService:
     """Get singleton LLM service instance."""
     global _llm_service_instance
     if _llm_service_instance is None:
+        cli_log(CliLogData(
+            action="LLMService",
+            message="🚀 Creating new LLM service instance...",
+            message_type="Info"
+        ))
         try:
             _llm_service_instance = LLMService()
+            cli_log(CliLogData(
+                action="LLMService",
+                message="✅ LLM service instance created successfully",
+                message_type="Info"
+            ))
         except Exception as e:
             cli_log(CliLogData(
                 action="LLMService",
-                message=f"Failed to initialize LLM service: {str(e)}. Creating disabled instance.",
-                message_type="Info"
+                message=f"❌ Failed to initialize LLM service: {str(e)}. Creating disabled instance.",
+                message_type="Error"
             ))
             # Create a disabled instance to avoid repeated initialization attempts
             _llm_service_instance = LLMService.__new__(LLMService)
             _llm_service_instance.enabled = False
             _llm_service_instance.client = None
+    else:
+        cli_log(CliLogData(
+            action="LLMService",
+            message="♻️ Using existing LLM service instance",
+            message_type="Info"
+        ))
     return _llm_service_instance 
