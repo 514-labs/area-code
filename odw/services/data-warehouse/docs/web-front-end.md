@@ -25,16 +25,19 @@ The frontend application serves as a bridge between technical data infrastructur
 The application provides a centralized control panel for data ingestion operations:
 
 - **Automated Data Pulls**: Users can trigger data extraction from various sources with a single button click
+- **LLM-Powered Processing**: Intelligent extraction from unstructured documents (PDFs, images, text files) 
+- **S3 Integration**: Direct processing of files from S3-compatible storage systems
 - **Real-time Status Monitoring**: Live updates show extraction progress and completion status
 - **Error Handling**: Clear visibility into failed operations with recovery options
 - **Batch Processing**: Configurable extraction parameters for different data volumes
 
 ### **2. Multi-Source Data Visualization**
-The interface presents data from three primary sources in an easily digestible format:
+The interface presents data from four primary sources in an easily digestible format:
 
 - **Blob Storage Data**: File metadata including sizes, types, and access patterns
 - **Application Logs**: System and application logs with error tracking and performance metrics
 - **User Events**: Analytics events showing user behavior and engagement patterns
+- **Medical Records**: Structured medical data extracted from unstructured documents via LLM processing
 
 ### **3. Analytical Dashboards**
 Comprehensive analytics capabilities provide business insights:

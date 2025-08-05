@@ -21,22 +21,43 @@ This project includes **LLM-powered unstructured data extraction** using Anthrop
 ### Setup Instructions
 
 1. **Get an Anthropic API key**: Sign up at [console.anthropic.com](https://console.anthropic.com) and create an API key
-2. **Set the environment variable**:
+
+2. **Configure LLM settings**: Copy the example configuration and customize as needed:
    ```bash
-   export ANTHROPIC_API_KEY="your-api-key-here"
+   cp env.example .env
    ```
-   Or add it to your shell profile (`.bashrc`, `.zshrc`, etc.)
+   Then edit `.env` to set your API key and configure LLM parameters. See `env.example` for detailed configuration options including batch processing, model selection, and validation settings.
 
 3. **Verify setup**: The LLM service will be automatically initialized when processing unstructured data
 
 ### LLM Features
 
 - **Extraction**: Convert unstructured documents (text, PDFs, images) to structured JSON using natural language instructions
-- **Validation**: Validate extracted data against business rules specified in plain English
+- **Validation**: Validate extracted data against business rules specified in plain English  
 - **Transformation**: Modify and enrich extracted data using natural language transformations
 - **Routing**: Intelligently route data based on content analysis
+- **Batch Processing**: Process multiple files efficiently with configurable batch sizes for improved performance
 
-**Note**: LLM features are optional. The system will work without the API key, but unstructured data processing will use default extraction methods.
+#### Configuration Options
+
+The LLM service supports extensive configuration through the `.env` file:
+
+- **Model Selection**: Choose from available Claude models (default: `claude-sonnet-4-20250514`)
+- **Processing Parameters**: Configure temperature, token limits, and content size limits
+- **Batch Processing**: Enable/disable batch processing and set optimal batch sizes
+- **Field Validation**: Enable strict field validation for cleaner data extraction
+- **Performance Tuning**: Adjust settings to balance speed vs. accuracy for your use case
+
+#### Fallback Behavior
+
+**Note**: LLM features are optional. When the API key is not configured, the system will:
+
+- Return structured metadata about the content (file type, content preview, processing timestamps)
+- Preserve original data with informational notes about the disabled LLM service  
+- Continue processing without intelligent extraction, validation, or transformation
+- Provide clear guidance on enabling LLM features through logging messages
+
+This ensures the system remains functional while providing a clear upgrade path to intelligent processing.
 
 ## S3/MinIO Configuration
 
@@ -75,9 +96,6 @@ signature_version = "s3v4"
 The system now accepts multiple path formats for unstructured data:
 
 ```bash
-# Local filesystem (existing functionality)
-/path/to/local/file.txt
-
 # S3 paths
 s3://bucket-name/path/to/file.txt
 
@@ -103,8 +121,6 @@ When submitting unstructured data via the `submitUnstructuredData` API, you can 
   "extracted_data": "{\"extracted\": \"data\"}"
 }
 ```
-
-**Note**: S3 configuration is optional. The system maintains full backward compatibility with local file paths.
 
 ## Quick Start
 
@@ -198,7 +214,7 @@ odw/
 
 ## Detailed high-level overview
 
-For a high-level architectural overview of the system, see [high-level-overview.md](./high-level-overview.md).
+For a high-level architectural overview of the system, see [high-level-overview.md](./docs/high-level-overview.md).
 
 ## Other Commands
 
