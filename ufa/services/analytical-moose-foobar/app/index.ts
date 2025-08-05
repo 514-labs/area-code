@@ -25,7 +25,7 @@
 // → docs.fiveonefour.com/moose/getting-started/quickstart
 
 export * from "./pipelines/eventsPipeline";
-export * from "./views/foo-materialized-view";
+export * from "./views/foo-current-state";
 export * from "./apis/bar/consumption/bar-average-value";
 export * from "./apis/bar/consumption/bar-base";
 export * from "./apis/foo/consumption/foo-average-score";
