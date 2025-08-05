@@ -34,7 +34,6 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
   const { data: anthropicStatus, isLoading: isStatusLoading } =
     useAnthropicStatus();
 
-  // Store timing data for tool calls
   const [toolTimings, setToolTimings] = useState<Record<string, number>>({});
 
   const { messages, sendMessage, status } = useChat({
@@ -42,7 +41,6 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
       api: `${getTransactionApiBase()}/chat`,
     }),
     onData: (data: any) => {
-      // Handle timing data streamed from the backend
       if (data.type === "data-tool-timing") {
         const { toolCallId, duration } = data.data as {
           toolCallId: string;
@@ -52,7 +50,6 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
           ...prev,
           [toolCallId]: duration,
         }));
-        console.log(`Received timing for ${toolCallId}: ${duration}ms`);
       }
     },
   });

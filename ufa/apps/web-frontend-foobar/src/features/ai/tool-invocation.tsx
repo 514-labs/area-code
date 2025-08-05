@@ -16,13 +16,11 @@ import { CodeBlock } from "./code-block";
 import { useState } from "react";
 import ms from "ms";
 
-// Format duration from milliseconds to human-readable format using the ms library
 function formatDuration(milliseconds: number): string {
-  if (milliseconds < 1000) {
+  if (milliseconds < 5000) {
     return `${Math.round(milliseconds)}ms`;
   }
 
-  // Use the ms library for durations >= 1 second
   return ms(milliseconds);
 }
 
@@ -50,7 +48,6 @@ export function ToolInvocation({
 }: ToolInvocationProps & { timing?: number }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Extract tool name from type (e.g., "tool-weatherTool" -> "weatherTool")
   const toolName = part.type.startsWith("tool-")
     ? part.type.slice(5)
     : part.type;
@@ -114,7 +111,6 @@ export function ToolInvocation({
 
             <div className="flex-1" />
 
-            {/* Timing information - show when tool execution is complete */}
             {part.state === "output-available" && timing && (
               <Badge variant="secondary" className="text-xs mr-2">
                 {formatDuration(timing)}
@@ -144,7 +140,6 @@ export function ToolInvocation({
               </div>
             )}
 
-            {/* Input */}
             {part.input && (
               <div
                 className={part.providerExecuted === undefined ? "pt-3" : ""}
@@ -156,7 +151,6 @@ export function ToolInvocation({
               </div>
             )}
 
-            {/* Output */}
             {part.output && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -173,7 +167,6 @@ export function ToolInvocation({
               </div>
             )}
 
-            {/* Error */}
             {part.errorText && (
               <div>
                 <div className="flex items-center gap-2 mb-2">

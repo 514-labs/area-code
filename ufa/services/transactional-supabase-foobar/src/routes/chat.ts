@@ -45,18 +45,6 @@ export async function chatRoutes(fastify: FastifyInstance) {
               const stepDuration = stepEndTime - stepStartTime;
               stepCount++;
 
-              // Log timing and usage info for each step
-              console.log("Step finished:", {
-                stepNumber: stepCount,
-                finishReason: stepResult.finishReason,
-                usage: stepResult.usage,
-                timestamp: stepResult.response?.timestamp,
-                duration: `${stepDuration}ms`,
-                toolCallsCount: stepResult.toolCalls?.length || 0,
-                toolResultsCount: stepResult.toolResults?.length || 0,
-              });
-
-              // Stream timing data for each tool call as data parts
               if (stepResult.toolCalls && stepResult.toolCalls.length > 0) {
                 stepResult.toolCalls.forEach((toolCall) => {
                   writer.write({
@@ -68,13 +56,9 @@ export async function chatRoutes(fastify: FastifyInstance) {
                       toolName: toolCall.toolName,
                     },
                   });
-                  console.log(
-                    `Streamed timing for ${toolCall.toolCallId}: ${stepDuration}ms`
-                  );
                 });
               }
 
-              // Reset for next step
               stepStartTime = Date.now();
             },
           });
