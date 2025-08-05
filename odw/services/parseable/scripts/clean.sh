@@ -83,7 +83,17 @@ remove_container() {
 }
 
 remove_image() {
-    if [ "$1" = "--remove-image" ]; then
+    local remove_image_flag=false
+    
+    # Check for --remove-image flag
+    for arg in "$@"; do
+        if [ "$arg" = "--remove-image" ]; then
+            remove_image_flag=true
+            break
+        fi
+    done
+    
+    if [ "$remove_image_flag" = true ]; then
         print_status "Checking for Parseable image..."
         
         if docker images --format "table {{.Repository}}:{{.Tag}}" | grep -q "$PARSEABLE_IMAGE"; then
@@ -96,6 +106,9 @@ remove_image() {
         else
             print_status "No Parseable image found"
         fi
+    else
+        print_status "Keeping Docker image for faster future startups"
+        print_status "Use --remove-image flag to remove the image as well"
     fi
 }
 
