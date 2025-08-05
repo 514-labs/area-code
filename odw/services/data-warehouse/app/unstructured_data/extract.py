@@ -412,7 +412,7 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
     
     cli_log(CliLogData(
         action="UnstructuredDataWorkflow",
-        message="🔧 DEBUG: About to initialize LLM service for batch processing",
+        message="DEBUG: About to initialize LLM service for batch processing",
         message_type="Info"
     ))
     
@@ -420,7 +420,7 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
         llm_service = get_llm_service()
         cli_log(CliLogData(
             action="UnstructuredDataWorkflow",
-            message=f"🔧 DEBUG: LLM service initialized successfully. Enabled: {llm_service.enabled}",
+            message=f"DEBUG: LLM service initialized successfully. Enabled: {llm_service.enabled}",
             message_type="Info"
         ))
     except Exception as e:

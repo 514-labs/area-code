@@ -58,6 +58,11 @@ class LLMService:
                 message="   3. Optionally configure other LLM settings as needed",
                 message_type="Info"
             ))
+            cli_log(CliLogData(
+                action="LLMService",
+                message="   4. Restart the service to continue",
+                message_type="Info"
+            ))            
             self._init_disabled_service()
             return
         
