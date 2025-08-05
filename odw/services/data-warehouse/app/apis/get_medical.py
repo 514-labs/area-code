@@ -36,6 +36,7 @@ def get_medical(client, params: GetMedicalQuery) -> GetMedicalResponse:
         SELECT
             id,
             patient_name,
+            patient_age,
             phone_number,
             scheduled_appointment_date,
             dental_procedure_name,

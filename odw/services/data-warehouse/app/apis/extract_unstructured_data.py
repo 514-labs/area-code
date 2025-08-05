@@ -13,6 +13,7 @@ class ExtractUnstructuredDataQueryParams(BaseModel):
 {
   "patient_name": "[full patient name]",
   "phone_number": "[patient phone number with any extensions]", 
+  "patient_age": "[patient age]",
   "scheduled_appointment_date": "[appointment date in original format]",
   "dental_procedure_name": "[specific dental procedure or treatment]",
   "doctor": "[doctor's name including title]"

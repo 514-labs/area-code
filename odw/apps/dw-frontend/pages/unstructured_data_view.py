@@ -169,6 +169,7 @@ def prepare_medical_display_data(df):
     display_columns = {
         "source_file_path": "Source File Path",
         "patient_name": "Patient Name",
+        "patient_age": "Patient Age",
         "phone_number": "Phone Number",
         "scheduled_appointment_date": "Appointment Date",
         "dental_procedure_name": "Procedure",
@@ -208,6 +209,7 @@ def show():
 
 {
   "patient_name": "[full patient name]",
+  "patient_age": "[patient age]",
   "phone_number": "[patient phone number with any extensions]",
   "scheduled_appointment_date": "[appointment date in original format]",
   "dental_procedure_name": "[specific dental procedure or treatment]",
@@ -347,6 +349,7 @@ Return only the JSON object with no additional text or formatting."""
                         # Create a clean display of medical record fields
                         medical_data = {
                             "Patient Name": original_record.get("patient_name", "N/A"),
+                            "Patient Age": original_record.get("patient_age", "N/A"),
                             "Phone Number": original_record.get("phone_number", "N/A"),
                             "Appointment Date": original_record.get("scheduled_appointment_date", "N/A"),
                             "Dental Procedure": original_record.get("dental_procedure_name", "N/A"),

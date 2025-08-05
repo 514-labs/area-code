@@ -4,11 +4,31 @@ from connectors.connector_factory import ConnectorFactory, ConnectorType
 from connectors.s3_connector import S3ConnectorConfig, S3FileContent
 from moose_lib import Task, TaskConfig, Workflow, WorkflowConfig, cli_log, CliLogData
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 import requests
 import json
 import uuid
+
+
+def _get_field_value(data: Dict[str, Any], field_names: List[str]) -> str:
+    """
+    Flexibly extract field value from LLM results using multiple possible field names.
+    
+    Args:
+        data: Extracted data dictionary from LLM
+        field_names: List of possible field names to look for (in order of preference)
+        
+    Returns:
+        The first matching field value found, or empty string if none found
+    """
+    for field_name in field_names:
+        if field_name in data and data[field_name]:
+            value = data[field_name]
+            # Handle cases where LLM returns placeholder text
+            if isinstance(value, str) and value not in ["", "N/A", "Not available", "Unknown", "[no data]", "null"]:
+                return value.strip()
+    return ""
 
 
 # For more information on workflows, see: https://docs.fiveonefour.com/moose/building/workflows.
@@ -20,6 +40,7 @@ class UnstructuredDataExtractParams(BaseModel):
 {
   "patient_name": "[full patient name]",
   "phone_number": "[patient phone number with any extensions]", 
+  "patient_age": "[patient age]",
   "scheduled_appointment_date": "[appointment date in original format]",
   "dental_procedure_name": "[specific dental procedure or treatment]",
   "doctor": "[doctor's name including title]"
@@ -46,6 +67,7 @@ def create_medical_record_from_extracted_data(source_file_path: str, extracted_d
         id=medical_id,
         patient_name=extracted_data.get("patient_name", ""),
         phone_number=extracted_data.get("phone_number", ""), 
+        patient_age=extracted_data.get("patient_age", ""),
         scheduled_appointment_date=extracted_data.get("scheduled_appointment_date", ""),
         dental_procedure_name=extracted_data.get("dental_procedure_name", ""),
         doctor=extracted_data.get("doctor", ""),
@@ -466,12 +488,22 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
                     record_id = original_record.get('id')
                     source_file_path = original_record.get('source_file_path')
                     
-                    # Log extraction results
+                    # Log extraction results with detailed field mapping
                     cli_log(CliLogData(
                         action="UnstructuredDataWorkflow",
                         message=f"DEBUG: Processing result {i+1} for record {record_id}. Extracted keys: {list(extracted_data.keys()) if extracted_data else 'None'}",
                         message_type="Info"
                     ))
+                    
+                    # Log detailed field extraction for debugging
+                    if extracted_data and not "extraction_error" in extracted_data:
+                        patient_name = _get_field_value(extracted_data, ["patient_name", "name", "patient", "full_name"])
+                        patient_age = _get_field_value(extracted_data, ["patient_age", "age"])
+                        cli_log(CliLogData(
+                            action="UnstructuredDataWorkflow",
+                            message=f"DEBUG: Field mapping for {record_id} - patient_name: '{patient_name}', patient_age: '{patient_age}', full_data: {json.dumps(extracted_data, indent=2)}",
+                            message_type="Info"
+                        ))
                     
                     # Check if this result contains an error
                     if "extraction_error" in extracted_data:
@@ -483,13 +515,15 @@ def stage_2_unstructured_to_medical(input: UnstructuredDataExtractParams, record
                         continue  # Skip this record, don't create a Medical record
                     
                     # Create Medical record with SAME ID as UnstructuredData record
+                    # Use flexible field mapping to handle LLM variations in field names
                     medical_record = Medical(
                         id=record_id,  # Use same ID to maintain relationship!
-                        patient_name=extracted_data.get("patient_name", ""),
-                        phone_number=extracted_data.get("phone_number", ""),
-                        scheduled_appointment_date=extracted_data.get("scheduled_appointment_date", ""),
-                        dental_procedure_name=extracted_data.get("dental_procedure_name", ""),
-                        doctor=extracted_data.get("doctor", ""),
+                        patient_name=_get_field_value(extracted_data, ["patient_name", "name", "patient", "full_name"]),
+                        patient_age=_get_field_value(extracted_data, ["patient_age", "age"]),
+                        phone_number=_get_field_value(extracted_data, ["phone_number", "phone", "telephone", "contact_number"]),
+                        scheduled_appointment_date=_get_field_value(extracted_data, ["scheduled_appointment_date", "appointment_date", "date", "scheduled_date"]),
+                        dental_procedure_name=_get_field_value(extracted_data, ["dental_procedure_name", "procedure", "treatment", "procedure_name"]),
+                        doctor=_get_field_value(extracted_data, ["doctor", "doctor_name", "physician", "treating_doctor"]),
                         transform_timestamp=datetime.now().isoformat(),
                         source_file_path=source_file_path
                     )

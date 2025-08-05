@@ -485,7 +485,7 @@ def convert_memos_to_images():
 # S3 UPLOAD FUNCTIONS
 # ============================================================================
 
-def load_moose_config(config_path="../../moose.config.toml"):
+def load_moose_config(config_path="../services/data-warehouse/moose.config.toml"):
     """
     Load S3 configuration from moose.config.toml file.
     
