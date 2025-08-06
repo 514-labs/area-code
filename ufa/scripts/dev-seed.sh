@@ -110,99 +110,7 @@ is_service_running() {
     esac
 }
 
-# Function to disable Supabase realtime replication
-disable_realtime_replication() {
-    echo "🛑 Disabling realtime replication for tables..."
-    cd "$PROJECT_ROOT/services/transactional-supabase-foobar" || {
-        echo "⚠️  Cannot access transactional service directory"
-        return 1
-    }
-    
-    # Disable realtime for foo and bar tables using Supabase CLI
-    if command -v pnpm >/dev/null 2>&1; then
-        # Call the disable function via the sync service
-        cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
-        if [ "$VERBOSE_MODE" = "true" ]; then
-            echo "Calling disable_realtime_replication function..."
-            node -e "
-const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
-(async () => {
-  try {
-    const mgr = new SupabaseManager();
-    await mgr.disableRealtimeReplication();
-    console.log('✅ Realtime replication disabled via function');
-  } catch (error) {
-    console.error('⚠️  Function call failed:', error.message);
-  }
-})();
-" || echo "Function call failed, continuing..."
-        else
-            node -e "
-const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
-(async () => {
-  try {
-    const mgr = new SupabaseManager();
-    await mgr.disableRealtimeReplication();
-  } catch (error) {
-    console.error('Function call failed:', error.message);
-  }
-})();
-" >> "$SEED_LOG" 2>&1 || echo "Function call failed, continuing..."
-        fi
-        cd "$PROJECT_ROOT"
-        echo "✅ Realtime replication disabled"
-    else
-        echo "⚠️  pnpm not found, skipping realtime disable"
-    fi
-    cd "$PROJECT_ROOT"
-}
 
-# Function to enable Supabase realtime replication
-enable_realtime_replication() {
-    echo "📡 Re-enabling realtime replication for tables..."
-    cd "$PROJECT_ROOT/services/transactional-supabase-foobar" || {
-        echo "⚠️  Cannot access transactional service directory"
-        return 1
-    }
-    
-    # Re-enable realtime for foo and bar tables using Supabase CLI
-    if command -v pnpm >/dev/null 2>&1; then
-        # Call the enable function via the sync service
-        cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
-        if [ "$VERBOSE_MODE" = "true" ]; then
-            echo "Calling enable_realtime_replication function..."
-            node -e "
-const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
-(async () => {
-  try {
-    const mgr = new SupabaseManager();
-    await mgr.enableRealtimeReplication();
-    console.log('✅ Realtime replication enabled via function');
-  } catch (error) {
-    console.error('⚠️  Function call failed:', error.message);
-  }
-})();
-" || echo "Function call failed, continuing..."
-        else
-            node -e "
-const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
-(async () => {
-  try {
-    const mgr = new SupabaseManager();
-    await mgr.enableRealtimeReplication();
-  } catch (error) {
-    console.error('Function call failed:', error.message);
-  }
-})();
-" >> "$SEED_LOG" 2>&1 || echo "Function call failed, continuing..."
-        fi
-        cd "$PROJECT_ROOT"
-        echo "✅ Realtime replication re-enabled"
-    else
-        echo "⚠️  pnpm not found, skipping realtime enable"
-    fi
-    cd "$PROJECT_ROOT"
-}
 
 # Function to cleanup existing workflows
 cleanup_existing_workflows() {
@@ -259,9 +167,7 @@ restart_workflows() {
     echo "🔄 Re-enabling Supabase realtime and restarting workflows..."
     log_message "Re-enabling realtime and restarting workflows after seeding"
     
-    # Re-enable Supabase realtime replication
-    echo "📡 Re-enabling Supabase realtime replication..."
-    enable_realtime_replication
+    # Workflow will handle its own realtime replication setup
     
     cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
     if command -v pnpm >/dev/null 2>&1; then
@@ -302,9 +208,7 @@ seed_all_data() {
     # Step 0: Stop any running workflows first
     cleanup_existing_workflows
     
-    # Step 0.5: Disable Supabase realtime replication during seeding
-    echo "🛑 Disabling Supabase realtime replication during seeding..."
-    disable_realtime_replication
+    # Workflow termination will handle disabling realtime replication
     echo ""
     
     # Check for command line flags

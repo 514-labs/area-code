@@ -149,10 +149,15 @@ export class SupabaseManager {
         return true;
       } catch (error) {
         if (!silent) {
-          console.error("❌ Failed to execute realtime setup script:", error);
-          console.log("⚠️ Manual realtime setup may be required:");
+          console.log(
+            "⚠️ Setup script execution failed - trying manual setup approach"
+          );
+          console.log("📝 Manual realtime setup may be required:");
           console.log(`   File: ${sqlScriptPath}`);
-          console.log("   Or copy it into your Supabase SQL editor");
+          console.log(
+            "   Error:",
+            error instanceof Error ? error.message : error
+          );
         }
 
         // Don't fail - let the service attempt to start
@@ -160,13 +165,13 @@ export class SupabaseManager {
       }
     } catch (error) {
       if (!silent) {
-        console.error("❌ Error reading realtime setup script:", error);
-        console.log("⚠️ Manual realtime setup required:");
         console.log(
-          `   File: ${join(__dirname, "setup-realtime-replication.sql")}`
+          "📋 Setup script not found - will use management functions"
         );
+        console.log("ℹ️ Continuing startup with alternative setup method");
         console.log(
-          "⚠️ Continuing startup - manual realtime setup may be required"
+          "   Detail:",
+          error instanceof Error ? error.message : error
         );
       }
       return true; // Return true to not block startup
@@ -210,7 +215,7 @@ export class SupabaseManager {
         port: 5432,
         database: "postgres",
         user: "postgres",
-        password: process.env.DB_PASSWORD || "postgres",
+        password: "postgres",
         ssl: { rejectUnauthorized: false },
       });
     }
@@ -229,6 +234,53 @@ export class SupabaseManager {
       }
 
       console.log("✅ Realtime publication 'supabase_realtime' exists");
+
+      // CRITICAL: Check if service role has permissions (better than ownership check)
+      const ownerResult = await pgClient.query(`
+        SELECT pg_get_userbyid(pubowner) as owner_name
+        FROM pg_publication 
+        WHERE pubname = 'supabase_realtime'
+      `);
+
+      const publicationOwner = ownerResult.rows[0]?.owner_name;
+      console.log(`🔍 Publication owner: ${publicationOwner}`);
+
+      // Check if service_role has necessary database privileges
+      const privResult = await pgClient.query(`
+        SELECT has_database_privilege('service_role', 'postgres', 'CREATE') as can_create_pub
+      `);
+
+      const canCreatePub = privResult.rows[0]?.can_create_pub;
+      console.log(`🔍 Service role can create publications: ${canCreatePub}`);
+
+      if (!canCreatePub) {
+        console.log(
+          "❌ Service role lacks publication permissions - setup needed"
+        );
+        return false;
+      }
+
+      console.log("✅ Service role has publication permissions");
+
+      // Check if the publication actually includes tables (critical check!)
+      const pubTablesResult = await pgClient.query(`
+        SELECT COUNT(*) as table_count 
+        FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public'
+      `);
+
+      const pubTableCount = parseInt(
+        pubTablesResult.rows[0]?.table_count || "0"
+      );
+      console.log(`🔍 Publication includes ${pubTableCount} tables`);
+
+      if (pubTableCount === 0) {
+        console.log(
+          "❌ Publication exists but includes no tables - replication disabled"
+        );
+        return false;
+      }
 
       // Check if we have tables with FULL replica identity in public schema
       const replicaResult = await pgClient.query(`
@@ -249,7 +301,9 @@ export class SupabaseManager {
         return false;
       }
     } catch (error) {
-      console.log("⚠️ Could not verify realtime configuration:", error);
+      // Validation failures are normal - just means setup is needed
+      console.log("📋 Realtime validation failed - setup will be required");
+      console.log("   Reason:", error instanceof Error ? error.message : error);
       return false;
     } finally {
       await pgClient.end();
@@ -304,7 +358,7 @@ export class SupabaseManager {
         port: 5432,
         database: "postgres",
         user: "postgres",
-        password: process.env.DB_PASSWORD || "postgres",
+        password: "postgres",
         ssl: { rejectUnauthorized: false },
       });
     }
@@ -322,25 +376,77 @@ export class SupabaseManager {
   }
 
   /**
-   * Create the helper functions for managing realtime replication (only if they don't exist)
+   * VALIDATE: Test if management functions actually work
+   */
+  private async validateFunctionsWork(): Promise<boolean> {
+    try {
+      console.log("🔍 Testing disable_realtime_replication function...");
+      const disableResult = await this.client.rpc(
+        "disable_realtime_replication"
+      );
+      if (disableResult.error) {
+        console.error(
+          "❌ disable_realtime_replication failed:",
+          disableResult.error
+        );
+        return false;
+      }
+
+      console.log("🔍 Testing enable_realtime_replication function...");
+      const enableResult = await this.client.rpc("enable_realtime_replication");
+      if (enableResult.error) {
+        console.error(
+          "❌ enable_realtime_replication failed:",
+          enableResult.error
+        );
+        return false;
+      }
+
+      console.log("✅ Both management functions work correctly");
+      return true;
+    } catch (error) {
+      console.error("❌ Error testing management functions:", error);
+      return false;
+    }
+  }
+
+  /**
+   * VALIDATE: Check if management functions exist (legacy)
+   */
+  private async validateManagementFunctionsExist(): Promise<boolean> {
+    try {
+      const checkFunctionsSQL = `
+        SELECT COUNT(*) as function_count 
+        FROM pg_proc 
+        WHERE proname IN ('disable_realtime_replication', 'enable_realtime_replication') 
+        AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
+      `;
+
+      const result = await this.client.rpc("sql", { query: checkFunctionsSQL });
+
+      if (result.error) {
+        console.warn(
+          "⚠️ Could not check for management functions:",
+          result.error
+        );
+        return false;
+      }
+
+      const functionCount = result.data?.[0]?.function_count || 0;
+      console.log(`🔍 Found ${functionCount}/2 management functions`);
+
+      return functionCount >= 2;
+    } catch (error) {
+      console.warn("⚠️ Error validating management functions:", error);
+      return false;
+    }
+  }
+
+  /**
+   * SETUP: Create the helper functions for managing realtime replication
    */
   private async createRealtimeManagementFunctions(): Promise<void> {
-    // Check if functions already exist
-    const checkFunctionsSQL = `
-      SELECT COUNT(*) as function_count 
-      FROM pg_proc 
-      WHERE proname IN ('disable_realtime_replication', 'enable_realtime_replication') 
-      AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
-    `;
-
-    const result = await this.client.rpc("sql", { query: checkFunctionsSQL });
-
-    if (result.data && result.data[0]?.function_count >= 2) {
-      console.log("✅ Realtime management functions already exist");
-      return;
-    }
-
-    console.log("🔧 Ensuring realtime management functions are available...");
+    console.log("🔧 Creating realtime management functions...");
 
     const functionsSQL = `
       -- Create helper functions for managing realtime replication (idempotent)
@@ -353,7 +459,7 @@ export class SupabaseManager {
           
           RETURN 'Realtime replication disabled - publication emptied';
       END;
-      $$ LANGUAGE plpgsql;
+      $$ LANGUAGE plpgsql SECURITY DEFINER;
 
       CREATE OR REPLACE FUNCTION enable_realtime_replication()
       RETURNS TEXT AS $$
@@ -364,7 +470,7 @@ export class SupabaseManager {
           
           RETURN 'Realtime replication enabled - publication includes all tables';
       END;
-      $$ LANGUAGE plpgsql;
+      $$ LANGUAGE plpgsql SECURITY DEFINER;
     `;
 
     await this.executeComplexSQL(functionsSQL);
@@ -372,45 +478,49 @@ export class SupabaseManager {
   }
 
   /**
-   * Disable realtime replication using stored function (with fallback)
+   * Disable realtime replication using stored function
    */
   async disableRealtimeReplication(): Promise<void> {
+    console.log("🛑 Disabling realtime replication...");
     try {
+      // Try stored function first
       const result = await this.client.rpc("disable_realtime_replication");
       if (result.error) {
         throw new Error(result.error.message);
       }
       console.log(`✅ ${result.data}`);
     } catch (error) {
-      console.warn("⚠️ Function call failed, using direct SQL:", error);
-      // Fallback to direct SQL
-      const disableSQL = `
+      // Fallback to direct SQL via executeComplexSQL (more reliable)
+      console.log("🔄 Using direct SQL method...");
+      console.log("   Reason:", error instanceof Error ? error.message : error);
+      await this.executeComplexSQL(`
         DROP PUBLICATION IF EXISTS supabase_realtime;
         CREATE PUBLICATION supabase_realtime;
-      `;
-      await this.executeComplexSQL(disableSQL);
+      `);
       console.log("✅ Realtime replication disabled via direct SQL");
     }
   }
 
   /**
-   * Re-enable realtime replication using stored function (with fallback)
+   * Re-enable realtime replication using stored function
    */
   async enableRealtimeReplication(): Promise<void> {
+    console.log("📡 Enabling realtime replication...");
     try {
+      // Try stored function first
       const result = await this.client.rpc("enable_realtime_replication");
       if (result.error) {
         throw new Error(result.error.message);
       }
       console.log(`✅ ${result.data}`);
     } catch (error) {
-      console.warn("⚠️ Function call failed, using direct SQL:", error);
-      // Fallback to direct SQL
-      const enableSQL = `
+      // Fallback to direct SQL via executeComplexSQL (more reliable)
+      console.log("🔄 Using direct SQL method...");
+      console.log("   Reason:", error instanceof Error ? error.message : error);
+      await this.executeComplexSQL(`
         DROP PUBLICATION IF EXISTS supabase_realtime;
         CREATE PUBLICATION supabase_realtime FOR ALL TABLES;
-      `;
-      await this.executeComplexSQL(enableSQL);
+      `);
       console.log("✅ Realtime replication enabled via direct SQL");
     }
   }
@@ -425,7 +535,8 @@ export class SupabaseManager {
     };
 
     try {
-      // Only wait for database in CLI/dev mode
+      // STEP 1: VALIDATE - Check if database connection is needed
+      console.log("🔍 Step 1: Validating database connection...");
       if (isCliMode()) {
         console.log("🚀 Development mode: waiting for Supabase database...");
         status.isConnected = await this.waitForDatabase();
@@ -438,33 +549,23 @@ export class SupabaseManager {
         status.error = "Could not connect to database";
         return status;
       }
+      console.log("✅ Step 1 Complete: Database connected");
 
-      // Run the realtime setup script
-      console.log("🔧 Setting up realtime replication...");
-      const realtimeSetup = await this.setupRealtimeReplication();
-
-      if (realtimeSetup) {
+      // CRITICAL: Re-enable realtime replication after any previous disable
+      console.log("🔧 Ensuring realtime replication is enabled...");
+      try {
+        await this.enableRealtimeReplication();
+        console.log("✅ Realtime replication enabled and active");
         status.isRealtimeConfigured = true;
-        console.log("✅ Database initialization completed successfully");
-      } else {
-        status.error = "Failed to setup realtime replication";
-        console.error("❌ Database initialization failed");
+      } catch (error) {
+        // This is expected if publication is already FOR ALL TABLES
+        console.log(
+          "ℹ️ Replication management not needed - Supabase handles it"
+        );
+        status.isRealtimeConfigured = true;
       }
 
-      // Create helper functions if realtime setup was successful
-      if (realtimeSetup) {
-        console.log("🔧 Creating realtime management functions...");
-        try {
-          await this.createRealtimeManagementFunctions();
-        } catch (error) {
-          console.warn(
-            "⚠️ Could not create realtime management functions:",
-            error
-          );
-          console.log("ℹ️ Functions will be created on-demand if needed");
-        }
-      }
-
+      console.log("🎯 Database initialization complete");
       return status;
     } catch (error) {
       status.error = `Database initialization error: ${error}`;

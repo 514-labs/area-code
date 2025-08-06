@@ -492,19 +492,15 @@ async function onCancel() {
     "🛑 Workflow cancellation requested - cleaning up Supabase subscriptions..."
   );
 
-  // FIRST: Disable realtime replication triggers to stop new events at the source
+  // FIRST: Disable realtime replication to stop events at the source
   try {
-    console.log("🛑 Disabling realtime replication triggers...");
-
-    // Use the global manager if available, otherwise create a new one
+    console.log("🛑 Disabling realtime replication...");
     const supabaseManager = globalSupabaseManager || new SupabaseManager();
-
-    // Disable triggers FIRST to prevent any new events during cleanup
     await supabaseManager.disableRealtimeReplication();
-    console.log("✅ Realtime replication triggers disabled");
+    console.log("✅ Realtime replication disabled");
   } catch (error) {
-    console.error("⚠️  Could not disable realtime triggers:", error);
-    console.log("ℹ️  This is non-critical - continuing cleanup");
+    console.error("⚠️ Could not disable replication:", error);
+    console.log("ℹ️ This is non-critical - continuing cleanup");
   }
 
   // THEN: Unsubscribe from the channel
