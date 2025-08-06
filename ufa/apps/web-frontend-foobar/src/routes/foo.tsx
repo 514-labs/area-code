@@ -25,7 +25,12 @@ function TransactionalFooAverageScore({
   const apiEndpoint = `${API_BASE}/foo/average-score`;
 
   return (
-    <FooAverageScore apiEndpoint={apiEndpoint} disableCache={!cacheEnabled} />
+    <FooAverageScore
+      title="Foo Average Score"
+      description="Transactional"
+      apiEndpoint={apiEndpoint}
+      disableCache={!cacheEnabled}
+    />
   );
 }
 
@@ -38,7 +43,12 @@ function AnalyticalConsumptionFooAverageScore({
   const apiEndpoint = `${API_BASE}/foo-average-score`;
 
   return (
-    <FooAverageScore apiEndpoint={apiEndpoint} disableCache={!cacheEnabled} />
+    <FooAverageScore
+      title="Foo Average Score"
+      description="Foo Current State Materialized View"
+      apiEndpoint={apiEndpoint}
+      disableCache={!cacheEnabled}
+    />
   );
 }
 

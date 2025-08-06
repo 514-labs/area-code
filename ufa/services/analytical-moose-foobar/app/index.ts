@@ -25,10 +25,9 @@
 // → docs.fiveonefour.com/moose/getting-started/quickstart
 
 export * from "./pipelines/eventsPipeline";
-export * from "./views/foo";
-export * from "./apis/bar/consumption/bar-average-value";
-export * from "./apis/bar/consumption/bar-base";
-export * from "./apis/foo/consumption/foo-average-score";
-export * from "./apis/foo/consumption/foo-base";
-export * from "./apis/foo/consumption/foo-current-state";
-export * from "./apis/foo/consumption/foo-score-over-time";
+export * from "./views/foo-current-state-materialized-view";
+export * from "./apis/bar/consumption/bar-average-value-api";
+export * from "./apis/bar/consumption/bar-base-api";
+export * from "./apis/foo/consumption/foo-average-score-api";
+export * from "./apis/foo/consumption/foo-base-api";
+export * from "./apis/foo/consumption/foo-score-over-time-api";
