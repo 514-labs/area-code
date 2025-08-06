@@ -322,31 +322,99 @@ export class SupabaseManager {
   }
 
   /**
-   * Disable realtime replication by temporarily dropping and recreating publication
+   * Create the helper functions for managing realtime replication (only if they don't exist)
    */
-  async disableRealtimeReplication(): Promise<void> {
-    const disableSQL = `
-      -- Temporarily drop the realtime publication to stop all logical replication
-      DROP PUBLICATION IF EXISTS supabase_realtime;
-      
-      -- Create an empty publication to maintain the structure
-      CREATE PUBLICATION supabase_realtime;
+  private async createRealtimeManagementFunctions(): Promise<void> {
+    // Check if functions already exist
+    const checkFunctionsSQL = `
+      SELECT COUNT(*) as function_count 
+      FROM pg_proc 
+      WHERE proname IN ('disable_realtime_replication', 'enable_realtime_replication') 
+      AND pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
     `;
 
-    await this.executeComplexSQL(disableSQL);
+    const result = await this.client.rpc("sql", { query: checkFunctionsSQL });
+
+    if (result.data && result.data[0]?.function_count >= 2) {
+      console.log("✅ Realtime management functions already exist");
+      return;
+    }
+
+    console.log(
+      "🔧 Creating realtime management functions for the first time..."
+    );
+
+    const functionsSQL = `
+      -- Create helper functions for managing realtime replication (first time only)
+      CREATE FUNCTION disable_realtime_replication()
+      RETURNS TEXT AS $$
+      BEGIN
+          -- Drop and recreate empty publication to disable realtime
+          DROP PUBLICATION IF EXISTS supabase_realtime;
+          CREATE PUBLICATION supabase_realtime;
+          
+          RETURN 'Realtime replication disabled - publication emptied';
+      END;
+      $$ LANGUAGE plpgsql;
+
+      CREATE FUNCTION enable_realtime_replication()
+      RETURNS TEXT AS $$
+      BEGIN
+          -- Drop and recreate publication with all tables to enable realtime
+          DROP PUBLICATION IF EXISTS supabase_realtime;
+          CREATE PUBLICATION supabase_realtime FOR ALL TABLES;
+          
+          RETURN 'Realtime replication enabled - publication includes all tables';
+      END;
+      $$ LANGUAGE plpgsql;
+    `;
+
+    await this.executeComplexSQL(functionsSQL);
+    console.log("✅ Realtime management functions created and will persist");
   }
 
   /**
-   * Re-enable realtime replication by recreating publication with all tables
+   * Disable realtime replication using stored function (with fallback)
+   */
+  async disableRealtimeReplication(): Promise<void> {
+    try {
+      const result = await this.client.rpc("disable_realtime_replication");
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      console.log(`✅ ${result.data}`);
+    } catch (error) {
+      console.warn("⚠️ Function call failed, using direct SQL:", error);
+      // Fallback to direct SQL
+      const disableSQL = `
+        DROP PUBLICATION IF EXISTS supabase_realtime;
+        CREATE PUBLICATION supabase_realtime;
+      `;
+      await this.executeComplexSQL(disableSQL);
+      console.log("✅ Realtime replication disabled via direct SQL");
+    }
+  }
+
+  /**
+   * Re-enable realtime replication using stored function (with fallback)
    */
   async enableRealtimeReplication(): Promise<void> {
-    const enableSQL = `
-      -- Drop and recreate the publication with all tables to resume logical replication
-      DROP PUBLICATION IF EXISTS supabase_realtime;
-      CREATE PUBLICATION supabase_realtime FOR ALL TABLES;
-    `;
-
-    await this.executeComplexSQL(enableSQL);
+    try {
+      const result = await this.client.rpc("enable_realtime_replication");
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      console.log(`✅ ${result.data}`);
+    } catch (error) {
+      console.warn("⚠️ Function call failed, using direct SQL:", error);
+      // Fallback to direct SQL
+      const enableSQL = `
+        DROP PUBLICATION IF EXISTS supabase_realtime;
+        CREATE PUBLICATION supabase_realtime FOR ALL TABLES;
+      `;
+      await this.executeComplexSQL(enableSQL);
+      console.log("✅ Realtime replication enabled via direct SQL");
+    }
   }
 
   /**
@@ -383,6 +451,20 @@ export class SupabaseManager {
       } else {
         status.error = "Failed to setup realtime replication";
         console.error("❌ Database initialization failed");
+      }
+
+      // Create helper functions if realtime setup was successful
+      if (realtimeSetup) {
+        console.log("🔧 Creating realtime management functions...");
+        try {
+          await this.createRealtimeManagementFunctions();
+        } catch (error) {
+          console.warn(
+            "⚠️ Could not create realtime management functions:",
+            error
+          );
+          console.log("ℹ️ Functions will be created on-demand if needed");
+        }
       }
 
       return status;

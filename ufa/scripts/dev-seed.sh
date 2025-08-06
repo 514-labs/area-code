@@ -120,14 +120,36 @@ disable_realtime_replication() {
     
     # Disable realtime for foo and bar tables using Supabase CLI
     if command -v pnpm >/dev/null 2>&1; then
+        # Call the disable function via the sync service
+        cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
         if [ "$VERBOSE_MODE" = "true" ]; then
-            echo "Removing tables from realtime publication..."
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.foo;" || echo "Publication drop failed, continuing..."
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.bar;" || echo "Publication drop failed, continuing..."
+            echo "Calling disable_realtime_replication function..."
+            node -e "
+const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
+(async () => {
+  try {
+    const mgr = new SupabaseManager();
+    await mgr.disableRealtimeReplication();
+    console.log('✅ Realtime replication disabled via function');
+  } catch (error) {
+    console.error('⚠️  Function call failed:', error.message);
+  }
+})();
+" || echo "Function call failed, continuing..."
         else
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.foo;" >> "$SEED_LOG" 2>&1 || echo "Publication drop failed, continuing..."
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.bar;" >> "$SEED_LOG" 2>&1 || echo "Publication drop failed, continuing..."
+            node -e "
+const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
+(async () => {
+  try {
+    const mgr = new SupabaseManager();
+    await mgr.disableRealtimeReplication();
+  } catch (error) {
+    console.error('Function call failed:', error.message);
+  }
+})();
+" >> "$SEED_LOG" 2>&1 || echo "Function call failed, continuing..."
         fi
+        cd "$PROJECT_ROOT"
         echo "✅ Realtime replication disabled"
     else
         echo "⚠️  pnpm not found, skipping realtime disable"
@@ -145,14 +167,36 @@ enable_realtime_replication() {
     
     # Re-enable realtime for foo and bar tables using Supabase CLI
     if command -v pnpm >/dev/null 2>&1; then
+        # Call the enable function via the sync service
+        cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
         if [ "$VERBOSE_MODE" = "true" ]; then
-            echo "Adding tables back to realtime publication..."
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.foo;" || echo "Publication add failed, continuing..."
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.bar;" || echo "Publication add failed, continuing..."
+            echo "Calling enable_realtime_replication function..."
+            node -e "
+const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
+(async () => {
+  try {
+    const mgr = new SupabaseManager();
+    await mgr.enableRealtimeReplication();
+    console.log('✅ Realtime replication enabled via function');
+  } catch (error) {
+    console.error('⚠️  Function call failed:', error.message);
+  }
+})();
+" || echo "Function call failed, continuing..."
         else
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.foo;" >> "$SEED_LOG" 2>&1 || echo "Publication add failed, continuing..."
-            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.bar;" >> "$SEED_LOG" 2>&1 || echo "Publication add failed, continuing..."
+            node -e "
+const { SupabaseManager } = require('./app/supabase/supabase-manager.js');
+(async () => {
+  try {
+    const mgr = new SupabaseManager();
+    await mgr.enableRealtimeReplication();
+  } catch (error) {
+    console.error('Function call failed:', error.message);
+  }
+})();
+" >> "$SEED_LOG" 2>&1 || echo "Function call failed, continuing..."
         fi
+        cd "$PROJECT_ROOT"
         echo "✅ Realtime replication re-enabled"
     else
         echo "⚠️  pnpm not found, skipping realtime enable"

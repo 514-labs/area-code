@@ -344,20 +344,16 @@ async function handleBarChange(payload: RealtimePayload) {
   }
 }
 
-// Global reference to channel for cleanup
+// Global references for cleanup
 let globalChannel: any = null;
+let globalSupabaseManager: SupabaseManager | null = null;
 
 async function run(supabaseManager: SupabaseManager) {
-  console.log("🚀 Starting Supabase realtime listener...");
+  console.log("🚀 Setting up realtime listeners...");
 
   // Get the initialized client and config
   const supabase = supabaseManager.getClient();
   const supabaseConfig = supabaseManager.getConfig();
-
-  console.log("Configuration summary:");
-  console.log("- supabaseUrl:", supabaseConfig.supabaseUrl);
-  console.log("- schema:", supabaseConfig.dbSchema);
-  console.log("✅ Supabase client ready and configured");
 
   // Set up a single channel for all table changes
   const channel = supabase
@@ -497,7 +493,9 @@ async function onCancel() {
   // FIRST: Disable realtime replication triggers to stop new events at the source
   try {
     console.log("🛑 Disabling realtime replication triggers...");
-    const supabaseManager = new SupabaseManager();
+
+    // Use the global manager if available, otherwise create a new one
+    const supabaseManager = globalSupabaseManager || new SupabaseManager();
 
     // Disable triggers FIRST to prevent any new events during cleanup
     await supabaseManager.disableRealtimeReplication();
@@ -523,110 +521,36 @@ async function onCancel() {
     console.log("ℹ️  No active Supabase channel to clean up");
   }
 
-  console.log("🧹 Cleanup complete");
+  // FINALLY: Clear global references
+  globalSupabaseManager = null;
+
+  console.log("🧹 Cleanup complete - all resources released");
 }
 
-// Combined task that initializes database and then runs the listener
+// Self-contained workflow initialization with proper checks and service waiting
 async function runWithInitialization() {
-  console.log("⏳ Waiting for Supabase...");
+  console.log("🚀 Starting self-contained workflow initialization...");
 
-  // Completely silent waiting - suppress ALL output
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
+  const supabaseManager = new SupabaseManager();
 
-  // Suppress all console output during waiting
-  console.log = () => {};
-  console.error = () => {};
-  console.warn = () => {};
+  // Store manager reference for cleanup
+  globalSupabaseManager = supabaseManager;
 
-  try {
-    const supabaseManager = new SupabaseManager();
+  // Step 1: Initialize database and realtime with proper checks
+  console.log("🔄 Initializing database and realtime replication...");
+  const dbStatus = await supabaseManager.initializeDatabase();
 
-    // Simple silent waiting loop
-    const startTime = Date.now();
-    const timeoutMs = 300000; // 5 minutes
-
-    while (Date.now() - startTime < timeoutMs) {
-      try {
-        if (await supabaseManager.checkDatabaseConnection(true)) {
-          // Restore console and show success
-          console.log = originalConsoleLog;
-          console.error = originalConsoleError;
-          console.warn = originalConsoleWarn;
-          console.log("✅ Supabase connected");
-          break;
-        }
-      } catch {
-        // Silent - just continue waiting
-      }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-
-    // Restore console
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
-
-    // Check if we timed out
-    if (Date.now() - startTime >= timeoutMs) {
-      throw new Error("❌ Timeout waiting for Supabase");
-    }
-
-    // Suppress output again for setup
-    console.log = () => {};
-    console.error = () => {};
-    console.warn = () => {};
-
-    await supabaseManager.setupRealtimeReplication(true);
-
-    // Restore console
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
-
-    // Wait for realtime service to be ready
-    console.log("🔄 Waiting for realtime service...");
-
-    const realtimeStartTime = Date.now();
-    const realtimeTimeoutMs = 120000; // 2 minutes for realtime
-
-    while (Date.now() - realtimeStartTime < realtimeTimeoutMs) {
-      try {
-        // Simple test: try to create and immediately close a channel
-        const testResponse = await fetch(
-          `${supabaseManager.getConfig().supabaseUrl}/rest/v1/`,
-          {
-            headers: {
-              apikey: supabaseManager.getConfig().supabaseKey,
-              Authorization: `Bearer ${supabaseManager.getConfig().supabaseKey}`,
-            },
-          }
-        );
-
-        if (testResponse.ok) {
-          console.log("✅ Realtime service ready");
-          break;
-        }
-      } catch {
-        // Continue waiting
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Check every 5 seconds
-    }
-
-    if (Date.now() - realtimeStartTime >= realtimeTimeoutMs) {
-      console.log("⚠️ Realtime service not responding, proceeding anyway...");
-    }
-
-    return await run(supabaseManager);
-  } catch (error) {
-    // Restore console in case of error
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
-    throw error;
+  if (!dbStatus.isConnected) {
+    throw new Error(`❌ Database connection failed: ${dbStatus.error}`);
   }
+
+  if (!dbStatus.isRealtimeConfigured) {
+    throw new Error(`❌ Realtime setup failed: ${dbStatus.error}`);
+  }
+
+  console.log("✅ All services verified and ready");
+
+  return await run(supabaseManager);
 }
 
 // Long-running Supabase listener task
