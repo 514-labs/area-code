@@ -459,12 +459,14 @@ async function run(supabaseManager: SupabaseManager) {
   globalChannel = channel;
 
   // Handle graceful shutdown
-  const cleanup = () => {
-    console.log("\n🔄 Cleaning up Supabase subscription...");
-    if (channel) {
-      channel.unsubscribe();
-    }
-    console.log("✅ Cleanup complete");
+  const cleanup = async () => {
+    console.log("\n🔄 Process signal received - running full cleanup...");
+
+    // Run the full onCancel cleanup (disables replication, etc.)
+    await onCancel();
+
+    // Exit the process
+    process.exit(0);
   };
 
   process.on("SIGINT", cleanup);
