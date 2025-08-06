@@ -340,13 +340,11 @@ export class SupabaseManager {
       return;
     }
 
-    console.log(
-      "🔧 Creating realtime management functions for the first time..."
-    );
+    console.log("🔧 Ensuring realtime management functions are available...");
 
     const functionsSQL = `
-      -- Create helper functions for managing realtime replication (first time only)
-      CREATE FUNCTION disable_realtime_replication()
+      -- Create helper functions for managing realtime replication (idempotent)
+      CREATE OR REPLACE FUNCTION disable_realtime_replication()
       RETURNS TEXT AS $$
       BEGIN
           -- Drop and recreate empty publication to disable realtime
@@ -357,7 +355,7 @@ export class SupabaseManager {
       END;
       $$ LANGUAGE plpgsql;
 
-      CREATE FUNCTION enable_realtime_replication()
+      CREATE OR REPLACE FUNCTION enable_realtime_replication()
       RETURNS TEXT AS $$
       BEGIN
           -- Drop and recreate publication with all tables to enable realtime
