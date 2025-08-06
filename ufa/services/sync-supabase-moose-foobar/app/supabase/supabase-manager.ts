@@ -31,9 +31,11 @@ export class SupabaseManager {
   /**
    * Check if Supabase database is available and accessible
    */
-  async checkDatabaseConnection(): Promise<boolean> {
+  async checkDatabaseConnection(silent: boolean = false): Promise<boolean> {
     try {
-      console.log("🔄 Checking database connection...");
+      if (!silent) {
+        console.log("🔄 Checking database connection...");
+      }
 
       // Simple health check query - just try to access a table
       const { error } = await this.client
@@ -48,15 +50,21 @@ export class SupabaseManager {
           error.message.includes("network") ||
           error.message.includes("timeout")
         ) {
-          console.error("❌ Database connection failed:", error.message);
+          if (!silent) {
+            console.error("❌ Database connection failed:", error.message);
+          }
           return false;
         }
       }
 
-      console.log("✅ Database connection successful");
+      if (!silent) {
+        console.log("✅ Database connection successful");
+      }
       return true;
     } catch (error) {
-      console.error("❌ Database connection error:", error);
+      if (!silent) {
+        console.error("❌ Database connection error:", error);
+      }
       return false;
     }
   }
@@ -67,15 +75,29 @@ export class SupabaseManager {
   async waitForDatabase(timeoutMs: number = 60000): Promise<boolean> {
     const startTime = Date.now();
     const checkInterval = 2000; // Check every 2 seconds
+    const logInterval = 10000; // Log progress every 10 seconds
+    let lastLogTime = 0;
 
     console.log("🔄 Waiting for database to be available...");
 
     while (Date.now() - startTime < timeoutMs) {
-      if (await this.checkDatabaseConnection()) {
+      // Use silent check to avoid spam
+      if (await this.checkDatabaseConnection(true)) {
+        console.log("✅ Database connection successful");
         return true;
       }
 
-      console.log("⏳ Database not ready yet, retrying in 2 seconds...");
+      // Only log progress every 10 seconds to reduce spam
+      const currentTime = Date.now();
+      if (currentTime - lastLogTime >= logInterval) {
+        const elapsed = Math.round((currentTime - startTime) / 1000);
+        const timeout = Math.round(timeoutMs / 1000);
+        console.log(
+          `⏳ Still waiting for database... (${elapsed}s/${timeout}s)`
+        );
+        lastLogTime = currentTime;
+      }
+
       await new Promise((resolve) => setTimeout(resolve, checkInterval));
     }
 
@@ -86,54 +108,67 @@ export class SupabaseManager {
   /**
    * Run the realtime replication setup by executing the SQL script directly
    */
-  async setupRealtimeReplication(): Promise<boolean> {
+  async setupRealtimeReplication(silent: boolean = false): Promise<boolean> {
     try {
-      console.log("🔧 Setting up realtime replication...");
+      if (!silent) {
+        console.log("🔧 Setting up realtime replication...");
+      }
 
       // First check if realtime is already configured
       const isAlreadyConfigured = await this.isRealtimeConfigured();
 
       if (isAlreadyConfigured) {
-        console.log(
-          "✅ Realtime replication is already configured - skipping setup"
-        );
+        if (!silent) {
+          console.log(
+            "✅ Realtime replication is already configured - skipping setup"
+          );
+        }
         return true;
       }
 
-      console.log(
-        "📋 Realtime replication not detected - proceeding with setup"
-      );
+      if (!silent) {
+        console.log(
+          "📋 Realtime replication not detected - proceeding with setup"
+        );
+      }
 
       // Read the SQL script
       const sqlScriptPath = join(__dirname, "setup-realtime-replication.sql");
       const sqlScript = readFileSync(sqlScriptPath, "utf-8");
 
-      console.log("🔄 Executing realtime setup SQL script...");
+      if (!silent) {
+        console.log("🔄 Executing realtime setup SQL script...");
+      }
 
       // Execute the SQL script using PostgreSQL client
       try {
         await this.executeComplexSQL(sqlScript);
-        console.log("✅ Realtime setup SQL script executed successfully");
+        if (!silent) {
+          console.log("✅ Realtime setup SQL script executed successfully");
+        }
         return true;
       } catch (error) {
-        console.error("❌ Failed to execute realtime setup script:", error);
-        console.log("⚠️ Manual realtime setup may be required:");
-        console.log(`   File: ${sqlScriptPath}`);
-        console.log("   Or copy it into your Supabase SQL editor");
+        if (!silent) {
+          console.error("❌ Failed to execute realtime setup script:", error);
+          console.log("⚠️ Manual realtime setup may be required:");
+          console.log(`   File: ${sqlScriptPath}`);
+          console.log("   Or copy it into your Supabase SQL editor");
+        }
 
         // Don't fail - let the service attempt to start
         return true;
       }
     } catch (error) {
-      console.error("❌ Error reading realtime setup script:", error);
-
-      console.log("⚠️ Manual realtime setup required:");
-      console.log(
-        `   File: ${join(__dirname, "setup-realtime-replication.sql")}`
-      );
-      console.log(
-        "⚠️ Continuing startup - manual realtime setup may be required"
-      );
+      if (!silent) {
+        console.error("❌ Error reading realtime setup script:", error);
+        console.log("⚠️ Manual realtime setup required:");
+        console.log(
+          `   File: ${join(__dirname, "setup-realtime-replication.sql")}`
+        );
+        console.log(
+          "⚠️ Continuing startup - manual realtime setup may be required"
+        );
+      }
       return true; // Return true to not block startup
     }
   }
