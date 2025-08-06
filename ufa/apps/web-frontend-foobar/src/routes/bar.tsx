@@ -26,6 +26,8 @@ function TransactionalBarAverageValue({
 
   return (
     <BarAverageValue
+      title="Bar Average Value"
+      description="Transactional"
       apiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />
@@ -42,6 +44,8 @@ function AnalyticalConsumptionBarAverageValue({
 
   return (
     <BarAverageValue
+      title="Bar Average Value"
+      description="CDC Analytical"
       apiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />

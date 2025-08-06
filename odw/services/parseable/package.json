@@ -1,0 +1,11 @@
+{
+  "name": "parseable",
+  "version": "0.0",
+  "description": "Parseable observability and log analytics",
+  "scripts": {
+    "dev": "./scripts/dev.sh",
+    "clean": "./scripts/clean.sh",
+    "odw:dev": "./scripts/dev.sh",
+    "odw:dev:clean": "./scripts/clean.sh"
+  }
+}
