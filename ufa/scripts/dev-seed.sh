@@ -110,6 +110,56 @@ is_service_running() {
     esac
 }
 
+# Function to disable Supabase realtime replication
+disable_realtime_replication() {
+    echo "🛑 Disabling realtime replication for tables..."
+    cd "$PROJECT_ROOT/services/transactional-supabase-foobar" || {
+        echo "⚠️  Cannot access transactional service directory"
+        return 1
+    }
+    
+    # Disable realtime for foo and bar tables using Supabase CLI
+    if command -v pnpm >/dev/null 2>&1; then
+        if [ "$VERBOSE_MODE" = "true" ]; then
+            echo "Removing tables from realtime publication..."
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.foo;" || echo "Publication drop failed, continuing..."
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.bar;" || echo "Publication drop failed, continuing..."
+        else
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.foo;" >> "$SEED_LOG" 2>&1 || echo "Publication drop failed, continuing..."
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime DROP TABLE public.bar;" >> "$SEED_LOG" 2>&1 || echo "Publication drop failed, continuing..."
+        fi
+        echo "✅ Realtime replication disabled"
+    else
+        echo "⚠️  pnpm not found, skipping realtime disable"
+    fi
+    cd "$PROJECT_ROOT"
+}
+
+# Function to enable Supabase realtime replication
+enable_realtime_replication() {
+    echo "📡 Re-enabling realtime replication for tables..."
+    cd "$PROJECT_ROOT/services/transactional-supabase-foobar" || {
+        echo "⚠️  Cannot access transactional service directory"
+        return 1
+    }
+    
+    # Re-enable realtime for foo and bar tables using Supabase CLI
+    if command -v pnpm >/dev/null 2>&1; then
+        if [ "$VERBOSE_MODE" = "true" ]; then
+            echo "Adding tables back to realtime publication..."
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.foo;" || echo "Publication add failed, continuing..."
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.bar;" || echo "Publication add failed, continuing..."
+        else
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.foo;" >> "$SEED_LOG" 2>&1 || echo "Publication add failed, continuing..."
+            pnpm exec supabase db execute --sql "ALTER PUBLICATION supabase_realtime ADD TABLE public.bar;" >> "$SEED_LOG" 2>&1 || echo "Publication add failed, continuing..."
+        fi
+        echo "✅ Realtime replication re-enabled"
+    else
+        echo "⚠️  pnpm not found, skipping realtime enable"
+    fi
+    cd "$PROJECT_ROOT"
+}
+
 # Function to cleanup existing workflows
 cleanup_existing_workflows() {
     echo "🛑 Stopping workflows..."
@@ -120,10 +170,35 @@ cleanup_existing_workflows() {
         if [ "$VERBOSE_MODE" = "true" ]; then
             echo "Stopping supabase-listener workflow..."
             pnpm dev:workflow:stop || true
+            
+            # Force kill any remaining workflow processes
+            echo "⏳ Ensuring all workflow processes are terminated..."
+            pkill -f "supabase-listener" 2>/dev/null || true
+            pkill -f "moose-cli workflow run" 2>/dev/null || true
+            sleep 3
+            
+            # Double check - if workflow still exists, force terminate it
+            if pnpm moose workflow list 2>/dev/null | grep -q "supabase-listener"; then
+                echo "⚠️  Workflow still running, force terminating..."
+                pnpm dev:workflow:stop || true
+                sleep 2
+            fi
             echo "✅ Workflow stop command completed"
         else
             echo "Stopping supabase-listener workflow..."
             pnpm dev:workflow:stop >> "$SEED_LOG" 2>&1 || true
+            
+            # Force kill any remaining workflow processes (silent mode)
+            echo "⏳ Ensuring all workflow processes are terminated..."
+            pkill -f "supabase-listener" 2>/dev/null || true
+            pkill -f "moose-cli workflow run" 2>/dev/null || true
+            sleep 3
+            
+            # Double check - if workflow still exists, force terminate it
+            if pnpm moose workflow list 2>/dev/null | grep -q "supabase-listener"; then
+                pnpm dev:workflow:stop >> "$SEED_LOG" 2>&1 || true
+                sleep 2
+            fi
             echo "✅ Workflow stop command completed"
         fi
     else
@@ -137,20 +212,36 @@ cleanup_existing_workflows() {
 
 # Function to restart workflows after seeding
 restart_workflows() {
-    echo "🔄 Restarting workflows..."
-    log_message "Restarting workflows after seeding"
+    echo "🔄 Re-enabling Supabase realtime and restarting workflows..."
+    log_message "Re-enabling realtime and restarting workflows after seeding"
+    
+    # Re-enable Supabase realtime replication
+    echo "📡 Re-enabling Supabase realtime replication..."
+    enable_realtime_replication
+    
     cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || true
     if command -v pnpm >/dev/null 2>&1; then
         # Start the workflow in background to not block the script
         if [ "$VERBOSE_MODE" = "true" ]; then
             echo "Starting supabase-listener workflow..."
+            # Check if workflow is already running before starting
+            if pnpm moose workflow list 2>/dev/null | grep -q "supabase-listener"; then
+                echo "⚠️  Workflow already exists, terminating it first..."
+                pnpm dev:workflow:stop || true
+                sleep 2
+            fi
             pnpm dev:workflow &
             WORKFLOW_PID=$!
         else
+            # Check if workflow is already running before starting (silent)
+            if pnpm moose workflow list 2>/dev/null | grep -q "supabase-listener"; then
+                pnpm dev:workflow:stop >> "$SEED_LOG" 2>&1 || true
+                sleep 2
+            fi
             nohup pnpm dev:workflow >> "$SEED_LOG" 2>&1 &
             WORKFLOW_PID=$!
         fi
-        echo "✅ Workflows restarted (PID: $WORKFLOW_PID)"
+        echo "✅ Workflows restarted with realtime enabled (PID: $WORKFLOW_PID)"
         log_message "supabase-listener workflow started in background (PID: $WORKFLOW_PID)"
     else
         echo "⚠️  pnpm not found, skipping workflow restart"
@@ -166,6 +257,10 @@ seed_all_data() {
     
     # Step 0: Stop any running workflows first
     cleanup_existing_workflows
+    
+    # Step 0.5: Disable Supabase realtime replication during seeding
+    echo "🛑 Disabling Supabase realtime replication during seeding..."
+    disable_realtime_replication
     echo ""
     
     # Check for command line flags

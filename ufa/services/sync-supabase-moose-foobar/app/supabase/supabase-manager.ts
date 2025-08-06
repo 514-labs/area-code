@@ -322,6 +322,34 @@ export class SupabaseManager {
   }
 
   /**
+   * Disable realtime replication by temporarily dropping and recreating publication
+   */
+  async disableRealtimeReplication(): Promise<void> {
+    const disableSQL = `
+      -- Temporarily drop the realtime publication to stop all logical replication
+      DROP PUBLICATION IF EXISTS supabase_realtime;
+      
+      -- Create an empty publication to maintain the structure
+      CREATE PUBLICATION supabase_realtime;
+    `;
+
+    await this.executeComplexSQL(disableSQL);
+  }
+
+  /**
+   * Re-enable realtime replication by recreating publication with all tables
+   */
+  async enableRealtimeReplication(): Promise<void> {
+    const enableSQL = `
+      -- Drop and recreate the publication with all tables to resume logical replication
+      DROP PUBLICATION IF EXISTS supabase_realtime;
+      CREATE PUBLICATION supabase_realtime FOR ALL TABLES;
+    `;
+
+    await this.executeComplexSQL(enableSQL);
+  }
+
+  /**
    * Initialize database: wait for connection and setup realtime if needed
    */
   async initializeDatabase(): Promise<DatabaseStatus> {
