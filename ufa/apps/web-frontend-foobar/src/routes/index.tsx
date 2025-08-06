@@ -25,7 +25,12 @@ function TransactionalFooAverageScore({
   const apiEndpoint = `${API_BASE}/foo/average-score`;
 
   return (
-    <FooAverageScore apiEndpoint={apiEndpoint} disableCache={!cacheEnabled} />
+    <FooAverageScore
+      title="Foo Average Score"
+      description="Transactional"
+      apiEndpoint={apiEndpoint}
+      disableCache={!cacheEnabled}
+    />
   );
 }
 
@@ -38,7 +43,12 @@ function AnalyticalFooAverageScore({
   const apiEndpoint = `${API_BASE}/foo-average-score`;
 
   return (
-    <FooAverageScore apiEndpoint={apiEndpoint} disableCache={!cacheEnabled} />
+    <FooAverageScore
+      title="Foo Average Score"
+      description="Foo Current State Materialized View"
+      apiEndpoint={apiEndpoint}
+      disableCache={!cacheEnabled}
+    />
   );
 }
 
@@ -84,6 +94,8 @@ function TransactionalBarAverageValue({
 
   return (
     <BarAverageValue
+      title="Bar Average Value"
+      description="Transactional"
       apiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />
@@ -100,6 +112,8 @@ function AnalyticalConsumptionBarAverageValue({
 
   return (
     <BarAverageValue
+      title="Bar Average Value"
+      description="CDC Analytical"
       apiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />
@@ -110,7 +124,7 @@ function IndexPage() {
   const { cacheEnabled } = useFrontendCaching();
 
   return (
-    <div className="grid grid-cols-12 px-4 lg:px-6 gap-5 h-full overflow-auto">
+    <div className="grid grid-cols-12 px-4 lg:px-6 gap-5 h-full overflow-auto pt-0.5">
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>

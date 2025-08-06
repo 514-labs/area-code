@@ -8,28 +8,30 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
-import { IconChartBar, IconClock, IconRefresh } from "@tabler/icons-react";
+import { IconClock, IconRefresh } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
 import { GetBarsAverageValueResponse } from "@workspace/models/bar";
 
-interface BarAverageValueProps {
-  apiEndpoint: string;
-  disableCache?: boolean;
-}
-
-// API function to fetch average value
 const fetchAverageValue = async (
   apiEndpoint: string
 ): Promise<GetBarsAverageValueResponse> => {
   const response = await fetch(apiEndpoint);
+
   if (!response.ok) throw new Error("Failed to fetch average value");
   return response.json();
 };
 
 export default function BarAverageValue({
+  title,
+  description,
   apiEndpoint,
   disableCache = false,
-}: BarAverageValueProps) {
+}: {
+  title: string;
+  description: string;
+  apiEndpoint: string;
+  disableCache?: boolean;
+}) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
     queryKey: ["bar-average-value", apiEndpoint],
     queryFn: () => fetchAverageValue(apiEndpoint),
@@ -42,43 +44,13 @@ export default function BarAverageValue({
     refetch();
   };
 
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <IconChartBar className="h-5 w-5" />
-              <CardTitle>Average Value</CardTitle>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isFetching}
-            >
-              <IconRefresh
-                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
-            </Button>
-          </div>
-          <CardDescription>Failed to load average value</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-destructive">
-            {error instanceof Error ? error.message : "An error occurred"}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle>Bar Average Value</CardTitle>
+          <div className="flex flex-col gap-2">
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -96,6 +68,12 @@ export default function BarAverageValue({
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-sm text-destructive">
+              {error instanceof Error ? error.message : "An error occurred"}
+            </p>
           </div>
         ) : (
           <div className="">
