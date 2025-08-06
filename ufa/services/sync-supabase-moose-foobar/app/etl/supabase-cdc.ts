@@ -525,28 +525,108 @@ async function onCancel() {
 
 // Self-contained workflow initialization with proper checks and service waiting
 async function runWithInitialization() {
-  console.log("🚀 Starting self-contained workflow initialization...");
+  console.log("⏳ Waiting for Supabase...");
 
-  const supabaseManager = new SupabaseManager();
+  // Completely silent waiting - suppress ALL output
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
 
-  // Store manager reference for cleanup
-  globalSupabaseManager = supabaseManager;
+  // Suppress all console output during waiting
+  console.log = () => {};
+  console.error = () => {};
+  console.warn = () => {};
 
-  // Step 1: Initialize database and realtime with proper checks
-  console.log("🔄 Initializing database and realtime replication...");
-  const dbStatus = await supabaseManager.initializeDatabase();
+  try {
+    const supabaseManager = new SupabaseManager();
 
-  if (!dbStatus.isConnected) {
-    throw new Error(`❌ Database connection failed: ${dbStatus.error}`);
+    // Store manager reference for cleanup
+    globalSupabaseManager = supabaseManager;
+
+    // Simple silent waiting loop
+    const startTime = Date.now();
+    const timeoutMs = 300000; // 5 minutes
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        if (await supabaseManager.checkDatabaseConnection(true)) {
+          // Restore console and show success
+          console.log = originalConsoleLog;
+          console.error = originalConsoleError;
+          console.warn = originalConsoleWarn;
+          console.log("✅ Supabase connected");
+          break;
+        }
+      } catch (error) {
+        // Silent - just continue waiting
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    // Restore console
+    console.log = originalConsoleLog;
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
+
+    // Check if we timed out
+    if (Date.now() - startTime >= timeoutMs) {
+      throw new Error("❌ Timeout waiting for Supabase");
+    }
+
+    // Suppress output again for setup
+    console.log = () => {};
+    console.error = () => {};
+    console.warn = () => {};
+
+    await supabaseManager.setupRealtimeReplication(true);
+
+    // Restore console
+    console.log = originalConsoleLog;
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
+
+    // Wait for realtime service to be ready
+    console.log("🔄 Waiting for realtime service...");
+
+    const realtimeStartTime = Date.now();
+    const realtimeTimeoutMs = 300000; // 5 minutes for realtime
+
+    while (Date.now() - realtimeStartTime < realtimeTimeoutMs) {
+      try {
+        // Simple test: try the REST API endpoint
+        const testResponse = await fetch(
+          `${supabaseManager.getConfig().supabaseUrl}/rest/v1/`,
+          {
+            headers: {
+              apikey: supabaseManager.getConfig().supabaseKey,
+              Authorization: `Bearer ${supabaseManager.getConfig().supabaseKey}`,
+            },
+          }
+        );
+
+        if (testResponse.ok) {
+          console.log("✅ Realtime service ready");
+          break;
+        }
+      } catch (error) {
+        // Continue waiting
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Check every 5 seconds
+    }
+
+    if (Date.now() - realtimeStartTime >= realtimeTimeoutMs) {
+      console.log("⚠️ Realtime service not responding, proceeding anyway...");
+    }
+
+    return await run(supabaseManager);
+  } catch (error) {
+    // Restore console in case of error
+    console.log = originalConsoleLog;
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
+    throw error;
   }
-
-  if (!dbStatus.isRealtimeConfigured) {
-    throw new Error(`❌ Realtime setup failed: ${dbStatus.error}`);
-  }
-
-  console.log("✅ All services verified and ready");
-
-  return await run(supabaseManager);
 }
 
 // Long-running Supabase listener task

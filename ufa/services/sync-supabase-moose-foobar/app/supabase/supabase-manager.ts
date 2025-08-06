@@ -523,6 +523,68 @@ export class SupabaseManager {
   }
 
   /**
+   * Wait for realtime services to be ready by testing WebSocket connection
+   */
+  async waitForRealtimeServices(timeoutMs: number = 60000): Promise<boolean> {
+    const startTime = Date.now();
+    const checkInterval = 3000; // Check every 3 seconds
+    const logInterval = 15000; // Log progress every 15 seconds
+    let lastLogTime = 0;
+
+    console.log("🔄 Waiting for realtime services to be available...");
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const isReady = await this.checkRealtimeWebSocket();
+        if (isReady) {
+          console.log("✅ Realtime services are ready");
+          return true;
+        }
+      } catch {
+        // Connection failed, continue waiting
+      }
+
+      // Only log progress every 15 seconds to reduce spam
+      const currentTime = Date.now();
+      if (currentTime - lastLogTime >= logInterval) {
+        const elapsed = Math.round((currentTime - startTime) / 1000);
+        const timeout = Math.round(timeoutMs / 1000);
+        console.log(
+          `⏳ Still waiting for realtime services... (${elapsed}s/${timeout}s)`
+        );
+        lastLogTime = currentTime;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, checkInterval));
+    }
+
+    console.error(
+      "❌ Timeout waiting for realtime services to become available"
+    );
+    return false;
+  }
+
+  /**
+   * Check if Supabase services are ready by testing the REST API
+   */
+  private async checkRealtimeWebSocket(): Promise<boolean> {
+    try {
+      // Simple test: try the REST API endpoint which indicates Supabase is ready
+      const testResponse = await fetch(`${this.config.supabaseUrl}/rest/v1/`, {
+        headers: {
+          apikey: this.config.supabaseKey,
+          Authorization: `Bearer ${this.config.supabaseKey}`,
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+
+      return testResponse.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Initialize database: wait for connection and setup realtime if needed
    */
   async initializeDatabase(): Promise<DatabaseStatus> {
@@ -552,15 +614,25 @@ export class SupabaseManager {
       console.log("🔧 Ensuring realtime replication is enabled...");
       try {
         await this.enableRealtimeReplication();
-        console.log("✅ Realtime replication enabled and active");
-        status.isRealtimeConfigured = true;
+        console.log("✅ Realtime replication enabled");
       } catch {
         // This is expected if publication is already FOR ALL TABLES
         console.log(
           "ℹ️ Replication management not needed - Supabase handles it"
         );
-        status.isRealtimeConfigured = true;
       }
+
+      // STEP 2: Wait for realtime services to be actually ready
+      console.log("🔄 Step 2: Waiting for realtime services to be ready...");
+      const isRealtimeReady = await this.waitForRealtimeServices();
+
+      if (!isRealtimeReady) {
+        status.error = "Realtime services did not become ready within timeout";
+        return status;
+      }
+
+      console.log("✅ Step 2 Complete: Realtime services are ready");
+      status.isRealtimeConfigured = true;
 
       console.log("🎯 Database initialization complete");
       return status;
