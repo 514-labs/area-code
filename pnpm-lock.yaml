@@ -32,6 +32,8 @@ importers:
 
   odw/services/minio: {}
 
+  odw/services/parseable: {}
+
   ufa/apps/web-frontend-foobar:
     dependencies:
       '@ai-sdk/react':

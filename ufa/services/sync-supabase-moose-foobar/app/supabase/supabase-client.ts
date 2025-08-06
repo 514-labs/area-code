@@ -1,6 +1,15 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { config as dotenvConfig } from "dotenv";
 import path from "path";
+import {
+  isProduction,
+  isDevelopment,
+  isSupabaseCli,
+  getSupabasePublicUrl,
+  getServiceRoleKey,
+  getAnonKey,
+  getDbSchema,
+} from "../env-vars";
 
 interface SyncConfig {
   supabaseUrl: string;
@@ -9,11 +18,7 @@ interface SyncConfig {
 }
 
 export function isCliMode(): boolean {
-  return (
-    process.env.SUPABASE_CLI === "true" ||
-    process.env.NODE_ENV === "development" ||
-    process.env.NODE_ENV !== "production"
-  );
+  return isSupabaseCli() || isDevelopment() || !isProduction();
 }
 
 // Load environment variables based on setup
@@ -49,37 +54,40 @@ export function getSupabaseConfig(): SyncConfig {
   if (isSupabaseCLI) {
     // CLI mode: use values from .env.development (with .env overrides)
     config = {
-      supabaseUrl: process.env.SUPABASE_PUBLIC_URL!,
-      supabaseKey: process.env.SERVICE_ROLE_KEY!,
-      dbSchema: process.env.DB_SCHEMA!,
+      supabaseUrl: getSupabasePublicUrl(),
+      supabaseKey: getServiceRoleKey(),
+      dbSchema: getDbSchema(),
     };
     console.log("🔗 Auto-configured for Supabase CLI");
     console.log(`   URL: ${config.supabaseUrl}`);
     console.log(`   Schema: ${config.dbSchema}`);
-
-    // Validate development configuration
-    if (!config.supabaseKey) {
-      throw new Error(
-        "SERVICE_ROLE_KEY is missing. Ensure .env.development file exists and contains the proper Supabase CLI keys."
-      );
-    }
   } else {
     // Production mode: use environment variables
-    config = {
-      supabaseUrl: process.env.SUPABASE_PUBLIC_URL || "http://localhost:8000",
-      supabaseKey: process.env.SERVICE_ROLE_KEY || process.env.ANON_KEY || "",
-      dbSchema: process.env.DB_SCHEMA || "public",
-    };
+    try {
+      const serviceRoleKey = getServiceRoleKey();
+      config = {
+        supabaseUrl: getSupabasePublicUrl(),
+        supabaseKey: serviceRoleKey,
+        dbSchema: getDbSchema(),
+      };
+    } catch (error) {
+      // Fallback to anonymous key if service role key is missing
+      const anonKey = getAnonKey();
+      if (!anonKey) {
+        throw new Error(
+          "Either SERVICE_ROLE_KEY or ANON_KEY environment variable is required for production mode"
+        );
+      }
+      config = {
+        supabaseUrl: getSupabasePublicUrl(),
+        supabaseKey: anonKey,
+        dbSchema: getDbSchema(),
+      };
+    }
+
     console.log("🏭 Using production configuration");
     console.log(`   URL: ${config.supabaseUrl}`);
     console.log(`   Schema: ${config.dbSchema}`);
-
-    // Validate production configuration
-    if (!config.supabaseKey) {
-      throw new Error(
-        "ANON_KEY or SERVICE_ROLE_KEY is required for production mode"
-      );
-    }
   }
 
   return config;

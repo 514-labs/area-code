@@ -3,6 +3,7 @@ import { createSupabaseClient, isCliMode } from "./supabase-client";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { Client } from "pg";
+import { isProduction, getSupabaseConnectionString } from "../env-vars";
 
 export interface DatabaseStatus {
   isConnected: boolean;
@@ -184,19 +185,20 @@ export class SupabaseManager {
   private async isRealtimeConfigured(): Promise<boolean> {
     // Use the same connection logic as executeComplexSQL
     const isLocalDev = this.config.supabaseUrl.includes("localhost");
-    const isProduction = process.env.NODE_ENV === "production";
+    const isProductionMode = isProduction();
 
     let pgClient: Client;
 
-    if (isProduction) {
-      if (!process.env.SUPABASE_CONNECTION_STRING) {
+    if (isProductionMode) {
+      const connectionString = getSupabaseConnectionString();
+      if (!connectionString) {
         console.log(
           "⚠️ Cannot check realtime config - SUPABASE_CONNECTION_STRING missing"
         );
         return false;
       }
       pgClient = new Client({
-        connectionString: process.env.SUPABASE_CONNECTION_STRING,
+        connectionString,
         ssl: { rejectUnauthorized: false },
       });
     } else if (isLocalDev) {
@@ -326,19 +328,14 @@ export class SupabaseManager {
 
     // Determine connection settings based on environment
     const isLocalDev = this.config.supabaseUrl.includes("localhost");
-    const isProduction = process.env.NODE_ENV === "production";
+    const isProductionMode = isProduction();
 
     let pgClient: Client;
 
-    if (isProduction) {
-      if (!process.env.SUPABASE_CONNECTION_STRING) {
-        throw new Error(
-          "SUPABASE_CONNECTION_STRING environment variable is required for production. " +
-            "Format: postgresql://postgres:[password]@[host]:[port]/postgres"
-        );
-      }
+    if (isProductionMode) {
+      const connectionString = getSupabaseConnectionString();
       pgClient = new Client({
-        connectionString: process.env.SUPABASE_CONNECTION_STRING,
+        connectionString,
         ssl: { rejectUnauthorized: false },
       });
     } else if (isLocalDev) {
@@ -557,7 +554,7 @@ export class SupabaseManager {
         await this.enableRealtimeReplication();
         console.log("✅ Realtime replication enabled and active");
         status.isRealtimeConfigured = true;
-      } catch (error) {
+      } catch {
         // This is expected if publication is already FOR ALL TABLES
         console.log(
           "ℹ️ Replication management not needed - Supabase handles it"
