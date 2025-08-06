@@ -9,11 +9,12 @@ The Operational Data Warehouse (ODW) is a comprehensive demonstration applicatio
 ![](./ODW-architecture.jpg)
 
 ### 1. **Data Ingestion Layer**
-The system implements a sophisticated data ingestion strategy with three primary data types:
+The system implements a sophisticated data ingestion strategy with four primary data types:
 
 - **Blob Storage Data**: File metadata including bucket names, file paths, sizes, and permissions
 - **Application Logs**: Structured log entries with timestamps, log levels, messages, and trace IDs  
 - **User Events**: Analytics events with user identification, session tracking, and event properties
+- **Unstructured Documents**: Text files, PDFs, and images processed via LLM extraction to generate structured medical records
 
 Each data type follows a **two-stage ingestion pattern**:
 - **Source Models**: Raw data received from external connectors
@@ -48,6 +49,8 @@ The application exposes type-safe APIs for data consumption:
 ### **Infrastructure-from-Code**
 The entire data infrastructure is defined through high-level declarations rather than manual configuration:
 - Database tables are automatically created based on data model definitions
+- S3 integration for unstructured data processing
+- LLM services for intelligent document extraction
 - Streaming topics are provisioned based on stream configurations
 - API endpoints are generated from consumption API definitions
 - Materialized views are created from SQL query specifications

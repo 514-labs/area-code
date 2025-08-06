@@ -249,6 +249,56 @@ blobSourceModel.get_dead_letter_queue().add_transform(
 
 **Behind the Scenes**: The DLQ system leverages Moose's DLQ transforms and recovery mechanisms, using DeadLetterModel to handle failed records and enable message recovery. Failed messages are automatically routed to DLQs where they can be inspected, fixed, and reprocessed through recovery transforms.
 
+## Unstructured Data Processing
+
+The Data Warehouse includes powerful LLM-driven unstructured data processing capabilities that transform documents, images, and text files into structured medical records. This feature demonstrates how modern AI can be seamlessly integrated into data warehouse workflows.
+
+### **Document-to-Medical Record Pipeline**
+
+The unstructured data page enables users to process documents stored in S3-compatible storage:
+
+- **S3 Pattern Input**: Users specify file patterns like `s3://medical-docs/*.pdf` or `minio://documents/patient-*.txt`
+- **LLM Processing**: Documents are processed using Anthropic's Claude API with vision capabilities for images and OCR
+- **Medical Record Generation**: Extracted data is structured into medical records with patient information, procedures, and appointments
+- **Workflow Monitoring**: Real-time progress tracking through the two-stage processing pipeline
+
+### **Key Features**
+
+- **Multi-Format Support**: Processes text files, PDFs, images, and Word documents
+- **Intelligent Extraction**: Uses natural language instructions to guide data extraction
+- **Batch Processing**: Handles multiple files efficiently with configurable batch sizes
+- **Error Handling**: Failed extractions are routed to dead letter queues for analysis
+- **S3 Integration**: Direct integration with AWS S3 and MinIO storage systems
+
+**Backend Code Examples:**
+
+*Unstructured data extraction workflow:*
+```python
+class UnstructuredDataExtractParams(BaseModel):
+    source_file_pattern: str  # S3 pattern like "s3://bucket/medical-docs/*"
+    processing_instructions: Optional[str] = """Extract patient information..."""
+
+def stage_1_s3_to_unstructured(input: UnstructuredDataExtractParams) -> List[str]:
+    connector = ConnectorFactory[S3FileContent].create(
+        ConnectorType.S3,
+        S3ConnectorConfig(s3_pattern=input.source_file_pattern)
+    )
+    files = connector.extract()
+    # Process each file and create UnstructuredData records
+```
+
+*LLM service integration:*
+```python
+llm_service = LLMService()
+extracted_data = llm_service.extract_structured_data(
+    file_content=file.content,
+    file_type=file.content_type,
+    instruction=processing_instructions
+)
+```
+
+**Behind the Scenes**: The unstructured data pipeline leverages Moose's workflow system, S3 connectors, and LLM integration to create a two-stage processing flow: S3 files → UnstructuredData staging → Medical records. This demonstrates how complex AI-powered workflows can be declaratively defined and automatically orchestrated.
+
 ## Summary
 
 This walkthrough has demonstrated how the Data Warehouse Frontend provides business users with an intuitive interface to interact with complex analytical infrastructure. Through the lens of this application, we've explored how Moose framework transforms traditional data engineering challenges into simple, declarative code.
@@ -256,6 +306,7 @@ This walkthrough has demonstrated how the Data Warehouse Frontend provides busin
 **What We've Covered:**
 - A unified dashboard showing real-time metrics across multiple data sources
 - Individual connector pages for detailed data exploration (Blobs, Logs, Events)
+- LLM-powered unstructured data processing from documents to medical records
 - Interactive workflow monitoring with direct links to Temporal UI
 - Advanced error handling through Dead Letter Queue testing and recovery
 - Materialized views demonstrating pre-aggregated analytics capabilities
@@ -268,6 +319,7 @@ Moose has been the invisible foundation that makes this all possible. It automat
 - Deploying and managing Kafka/Redpanda brokers with topic configurations  
 - Building custom APIs with validation, authentication, and error handling
 - Implementing streaming processors with exactly-once semantics
+- Integrating LLM services with S3 storage and workflow orchestration
 - Creating monitoring dashboards for data pipeline health
 - Writing extensive DevOps scripts for deployment and scaling
 - Managing database migrations and schema evolution
