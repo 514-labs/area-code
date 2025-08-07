@@ -3,7 +3,7 @@ import {
   BarWithCDC,
   GetBarsWithCDCParams,
   GetBarsWithCDCResponse,
-} from "@workspace/models/bar";
+} from "@workspace/models";
 import { BarPipeline } from "../../../index";
 
 export const barConsumptionApi = new ConsumptionApi<
