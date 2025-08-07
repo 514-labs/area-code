@@ -7,7 +7,6 @@ import {
   text,
   boolean,
   jsonb,
-  json,
   decimal,
   pgEnum,
 } from "drizzle-orm/pg-core";
@@ -37,44 +36,43 @@ export const foo = pgTable("foo", {
   description: text("description"),
   status: fooStatusEnum("status").notNull().default("active"),
   priority: integer("priority").notNull().default(1),
-  isActive: boolean("is_active").notNull().default(true),
+  is_active: boolean("is_active").notNull().default(true),
   metadata: jsonb("metadata").default({}),
-  config: json("config").default({}),
   tags: text("tags").array().default([]),
   score: decimal("score", { precision: 10, scale: 2 }).default("0.00"),
-  largeText: text("large_text").default(""),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  large_text: text("large_text").default(""),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Bar table - matches models package exactly
 export const bar = pgTable("bar", {
   id: uuid("id").primaryKey().defaultRandom(),
-  fooId: uuid("foo_id")
+  foo_id: uuid("foo_id")
     .notNull()
     .references(() => foo.id),
   value: integer("value").notNull(),
   label: varchar("label", { length: 100 }),
   notes: text("notes"),
-  isEnabled: boolean("is_enabled").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  is_enabled: boolean("is_enabled").notNull().default(true),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // FooBar junction table - many-to-many relationship
 export const fooBar = pgTable("foo_bar", {
   id: uuid("id").primaryKey().defaultRandom(),
-  fooId: uuid("foo_id")
+  foo_id: uuid("foo_id")
     .notNull()
     .references(() => foo.id),
-  barId: uuid("bar_id")
+  bar_id: uuid("bar_id")
     .notNull()
     .references(() => bar.id),
-  relationshipType: varchar("relationship_type", { length: 50 }).default(
+  relationship_type: varchar("relationship_type", { length: 50 }).default(
     "default"
   ),
   metadata: text("metadata"), // JSON string for additional data
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 // Zod schemas for validation
@@ -87,10 +85,10 @@ export const selectBarSchema = createSelectSchema(bar);
 export const insertFooBarSchema = createInsertSchema(fooBar);
 export const selectFooBarSchema = createSelectSchema(fooBar);
 
-// Export models from shared package for API types
+// Export models from shared package - these now match the database exactly
 export type { Foo, CreateFoo, UpdateFoo, Bar, CreateBar, UpdateBar };
 
-// Keep Drizzle types for internal database operations
+// Drizzle inferred types now match the models exactly
 export type DbFoo = typeof foo.$inferSelect;
 export type NewDbFoo = typeof foo.$inferInsert;
 
