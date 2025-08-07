@@ -3,8 +3,6 @@
     "outDir": "dist",
     "esModuleInterop": true,
     "paths": {
-      "@workspace/models": ["../../packages/models/src/index"],
-      "@workspace/models/*": ["../../packages/models/src/*"],
       "datamodels/*": ["./app/ingest/*"],
       "versions/*": ["./.moose/versions/*"]
     },

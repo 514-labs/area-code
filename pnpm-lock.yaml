@@ -60,7 +60,7 @@ importers:
         version: 4.1.11(vite@5.4.19(@types/node@24.2.0)(lightningcss@1.30.1)(terser@5.43.1))
       '@tanstack/react-form':
         specifier: ^1.12.3
-        version: 1.18.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        version: 1.19.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@tanstack/react-query':
         specifier: ^5.81.2
         version: 5.84.1(react@19.1.1)
@@ -185,10 +185,14 @@ importers:
       '@514labs/moose-lib':
         specifier: latest
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 =======
         version: 0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+        version: 0.5.5(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+>>>>>>> 4d31fd2 (add tsconfig)
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -400,10 +404,14 @@ importers:
       '@514labs/moose-lib':
         specifier: latest
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 =======
         version: 0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+        version: 0.5.5(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+>>>>>>> 4d31fd2 (add tsconfig)
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -420,10 +428,14 @@ importers:
       '@514labs/moose-cli':
         specifier: latest
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23
 =======
         version: 0.5.4
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+        version: 0.5.5
+>>>>>>> 4d31fd2 (add tsconfig)
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.9
@@ -482,13 +494,17 @@ importers:
       '@514labs/moose-lib':
         specifier: latest
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 =======
         version: 0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+        version: 0.5.5(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+>>>>>>> 4d31fd2 (add tsconfig)
       '@supabase/supabase-js':
         specifier: ^2.39.0
-        version: 2.53.0
+        version: 2.54.0
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -511,10 +527,14 @@ importers:
       '@514labs/moose-cli':
         specifier: latest
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23
 =======
         version: 0.5.4
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+        version: 0.5.5
+>>>>>>> 4d31fd2 (add tsconfig)
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.9
@@ -544,10 +564,10 @@ importers:
         version: 5.2.3
       '@supabase/realtime-js':
         specifier: ^2.10.2
-        version: 2.14.0
+        version: 2.15.0
       '@supabase/supabase-js':
         specifier: ^2.39.1
-        version: 2.53.0
+        version: 2.54.0
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -613,6 +633,7 @@ importers:
 packages:
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@514labs/moose-cli-darwin-arm64@0.5.23':
     resolution: {integrity: sha512-co4IfDQhjdeZaP25MFJ0fewuy6VXKjvAT/PNTX8ZnzpZMaNpAKL6sNgbE4DuiGRYVaxO5eCeevmkHpz4ddlx7Q==}
     cpu: [arm64]
@@ -642,31 +663,40 @@ packages:
 =======
   '@514labs/moose-cli-darwin-arm64@0.5.4':
     resolution: {integrity: sha512-oYoLyu9mfYKr1ZQwzhLx/JDNXGK7Ts/E9MRkC8FsZ1XuOuL4F6I4tje5bmh6TP0XYGu+NhzXZ8ptDTL/+HVcRQ==}
+=======
+  '@514labs/moose-cli-darwin-arm64@0.5.5':
+    resolution: {integrity: sha512-i4TZ6l7y03es4AKOpmI573fYoFHSZdk78g/yYQhHYVFtC404Ta/K0x2mtFJsFj/8CNDkSdpD/d5r6NRRPlc7Pw==}
+>>>>>>> 4d31fd2 (add tsconfig)
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.5.4':
-    resolution: {integrity: sha512-bvDS4YH/Jdnj/vKfiYPK5MzPef1+/45V7QJ/rWkhr09xFVb6xfdipOa06jCNk/EtGiAXaN95MaNqbnaW7JrtEQ==}
+  '@514labs/moose-cli-darwin-x64@0.5.5':
+    resolution: {integrity: sha512-cmZ1bWh+p3PGvtfkT/IAhF6vpTFtEbthJjI0hqQ/tsFYmfV+tm+vf7wGf5+ueh14KDcJQf7TmfxFjqf+6j0s7Q==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.5.4':
-    resolution: {integrity: sha512-u83MX1BvwHTQ7qzaqIiJc04cYe6JMNIzpYANrI5djrb39Miw0HFcxPL9zaj8iS7lByajQLNYrUYa6/kYObX72Q==}
+  '@514labs/moose-cli-linux-arm64@0.5.5':
+    resolution: {integrity: sha512-Qo0aeham2GSRwoYdCXO+CYtKb4B2W3ojd1n7FCO64v+jmFnWrNWbxBmgDKUpku10AsZ0boD49G/U6rarYCRu4w==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.5.4':
-    resolution: {integrity: sha512-gLbOlpB8j2ANymnU3EFrO9FkmF2xQKgkTqUH8FlWW2+0s5sWrgOOGJgo/xzIwgC0erqFcnG5zvtQmJp5DvUsWQ==}
+  '@514labs/moose-cli-linux-x64@0.5.5':
+    resolution: {integrity: sha512-YXZvX+Wue5dXGOtE/BuOSGzlIipqwn7T3Jd/ZyuznKRBDHK9dCAZflkSl16oQq4uR9POKMdNdQVDQ+rJ4Cyuqw==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.5.4':
-    resolution: {integrity: sha512-DRvcbGf9ELGgOw8DKLYKkcon6SnW/YHUNQ86+0gRY+yDmeK9z01DCP8cLsLNDatx24lYKWgivH69NhKx7G5Jew==}
+  '@514labs/moose-cli@0.5.5':
+    resolution: {integrity: sha512-wtgmjvFLyJxOoBE9iL9Nda9Dtfe5e0ktMCdek6mSEsx++ir/MMs0P8Tsgm+651uo2y2Q6Ufs5f0nyMR1it9OSw==}
     hasBin: true
 
+<<<<<<< HEAD
   '@514labs/moose-lib@0.5.4':
     resolution: {integrity: sha512-SOfCQvlZcsLJuzKgfuF0bX0McwjFmUOfDpAL9jEWoYdr3TDZyOEP3sNCVup2l1Kvs38cENUYKwGTc8hic2DXPA==}
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+  '@514labs/moose-lib@0.5.5':
+    resolution: {integrity: sha512-lkmZglslhbVWb71JAmB2nek7vT0kxUAR2k9hNoWro+3XmGWJdxENSlKp4DxNwHKfAAdiotWIEuSnl256EyUmJQ==}
+>>>>>>> 4d31fd2 (add tsconfig)
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
@@ -1518,8 +1548,8 @@ packages:
     peerDependencies:
       tslib: '2'
 
-  '@jsonjoy.com/json-pack@1.8.0':
-    resolution: {integrity: sha512-paJGjyBTRzfgkqhIyer992g21aSKuu9h//zGS7aqm795roD6VYFf6iU9NYua1Bndmh/NRPkjtm9+hEPkK0yZSw==}
+  '@jsonjoy.com/json-pack@1.9.0':
+    resolution: {integrity: sha512-5QyhXHb/64WUvP5thqF+7oe5CErg0z9A8g2pFLONp72gK674aBk/3rXDE9ZSC8UHFfB2zoKLI3uvmqUF1CDv0A==}
     engines: {node: '>=10.0'}
     peerDependencies:
       tslib: '2'
@@ -2463,11 +2493,8 @@ packages:
   '@supabase/postgrest-js@1.19.4':
     resolution: {integrity: sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==}
 
-  '@supabase/realtime-js@2.11.15':
-    resolution: {integrity: sha512-HQKRnwAqdVqJW/P9TjKVK+/ETpW4yQ8tyDPPtRMKOH4Uh3vQD74vmj353CYs8+YwVBKubeUOOEpI9CT8mT4obw==}
-
-  '@supabase/realtime-js@2.14.0':
-    resolution: {integrity: sha512-p9GhtxOBr1YLqxU9C1g8Pi+jgATYWa3KKgTqD7Qo77wOkbn+ts0Xg8mitptSVYb9DDIX6xbhJv6GghUMyH2ykA==}
+  '@supabase/realtime-js@2.15.0':
+    resolution: {integrity: sha512-SEIWApsxyoAe68WU2/5PCCuBwa11LL4Bb8K3r2FHCt3ROpaTthmDiWEhnLMGayP05N4QeYrMk0kyTZOwid/Hjw==}
 
   '@supabase/realtime-js@2.15.0':
     resolution: {integrity: sha512-SEIWApsxyoAe68WU2/5PCCuBwa11LL4Bb8K3r2FHCt3ROpaTthmDiWEhnLMGayP05N4QeYrMk0kyTZOwid/Hjw==}
@@ -2475,8 +2502,8 @@ packages:
   '@supabase/storage-js@2.10.4':
     resolution: {integrity: sha512-cvL02GarJVFcNoWe36VBybQqTVRq6wQSOCvTS64C+eyuxOruFIm1utZAY0xi2qKtHJO3EjKaj8iWJKySusDmAQ==}
 
-  '@supabase/supabase-js@2.53.0':
-    resolution: {integrity: sha512-Vg9sl0oFn55cCPaEOsDsRDbxOVccxRrK/cikjL1XbywHEOfyA5SOOEypidMvQLwgoAfnC2S4D9BQwJDcZs7/TQ==}
+  '@supabase/supabase-js@2.54.0':
+    resolution: {integrity: sha512-DLw83YwBfAaFiL3oWV26+sHRdeCGtxmIKccjh/Pndze3BWM4fZghzYKhk3ElOQU8Bluq4AkkCJ5bM5Szl/sfRg==}
 
   '@supabase/supabase-js@2.54.0':
     resolution: {integrity: sha512-DLw83YwBfAaFiL3oWV26+sHRdeCGtxmIKccjh/Pndze3BWM4fZghzYKhk3ElOQU8Bluq4AkkCJ5bM5Szl/sfRg==}
@@ -2664,8 +2691,8 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7
 
-  '@tanstack/form-core@1.18.0':
-    resolution: {integrity: sha512-VfTJgD8yCBbKR4qDwgD+OWMpVI9QiJtdkf2W9wDFBMkPV5gCPfeidmJbcXjTdHIbWD6BdZOF4KwXt+pSoeoqyA==}
+  '@tanstack/form-core@1.19.0':
+    resolution: {integrity: sha512-LSV1XdQCS+0Xnwtqdcjxe3E9C6HeDdaqGm6krZeJ+OCLESsFqPp/jHyoVf5HLfTEGD16hETgYo+sPxC1cox8uQ==}
 
   '@tanstack/history@1.130.12':
     resolution: {integrity: sha512-2VO1nNFDWojgZ7Uqv/OJfH6LphZQ1kE6l8sI3YBgSPtj3qN6I/rsoTHW9rGjwiDO8sQoDRXod2hpH6HMs5NDsw==}
@@ -2677,8 +2704,8 @@ packages:
   '@tanstack/query-devtools@5.84.0':
     resolution: {integrity: sha512-fbF3n+z1rqhvd9EoGp5knHkv3p5B2Zml1yNRjh7sNXklngYI5RVIWUrUjZ1RIcEoscarUb0+bOvIs5x9dwzOXQ==}
 
-  '@tanstack/react-form@1.18.0':
-    resolution: {integrity: sha512-iXcFCs8PKYLjE2a9bXtB/1NhRsVh3T/O87Jn8FQcTPm/SIfSbUoNhfXCQ46lroszW+c4Xx4Vpi1zoRgpuWQ5nQ==}
+  '@tanstack/react-form@1.19.0':
+    resolution: {integrity: sha512-3w9gz5C5Egepx//KYvwh/Qndid2aF+x6E9H5hBSWj+xGKrZSIJz8d5RKMlqxxNJZpYRnplLVTV9bLtUFqI8wtA==}
     peerDependencies:
       '@tanstack/react-start': ^1.130.10
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -3736,8 +3763,8 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
-  electron-to-chromium@1.5.197:
-    resolution: {integrity: sha512-m1xWB3g7vJ6asIFz+2pBUbq3uGmfmln1M9SSvBe4QIFWYrRHylP73zL/3nMjDmwz8V+1xAXQDfBd6+HPW0WvDQ==}
+  electron-to-chromium@1.5.198:
+    resolution: {integrity: sha512-G5COfnp3w+ydVu80yprgWSfmfQaYRh9DOxfhAxstLyetKaLyl55QrNjx8C38Pc/C+RaDmb1M0Lk8wPEMQ+bGgQ==}
 
   embla-carousel-react@8.6.0:
     resolution: {integrity: sha512-0/PjqU7geVmo6F734pmPqpyHqiM99olvyecY7zdweCw+6tKEXnrE90pBiBbMMU8s5tICemzpQ3hi5EpxzGW+JA==}
@@ -4346,11 +4373,6 @@ packages:
     resolution: {integrity: sha512-LpB/54B+/2J5hqQ7imZHfdU31OlgQqx7ZicVlkm9kzg9/w8GKLEcFfJl/t7DCEDueOyBAD6zCCwTO6Fzs0NoEQ==}
     engines: {node: '>=16'}
 
-  isows@1.0.7:
-    resolution: {integrity: sha512-I1fSfDCZL5P0v33sVqeTDSpcstAg/N+wF5HS033mogOVIp4B+oHC7oOCsA3axAbBSGTJ8QubbNmnIRN/h8U7hg==}
-    peerDependencies:
-      ws: '*'
-
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
@@ -4903,8 +4925,8 @@ packages:
   pino-std-serializers@7.0.0:
     resolution: {integrity: sha512-e906FRY0+tV27iq4juKzSYPbUj2do2X2JX4EzSca1631EB2QJQUqGbDuERal7LCtOpxl6x3+nvo9NPZcmjkiFA==}
 
-  pino@9.7.0:
-    resolution: {integrity: sha512-vnMCM6xZTb1WDmLvtG2lE/2p+t9hDEIvTWJsu6FejkE62vB7gDhvzrpFR4Cw2to+9JNQxVnkAKVPA1KPB98vWg==}
+  pino@9.8.0:
+    resolution: {integrity: sha512-L5+rV1wL7vGAcxXP7sPpN5lrJ07Piruka6ArXr7EWBXxdVWjJshGVX8suFsiusJVcGKDGUFfbgbnKdg+VAC+0g==}
     hasBin: true
 
   pirates@4.0.7:
@@ -5498,8 +5520,8 @@ packages:
   thenify@3.3.1:
     resolution: {integrity: sha512-RVZSIV5IG10Hk3enotrhvz0T9em6cyHBLkH/YAZuKqd8hRkKhSfCGIcP2KUY0EPxndzANBmNllzWPwak+bheSw==}
 
-  thingies@1.21.0:
-    resolution: {integrity: sha512-hsqsJsFMsV+aD4s3CWKk85ep/3I9XzYV/IXaSouJMYIoDlgyi11cBhsqYe9/geRfB0YIikBQg6raRaM+nIMP9g==}
+  thingies@2.5.0:
+    resolution: {integrity: sha512-s+2Bwztg6PhWUD7XMfeYm5qliDdSiZm7M7n8KjTkIsm3l/2lgVRc2/Gx/v+ZX8lT4FMA+i8aQvhcWylldc+ZNw==}
     engines: {node: '>=10.18'}
     peerDependencies:
       tslib: ^2
@@ -5971,6 +5993,7 @@ packages:
 snapshots:
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@514labs/moose-cli-darwin-arm64@0.5.23':
     optional: true
 
@@ -5993,26 +6016,33 @@ snapshots:
   '@514labs/moose-lib@0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
 =======
   '@514labs/moose-cli-darwin-arm64@0.5.4':
+=======
+  '@514labs/moose-cli-darwin-arm64@0.5.5':
+>>>>>>> 4d31fd2 (add tsconfig)
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.5.4':
+  '@514labs/moose-cli-darwin-x64@0.5.5':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.5.4':
+  '@514labs/moose-cli-linux-arm64@0.5.5':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.5.4':
+  '@514labs/moose-cli-linux-x64@0.5.5':
     optional: true
 
-  '@514labs/moose-cli@0.5.4':
+  '@514labs/moose-cli@0.5.5':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.5.4
-      '@514labs/moose-cli-darwin-x64': 0.5.4
-      '@514labs/moose-cli-linux-arm64': 0.5.4
-      '@514labs/moose-cli-linux-x64': 0.5.4
+      '@514labs/moose-cli-darwin-arm64': 0.5.5
+      '@514labs/moose-cli-darwin-x64': 0.5.5
+      '@514labs/moose-cli-linux-arm64': 0.5.5
+      '@514labs/moose-cli-linux-x64': 0.5.5
 
+<<<<<<< HEAD
   '@514labs/moose-lib@0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+  '@514labs/moose-lib@0.5.5(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+>>>>>>> 4d31fd2 (add tsconfig)
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -6042,10 +6072,14 @@ snapshots:
       - webpack-cli
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@514labs/moose-lib@0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
 =======
   '@514labs/moose-lib@0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
 >>>>>>> a336032 (rm-tsconfig-path)
+=======
+  '@514labs/moose-lib@0.5.5(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+>>>>>>> 4d31fd2 (add tsconfig)
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -6819,13 +6853,15 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@jsonjoy.com/json-pack@1.8.0(tslib@2.8.1)':
+  '@jsonjoy.com/json-pack@1.9.0(tslib@2.8.1)':
     dependencies:
       '@jsonjoy.com/base64': 1.1.2(tslib@2.8.1)
+      '@jsonjoy.com/buffers': 1.0.0(tslib@2.8.1)
+      '@jsonjoy.com/codegen': 1.0.0(tslib@2.8.1)
       '@jsonjoy.com/json-pointer': 1.0.1(tslib@2.8.1)
       '@jsonjoy.com/util': 1.9.0(tslib@2.8.1)
       hyperdyperid: 1.2.0
-      thingies: 1.21.0(tslib@2.8.1)
+      thingies: 2.5.0(tslib@2.8.1)
       tslib: 2.8.1
 
   '@jsonjoy.com/json-pointer@1.0.1(tslib@2.8.1)':
@@ -7727,6 +7763,7 @@ snapshots:
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
+<<<<<<< HEAD
   '@supabase/realtime-js@2.11.15':
     dependencies:
       '@supabase/node-fetch': 2.6.13
@@ -7739,6 +7776,9 @@ snapshots:
       - utf-8-validate
 
   '@supabase/realtime-js@2.14.0':
+=======
+  '@supabase/realtime-js@2.15.0':
+>>>>>>> 0c8d3e8 (add tsconfig)
     dependencies:
       '@supabase/node-fetch': 2.6.13
       '@types/phoenix': 1.6.6
@@ -7762,13 +7802,13 @@ snapshots:
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
-  '@supabase/supabase-js@2.53.0':
+  '@supabase/supabase-js@2.54.0':
     dependencies:
       '@supabase/auth-js': 2.71.1
       '@supabase/functions-js': 2.4.5
       '@supabase/node-fetch': 2.6.15
       '@supabase/postgrest-js': 1.19.4
-      '@supabase/realtime-js': 2.11.15
+      '@supabase/realtime-js': 2.15.0
       '@supabase/storage-js': 2.10.4
     transitivePeerDependencies:
       - bufferutil
@@ -7939,7 +7979,7 @@ snapshots:
       tailwindcss: 4.1.11
       vite: 5.4.19(@types/node@24.2.0)(lightningcss@1.30.1)(terser@5.43.1)
 
-  '@tanstack/form-core@1.18.0':
+  '@tanstack/form-core@1.19.0':
     dependencies:
       '@tanstack/store': 0.7.2
 
@@ -7949,9 +7989,9 @@ snapshots:
 
   '@tanstack/query-devtools@5.84.0': {}
 
-  '@tanstack/react-form@1.18.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
+  '@tanstack/react-form@1.19.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
-      '@tanstack/form-core': 1.18.0
+      '@tanstack/form-core': 1.19.0
       '@tanstack/react-store': 0.7.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       decode-formdata: 0.9.0
       devalue: 5.1.1
@@ -8708,7 +8748,7 @@ snapshots:
   browserslist@4.25.1:
     dependencies:
       caniuse-lite: 1.0.30001731
-      electron-to-chromium: 1.5.197
+      electron-to-chromium: 1.5.198
       node-releases: 2.0.19
       update-browserslist-db: 1.1.3(browserslist@4.25.1)
 
@@ -9074,7 +9114,7 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
-  electron-to-chromium@1.5.197: {}
+  electron-to-chromium@1.5.198: {}
 
   embla-carousel-react@8.6.0(react@19.1.1):
     dependencies:
@@ -9382,7 +9422,7 @@ snapshots:
       fast-json-stringify: 6.0.1
       find-my-way: 9.3.0
       light-my-request: 6.6.0
-      pino: 9.7.0
+      pino: 9.8.0
       process-warning: 5.0.0
       rfdc: 1.4.1
       secure-json-parse: 4.0.0
@@ -9788,10 +9828,6 @@ snapshots:
 
   isexe@3.1.1: {}
 
-  isows@1.0.7(ws@8.18.3):
-    dependencies:
-      ws: 8.18.3
-
   jackspeak@3.4.3:
     dependencies:
       '@isaacs/cliui': 8.0.2
@@ -9991,7 +10027,7 @@ snapshots:
 
   memfs@4.36.0:
     dependencies:
-      '@jsonjoy.com/json-pack': 1.8.0(tslib@2.8.1)
+      '@jsonjoy.com/json-pack': 1.9.0(tslib@2.8.1)
       '@jsonjoy.com/util': 1.9.0(tslib@2.8.1)
       tree-dump: 1.0.3(tslib@2.8.1)
       tslib: 2.8.1
@@ -10307,7 +10343,7 @@ snapshots:
 
   pino-std-serializers@7.0.0: {}
 
-  pino@9.7.0:
+  pino@9.8.0:
     dependencies:
       atomic-sleep: 1.0.0
       fast-redact: 3.5.0
@@ -10899,7 +10935,7 @@ snapshots:
     dependencies:
       any-promise: 1.3.0
 
-  thingies@1.21.0(tslib@2.8.1):
+  thingies@2.5.0(tslib@2.8.1):
     dependencies:
       tslib: 2.8.1
 
