@@ -1,6 +1,6 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
 import { FooCurrentStateView } from "../../../index";
-import { GetFoosAverageScoreResponse } from "@workspace/models/foo";
+import { GetFoosAverageScoreResponse } from "@workspace/models";
 
 // eslint-disable-next-line
 type EmptyParams = {};

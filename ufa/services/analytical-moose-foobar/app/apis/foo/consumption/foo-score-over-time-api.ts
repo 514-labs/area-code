@@ -4,7 +4,7 @@ import {
   FoosScoreOverTimeDataPoint,
   GetFoosScoreOverTimeParams,
   GetFoosScoreOverTimeResponse,
-} from "@workspace/models/foo";
+} from "@workspace/models";
 
 // Score over time consumption API
 export const scoreOverTimeApi = new ConsumptionApi<

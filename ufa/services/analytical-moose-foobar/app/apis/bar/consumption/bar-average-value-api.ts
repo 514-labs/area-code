@@ -1,6 +1,6 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
 import { BarPipeline } from "../../../index";
-import { GetBarsAverageValueResponse } from "@workspace/models/bar";
+import { GetBarsAverageValueResponse } from "@workspace/models";
 
 // Type for endpoints with no parameters
 // eslint-disable-next-line

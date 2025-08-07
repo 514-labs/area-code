@@ -2,9 +2,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "esModuleInterop": true,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "moduleDetection": "force",
     "paths": {
-      "@workspace/models": ["../../packages/models/src/index"],
-      "@workspace/models/*": ["../../packages/models/src/*"],
       "datamodels/*": ["./app/ingest/*"],
       "versions/*": ["./.moose/versions/*"]
     },
