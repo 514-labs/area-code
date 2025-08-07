@@ -11,15 +11,15 @@ import {
 export async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
   const updateData: Partial<NewDbBar> = {
     ...data,
-    updatedAt: new Date(),
+    updated_at: new Date(),
   };
 
-  // If updating fooId, verify that foo exists
-  if (updateData.fooId) {
+  // If updating foo_id, verify that foo exists
+  if (updateData.foo_id) {
     const fooExists = await db
       .select()
       .from(foo)
-      .where(eq(foo.id, updateData.fooId))
+      .where(eq(foo.id, updateData.foo_id))
       .limit(1);
 
     if (fooExists.length === 0) {
@@ -33,13 +33,13 @@ export async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
     .where(eq(bar.id, id))
     .returning({
       id: bar.id,
-      foo_id: bar.fooId,
+      foo_id: bar.foo_id,
       value: bar.value,
       label: bar.label,
       notes: bar.notes,
-      is_enabled: bar.isEnabled,
-      created_at: bar.createdAt,
-      updated_at: bar.updatedAt,
+      is_enabled: bar.is_enabled,
+      created_at: bar.created_at,
+      updated_at: bar.updated_at,
     });
 
   if (updatedBar.length === 0) {

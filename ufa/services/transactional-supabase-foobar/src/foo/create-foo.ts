@@ -6,13 +6,13 @@ import {
   type CreateFoo,
   type NewDbFoo,
 } from "../database/schema";
-import { getModelFromDBRow, apiToDbFoo } from "./foo-utils";
+import { convertDbFooToModel, convertModelToDbFoo } from "./foo-utils";
 
 async function createFoo(data: CreateFoo): Promise<Foo> {
   console.log("Received request body:", JSON.stringify(data, null, 2));
 
-  // Convert API data to database format
-  const dbData = apiToDbFoo(data);
+  // Convert API data to database format - minimal conversion now needed
+  const dbData = convertModelToDbFoo(data);
 
   // Manually ensure all types are correct for database insert
   const insertData: NewDbFoo = {
@@ -22,17 +22,16 @@ async function createFoo(data: CreateFoo): Promise<Foo> {
       (dbData.status as "active" | "inactive" | "pending" | "archived") ||
       "active",
     priority: dbData.priority || 1,
-    isActive: dbData.isActive !== undefined ? dbData.isActive : true,
+    is_active: dbData.is_active !== undefined ? dbData.is_active : true,
     metadata: dbData.metadata || {},
-    config: dbData.config || {},
     tags: Array.isArray(dbData.tags) ? dbData.tags : [],
     score: dbData.score || "0.00",
-    largeText: dbData.largeText || "",
+    large_text: dbData.large_text || "",
   };
 
   const newFoo = await db.insert(foo).values(insertData).returning();
 
-  return getModelFromDBRow(newFoo[0]);
+  return convertDbFooToModel(newFoo[0]);
 }
 
 export function createFooEndpoint(fastify: FastifyInstance) {

@@ -6,17 +6,17 @@ export async function getBarsByFooId(fooId: string): Promise<Bar[]> {
   const bars = await db
     .select({
       id: bar.id,
-      foo_id: bar.fooId,
+      foo_id: bar.foo_id,
       value: bar.value,
       label: bar.label,
       notes: bar.notes,
-      is_enabled: bar.isEnabled,
-      created_at: bar.createdAt,
-      updated_at: bar.updatedAt,
+      is_enabled: bar.is_enabled,
+      created_at: bar.created_at,
+      updated_at: bar.updated_at,
     })
     .from(bar)
-    .where(eq(bar.fooId, fooId))
-    .orderBy(desc(bar.createdAt));
+    .where(eq(bar.foo_id, fooId))
+    .orderBy(desc(bar.created_at));
 
   return bars;
 }

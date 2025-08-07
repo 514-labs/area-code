@@ -7,14 +7,14 @@ import {
   type UpdateFoo,
   type NewDbFoo,
 } from "../database/schema";
-import { getModelFromDBRow, apiToDbFoo } from "./foo-utils";
+import { convertDbFooToModel, convertModelToDbFoo } from "./foo-utils";
 
 async function updateFoo(id: string, data: UpdateFoo): Promise<Foo> {
-  const dbData = apiToDbFoo(data);
+  const dbData = convertModelToDbFoo(data);
 
   // Manually ensure all types are correct for database update
   const updateData: Partial<NewDbFoo> = {
-    updatedAt: new Date(),
+    updated_at: new Date(),
   };
 
   // Only update fields that are provided
@@ -23,13 +23,13 @@ async function updateFoo(id: string, data: UpdateFoo): Promise<Foo> {
     updateData.description = dbData.description;
   if (dbData.status !== undefined) updateData.status = dbData.status;
   if (dbData.priority !== undefined) updateData.priority = dbData.priority;
-  if (dbData.isActive !== undefined) updateData.isActive = dbData.isActive;
+  if (dbData.is_active !== undefined) updateData.is_active = dbData.is_active;
   if (dbData.metadata !== undefined) updateData.metadata = dbData.metadata;
-  if (dbData.config !== undefined) updateData.config = dbData.config;
   if (dbData.tags !== undefined)
     updateData.tags = Array.isArray(dbData.tags) ? dbData.tags : [];
   if (dbData.score !== undefined) updateData.score = dbData.score;
-  if (dbData.largeText !== undefined) updateData.largeText = dbData.largeText;
+  if (dbData.large_text !== undefined)
+    updateData.large_text = dbData.large_text;
 
   const updatedFoo = await db
     .update(foo)
@@ -41,7 +41,7 @@ async function updateFoo(id: string, data: UpdateFoo): Promise<Foo> {
     throw new Error("Foo not found");
   }
 
-  return getModelFromDBRow(updatedFoo[0]);
+  return convertDbFooToModel(updatedFoo[0]);
 }
 
 export function updateFooEndpoint(fastify: FastifyInstance) {

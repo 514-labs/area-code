@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
 import { db } from "../database/connection";
 import { foo, type Foo } from "../database/schema";
-import { getModelFromDBRow } from "./foo-utils";
+import { convertDbFooToModel } from "./foo-utils";
 
 async function getFooById(id: string): Promise<Foo> {
   const fooItem = await db.select().from(foo).where(eq(foo.id, id)).limit(1);
@@ -11,7 +11,7 @@ async function getFooById(id: string): Promise<Foo> {
     throw new Error("Foo not found");
   }
 
-  return getModelFromDBRow(fooItem[0]);
+  return convertDbFooToModel(fooItem[0]);
 }
 
 export function getFooByIdEndpoint(fastify: FastifyInstance) {

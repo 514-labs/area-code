@@ -8,29 +8,29 @@ async function getBarById(id: string): Promise<BarWithFoo> {
   const barWithFoo = await db
     .select({
       id: bar.id,
-      foo_id: bar.fooId,
+      foo_id: bar.foo_id,
       value: bar.value,
       label: bar.label,
       notes: bar.notes,
-      is_enabled: bar.isEnabled,
-      created_at: bar.createdAt,
-      updated_at: bar.updatedAt,
+      is_enabled: bar.is_enabled,
+      created_at: bar.created_at,
+      updated_at: bar.updated_at,
       foo: {
         id: foo.id,
         name: foo.name,
         description: foo.description,
         status: foo.status,
         priority: foo.priority,
-        is_active: foo.isActive,
+        is_active: foo.is_active,
         metadata: foo.metadata,
         tags: foo.tags,
-        created_at: foo.createdAt,
-        updated_at: foo.updatedAt,
+        created_at: foo.created_at,
+        updated_at: foo.updated_at,
         score: foo.score,
       },
     })
     .from(bar)
-    .innerJoin(foo, eq(bar.fooId, foo.id))
+    .innerJoin(foo, eq(bar.foo_id, foo.id))
     .where(eq(bar.id, id))
     .limit(1);
 

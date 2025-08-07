@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { FastifyInstance } from "fastify";
 import { db } from "../database/connection";
 import {
   bar,
@@ -15,23 +16,14 @@ async function createBar(data: CreateBar): Promise<Bar> {
   const fooExists = await db
     .select()
     .from(foo)
-    .where(eq(foo.id, validatedData.fooId))
+    .where(eq(foo.id, validatedData.foo_id))
     .limit(1);
 
   if (fooExists.length === 0) {
     throw new Error("Referenced foo does not exist");
   }
 
-  const newBar = await db.insert(bar).values(validatedData).returning({
-    id: bar.id,
-    foo_id: bar.fooId,
-    value: bar.value,
-    label: bar.label,
-    notes: bar.notes,
-    is_enabled: bar.isEnabled,
-    created_at: bar.createdAt,
-    updated_at: bar.updatedAt,
-  });
+  const newBar = await db.insert(bar).values(validatedData).returning();
 
   return newBar[0];
 }

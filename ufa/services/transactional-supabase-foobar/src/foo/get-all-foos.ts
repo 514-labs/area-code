@@ -3,7 +3,7 @@ import { sql, asc, desc } from "drizzle-orm";
 import { db } from "../database/connection";
 import { foo } from "../database/schema";
 import { GetFoosParams, GetFoosResponse } from "@workspace/models/foo";
-import { getModelFromDBRow } from "./foo-utils";
+import { convertDbFooToModel } from "./foo-utils";
 
 async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
   const limit = params.limit || 10;
@@ -40,26 +40,26 @@ async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
         break;
       case "is_active":
         orderByClause =
-          sortOrder === "desc" ? desc(foo.isActive) : asc(foo.isActive);
+          sortOrder === "desc" ? desc(foo.is_active) : asc(foo.is_active);
         break;
       case "score":
         orderByClause = sortOrder === "desc" ? desc(foo.score) : asc(foo.score);
         break;
       case "created_at":
         orderByClause =
-          sortOrder === "desc" ? desc(foo.createdAt) : asc(foo.createdAt);
+          sortOrder === "desc" ? desc(foo.created_at) : asc(foo.created_at);
         break;
       case "updated_at":
         orderByClause =
-          sortOrder === "desc" ? desc(foo.updatedAt) : asc(foo.updatedAt);
+          sortOrder === "desc" ? desc(foo.updated_at) : asc(foo.updated_at);
         break;
       default:
-        // Default sorting by createdAt desc for invalid sortBy
-        orderByClause = desc(foo.createdAt);
+        // Default sorting by created_at desc for invalid sortBy
+        orderByClause = desc(foo.created_at);
     }
   } else {
-    // Default sorting by createdAt desc
-    orderByClause = desc(foo.createdAt);
+    // Default sorting by created_at desc
+    orderByClause = desc(foo.created_at);
   }
 
   const startTime = Date.now();
@@ -82,7 +82,7 @@ async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
   const total = totalResult[0].count;
   const hasMore = offset + limit < total;
 
-  const convertedFoo = fooItems.map(getModelFromDBRow);
+  const convertedFoo = fooItems.map(convertDbFooToModel);
 
   return {
     data: convertedFoo,
