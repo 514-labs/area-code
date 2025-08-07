@@ -10,6 +10,8 @@ export async function setupRealtimeReplication(
   const sqlScript = readFileSync(sqlScriptPath, "utf-8");
 
   await executeSQL(pgClient, sqlScript);
+
+  console.log("✅ Realtime replication setup complete");
 }
 
 export async function disableRealtimeReplication(

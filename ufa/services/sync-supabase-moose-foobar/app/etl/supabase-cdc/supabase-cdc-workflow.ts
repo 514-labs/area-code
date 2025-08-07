@@ -7,10 +7,7 @@ import {
   SupabaseConfig,
   checkDatabaseConnection,
 } from "../../supabase/supabase-client";
-import {
-  createProgresClient,
-  PostgresClient,
-} from "../../supabase/postgres-client";
+import { createProgresClient } from "../../supabase/postgres-client";
 import {
   disableRealtimeReplication,
   setupRealtimeReplication,
@@ -22,7 +19,7 @@ async function registerSupabaseCDCListeners(
   supabaseClient: SupabaseClient,
   supabaseConfig: SupabaseConfig
 ) {
-  console.log("🚀 Setting up realtime listeners...");
+  console.log("🔄 Setting up realtime listeners...");
 
   const channel = supabaseClient
     .channel("db-changes")
@@ -51,7 +48,6 @@ async function registerSupabaseCDCListeners(
       }
     )
     .subscribe((status, error) => {
-      // Log status with appropriate emoji/level based on status type
       const timestamp = new Date().toISOString();
 
       if (status === "SUBSCRIBED") {
@@ -79,6 +75,7 @@ async function registerSupabaseCDCListeners(
 
         if (error) {
           console.error("- Error details:", error);
+          console.error("- Full error object:", JSON.stringify(error, null, 2));
           console.error(
             "- Error message:",
             error.message || "No message available"
@@ -189,7 +186,7 @@ async function onCancel() {
 }
 
 async function waitForSupabase(supabaseClient: SupabaseClient) {
-  console.log("⏳ Waiting for Supabase...");
+  console.log("🔄 Waiting for Supabase...");
 
   const startTime = Date.now();
   const timeoutMs = 300000; // 5 minutes
@@ -216,22 +213,28 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
 
   while (Date.now() - realtimeStartTime < realtimeTimeoutMs) {
     try {
-      const testResponse = await fetch(
-        `${supabaseConfig.supabaseUrl}/rest/v1/`,
-        {
-          headers: {
-            apikey: supabaseConfig.supabaseKey,
-            Authorization: `Bearer ${supabaseConfig.supabaseKey}`,
-          },
-        }
-      );
+      const realtimeUrl = `${supabaseConfig.supabaseUrl}/realtime/v1/websocket?apikey=${supabaseConfig.supabaseKey}`;
+      const testResponse = await fetch(realtimeUrl);
 
-      if (testResponse.ok) {
-        console.log("✅ Realtime service ready");
+      // For WebSocket endpoints, getting a 426 "Upgrade Required" or similar is actually good
+      // It means the endpoint exists and is responding
+      if (
+        testResponse.status === 426 ||
+        testResponse.status === 400 ||
+        testResponse.ok
+      ) {
+        console.log(
+          "✅ Realtime service ready (status:",
+          testResponse.status,
+          ")"
+        );
         break;
       }
     } catch (error) {
-      // Continue waiting
+      console.log(
+        "🔄 Realtime service check failed:",
+        (error as Error).message
+      );
     }
 
     await new Promise((resolve) => setTimeout(resolve, 5000)); // Check every 5 seconds

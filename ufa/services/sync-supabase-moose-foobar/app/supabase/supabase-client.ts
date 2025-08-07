@@ -47,18 +47,7 @@ export async function checkDatabaseConnection(
       .select("id", { count: "exact", head: true })
       .limit(1);
 
-    if (error && !error.message.includes('relation "foo" does not exist')) {
-      // If the error is not about the table not existing, it's a connection issue
-      if (
-        error.message.includes("connect") ||
-        error.message.includes("network") ||
-        error.message.includes("timeout")
-      ) {
-        return false;
-      }
-    }
-
-    return true;
+    return !error;
   } catch (error) {
     return false;
   }

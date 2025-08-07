@@ -1,5 +1,5 @@
 import { Client } from "pg";
-import { getSupabaseConnectionString } from "../env-vars";
+import { getSupabaseConnectionString, isProduction } from "../env-vars";
 
 export type PostgresClient = Client;
 
@@ -7,7 +7,7 @@ export function createProgresClient(): PostgresClient {
   const connectionString = getSupabaseConnectionString();
   return new Client({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: isProduction() ? { rejectUnauthorized: false } : false,
   });
 }
 
