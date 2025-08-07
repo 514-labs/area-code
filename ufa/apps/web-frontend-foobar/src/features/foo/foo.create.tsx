@@ -136,7 +136,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button onClick={resetForm}>
+          <Button onClick={resetForm} variant="secondary">
             <Plus className="h-4 w-4 mr-2" />
             Create Foo
           </Button>
@@ -207,7 +207,10 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
               max="10"
               value={formData.priority}
               onChange={(e) =>
-                setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })
+                setFormData({
+                  ...formData,
+                  priority: parseInt(e.target.value) || 1,
+                })
               }
             />
           </div>
@@ -221,7 +224,10 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
               step="0.1"
               value={formData.score}
               onChange={(e) =>
-                setFormData({ ...formData, score: parseFloat(e.target.value) || 0 })
+                setFormData({
+                  ...formData,
+                  score: parseFloat(e.target.value) || 0,
+                })
               }
             />
           </div>
@@ -260,7 +266,11 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
             </div>
             <div className="flex flex-wrap gap-2">
               {formData.tags?.map((tag, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="flex items-center space-x-1"
+                >
                   <span>{tag}</span>
                   <X
                     className="h-3 w-3 cursor-pointer"
@@ -291,7 +301,10 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
             </div>
             <div className="space-y-1">
               {Object.entries(formData.metadata || {}).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                <div
+                  key={key}
+                  className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                >
                   <span className="text-sm">
                     <strong>{key}:</strong> {String(value)}
                   </span>
@@ -318,7 +331,11 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !formData.name}>

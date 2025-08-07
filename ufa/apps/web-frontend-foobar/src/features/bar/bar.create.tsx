@@ -107,7 +107,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button onClick={resetForm}>
+          <Button onClick={resetForm} variant="secondary">
             <Plus className="h-4 w-4 mr-2" />
             Create Bar
           </Button>
