@@ -197,6 +197,17 @@ DROP FUNCTION IF EXISTS setup_table_replication(TEXT, TEXT);
 DROP PUBLICATION IF EXISTS supabase_realtime;
 CREATE PUBLICATION supabase_realtime FOR ALL TABLES;
 
+-- Grant service role permission to manage this specific publication
+-- Note: We can't change owner, but we can grant ALTER permission
+GRANT ALL ON DATABASE postgres TO service_role;
+-- Grant usage on schema
+GRANT USAGE ON SCHEMA public TO service_role;
+-- Grant all privileges on all tables in public schema
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO service_role;
+-- Grant CREATE on schema for publications
+GRANT CREATE ON SCHEMA public TO service_role;
+
 -- Verify the setup
 SELECT 'Verifying replication setup...' as status;
 
@@ -255,4 +266,4 @@ ORDER BY tablename;
 -- Final success message
 SELECT 'Automated replication setup completed successfully!' as status;
 SELECT 'All tables in public schema are now configured for realtime replication.' as info;
-SELECT 'You can now use the realtime client to listen to changes.' as next_steps; 
+SELECT 'You can now use the realtime client to listen to changes.' as next_steps;

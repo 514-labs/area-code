@@ -5,23 +5,25 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "ufa:dev": "moose-cli dev",
+    "ufa:dev": "bash scripts/start-dev-with-workflow.sh",
     "ufa:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'",
     "dev:workflow": "moose-cli workflow run supabase-listener",
     "dev:workflow:stop": "moose-cli workflow terminate supabase-listener"
   },
   "dependencies": {
-    "axios": "^1.7.7",
-    "ts-patch": "^3.3.0",
     "@514labs/moose-lib": "latest",
-    "typia": "^7.6.0",
     "@supabase/supabase-js": "^2.39.0",
+    "@workspace/models": "workspace:*",
+    "axios": "^1.7.7",
     "dotenv": "^16.3.1",
-    "@workspace/models": "workspace:*"
+    "pg": "^8.11.3",
+    "ts-patch": "^3.3.0",
+    "typia": "^7.6.0"
   },
   "devDependencies": {
     "@514labs/moose-cli": "latest",
     "@types/node": "^20.12.12",
+    "@types/pg": "^8.10.0",
     "typescript": "5.8.3"
   }
 }
