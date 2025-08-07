@@ -220,7 +220,17 @@ export async function barRoutes(fastify: FastifyInstance) {
     "/bar",
     async (request, reply) => {
       try {
-        const validatedData = insertBarSchema.parse(request.body);
+        // Transform snake_case API input to camelCase for database schema
+        const body = request.body as any;
+        const transformedBody = {
+          fooId: body.foo_id,
+          value: body.value,
+          label: body.label,
+          notes: body.notes,
+          isEnabled: body.is_enabled ?? true,
+        };
+
+        const validatedData = insertBarSchema.parse(transformedBody);
 
         // Verify that foo exists
         const fooExists = await db
@@ -262,10 +272,29 @@ export async function barRoutes(fastify: FastifyInstance) {
   }>("/bar/:id", async (request, reply) => {
     try {
       const { id } = request.params;
+
+      // Transform snake_case API input to camelCase for database schema
+      const body = request.body as any;
       const updateData: Partial<NewDbBar> = {
-        ...request.body,
         updatedAt: new Date(),
       };
+
+      // Map API fields to database fields
+      if (body.foo_id !== undefined) {
+        updateData.fooId = body.foo_id;
+      }
+      if (body.value !== undefined) {
+        updateData.value = body.value;
+      }
+      if (body.label !== undefined) {
+        updateData.label = body.label;
+      }
+      if (body.notes !== undefined) {
+        updateData.notes = body.notes;
+      }
+      if (body.is_enabled !== undefined) {
+        updateData.isEnabled = body.is_enabled;
+      }
 
       // If updating fooId, verify that foo exists
       if (updateData.fooId) {
