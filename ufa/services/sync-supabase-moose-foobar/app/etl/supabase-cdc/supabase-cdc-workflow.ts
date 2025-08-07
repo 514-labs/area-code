@@ -7,7 +7,10 @@ import {
   SupabaseConfig,
   checkDatabaseConnection,
 } from "../../supabase/supabase-client";
-import { createProgresClient } from "../../supabase/postgres-client";
+import {
+  createProgresClient,
+  PostgresClient,
+} from "../../supabase/postgres-client";
 import {
   disableRealtimeReplication,
   setupRealtimeReplication,
@@ -161,11 +164,11 @@ async function cleanupSupabaseCDCListeners() {
   }
 }
 
-async function cleanupRealtimeReplication(supabaseClient: SupabaseClient) {
+async function cleanupRealtimeReplication(pgClient: PostgresClient) {
   console.log("🛑 Disabling realtime replication...");
 
   try {
-    await disableRealtimeReplication(supabaseClient);
+    await disableRealtimeReplication(pgClient);
     console.log("✅ Realtime replication disabled");
   } catch (error) {
     console.error("❌ Error during realtime replication cleanup:", error);
@@ -177,10 +180,10 @@ async function onCancel() {
     "🛑 Workflow cancellation requested - cleaning up Supabase subscriptions..."
   );
 
-  const { client: supabaseClient } = createSupabaseClient();
+  const pgClient = createProgresClient();
 
   await cleanupSupabaseCDCListeners();
-  await cleanupRealtimeReplication(supabaseClient);
+  await cleanupRealtimeReplication(pgClient);
 
   console.log("🧹 Cleanup complete - all resources released");
 }

@@ -1,7 +1,6 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { executeSQL, PostgresClient } from "./postgres-client";
-import { SupabaseClient } from "@supabase/supabase-js";
 
 export async function setupRealtimeReplication(
   pgClient: PostgresClient
@@ -15,21 +14,19 @@ export async function setupRealtimeReplication(
 }
 
 export async function disableRealtimeReplication(
-  supabaseClient: SupabaseClient
+  pgClient: PostgresClient
 ): Promise<void> {
   try {
-    const result = await supabaseClient.rpc("disable_realtime_replication");
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-  } catch (error) {
-    // Fallback to direct SQL via executeComplexSQL (more reliable)
-    console.log("🔄 Using direct SQL method...");
-    console.log("   Reason:", error instanceof Error ? error.message : error);
-    await this.executeComplexSQL(`
+    await executeSQL(
+      pgClient,
+      `
       DROP PUBLICATION IF EXISTS supabase_realtime;
       CREATE PUBLICATION supabase_realtime;
-    `);
-    console.log("✅ Realtime replication disabled via direct SQL");
+    `
+    );
+
+    console.log("✅ Realtime replication disabled");
+  } catch (error) {
+    console.error("❌ Error during realtime replication cleanup:", error);
   }
 }
