@@ -12,6 +12,6 @@ dotenvConfig({ path: path.resolve(process.cwd(), ".env") });
 
 // Export task and workflow from the ETL module
 export {
-  supabaseListenerTask,
-  supabaseListenerWorkflow,
-} from "./etl/supabase-cdc";
+  supabaseCDCTask,
+  supabaseCDCWorkflow,
+} from "./etl/supabase-cdc/supabase-cdc-workflow";
