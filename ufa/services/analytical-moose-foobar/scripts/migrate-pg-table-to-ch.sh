@@ -29,14 +29,6 @@ detect_postgres_container() {
     fi
 }
 
-# Set the PostgreSQL container name
-PG_CONTAINER=$(detect_postgres_container)
-if [ -z "$PG_CONTAINER" ]; then
-    echo "❌ No PostgreSQL container found. Ensure either Supabase CLI or production Docker setup is running."
-    exit 1
-fi
-echo "🐳 Using PostgreSQL container: $PG_CONTAINER"
-
 # Batch size for processing large datasets
 BATCH_SIZE=500000
 
@@ -46,6 +38,7 @@ KEEP_TEMP=false
 COUNT_LIMIT=""
 SOURCE_TABLE=""
 DEST_TABLE=""
+IS_PRODUCTION=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -73,6 +66,10 @@ while [[ $# -gt 0 ]]; do
             fi
             shift 2
             ;;
+        --production)
+            IS_PRODUCTION=true
+            shift
+            ;;
         --help)
             echo "Usage: $0 --source-table <pg_table> --dest-table <ch_table> [OPTIONS]"
             echo "Migrate data from any PostgreSQL table to ClickHouse table"
@@ -85,6 +82,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --clear-data           Clear existing data in ClickHouse before migration"
             echo "  --keep-temp            Keep temporary files after migration"
             echo "  --count <num>          Limit the number of records to migrate (for testing)"
+            echo "  --production           Use HTTP connection for production ClickHouse (instead of Docker)"
             echo "  --help                 Show this help message"
             echo ""
             echo "Examples:"
@@ -113,6 +111,19 @@ if [ -z "$DEST_TABLE" ]; then
     exit 1
 fi
 
+# Set the PostgreSQL container name (only for development mode)
+if [ "$IS_PRODUCTION" = true ]; then
+    echo "🌐 Using production PostgreSQL connection"
+    PG_CONTAINER=""  # Not needed in production
+else
+    PG_CONTAINER=$(detect_postgres_container)
+    if [ -z "$PG_CONTAINER" ]; then
+        echo "❌ No PostgreSQL container found. Ensure either Supabase CLI or production Docker setup is running."
+        exit 1
+    fi
+    echo "🐳 Using PostgreSQL container: $PG_CONTAINER"
+fi
+
 # Create temp directory
 TEMP_DIR="temp_migration_${SOURCE_TABLE}"
 mkdir -p "$TEMP_DIR"
@@ -124,47 +135,43 @@ echo "Source table: $SOURCE_TABLE"
 echo "Destination table: $DEST_TABLE"
 echo ""
 
-# Function to run PostgreSQL query via Docker
+# Function to run PostgreSQL query (Docker or direct based on mode)
 run_postgres_query() {
     local query="$1"
     local output_file="$2"
     
-    if ! docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -F$'\t' -c "$query" > "$output_file"; then
-        echo "❌ PostgreSQL query failed: $query"
-        return 1
+    if [ "$IS_PRODUCTION" = true ] && [ -n "${PG_CONNECTION_STRING:-}" ]; then
+        # Production mode: Use psql with connection string
+        if ! psql "$PG_CONNECTION_STRING" -t -A -F$'\t' -c "$query" > "$output_file"; then
+            echo "❌ PostgreSQL query failed: $query"
+            return 1
+        fi
+    else
+        # Development mode: Use Docker connection
+        if ! docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -F$'\t' -c "$query" > "$output_file"; then
+            echo "❌ PostgreSQL query failed: $query"
+            return 1
+        fi
     fi
     return 0
 }
 
-# Function to run PostgreSQL query and return result directly
+# Function to run PostgreSQL query and return result directly (Docker or direct based on mode)
 run_postgres_query_direct() {
     local query="$1"
     local result
     
-    if ! result=$(docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -c "$query" 2>&1); then
-        echo "❌ PostgreSQL query failed: $query" >&2
-        echo "   Error: $result" >&2
-        return 1
-    fi
-    
-    echo "$result"
-    return 0
-}
-
-# Function to run ClickHouse query via Docker
-run_clickhouse_query() {
-    local query="$1"
-    local result
-    
-    if [ -n "$CH_PASSWORD" ]; then
-        if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query" 2>&1); then
-            echo "❌ ClickHouse query failed: $query" >&2
+    if [ "$IS_PRODUCTION" = true ] && [ -n "${PG_CONNECTION_STRING:-}" ]; then
+        # Production mode: Use psql with connection string
+        if ! result=$(psql "$PG_CONNECTION_STRING" -t -A -c "$query" 2>&1); then
+            echo "❌ PostgreSQL query failed: $query" >&2
             echo "   Error: $result" >&2
             return 1
         fi
     else
-        if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query" 2>&1); then
-            echo "❌ ClickHouse query failed: $query" >&2
+        # Development mode: Use Docker connection
+        if ! result=$(docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$PG_DB" -t -A -c "$query" 2>&1); then
+            echo "❌ PostgreSQL query failed: $query" >&2
             echo "   Error: $result" >&2
             return 1
         fi
@@ -174,7 +181,51 @@ run_clickhouse_query() {
     return 0
 }
 
-# Function to import JSONEachRow file to ClickHouse
+# Function to run ClickHouse query (Docker or HTTP based on mode)
+run_clickhouse_query() {
+    local query="$1"
+    local result
+    
+    if [ "$IS_PRODUCTION" = true ]; then
+        # Production mode: Use HTTP connection
+        # For ClickHouse Cloud, use the full URL as provided
+        local ch_url="$CH_HOST"
+        
+        if [ -n "$CH_PASSWORD" ]; then
+            if ! result=$(curl -s -u "$CH_USER:$CH_PASSWORD" -X POST "$ch_url" -d "$query" 2>&1); then
+                echo "❌ ClickHouse query failed: $query" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
+        else
+            if ! result=$(curl -s -u "$CH_USER:" -X POST "$ch_url" -d "$query" 2>&1); then
+                echo "❌ ClickHouse query failed: $query" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
+        fi
+    else
+        # Development mode: Use Docker connection
+        if [ -n "$CH_PASSWORD" ]; then
+            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query" 2>&1); then
+                echo "❌ ClickHouse query failed: $query" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
+        else
+            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query" 2>&1); then
+                echo "❌ ClickHouse query failed: $query" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
+        fi
+    fi
+    
+    echo "$result"
+    return 0
+}
+
+# Function to import JSONEachRow file to ClickHouse (Docker or HTTP based on mode)
 import_to_clickhouse() {
     local file="$1"
     local table="$2"
@@ -185,19 +236,46 @@ import_to_clickhouse() {
         return 1
     fi
     
-    if [ -n "$CH_PASSWORD" ]; then
-        if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
-            echo "❌ Failed to import data to ClickHouse table: $table" >&2
-            echo "   File: $file" >&2
-            echo "   Error: $result" >&2
-            return 1
+    if [ "$IS_PRODUCTION" = true ]; then
+        # Production mode: Use HTTP connection
+        # For ClickHouse Cloud, use the full URL as provided
+        local ch_url="$CH_HOST"
+        
+        # URL encode the query and add it to the URL
+        local encoded_query=$(printf '%s' "INSERT INTO $table FORMAT JSONEachRow" | sed 's/ /%20/g')
+        local insert_url="${ch_url}?query=${encoded_query}"
+        
+        if [ -n "$CH_PASSWORD" ]; then
+            if ! result=$(curl -s -u "$CH_USER:$CH_PASSWORD" -X POST "$insert_url" -H "Content-Type: application/json" --data-binary "@$file" 2>&1); then
+                echo "❌ Failed to import data to ClickHouse table: $table" >&2
+                echo "   File: $file" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
+        else
+            if ! result=$(curl -s -u "$CH_USER:" -X POST "$insert_url" -H "Content-Type: application/json" --data-binary "@$file" 2>&1); then
+                echo "❌ Failed to import data to ClickHouse table: $table" >&2
+                echo "   File: $file" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
         fi
     else
-        if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
-            echo "❌ Failed to import data to ClickHouse table: $table" >&2
-            echo "   File: $file" >&2
-            echo "   Error: $result" >&2
-            return 1
+        # Development mode: Use Docker connection
+        if [ -n "$CH_PASSWORD" ]; then
+            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+                echo "❌ Failed to import data to ClickHouse table: $table" >&2
+                echo "   File: $file" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
+        else
+            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+                echo "❌ Failed to import data to ClickHouse table: $table" >&2
+                echo "   File: $file" >&2
+                echo "   Error: $result" >&2
+                return 1
+            fi
         fi
     fi
     
@@ -206,9 +284,21 @@ import_to_clickhouse() {
 
 # Test PostgreSQL connection
 echo "Testing PostgreSQL connection..."
-if ! docker exec "$PG_CONTAINER" pg_isready -h localhost -p 5432 -U "$PG_USER" > /dev/null 2>&1; then
-    echo "❌ PostgreSQL connection failed"
-    exit 1
+if [ "$IS_PRODUCTION" = true ] && [ -n "${PG_CONNECTION_STRING:-}" ]; then
+    # Production mode: Test connection with psql
+    if ! psql "$PG_CONNECTION_STRING" -c "SELECT 1" > /dev/null 2>&1; then
+        echo "❌ PostgreSQL connection failed"
+        echo "   Connection string: $PG_CONNECTION_STRING"
+        echo "   Testing connection manually..."
+        psql "$PG_CONNECTION_STRING" -c "SELECT 1" 2>&1 | head -5
+        exit 1
+    fi
+else
+    # Development mode: Use Docker connection test
+    if ! docker exec "$PG_CONTAINER" pg_isready -h localhost -p 5432 -U "$PG_USER" > /dev/null 2>&1; then
+        echo "❌ PostgreSQL connection failed"
+        exit 1
+    fi
 fi
 echo "✅ PostgreSQL connection successful"
 
