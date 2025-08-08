@@ -1,17 +1,14 @@
 import { FastifyInstance } from "fastify";
-import { sql, asc, desc } from "drizzle-orm";
+import { asc, desc, count } from "drizzle-orm";
 import { db } from "../database/connection";
 import { foo } from "../database/schema";
 import { GetFoosParams, GetFoosResponse } from "@workspace/models/foo";
 import { convertDbFooToModel } from "./foo-utils";
 
 async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
-  const limit = params.limit || 10;
-  const offset = params.offset || 0;
-  const sortBy = params.sortBy;
-  const sortOrder = params.sortOrder || "asc";
+  const limit = Number(params.limit) || 10;
+  const offset = Number(params.offset) || 0;
 
-  // Validate pagination parameters
   if (limit < 1 || limit > 100) {
     throw new Error("Limit must be between 1 and 100");
   }
@@ -19,7 +16,8 @@ async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
     throw new Error("Offset must be non-negative");
   }
 
-  // Build query with sorting - simplified approach
+  const sortBy = params.sortBy;
+  const sortOrder = params.sortOrder || "asc";
   let orderByClause;
   if (sortBy) {
     switch (sortBy) {
@@ -64,25 +62,24 @@ async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
 
   const startTime = Date.now();
 
-  // Execute query with sorting and pagination
-  const fooItems = await db
+  // Get total count for pagination
+  const totalCountQuery = db.select({ count: count() }).from(foo);
+  const totalCountResult = await totalCountQuery;
+  const total = totalCountResult[0]?.count || 0;
+
+  const fooItemsQuery = db
     .select()
     .from(foo)
     .orderBy(orderByClause)
     .limit(limit)
     .offset(offset);
 
-  // Get total count for pagination metadata
-  const totalResult = await db
-    .select({ count: sql<number>`cast(count(*) as int)` })
-    .from(foo);
+  const fooItemsFromQuery = await fooItemsQuery;
+
+  const convertedFoo = fooItemsFromQuery.map(convertDbFooToModel);
 
   const queryTime = Date.now() - startTime;
-
-  const total = totalResult[0].count;
   const hasMore = offset + limit < total;
-
-  const convertedFoo = fooItems.map(convertDbFooToModel);
 
   return {
     data: convertedFoo,

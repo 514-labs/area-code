@@ -11,16 +11,16 @@
     "ufa:prod:seed": "./database/scripts/run-sql-seed-external.sh",
     "build:copy-env": "[ -f .env.production ] && cp .env.production dist/ || echo 'Warning: .env.production file is missing. Ensure it exists if required.'",
     "dev": "./scripts/dev-startup.sh",
-    "dev:fastify": "SUPABASE_CLI=true pnpm tsx watch src/server.ts",
-    "dev:migrate": "SUPABASE_CLI=true pnpm run db:migrate",
+    "dev:fastify": "pnpm tsx watch src/server.ts",
+    "dev:migrate": "pnpm run db:migrate",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "pnpm supabase migration up",
+    "db:migrate": "pnpm supabase migration up --workdir database",
     "db:migrate:check": "drizzle-kit check",
-    "db:start": "pnpm supabase start",
-    "db:stop": "pnpm supabase stop || echo 'Note: supabase stop failed (may not be running)'",
-    "db:status": "pnpm supabase status"
+    "db:start": "pnpm supabase start --workdir database",
+    "db:stop": "pnpm supabase stop --workdir database || echo 'Note: supabase stop failed (may not be running)'",
+    "db:status": "pnpm supabase status --workdir database"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "2.0.0-beta.10",

@@ -9,10 +9,8 @@ import {
 } from "@workspace/models/bar";
 
 async function getAllBars(params: GetBarsParams): Promise<GetBarsResponse> {
-  const limit = params.limit || 10;
-  const offset = params.offset || 0;
-  const sortBy = params.sortBy;
-  const sortOrder = params.sortOrder || "asc";
+  const limit = Number(params.limit) || 10;
+  const offset = Number(params.offset) || 0;
 
   // Validate pagination parameters
   if (limit < 1 || limit > 100) {
@@ -24,6 +22,9 @@ async function getAllBars(params: GetBarsParams): Promise<GetBarsResponse> {
 
   // Build query with sorting
   let orderByClause;
+  const sortBy = params.sortBy;
+  const sortOrder = params.sortOrder || "desc";
+
   if (sortBy) {
     switch (sortBy) {
       case "label":
@@ -45,17 +46,15 @@ async function getAllBars(params: GetBarsParams): Promise<GetBarsResponse> {
           sortOrder === "desc" ? desc(bar.updated_at) : asc(bar.updated_at);
         break;
       default:
-        // Default sorting by createdAt desc for invalid sortBy
         orderByClause = desc(bar.created_at);
     }
   } else {
-    // Default sorting by created_at desc
     orderByClause = desc(bar.created_at);
   }
 
   const startTime = Date.now();
 
-  // Execute query with sorting and pagination - now field names match
+  // Execute query with sorting and pagination using normal Drizzle query builder
   const barItems = await db
     .select({
       id: bar.id,
