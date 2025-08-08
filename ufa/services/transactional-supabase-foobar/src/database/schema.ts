@@ -65,7 +65,10 @@ export const bar = pgTable(
     created_at: timestamp("created_at").notNull().defaultNow(),
     updated_at: timestamp("updated_at").notNull().defaultNow(),
   },
-  (table) => [index("bar_id_idx").on(table.id)]
+  (table) => [
+    index("bar_created_at_idx").on(table.created_at),
+    index("bar_foo_id_idx").on(table.foo_id),
+  ]
 );
 
 export const insertFooSchema = createInsertSchema(foo);
