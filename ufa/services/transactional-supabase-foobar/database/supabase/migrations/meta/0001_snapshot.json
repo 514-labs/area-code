@@ -1,4 +1,6 @@
 {
+  "id": "f07114d3-bda3-43eb-b0cd-b353d383a50a",
+  "prevId": "22802e6a-04b7-4291-ac54-7dfa39fa0c04",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -59,27 +61,58 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "bar_created_at_idx": {
+          "name": "bar_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bar_foo_id_idx": {
+          "name": "bar_foo_id_idx",
+          "columns": [
+            {
+              "expression": "foo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "bar_foo_id_foo_id_fk": {
           "name": "bar_foo_id_foo_id_fk",
           "tableFrom": "bar",
+          "tableTo": "foo",
           "columnsFrom": [
             "foo_id"
           ],
-          "tableTo": "foo",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.foo": {
       "name": "foo",
@@ -107,6 +140,7 @@
         "status": {
           "name": "status",
           "type": "foo_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'active'"
@@ -130,14 +164,7 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false,
-          "default": "'{}'"
-        },
-        "config": {
-          "name": "config",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'"
+          "default": "'{}'::jsonb"
         },
         "tags": {
           "name": "tags",
@@ -148,7 +175,7 @@
         },
         "score": {
           "name": "score",
-          "type": "numeric(10,2)",
+          "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": false,
           "default": "'0.00'"
@@ -175,92 +202,65 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "foo_created_at_idx": {
+          "name": "foo_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "foo_score_idx": {
+          "name": "foo_score_idx",
+          "columns": [
+            {
+              "expression": "score",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "foo_score_time_idx": {
+          "name": "foo_score_time_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "score",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
-    },
-    "public.foo_bar": {
-      "name": "foo_bar",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "foo_id": {
-          "name": "foo_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "bar_id": {
-          "name": "bar_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "relationship_type": {
-          "name": "relationship_type",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'default'"
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "foo_bar_foo_id_foo_id_fk": {
-          "name": "foo_bar_foo_id_foo_id_fk",
-          "tableFrom": "foo_bar",
-          "columnsFrom": [
-            "foo_id"
-          ],
-          "tableTo": "foo",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
-        },
-        "foo_bar_bar_id_bar_id_fk": {
-          "name": "foo_bar_bar_id_bar_id_fk",
-          "tableFrom": "foo_bar",
-          "columnsFrom": [
-            "bar_id"
-          ],
-          "tableTo": "bar",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -276,15 +276,13 @@
     }
   },
   "schemas": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "id": "22802e6a-04b7-4291-ac54-7dfa39fa0c04",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "sequences": {},
+  "roles": {},
   "policies": {},
   "views": {},
-  "roles": {}
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
 }

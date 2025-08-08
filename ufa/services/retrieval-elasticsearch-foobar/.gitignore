@@ -7,10 +7,7 @@ build/
 *.tsbuildinfo
 
 # Environment files
-.env
 .env.local
-.env.development
-.env.production
 
 # Migration script environment files (contain sensitive credentials)
 database/scripts/prod-migration.env
