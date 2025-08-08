@@ -1,8 +1,9 @@
 import { inArray } from "drizzle-orm";
+import { FastifyInstance } from "fastify";
 import { db } from "../database/connection";
 import { bar } from "../database/schema";
 
-export async function bulkDeleteBars(
+async function bulkDeleteBars(
   ids: string[]
 ): Promise<{ success: boolean; deletedCount: number }> {
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -24,4 +25,26 @@ export async function bulkDeleteBars(
     success: true,
     deletedCount: deletedBars.length,
   };
+}
+
+export function bulkDeleteBarsEndpoint(fastify: FastifyInstance) {
+  fastify.delete<{
+    Body: { ids: string[] };
+    Reply: { success: boolean; deletedCount: number } | { error: string };
+  }>("/bar", async (request, reply) => {
+    try {
+      const result = await bulkDeleteBars(request.body.ids);
+      return reply.status(200).send(result);
+    } catch (error) {
+      console.error("Bulk delete bars error:", error);
+      if (
+        error instanceof Error &&
+        (error.message === "Invalid or empty ids array" ||
+          error.message === "All IDs must be strings")
+      ) {
+        return reply.status(400).send({ error: error.message });
+      }
+      return reply.status(500).send({ error: "Failed to delete bars" });
+    }
+  });
 }

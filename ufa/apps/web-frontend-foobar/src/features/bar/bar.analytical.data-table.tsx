@@ -220,11 +220,13 @@ export default function BarAnalyticalDataTable({
   disableCache?: boolean;
   selectableRows?: boolean;
 }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "cdc_timestamp", desc: true },
+  ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-  const [queryTime, setQueryTime] = useState<number>(0);
+  const [queryTime, setQueryTime] = useState<number | null>(null);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
@@ -235,7 +237,11 @@ export default function BarAnalyticalDataTable({
   const fetchApiEndpoint = `${API_BASE}/bar`;
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
-  const { data: barResponse, isLoading } = useQuery({
+  const {
+    data: barResponse,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [
       "bars-cdc",
       fetchApiEndpoint,
@@ -270,9 +276,14 @@ export default function BarAnalyticalDataTable({
   // Get columns with CDC support
   const columns = createColumns();
 
+  let availableColumns = columns.filter((col) => col.id !== "select");
+  if (selectableRows) {
+    availableColumns = columns;
+  }
+
   const table = useReactTable({
     data,
-    columns: columns,
+    columns: availableColumns,
     state: {
       sorting,
       columnVisibility,
@@ -307,7 +318,7 @@ export default function BarAnalyticalDataTable({
     <div className="w-full flex-col justify-start gap-6">
       {serverPagination && (
         <div className="px-4 lg:px-6 mb-4 text-sm text-gray-600 flex items-center justify-between">
-          {queryTime > 0 && (
+          {queryTime !== null && (
             <div className="inline-flex items-baseline gap-2">
               <span className="leading-none font-semibold text-card-foreground text-[16px]">
                 Bar Analytical
@@ -358,7 +369,7 @@ export default function BarAnalyticalDataTable({
 
       <div className="relative flex flex-col gap-4 overflow-auto">
         <div className="overflow-hidden rounded-lg border">
-          <Table key={fetchApiEndpoint}>
+          <Table key="bar-analytical-table">
             <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -381,7 +392,7 @@ export default function BarAnalyticalDataTable({
               {isLoading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={availableColumns.length}
                     className="h-24 text-center"
                   >
                     <div className="flex items-center justify-center">
@@ -390,10 +401,21 @@ export default function BarAnalyticalDataTable({
                     </div>
                   </TableCell>
                 </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={availableColumns.length}
+                    className="h-24 text-center"
+                  >
+                    <div className="text-red-500">
+                      Error loading data: {error.message}
+                    </div>
+                  </TableCell>
+                </TableRow>
               ) : table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row, index) => (
                   <TableRow
-                    key={row.id}
+                    key={`${row.id}-${index}`}
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -409,7 +431,7 @@ export default function BarAnalyticalDataTable({
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={availableColumns.length}
                     className="h-24 text-center"
                   >
                     No results.
@@ -419,102 +441,84 @@ export default function BarAnalyticalDataTable({
             </TableBody>
           </Table>
         </div>
-      </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {selectableRows && (
-            <>
-              <NumericFormat
-                value={table.getFilteredSelectedRowModel().rows.length}
-                displayType="text"
-                thousandSeparator=","
-              />{" "}
-              of{" "}
-              <NumericFormat
-                value={table.getFilteredRowModel().rows.length}
-                displayType="text"
-                thousandSeparator=","
-              />{" "}
-              row(s) selected.
-            </>
-          )}
-        </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">Rows per page</p>
-            <Select
-              value={`${table.getState().pagination.pageSize}`}
-              onValueChange={(value) => {
-                table.setPageSize(Number(value));
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue
-                  placeholder={table.getState().pagination.pageSize}
+        <div className="flex items-center justify-between px-2">
+          <div className={`flex items-center space-x-6 lg:space-x-8`}>
+            <div className="flex items-center space-x-2">
+              <p className="text-sm font-medium">Rows per page</p>
+              <Select
+                value={`${table.getState().pagination.pageSize}`}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue
+                    placeholder={table.getState().pagination.pageSize}
+                  />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 40, 50].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              <span>
+                Page{" "}
+                <NumericFormat
+                  value={table.getState().pagination.pageIndex + 1}
+                  displayType="text"
+                  thousandSeparator=","
+                />{" "}
+                of{" "}
+                <NumericFormat
+                  value={table.getPageCount()}
+                  displayType="text"
+                  thousandSeparator=","
                 />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex w-fit items-center justify-center text-sm font-medium">
-            <span>
-              Page{" "}
-              <NumericFormat
-                value={table.getState().pagination.pageIndex + 1}
-                displayType="text"
-                thousandSeparator=","
-              />{" "}
-              of{" "}
-              <NumericFormat
-                value={table.getPageCount()}
-                displayType="text"
-                thousandSeparator=","
-              />
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to first page</span>
-              <IconChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="h-8 w-8 p-0"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to previous page</span>
-              <IconChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="h-8 w-8 p-0"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to next page</span>
-              <IconChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to last page</span>
-              <IconChevronsRight className="h-4 w-4" />
-            </Button>
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage() || isLoading}
+              >
+                <span className="sr-only">Go to first page</span>
+                <IconChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage() || isLoading}
+              >
+                <span className="sr-only">Go to previous page</span>
+                <IconChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="h-8 w-8 p-0"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage() || isLoading}
+              >
+                <span className="sr-only">Go to next page</span>
+                <IconChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage() || isLoading}
+              >
+                <span className="sr-only">Go to last page</span>
+                <IconChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
