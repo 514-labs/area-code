@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { FastifyInstance } from "fastify";
 import { db } from "../database/connection";
 import {
   bar,
@@ -8,7 +9,7 @@ import {
   type NewDbBar,
 } from "../database/schema";
 
-export async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
+async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
   const updateData: Partial<NewDbBar> = {
     ...data,
     updated_at: new Date(),
@@ -47,4 +48,29 @@ export async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
   }
 
   return updatedBar[0];
+}
+
+export function updateBarEndpoint(fastify: FastifyInstance) {
+  fastify.put<{
+    Params: { id: string };
+    Body: UpdateBar;
+    Reply: Bar | { error: string };
+  }>("/bar/:id", async (request, reply) => {
+    try {
+      const result = await updateBar(request.params.id, request.body);
+      return reply.status(200).send(result);
+    } catch (error) {
+      console.error("Update bar error:", error);
+      if (
+        error instanceof Error &&
+        error.message === "Referenced foo does not exist"
+      ) {
+        return reply.status(400).send({ error: error.message });
+      }
+      if (error instanceof Error && error.message === "Bar not found") {
+        return reply.status(404).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: "Invalid bar data" });
+    }
+  });
 }
