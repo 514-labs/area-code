@@ -1,10 +1,8 @@
 {
-  "id": "22802e6a-04b7-4291-ac54-7dfa39fa0c04",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "tables": {
-    "bar": {
+    "public.bar": {
       "name": "bar",
       "schema": "",
       "columns": {
@@ -66,17 +64,24 @@
         "bar_foo_id_foo_id_fk": {
           "name": "bar_foo_id_foo_id_fk",
           "tableFrom": "bar",
+          "columnsFrom": [
+            "foo_id"
+          ],
           "tableTo": "foo",
-          "columnsFrom": ["foo_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
-    "foo": {
+    "public.foo": {
       "name": "foo",
       "schema": "",
       "columns": {
@@ -173,9 +178,12 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
-    "foo_bar": {
+    "public.foo_bar": {
       "name": "foo_bar",
       "schema": "",
       "columns": {
@@ -224,41 +232,59 @@
         "foo_bar_foo_id_foo_id_fk": {
           "name": "foo_bar_foo_id_foo_id_fk",
           "tableFrom": "foo_bar",
+          "columnsFrom": [
+            "foo_id"
+          ],
           "tableTo": "foo",
-          "columnsFrom": ["foo_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "foo_bar_bar_id_bar_id_fk": {
           "name": "foo_bar_bar_id_bar_id_fk",
           "tableFrom": "foo_bar",
+          "columnsFrom": [
+            "bar_id"
+          ],
           "tableTo": "bar",
-          "columnsFrom": ["bar_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     }
   },
   "enums": {
-    "foo_status": {
+    "public.foo_status": {
       "name": "foo_status",
-      "values": {
-        "active": "active",
-        "inactive": "inactive",
-        "pending": "pending",
-        "archived": "archived"
-      }
+      "schema": "public",
+      "values": [
+        "active",
+        "inactive",
+        "pending",
+        "archived"
+      ]
     }
   },
   "schemas": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "22802e6a-04b7-4291-ac54-7dfa39fa0c04",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "sequences": {},
+  "policies": {},
+  "views": {},
+  "roles": {}
 }
