@@ -6,7 +6,7 @@ dotenvConfig({ path: ".env.development" });
 dotenvConfig({ path: ".env.local" });
 
 if (!process.env.SUPABASE_CONNECTION_STRING) {
-  throw new Error("DATABASE_URL is not set");
+  throw new Error("SUPABASE_CONNECTION_STRING is not set");
 }
 
 const connectionString: string = process.env.SUPABASE_CONNECTION_STRING;
