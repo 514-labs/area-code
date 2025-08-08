@@ -23,7 +23,7 @@ start_supabase() {
     # Wait for services to be ready using supabase status
     echo "Waiting for services to be ready..."
     for i in {1..30}; do
-        if pnpm supabase status > /dev/null 2>&1; then
+        if pnpm supabase status --workdir database > /dev/null 2>&1; then
             echo "Supabase services are ready"
             break
         fi

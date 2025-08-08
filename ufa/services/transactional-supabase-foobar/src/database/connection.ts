@@ -2,30 +2,39 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-let connectionString: string;
+let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: Pool | null = null;
 
-if (process.env.NODE_ENV === "production") {
+function initConnection() {
+  if (_db && _pool) return { db: _db, pool: _pool };
+
   if (!process.env.SUPABASE_CONNECTION_STRING) {
-    throw new Error(
-      "SUPABASE_CONNECTION_STRING environment variable is required for production"
-    );
+    throw new Error("SUPABASE_CONNECTION_STRING is not set");
   }
-  connectionString = process.env.SUPABASE_CONNECTION_STRING;
-  console.log("🔗 Production: Using SUPABASE_CONNECTION_STRING");
-} else {
-  connectionString =
-    process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
-  console.log("🔗 Development: Using Supabase CLI");
+
+  const connectionString: string = process.env.SUPABASE_CONNECTION_STRING;
+
+  _pool = new Pool({
+    connectionString,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  });
+
+  _db = drizzle(_pool, { schema });
+  return { db: _db, pool: _pool };
 }
 
-const pool = new Pool({
-  connectionString,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+  get(target, prop) {
+    const { db } = initConnection();
+    return db[prop as keyof typeof db];
+  },
 });
 
-export const db = drizzle(pool, { schema });
-
-export { pool };
+export const pool = new Proxy({} as Pool, {
+  get(target, prop) {
+    const { pool } = initConnection();
+    return pool[prop as keyof typeof pool];
+  },
+});

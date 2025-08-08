@@ -18,25 +18,20 @@ import {
   shutdownSupabaseLocalMCPClient,
 } from "./ai/mcp/supabase-mcp-client";
 
-// Load environment variables from .env file in parent directory
+// Load environment variables FIRST, before importing anything that might need them
 import { config as dotenvConfig } from "dotenv";
 import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from .env files in order of precedence
+//Load environment variables from .env files in order of precedence
 dotenvConfig({ path: path.resolve(__dirname, "../.env") });
-// .env.development (base development config)
 dotenvConfig({ path: path.resolve(__dirname, "../.env.development") });
-// .env.local (local overrides)
 dotenvConfig({ path: path.resolve(__dirname, "../.env.local") });
 
 // Watch for .env file changes in development
-if (
-  process.env.NODE_ENV === "development" ||
-  process.env.SUPABASE_CLI === "true"
-) {
+if (process.env.NODE_ENV === "development") {
   import("fs").then(({ watch, utimes }) => {
     const envFiles = [".env", ".env.development", ".env.local"];
 

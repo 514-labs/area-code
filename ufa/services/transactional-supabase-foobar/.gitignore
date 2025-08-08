@@ -1,8 +1,5 @@
 # Environment files (contain sensitive secrets)
-.env
 .env.local
-.env.development
-.env.test
 !.env.example
 
 # Docker data volumes - persistent database data
