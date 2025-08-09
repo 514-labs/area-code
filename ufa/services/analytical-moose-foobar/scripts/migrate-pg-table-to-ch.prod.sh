@@ -119,8 +119,7 @@ parse_clickhouse_details() {
     CH_PASSWORD="$password"
     # For production, we'll use the full URL as CH_HOST for HTTP calls
     CH_HOST="$db_url"
-    # Set default database for production
-    CH_DB="default"
+    # Database will be set later based on environment variable or user input
     
     echo "✅ ClickHouse connection parsed successfully"
     echo "   URL: $CH_HOST"
@@ -158,6 +157,22 @@ if [ "$USE_ENV_TABLES" = false ]; then
     echo
 fi
 
+# Set ClickHouse database (use env var if set, otherwise prompt)
+if [ -n "${CH_DATABASE:-}" ]; then
+    CH_DB="$CH_DATABASE"
+    echo "✅ Using ClickHouse database: $CH_DB (from env file)"
+else
+    read -p "ClickHouse database name (default: default): " CH_DB_INPUT
+    if [ -z "$CH_DB_INPUT" ]; then
+        CH_DB="default"
+        echo "✅ Using default ClickHouse database: $CH_DB"
+    else
+        CH_DB="$CH_DB_INPUT"
+        echo "✅ Using ClickHouse database: $CH_DB"
+    fi
+fi
+echo
+
 # Ask for additional options (or use env vars if provided)
 echo "Migration Options:"
 echo
@@ -180,13 +195,22 @@ else
     fi
 fi
 
-read -p "Keep temporary files after migration? (y/N): " KEEP_CHOICE
-KEEP_TEMP=false
-if [[ $KEEP_CHOICE =~ ^[Yy]$ ]]; then
-    KEEP_TEMP=true
-    echo "✅ Will keep temporary files"
+# Use KEEP_TEMP from env file if set, otherwise prompt
+if [ -n "${KEEP_TEMP:-}" ]; then
+    if [ "$KEEP_TEMP" = "true" ]; then
+        echo "✅ Will keep temporary files (from env file)"
+    else
+        echo "✅ Will clean up temporary files (from env file)"
+    fi
 else
-    echo "✅ Will clean up temporary files"
+    read -p "Keep temporary files after migration? (y/N): " KEEP_CHOICE
+    KEEP_TEMP=false
+    if [[ $KEEP_CHOICE =~ ^[Yy]$ ]]; then
+        KEEP_TEMP=true
+        echo "✅ Will keep temporary files"
+    else
+        echo "✅ Will clean up temporary files"
+    fi
 fi
 
 read -p "Limit number of records to migrate (leave empty for all): " COUNT_LIMIT
@@ -242,6 +266,7 @@ fi
 ARGS=(
     "--source-table" "$SOURCE_TABLE"
     "--dest-table" "$DEST_TABLE"
+    "--database" "$CH_DB"
     "--production"
 )
 

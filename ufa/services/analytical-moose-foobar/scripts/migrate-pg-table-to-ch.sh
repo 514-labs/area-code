@@ -14,7 +14,8 @@ CH_HOST=${CH_HOST:-localhost}
 CH_PORT=${CH_PORT:-18123}
 CH_USER=${CH_USER:-panda}
 CH_PASSWORD=${CH_PASSWORD:-pandapass}
-CH_DB=${CH_DB:-local}
+# Will be set after parsing command line arguments
+CH_DB=""
 
 # Detect which PostgreSQL container to use (Supabase CLI vs Production Docker)
 detect_postgres_container() {
@@ -38,6 +39,7 @@ KEEP_TEMP=false
 COUNT_LIMIT=""
 SOURCE_TABLE=""
 DEST_TABLE=""
+CH_DATABASE=""
 IS_PRODUCTION=false
 
 while [[ $# -gt 0 ]]; do
@@ -66,6 +68,10 @@ while [[ $# -gt 0 ]]; do
             fi
             shift 2
             ;;
+        --database)
+            CH_DATABASE="$2"
+            shift 2
+            ;;
         --production)
             IS_PRODUCTION=true
             shift
@@ -82,6 +88,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --clear-data           Clear existing data in ClickHouse before migration"
             echo "  --keep-temp            Keep temporary files after migration"
             echo "  --count <num>          Limit the number of records to migrate (for testing)"
+            echo "  --database <name>      ClickHouse database name (defaults: 'local' for dev, 'default' for prod)"
             echo "  --production           Use HTTP connection for production ClickHouse (instead of Docker)"
             echo "  --help                 Show this help message"
             echo ""
@@ -109,6 +116,21 @@ if [ -z "$DEST_TABLE" ]; then
     echo "❌ Error: --dest-table is required"
     echo "Use --help for usage information"
     exit 1
+fi
+
+# Set database name: use command line parameter, then environment variable, then defaults
+if [ -n "$CH_DATABASE" ]; then
+    CH_DB="$CH_DATABASE"
+elif [ -n "${CH_DB:-}" ]; then
+    # Use environment variable if set
+    CH_DB="${CH_DB}"
+else
+    # Default based on production mode
+    if [ "$IS_PRODUCTION" = true ]; then
+        CH_DB="default"
+    else
+        CH_DB="local"
+    fi
 fi
 
 # Set the PostgreSQL container name (only for development mode)
@@ -191,14 +213,17 @@ run_clickhouse_query() {
         # For ClickHouse Cloud, use the full URL as provided
         local ch_url="$CH_HOST"
         
+        # Add database parameter to URL
+        local query_url="${ch_url}?database=${CH_DB}"
+        
         if [ -n "$CH_PASSWORD" ]; then
-            if ! result=$(curl -s -u "$CH_USER:$CH_PASSWORD" -X POST "$ch_url" -d "$query" 2>&1); then
+            if ! result=$(curl -s -u "$CH_USER:$CH_PASSWORD" -X POST "$query_url" -d "$query" 2>&1); then
                 echo "❌ ClickHouse query failed: $query" >&2
                 echo "   Error: $result" >&2
                 return 1
             fi
         else
-            if ! result=$(curl -s -u "$CH_USER:" -X POST "$ch_url" -d "$query" 2>&1); then
+            if ! result=$(curl -s -u "$CH_USER:" -X POST "$query_url" -d "$query" 2>&1); then
                 echo "❌ ClickHouse query failed: $query" >&2
                 echo "   Error: $result" >&2
                 return 1
@@ -241,9 +266,9 @@ import_to_clickhouse() {
         # For ClickHouse Cloud, use the full URL as provided
         local ch_url="$CH_HOST"
         
-        # URL encode the query and add it to the URL
+        # URL encode the query and add it to the URL with database parameter
         local encoded_query=$(printf '%s' "INSERT INTO $table FORMAT JSONEachRow" | sed 's/ /%20/g')
-        local insert_url="${ch_url}?query=${encoded_query}"
+        local insert_url="${ch_url}?database=${CH_DB}&query=${encoded_query}"
         
         if [ -n "$CH_PASSWORD" ]; then
             if ! result=$(curl -s -u "$CH_USER:$CH_PASSWORD" -X POST "$insert_url" -H "Content-Type: application/json" --data-binary "@$file" 2>&1); then
