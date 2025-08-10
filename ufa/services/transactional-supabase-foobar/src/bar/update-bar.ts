@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import {
   bar,
   foo,
@@ -9,7 +9,11 @@ import {
   type NewDbBar,
 } from "../database/schema";
 
-async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
+async function updateBar(
+  id: string,
+  data: UpdateBar,
+  authToken?: string
+): Promise<Bar> {
   const updateData: Partial<NewDbBar> = {
     ...data,
     updated_at: new Date(),
@@ -17,6 +21,7 @@ async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
 
   // If updating foo_id, verify that foo exists
   if (updateData.foo_id) {
+    const db = await getDb(authToken);
     const fooExists = await db
       .select()
       .from(foo)
@@ -28,6 +33,7 @@ async function updateBar(id: string, data: UpdateBar): Promise<Bar> {
     }
   }
 
+  const db = await getDb(authToken);
   const updatedBar = await db
     .update(bar)
     .set(updateData)
@@ -57,7 +63,12 @@ export function updateBarEndpoint(fastify: FastifyInstance) {
     Reply: Bar | { error: string };
   }>("/bar/:id", async (request, reply) => {
     try {
-      const result = await updateBar(request.params.id, request.body);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await updateBar(
+        request.params.id,
+        request.body,
+        authToken
+      );
       return reply.status(200).send(result);
     } catch (error) {
       console.error("Update bar error:", error);

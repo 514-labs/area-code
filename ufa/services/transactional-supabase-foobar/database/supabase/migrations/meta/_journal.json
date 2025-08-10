@@ -15,6 +15,13 @@
       "when": 1754657210108,
       "tag": "0001_careful_onslaught",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754763705543,
+      "tag": "0002_gifted_groot",
+      "breakpoints": true
     }
   ]
 }

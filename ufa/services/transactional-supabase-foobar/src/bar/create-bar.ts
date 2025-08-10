@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import {
   bar,
   foo,
@@ -9,10 +9,11 @@ import {
   type CreateBar,
 } from "../database/schema";
 
-async function createBar(data: CreateBar): Promise<Bar> {
+async function createBar(data: CreateBar, authToken?: string): Promise<Bar> {
   const validatedData = insertBarSchema.parse(data);
 
   // Verify that foo exists
+  const db = await getDb(authToken);
   const fooExists = await db
     .select()
     .from(foo)
@@ -33,7 +34,8 @@ export function createBarEndpoint(fastify: FastifyInstance) {
     "/bar",
     async (request, reply) => {
       try {
-        const result = await createBar(request.body);
+        const authToken = request.headers.authorization?.replace("Bearer ", "");
+        const result = await createBar(request.body, authToken);
         return reply.status(201).send(result);
       } catch (error) {
         console.error("Create bar error:", error);

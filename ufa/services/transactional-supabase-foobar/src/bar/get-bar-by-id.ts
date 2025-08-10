@@ -1,10 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import { bar, foo } from "../database/schema";
 import { BarWithFoo } from "@workspace/models/bar";
 
-async function getBarById(id: string): Promise<BarWithFoo> {
+async function getBarById(id: string, authToken?: string): Promise<BarWithFoo> {
+  const db = await getDb(authToken);
   const barWithFoo = await db
     .select({
       id: bar.id,
@@ -48,7 +49,8 @@ export function getBarByIdEndpoint(fastify: FastifyInstance) {
   }>("/bar/:id", async (request, reply) => {
     try {
       const { id } = request.params;
-      const result = await getBarById(id);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await getBarById(id, authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Error fetching bar:", error);

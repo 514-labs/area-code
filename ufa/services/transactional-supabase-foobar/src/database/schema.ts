@@ -10,7 +10,10 @@ import {
   decimal,
   pgEnum,
   index,
+  pgPolicy,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { authenticatedRole, anonRole } from "drizzle-orm/supabase";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import type {
   Foo,
@@ -48,6 +51,17 @@ export const foo = pgTable(
     index("foo_created_at_idx").on(table.created_at),
     index("foo_score_idx").on(table.score),
     index("foo_score_time_idx").on(table.created_at, table.score),
+    // RLS policies
+    pgPolicy("foo_read_all", {
+      for: "select",
+      using: sql`true`, // Everyone can read
+    }),
+    pgPolicy("foo_write_admin_only", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
+      withCheck: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
+    }),
   ]
 );
 
@@ -68,6 +82,18 @@ export const bar = pgTable(
   (table) => [
     index("bar_created_at_idx").on(table.created_at),
     index("bar_foo_id_idx").on(table.foo_id),
+    index("bar_updated_at_idx").on(table.updated_at),
+    // RLS policies
+    pgPolicy("bar_read_all", {
+      for: "select",
+      using: sql`true`, // Everyone can read
+    }),
+    pgPolicy("bar_write_admin_only", {
+      for: "all",
+      to: authenticatedRole,
+      using: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
+      withCheck: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
+    }),
   ]
 );
 

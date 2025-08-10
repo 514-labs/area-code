@@ -27,3 +27,15 @@ export function getRetrievalApiBase() {
 
   return value;
 }
+
+export function getSupabaseUrl() {
+  const value = import.meta.env.VITE_SUPABASE_URL;
+  if (!value) throw new Error("Missing env var: VITE_SUPABASE_URL");
+  return value;
+}
+
+export function getSupabaseAnonKey() {
+  const value = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!value) throw new Error("Missing env var: VITE_SUPABASE_ANON_KEY");
+  return value;
+}

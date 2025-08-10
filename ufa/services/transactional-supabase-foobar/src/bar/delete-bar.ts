@@ -1,9 +1,13 @@
 import { eq } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import { bar } from "../database/schema";
 
-async function deleteBar(id: string): Promise<{ success: boolean }> {
+async function deleteBar(
+  id: string,
+  authToken?: string
+): Promise<{ success: boolean }> {
+  const db = await getDb(authToken);
   const deletedBar = await db.delete(bar).where(eq(bar.id, id)).returning();
 
   if (deletedBar.length === 0) {
@@ -19,7 +23,8 @@ export function deleteBarEndpoint(fastify: FastifyInstance) {
     Reply: { success: boolean } | { error: string };
   }>("/bar/:id", async (request, reply) => {
     try {
-      const result = await deleteBar(request.params.id);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await deleteBar(request.params.id, authToken);
       return reply.status(200).send(result);
     } catch (error) {
       console.error("Delete bar error:", error);

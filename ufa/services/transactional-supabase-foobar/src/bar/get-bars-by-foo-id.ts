@@ -1,8 +1,12 @@
 import { eq, desc } from "drizzle-orm";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import { bar, type Bar } from "../database/schema";
 
-export async function getBarsByFooId(fooId: string): Promise<Bar[]> {
+export async function getBarsByFooId(
+  fooId: string,
+  authToken?: string
+): Promise<Bar[]> {
+  const db = await getDb(authToken);
   const bars = await db
     .select({
       id: bar.id,

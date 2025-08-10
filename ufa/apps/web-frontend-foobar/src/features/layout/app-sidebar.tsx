@@ -1,6 +1,7 @@
 import { NavMain, type NavMainItem } from "./nav-main";
 import { NavSecondary, type NavItem } from "./nav-secondary";
 import { NavUser } from "./nav-user";
+import { useAuth } from "@/auth/auth-context";
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +33,8 @@ export function AppSidebar({
   topHero,
   variant = "inset",
 }: AppSidebarProps) {
+  const { user: authUser } = useAuth();
+
   return (
     <Sidebar collapsible="offcanvas" variant={variant}>
       <SidebarHeader>
@@ -54,6 +57,20 @@ export function AppSidebar({
           className="mt-auto"
         />
       </SidebarContent>
+      {authUser && (
+        <SidebarFooter>
+          <NavUser
+            user={{
+              name:
+                authUser.user_metadata?.full_name ||
+                authUser.email?.split("@")[0] ||
+                "User",
+              email: authUser.email || "",
+              avatar: authUser.user_metadata?.avatar_url || "",
+            }}
+          />
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }

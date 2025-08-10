@@ -1,13 +1,16 @@
 import { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import { foo } from "../database/schema";
 import { GetFoosAverageScoreResponse } from "@workspace/models/foo";
 
-async function getFooAverageScore(): Promise<GetFoosAverageScoreResponse> {
+async function getFooAverageScore(
+  authToken?: string
+): Promise<GetFoosAverageScoreResponse> {
   const startTime = Date.now();
 
   // Get average score and count
+  const db = await getDb(authToken);
   const result = await db
     .select({
       averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
@@ -33,7 +36,8 @@ export function getFooAverageScoreEndpoint(fastify: FastifyInstance) {
     Reply: GetFoosAverageScoreResponse | { error: string };
   }>("/foo/average-score", async (request, reply) => {
     try {
-      const result = await getFooAverageScore();
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await getFooAverageScore(authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Error calculating average score:", error);

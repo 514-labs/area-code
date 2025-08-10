@@ -1,6 +1,6 @@
 import { eq, desc, asc, sql } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import { bar, foo } from "../database/schema";
 import {
   GetBarsParams,
@@ -8,7 +8,10 @@ import {
   BarWithFoo,
 } from "@workspace/models/bar";
 
-async function getAllBars(params: GetBarsParams): Promise<GetBarsResponse> {
+async function getAllBars(
+  params: GetBarsParams,
+  authToken?: string
+): Promise<GetBarsResponse> {
   const limit = Number(params.limit) || 10;
   const offset = Number(params.offset) || 0;
 
@@ -55,6 +58,7 @@ async function getAllBars(params: GetBarsParams): Promise<GetBarsResponse> {
   const startTime = Date.now();
 
   // Execute query with sorting and pagination using normal Drizzle query builder
+  const db = await getDb(authToken);
   const barItems = await db
     .select({
       id: bar.id,
@@ -115,7 +119,8 @@ export function getAllBarsEndpoint(fastify: FastifyInstance) {
     Reply: GetBarsResponse | { error: string };
   }>("/bar", async (request, reply) => {
     try {
-      const result = await getAllBars(request.query);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await getAllBars(request.query, authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Error fetching bars:", error);

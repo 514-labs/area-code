@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDb } from "../database/connection";
 import {
   foo,
   type Foo,
@@ -8,13 +8,10 @@ import {
 } from "../database/schema";
 import { convertDbFooToModel, convertModelToDbFoo } from "./foo-utils";
 
-async function createFoo(data: CreateFoo): Promise<Foo> {
+async function createFoo(data: CreateFoo, authToken?: string): Promise<Foo> {
   console.log("Received request body:", JSON.stringify(data, null, 2));
 
-  // Convert API data to database format - minimal conversion now needed
   const dbData = convertModelToDbFoo(data);
-
-  // Manually ensure all types are correct for database insert
   const insertData: NewDbFoo = {
     name: dbData.name || data.name,
     description: dbData.description ?? null,
@@ -29,8 +26,8 @@ async function createFoo(data: CreateFoo): Promise<Foo> {
     large_text: dbData.large_text || "",
   };
 
+  const db = await getDb(authToken);
   const newFoo = await db.insert(foo).values(insertData).returning();
-
   return convertDbFooToModel(newFoo[0]);
 }
 
@@ -40,10 +37,26 @@ export function createFooEndpoint(fastify: FastifyInstance) {
     Reply: Foo | { error: string; details?: string; received?: CreateFoo };
   }>("/foo", async (request, reply) => {
     try {
-      const result = await createFoo(request.body);
+      const authHeader = request.headers.authorization;
+      const authToken = authHeader?.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : undefined;
+
+      const result = await createFoo(request.body, authToken);
       return reply.status(201).send(result);
     } catch (error) {
       console.error("Validation error:", error);
+
+      if (
+        error instanceof Error &&
+        error.message.includes("permission denied")
+      ) {
+        return reply.status(403).send({
+          error: "Permission denied",
+          details: "Insufficient permissions to create foo",
+        });
+      }
+
       return reply.status(400).send({
         error: "Invalid foo data",
         details: error instanceof Error ? error.message : "Unknown error",
