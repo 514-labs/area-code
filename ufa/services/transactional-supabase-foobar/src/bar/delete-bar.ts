@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { bar } from "../database/schema";
 
 async function deleteBar(
   id: string,
   authToken?: string
 ): Promise<{ success: boolean }> {
-  const db = await getDb(authToken);
+  const db = getDrizzleSupabaseClient(authToken);
   const deletedBar = await db.delete(bar).where(eq(bar.id, id)).returning();
 
   if (deletedBar.length === 0) {

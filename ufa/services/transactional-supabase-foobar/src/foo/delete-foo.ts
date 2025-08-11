@@ -1,14 +1,16 @@
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo } from "../database/schema";
 
 async function deleteFoo(
   id: string,
   authToken?: string
 ): Promise<{ success: boolean }> {
-  const db = await getDb(authToken);
-  const deletedFoo = await db.delete(foo).where(eq(foo.id, id)).returning();
+  const client = await getDrizzleSupabaseClient(authToken);
+  const deletedFoo = await client.runTransaction(async (tx) => {
+    return await tx.delete(foo).where(eq(foo.id, id)).returning();
+  });
 
   if (deletedFoo.length === 0) {
     throw new Error("Foo not found");

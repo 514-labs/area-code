@@ -1,6 +1,6 @@
 import { eq, desc, asc, sql } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { bar, foo } from "../database/schema";
 import {
   GetBarsParams,
@@ -58,7 +58,7 @@ async function getAllBars(
   const startTime = Date.now();
 
   // Execute query with sorting and pagination using normal Drizzle query builder
-  const db = await getDb(authToken);
+  const db = getDrizzleSupabaseClient(authToken);
   const barItems = await db
     .select({
       id: bar.id,

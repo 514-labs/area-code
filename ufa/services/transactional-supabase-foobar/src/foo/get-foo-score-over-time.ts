@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo } from "../database/schema";
 import {
   GetFoosScoreOverTimeParams,
@@ -30,7 +30,7 @@ async function getFooScoreOverTime(
   const endDateStr = endDate.toISOString().split("T")[0];
 
   // Query to get daily score aggregations using PostgreSQL date functions
-  const db = await getDb(authToken);
+  const db = getDrizzleSupabaseClient(authToken);
   const result = await db
     .select({
       date: sql<string>`DATE(created_at)`,

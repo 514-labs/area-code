@@ -1,11 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { bar, foo } from "../database/schema";
 import { BarWithFoo } from "@workspace/models/bar";
 
 async function getBarById(id: string, authToken?: string): Promise<BarWithFoo> {
-  const db = await getDb(authToken);
+  const db = getDrizzleSupabaseClient(authToken);
   const barWithFoo = await db
     .select({
       id: bar.id,

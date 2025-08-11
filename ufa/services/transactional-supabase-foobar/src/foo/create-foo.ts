@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import {
   foo,
   type Foo,
@@ -26,9 +26,13 @@ async function createFoo(data: CreateFoo, authToken?: string): Promise<Foo> {
     large_text: dbData.large_text || "",
   };
 
-  const db = await getDb(authToken);
-  const newFoo = await db.insert(foo).values(insertData).returning();
-  return convertDbFooToModel(newFoo[0]);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const newFoo = await client.runTransaction(async (tx) => {
+    const result = await tx.insert(foo).values(insertData).returning();
+    return result[0];
+  });
+
+  return convertDbFooToModel(newFoo);
 }
 
 export function createFooEndpoint(fastify: FastifyInstance) {

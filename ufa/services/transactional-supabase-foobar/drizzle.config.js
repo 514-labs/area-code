@@ -1,12 +1,11 @@
 import { defineConfig } from "drizzle-kit";
-import { getSupabaseConnectionString } from "./src/env-vars.js";
 
 export default defineConfig({
   schema: "./src/database/schema.ts",
   out: "./database/supabase/migrations", // Output to Supabase migrations directory
   dialect: "postgresql",
   dbCredentials: {
-    url: getSupabaseConnectionString(),
+    url: process.env.SUPABASE_CONNECTION_STRING,
   },
   schemaFilter: ["public"],
   verbose: true,

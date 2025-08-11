@@ -1,12 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo, type Foo } from "../database/schema";
 import { convertDbFooToModel } from "./foo-utils";
 
 async function getFooById(id: string, authToken?: string): Promise<Foo> {
-  const db = await getDb(authToken);
-  const fooItem = await db.select().from(foo).where(eq(foo.id, id)).limit(1);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const fooItem = await client.runTransaction(async (tx) => {
+    return await tx.select().from(foo).where(eq(foo.id, id)).limit(1);
+  });
 
   if (fooItem.length === 0) {
     throw new Error("Foo not found");

@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { inArray } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo } from "../database/schema";
 
 async function bulkDeleteFoos(
@@ -17,11 +17,10 @@ async function bulkDeleteFoos(
   }
 
   // Delete multiple foo items using the inArray helper from drizzle-orm
-  const db = await getDb(authToken);
-  const deletedFoos = await db
-    .delete(foo)
-    .where(inArray(foo.id, ids))
-    .returning();
+  const client = await getDrizzleSupabaseClient(authToken);
+  const deletedFoos = await client.runTransaction(async (tx) => {
+    return await tx.delete(foo).where(inArray(foo.id, ids)).returning();
+  });
 
   return {
     success: true,

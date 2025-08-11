@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import {
   foo,
   type Foo,
@@ -33,12 +33,14 @@ async function updateFoo(
   if (dbData.large_text !== undefined)
     updateData.large_text = dbData.large_text;
 
-  const db = await getDb(authToken);
-  const updatedFoo = await db
-    .update(foo)
-    .set(updateData)
-    .where(eq(foo.id, id))
-    .returning();
+  const client = await getDrizzleSupabaseClient(authToken);
+  const updatedFoo = await client.runTransaction(async (tx) => {
+    return await tx
+      .update(foo)
+      .set(updateData)
+      .where(eq(foo.id, id))
+      .returning();
+  });
 
   if (updatedFoo.length === 0) {
     throw new Error("Foo not found");

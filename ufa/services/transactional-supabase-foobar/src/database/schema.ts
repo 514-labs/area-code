@@ -11,6 +11,7 @@ import {
   pgEnum,
   index,
   pgPolicy,
+  pgSchema,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { authenticatedRole, anonRole } from "drizzle-orm/supabase";
@@ -24,12 +25,41 @@ import type {
   UpdateBar,
 } from "@workspace/models";
 
+const authSchema = pgSchema("auth");
+const usersInAuth = authSchema.table("users", {
+  id: uuid("id").primaryKey(),
+});
+
+// important note: the security definer public.user_is_admin() is defined in migrations/0002_lovely_harrier.sql
+// important note: trigger on auth.users automatically creates public.users records
+
 export const fooStatusEnum = pgEnum("foo_status", [
   "active",
   "inactive",
   "pending",
   "archived",
 ]);
+
+export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .references(() => usersInAuth.id),
+    role: userRoleEnum("role").notNull().default("user"),
+    created_at: timestamp("created_at").notNull().defaultNow(),
+    updated_at: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    pgPolicy("users_read_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`id = auth.uid()`,
+    }),
+  ]
+);
 
 export const foo = pgTable(
   "foo",
@@ -54,13 +84,24 @@ export const foo = pgTable(
     // RLS policies
     pgPolicy("foo_read_all", {
       for: "select",
+      to: [authenticatedRole, anonRole],
       using: sql`true`, // Everyone can read
     }),
-    pgPolicy("foo_write_admin_only", {
-      for: "all",
+    pgPolicy("foo_insert_admin_only", {
+      for: "insert",
       to: authenticatedRole,
-      using: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
-      withCheck: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
+      withCheck: sql`public.user_is_admin()`,
+    }),
+    pgPolicy("foo_update_admin_only", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`true`, // Can see all rows for update
+      withCheck: sql`public.user_is_admin()`, // But only admin can actually update
+    }),
+    pgPolicy("foo_delete_admin_only", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.user_is_admin()`, // Only admin can delete
     }),
   ]
 );
@@ -86,16 +127,30 @@ export const bar = pgTable(
     // RLS policies
     pgPolicy("bar_read_all", {
       for: "select",
+      to: [authenticatedRole, anonRole],
       using: sql`true`, // Everyone can read
     }),
-    pgPolicy("bar_write_admin_only", {
-      for: "all",
+    pgPolicy("bar_insert_admin_only", {
+      for: "insert",
       to: authenticatedRole,
-      using: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
-      withCheck: sql`(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'`,
+      withCheck: sql`public.user_is_admin()`,
+    }),
+    pgPolicy("bar_update_admin_only", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`true`, // Can see all rows for update
+      withCheck: sql`public.user_is_admin()`, // But only admin can actually update
+    }),
+    pgPolicy("bar_delete_admin_only", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`public.user_is_admin()`, // Only admin can delete
     }),
   ]
 );
+
+export const insertUsersSchema = createInsertSchema(users);
+export const selectUsersSchema = createSelectSchema(users);
 
 export const insertFooSchema = createInsertSchema(foo);
 export const selectFooSchema = createSelectSchema(foo);
@@ -104,6 +159,9 @@ export const insertBarSchema = createInsertSchema(bar);
 export const selectBarSchema = createSelectSchema(bar);
 
 export type { Foo, CreateFoo, UpdateFoo, Bar, CreateBar, UpdateBar };
+
+export type DbUsers = typeof users.$inferSelect;
+export type NewDbUsers = typeof users.$inferInsert;
 
 export type DbFoo = typeof foo.$inferSelect;
 export type NewDbFoo = typeof foo.$inferInsert;

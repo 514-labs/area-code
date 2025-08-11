@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import {
   bar,
   foo,
@@ -12,19 +12,21 @@ import {
 async function createBar(data: CreateBar, authToken?: string): Promise<Bar> {
   const validatedData = insertBarSchema.parse(data);
 
-  // Verify that foo exists
-  const db = await getDb(authToken);
-  const fooExists = await db
-    .select()
-    .from(foo)
-    .where(eq(foo.id, validatedData.foo_id))
-    .limit(1);
+  // Verify that foo exists and create bar in transaction
+  const client = await getDrizzleSupabaseClient(authToken);
+  const newBar = await client.runTransaction(async (tx) => {
+    const fooExists = await tx
+      .select()
+      .from(foo)
+      .where(eq(foo.id, validatedData.foo_id))
+      .limit(1);
 
-  if (fooExists.length === 0) {
-    throw new Error("Referenced foo does not exist");
-  }
+    if (fooExists.length === 0) {
+      throw new Error("Referenced foo does not exist");
+    }
 
-  const newBar = await db.insert(bar).values(validatedData).returning();
+    return await tx.insert(bar).values(validatedData).returning();
+  });
 
   return newBar[0];
 }

@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { asc, desc, count } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo } from "../database/schema";
 import { GetFoosParams, GetFoosResponse } from "@workspace/models/foo";
 import { convertDbFooToModel } from "./foo-utils";
@@ -66,19 +66,24 @@ async function getAllFoos(
   const startTime = Date.now();
 
   // Get total count for pagination
-  const db = await getDb(authToken);
-  const totalCountQuery = db.select({ count: count() }).from(foo);
-  const totalCountResult = await totalCountQuery;
+  const client = await getDrizzleSupabaseClient(authToken);
+  const { totalCountResult, fooItemsFromQuery } = await client.runTransaction(async (tx) => {
+    const totalCountQuery = tx.select({ count: count() }).from(foo);
+    const totalCountResult = await totalCountQuery;
+    
+    const fooItemsQuery = tx
+      .select()
+      .from(foo)
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset);
+    
+    const fooItemsFromQuery = await fooItemsQuery;
+    
+    return { totalCountResult, fooItemsFromQuery };
+  });
+  
   const total = totalCountResult[0]?.count || 0;
-
-  const fooItemsQuery = db
-    .select()
-    .from(foo)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
-
-  const fooItemsFromQuery = await fooItemsQuery;
 
   const convertedFoo = fooItemsFromQuery.map(convertDbFooToModel);
 

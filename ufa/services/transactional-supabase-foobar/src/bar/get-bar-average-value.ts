@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { bar } from "../database/schema";
 import { GetBarsAverageValueResponse } from "@workspace/models/bar";
 
@@ -10,7 +10,7 @@ async function getBarAverageValue(
   const startTime = Date.now();
 
   // Get average value and count
-  const db = await getDb(authToken);
+  const db = getDrizzleSupabaseClient(authToken);
   const result = await db
     .select({
       averageValue: sql<number>`AVG(CAST(value AS DECIMAL))`,

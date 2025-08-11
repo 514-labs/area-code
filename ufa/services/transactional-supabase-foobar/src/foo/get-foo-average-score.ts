@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo } from "../database/schema";
 import { GetFoosAverageScoreResponse } from "@workspace/models/foo";
 
@@ -10,13 +10,15 @@ async function getFooAverageScore(
   const startTime = Date.now();
 
   // Get average score and count
-  const db = await getDb(authToken);
-  const result = await db
-    .select({
-      averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(foo);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const result = await client.runTransaction(async (tx) => {
+    return await tx
+      .select({
+        averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(foo);
+  });
 
   const endTime = Date.now();
   const queryTime = endTime - startTime;
@@ -36,7 +38,22 @@ export function getFooAverageScoreEndpoint(fastify: FastifyInstance) {
     Reply: GetFoosAverageScoreResponse | { error: string };
   }>("/foo/average-score", async (request, reply) => {
     try {
+      console.log("🔍 Request headers:", {
+        authorization: request.headers.authorization
+          ? `${request.headers.authorization.substring(0, 30)}...`
+          : null,
+        cookie: request.headers.cookie ? "present" : null,
+        "x-supabase-auth": request.headers["x-supabase-auth"]
+          ? "present"
+          : null,
+      });
+
       const authToken = request.headers.authorization?.replace("Bearer ", "");
+      console.log(
+        "🔍 Extracted authToken:",
+        authToken ? `${authToken.substring(0, 20)}...` : null
+      );
+
       const result = await getFooAverageScore(authToken);
       return reply.send(result);
     } catch (error) {

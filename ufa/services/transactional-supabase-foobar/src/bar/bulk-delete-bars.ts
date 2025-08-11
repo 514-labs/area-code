@@ -1,6 +1,6 @@
 import { inArray } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { bar } from "../database/schema";
 
 async function bulkDeleteBars(
@@ -17,7 +17,7 @@ async function bulkDeleteBars(
   }
 
   // Delete multiple bar items using the inArray helper from drizzle-orm
-  const db = await getDb(authToken);
+  const db = getDrizzleSupabaseClient(authToken);
   const deletedBars = await db
     .delete(bar)
     .where(inArray(bar.id, ids))

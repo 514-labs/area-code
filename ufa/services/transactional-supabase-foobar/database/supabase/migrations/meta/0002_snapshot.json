@@ -1,5 +1,5 @@
 {
-  "id": "447c4183-21b3-4198-97b7-e45833c5206d",
+  "id": "272c6bfb-8ae5-42f7-b246-411dfce994b5",
   "prevId": "f07114d3-bda3-43eb-b0cd-b353d383a50a",
   "version": "7",
   "dialect": "postgresql",
@@ -131,19 +131,20 @@
           "as": "PERMISSIVE",
           "for": "SELECT",
           "to": [
-            "public"
+            "anon",
+            "authenticated"
           ],
           "using": "true"
         },
-        "bar_write_admin_only": {
-          "name": "bar_write_admin_only",
+        "bar_cud_admin_only": {
+          "name": "bar_cud_admin_only",
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": [
             "authenticated"
           ],
-          "using": "(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'",
-          "withCheck": "(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'"
+          "using": "public.user_is_admin()",
+          "withCheck": "public.user_is_admin()"
         }
       },
       "checkConstraints": {},
@@ -299,19 +300,86 @@
           "as": "PERMISSIVE",
           "for": "SELECT",
           "to": [
-            "public"
+            "anon",
+            "authenticated"
           ],
           "using": "true"
         },
-        "foo_write_admin_only": {
-          "name": "foo_write_admin_only",
+        "foo_cud_admin_only": {
+          "name": "foo_cud_admin_only",
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": [
             "authenticated"
           ],
-          "using": "(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'",
-          "withCheck": "(auth.jwt() ->> 'app_metadata')::jsonb ->> 'role' = 'admin'"
+          "using": "public.user_is_admin()",
+          "withCheck": "public.user_is_admin()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'user'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_id_users_id_fk": {
+          "name": "users_id_users_id_fk",
+          "tableFrom": "users",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "users_read_own": {
+          "name": "users_read_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "id = auth.uid()"
         }
       },
       "checkConstraints": {},
@@ -327,6 +395,14 @@
         "inactive",
         "pending",
         "archived"
+      ]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "user",
+        "admin"
       ]
     }
   },

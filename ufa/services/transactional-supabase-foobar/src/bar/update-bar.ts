@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { getDb } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import {
   bar,
   foo,
@@ -21,7 +21,7 @@ async function updateBar(
 
   // If updating foo_id, verify that foo exists
   if (updateData.foo_id) {
-    const db = await getDb(authToken);
+    const db = getDrizzleSupabaseClient(authToken);
     const fooExists = await db
       .select()
       .from(foo)
@@ -33,7 +33,7 @@ async function updateBar(
     }
   }
 
-  const db = await getDb(authToken);
+  const db = getDrizzleSupabaseClient(authToken);
   const updatedBar = await db
     .update(bar)
     .set(updateData)
