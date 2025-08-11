@@ -17,11 +17,10 @@ async function bulkDeleteBars(
   }
 
   // Delete multiple bar items using the inArray helper from drizzle-orm
-  const db = getDrizzleSupabaseClient(authToken);
-  const deletedBars = await db
-    .delete(bar)
-    .where(inArray(bar.id, ids))
-    .returning();
+  const client = await getDrizzleSupabaseClient(authToken);
+  const deletedBars = await client.runTransaction(async (tx) => {
+    return await tx.delete(bar).where(inArray(bar.id, ids)).returning();
+  });
 
   return {
     success: true,

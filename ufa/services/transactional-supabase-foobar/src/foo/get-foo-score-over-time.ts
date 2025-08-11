@@ -30,21 +30,23 @@ async function getFooScoreOverTime(
   const endDateStr = endDate.toISOString().split("T")[0];
 
   // Query to get daily score aggregations using PostgreSQL date functions
-  const db = getDrizzleSupabaseClient(authToken);
-  const result = await db
-    .select({
-      date: sql<string>`DATE(created_at)`,
-      averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
-      totalCount: sql<number>`COUNT(*)`,
-    })
-    .from(foo)
-    .where(
-      sql`DATE(created_at) >= ${startDateStr} 
-          AND DATE(created_at) <= ${endDateStr}
-          AND score IS NOT NULL`
-    )
-    .groupBy(sql`DATE(created_at)`)
-    .orderBy(sql`DATE(created_at) ASC`);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const result = await client.runTransaction(async (tx) => {
+    return await tx
+      .select({
+        date: sql<string>`DATE(created_at)`,
+        averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
+        totalCount: sql<number>`COUNT(*)`,
+      })
+      .from(foo)
+      .where(
+        sql`DATE(created_at) >= ${startDateStr} 
+            AND DATE(created_at) <= ${endDateStr}
+            AND score IS NOT NULL`
+      )
+      .groupBy(sql`DATE(created_at)`)
+      .orderBy(sql`DATE(created_at) ASC`);
+  });
 
   const endTime = Date.now();
   const queryTime = endTime - startTime;

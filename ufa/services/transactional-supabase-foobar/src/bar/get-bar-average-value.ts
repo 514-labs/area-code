@@ -10,13 +10,15 @@ async function getBarAverageValue(
   const startTime = Date.now();
 
   // Get average value and count
-  const db = getDrizzleSupabaseClient(authToken);
-  const result = await db
-    .select({
-      averageValue: sql<number>`AVG(CAST(value AS DECIMAL))`,
-      count: sql<number>`COUNT(*)`,
-    })
-    .from(bar);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const result = await client.runTransaction(async (tx) => {
+    return await tx
+      .select({
+        averageValue: sql<number>`AVG(CAST(value AS DECIMAL))`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(bar);
+  });
 
   const endTime = Date.now();
   const queryTime = endTime - startTime;

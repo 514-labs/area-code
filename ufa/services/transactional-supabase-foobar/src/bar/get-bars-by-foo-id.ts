@@ -6,21 +6,23 @@ export async function getBarsByFooId(
   fooId: string,
   authToken?: string
 ): Promise<Bar[]> {
-  const db = getDrizzleSupabaseClient(authToken);
-  const bars = await db
-    .select({
-      id: bar.id,
-      foo_id: bar.foo_id,
-      value: bar.value,
-      label: bar.label,
-      notes: bar.notes,
-      is_enabled: bar.is_enabled,
-      created_at: bar.created_at,
-      updated_at: bar.updated_at,
-    })
-    .from(bar)
-    .where(eq(bar.foo_id, fooId))
-    .orderBy(desc(bar.created_at));
+  const client = await getDrizzleSupabaseClient(authToken);
+  const bars = await client.runTransaction(async (tx) => {
+    return await tx
+      .select({
+        id: bar.id,
+        foo_id: bar.foo_id,
+        value: bar.value,
+        label: bar.label,
+        notes: bar.notes,
+        is_enabled: bar.is_enabled,
+        created_at: bar.created_at,
+        updated_at: bar.updated_at,
+      })
+      .from(bar)
+      .where(eq(bar.foo_id, fooId))
+      .orderBy(desc(bar.created_at));
+  });
 
   return bars;
 }
