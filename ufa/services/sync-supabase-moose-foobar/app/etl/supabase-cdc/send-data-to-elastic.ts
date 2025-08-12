@@ -1,6 +1,5 @@
 import { getRetrievalBaseUrl } from "../../env-vars";
 
-const RETRIEVAL_BASE_URL = getRetrievalBaseUrl();
 
 export async function sendDataToElasticsearch(
   type: "foo" | "bar",
@@ -8,7 +7,7 @@ export async function sendDataToElasticsearch(
   data: Record<string, unknown>
 ) {
   console.log("Sending data to Elasticsearch:", type, action, data);
-  const retrievalUrl = RETRIEVAL_BASE_URL;
+  const retrievalUrl = getRetrievalBaseUrl();
   const url = `${retrievalUrl}/api/ingest/${type}`;
 
   try {
