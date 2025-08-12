@@ -15,3 +15,5 @@ export {
   supabaseCDCTask,
   supabaseCDCWorkflow,
 } from "./etl/supabase-cdc/supabase-cdc-workflow";
+
+export { default as startWorkflow } from "./apis/start-workflow";
