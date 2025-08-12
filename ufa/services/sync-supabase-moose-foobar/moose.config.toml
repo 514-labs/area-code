@@ -45,5 +45,5 @@ postgresql_version = "13"
 [features]
 streaming_engine = false
 workflows = true
-data_model_v2 = false
+data_model_v2 = true
 olap = false
