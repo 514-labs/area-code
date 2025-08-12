@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "@514labs/moose-lib": "latest"
