@@ -1,11 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { asc, desc, count } from "drizzle-orm";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo } from "../database/schema";
 import { GetFoosParams, GetFoosResponse } from "@workspace/models/foo";
 import { convertDbFooToModel } from "./foo-utils";
 
-async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
+async function getAllFoos(
+  params: GetFoosParams,
+  authToken?: string
+): Promise<GetFoosResponse> {
   const limit = Number(params.limit) || 10;
   const offset = Number(params.offset) || 0;
 
@@ -63,18 +66,26 @@ async function getAllFoos(params: GetFoosParams): Promise<GetFoosResponse> {
   const startTime = Date.now();
 
   // Get total count for pagination
-  const totalCountQuery = db.select({ count: count() }).from(foo);
-  const totalCountResult = await totalCountQuery;
+  const client = await getDrizzleSupabaseClient(authToken);
+  const { totalCountResult, fooItemsFromQuery } = await client.runTransaction(
+    async (tx) => {
+      const totalCountQuery = tx.select({ count: count() }).from(foo);
+      const totalCountResult = await totalCountQuery;
+
+      const fooItemsQuery = tx
+        .select()
+        .from(foo)
+        .orderBy(orderByClause)
+        .limit(limit)
+        .offset(offset);
+
+      const fooItemsFromQuery = await fooItemsQuery;
+
+      return { totalCountResult, fooItemsFromQuery };
+    }
+  );
+
   const total = totalCountResult[0]?.count || 0;
-
-  const fooItemsQuery = db
-    .select()
-    .from(foo)
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
-
-  const fooItemsFromQuery = await fooItemsQuery;
 
   const convertedFoo = fooItemsFromQuery.map(convertDbFooToModel);
 
@@ -99,7 +110,8 @@ export function getAllFoosEndpoint(fastify: FastifyInstance) {
     Reply: GetFoosResponse | { error: string };
   }>("/foo", async (request, reply) => {
     try {
-      const result = await getAllFoos(request.query);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await getAllFoos(request.query, authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Error fetching foo items:", error);

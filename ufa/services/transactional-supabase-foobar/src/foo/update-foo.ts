@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import {
   foo,
   type Foo,
@@ -9,15 +9,17 @@ import {
 } from "../database/schema";
 import { convertDbFooToModel, convertModelToDbFoo } from "./foo-utils";
 
-async function updateFoo(id: string, data: UpdateFoo): Promise<Foo> {
+async function updateFoo(
+  id: string,
+  data: UpdateFoo,
+  authToken?: string
+): Promise<Foo> {
   const dbData = convertModelToDbFoo(data);
 
-  // Manually ensure all types are correct for database update
   const updateData: Partial<NewDbFoo> = {
     updated_at: new Date(),
   };
 
-  // Only update fields that are provided
   if (dbData.name !== undefined) updateData.name = dbData.name;
   if (dbData.description !== undefined)
     updateData.description = dbData.description;
@@ -31,11 +33,14 @@ async function updateFoo(id: string, data: UpdateFoo): Promise<Foo> {
   if (dbData.large_text !== undefined)
     updateData.large_text = dbData.large_text;
 
-  const updatedFoo = await db
-    .update(foo)
-    .set(updateData)
-    .where(eq(foo.id, id))
-    .returning();
+  const client = await getDrizzleSupabaseClient(authToken);
+  const updatedFoo = await client.runTransaction(async (tx) => {
+    return await tx
+      .update(foo)
+      .set(updateData)
+      .where(eq(foo.id, id))
+      .returning();
+  });
 
   if (updatedFoo.length === 0) {
     throw new Error("Foo not found");
@@ -52,13 +57,29 @@ export function updateFooEndpoint(fastify: FastifyInstance) {
   }>("/foo/:id", async (request, reply) => {
     try {
       const { id } = request.params;
-      const result = await updateFoo(id, request.body);
+      const authHeader = request.headers.authorization;
+      const authToken = authHeader?.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : undefined;
+
+      const result = await updateFoo(id, request.body, authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Update error:", error);
+
       if (error instanceof Error && error.message === "Foo not found") {
         return reply.status(404).send({ error: error.message });
       }
+
+      if (
+        error instanceof Error &&
+        error.message.includes("permission denied")
+      ) {
+        return reply.status(403).send({
+          error: "Permission denied",
+        });
+      }
+
       return reply.status(400).send({ error: "Failed to update foo" });
     }
   });

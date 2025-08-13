@@ -49,6 +49,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.1.1)
+      '@supabase/supabase-js':
+        specifier: ^2.54.0
+        version: 2.54.0
       '@tabler/icons-react':
         specifier: ^3.34.0
         version: 3.34.1(react@19.1.1)
@@ -181,7 +184,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.5.6(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.5.9(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -392,7 +395,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.5.6(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.5.9(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -408,7 +411,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.5.6
+        version: 0.5.9
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.9
@@ -466,7 +469,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.5.6(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
+        version: 0.5.9(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.53.0
@@ -491,7 +494,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.5.6
+        version: 0.5.9
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.9
@@ -536,19 +539,22 @@ importers:
         version: 16.6.1
       drizzle-orm:
         specifier: ^0.44.4
-        version: 0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3)
+        version: 0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3)(postgres@3.4.7)
       drizzle-zod:
         specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3))(zod@3.25.76)
+        version: 0.5.1(drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3)(postgres@3.4.7))(zod@3.25.76)
       fastify:
         specifier: ^5.4.0
         version: 5.4.0
-      pg:
-        specifier: ^8.11.3
-        version: 8.16.3
+      jwt-decode:
+        specifier: ^4.0.0
+        version: 4.0.0
       pino-pretty:
         specifier: ^13.0.0
         version: 13.1.1
+      postgres:
+        specifier: ^3.4.7
+        version: 3.4.7
       ws:
         specifier: ^8.18.0
         version: 8.18.3
@@ -565,9 +571,6 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.9
-      '@types/pg':
-        specifier: ^8.10.9
-        version: 8.15.5
       '@types/ws':
         specifier: ^8.5.10
         version: 8.18.1
@@ -589,32 +592,32 @@ importers:
 
 packages:
 
-  '@514labs/moose-cli-darwin-arm64@0.5.6':
-    resolution: {integrity: sha512-L1s3881MMIn33+ORV9ILYEPPj8Wn7ThVqI8j0GImNQHXsA2mKoBDfHfmqmwD8RnefklVI+w6kFvFmtRGeVBfuA==}
+  '@514labs/moose-cli-darwin-arm64@0.5.9':
+    resolution: {integrity: sha512-6FcQzu/U9QM5oI4LX6iM+fI7t1Fl45S32OmQsW1LpPTEe7+fqFTYcxRa5/Eb+GmbTk7O1VQTXSSBGbp3Ot6oVQ==}
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.5.6':
-    resolution: {integrity: sha512-oNk92VEFRcx7M5fe5XHSz35Fb5+R33QqqcCzRUDUhS0Bf6nDjYwYgs2vYBIGfiVapy8VBqms0DmGKpumFr6vjw==}
+  '@514labs/moose-cli-darwin-x64@0.5.9':
+    resolution: {integrity: sha512-VmF/JdjQGgxg+75oY/GqQdIuiNngMV3NN70/+GnfQEBqEWbbTPEr0xwaKf3QiCMe5a9LSXDMGG2brfg8/BYVBw==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.5.6':
-    resolution: {integrity: sha512-L8q7nkRTET3mOOIHPv8vRwf5DsfrcQczb/kfKedJAqmUfKPUV1WTfese1lgWDc4Z9t0UF+0cNzOQ2UIZp0oj4g==}
+  '@514labs/moose-cli-linux-arm64@0.5.9':
+    resolution: {integrity: sha512-rjujffOb2wW3DhNxzOkOCooNha4Yno3fActrzUGCJwiPK+0603IsesoG6rXSNW1JSrm7L81bYW1/ym3k+HNlyg==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.5.6':
-    resolution: {integrity: sha512-cF6jfL1VpbsO6+KbRCtU7oZ44hoGCaeYr6cG88gkv9Ey30HJI9d2uDsyILcZeXVENc1krsBAj0RGXZ/iaR35Jw==}
+  '@514labs/moose-cli-linux-x64@0.5.9':
+    resolution: {integrity: sha512-siXkOvX731Y7JeCFWXFunEQwCeT7YtuvDAbhKSU/qTHmVpal9aWMm44BR0brUzDgYwYHVR0Kb4eRMEp6DVZVpg==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.5.6':
-    resolution: {integrity: sha512-mHF6feVrGhzUWDjCThwiZ6WmwTT3O/QylWQFQmMjFWkjauYcxs5/Gd4WV5pgBlSPrBhOehSwiBM98qeePbxiDA==}
+  '@514labs/moose-cli@0.5.9':
+    resolution: {integrity: sha512-EvV8nrjtctf4s/wr9VUMVSC3jLlyCRvObtQx5lOp+1z+jdTO6vOA8UvjgDGY6LjSAKzCyAFWzcmQNCRjm56W8Q==}
     hasBin: true
 
-  '@514labs/moose-lib@0.5.6':
-    resolution: {integrity: sha512-RmogLKfJcqdPFa1ok7iofUJC/JR3OoTuQB9kgh3iT3tS+ytpj6kwKrfYkjpZW+9Ro9RtwoK/kKYPxD9iSIwyJQ==}
+  '@514labs/moose-lib@0.5.9':
+    resolution: {integrity: sha512-4ntfyziGErUFugKhNOhp1/mLayghy8MtApDN26pqhZlwa7X3h1G3lTbde4lMbjy7VQt7Hb8xpsukSVk5MUZUng==}
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
@@ -2417,11 +2420,17 @@ packages:
   '@supabase/realtime-js@2.13.0':
     resolution: {integrity: sha512-vJANFmwb3kQaf3apF/BE6KuKfePLUeJPP1GCgEe7GDZdQ6nyLkaqlP7Sfto2uW/1PmFFSr/wPtmAM7PfOXHd+w==}
 
+  '@supabase/realtime-js@2.15.0':
+    resolution: {integrity: sha512-SEIWApsxyoAe68WU2/5PCCuBwa11LL4Bb8K3r2FHCt3ROpaTthmDiWEhnLMGayP05N4QeYrMk0kyTZOwid/Hjw==}
+
   '@supabase/storage-js@2.10.4':
     resolution: {integrity: sha512-cvL02GarJVFcNoWe36VBybQqTVRq6wQSOCvTS64C+eyuxOruFIm1utZAY0xi2qKtHJO3EjKaj8iWJKySusDmAQ==}
 
   '@supabase/supabase-js@2.53.0':
     resolution: {integrity: sha512-Vg9sl0oFn55cCPaEOsDsRDbxOVccxRrK/cikjL1XbywHEOfyA5SOOEypidMvQLwgoAfnC2S4D9BQwJDcZs7/TQ==}
+
+  '@supabase/supabase-js@2.54.0':
+    resolution: {integrity: sha512-DLw83YwBfAaFiL3oWV26+sHRdeCGtxmIKccjh/Pndze3BWM4fZghzYKhk3ElOQU8Bluq4AkkCJ5bM5Szl/sfRg==}
 
   '@swc/core-darwin-arm64@1.13.3':
     resolution: {integrity: sha512-ux0Ws4pSpBTqbDS9GlVP354MekB1DwYlbxXU3VhnDr4GBcCOimpocx62x7cFJkSpEBF8bmX8+/TTCGKh4PbyXw==}
@@ -4370,6 +4379,10 @@ packages:
   jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
 
+  jwt-decode@4.0.0:
+    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
+    engines: {node: '>=18'}
+
   kafkajs@2.2.4:
     resolution: {integrity: sha512-j/YeapB1vfPT2iOIUn/vxdyKEuhuY2PxMBvf5JWux6iSaukAccrMtXEY/Lb7OvavDhOWME589bpLrEdnVHjfjA==}
     engines: {node: '>=14.0.0'}
@@ -4895,6 +4908,10 @@ packages:
   postgres-interval@1.2.0:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
+
+  postgres@3.4.7:
+    resolution: {integrity: sha512-Jtc2612XINuBjIl/QTWsV5UvE8UHuNblcO3vVADSrKsrc6RqGX6lOW1cEo3CM2v0XG4Nat8nI+YM7/f26VxXLw==}
+    engines: {node: '>=12'}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -5907,26 +5924,26 @@ packages:
 
 snapshots:
 
-  '@514labs/moose-cli-darwin-arm64@0.5.6':
+  '@514labs/moose-cli-darwin-arm64@0.5.9':
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.5.6':
+  '@514labs/moose-cli-darwin-x64@0.5.9':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.5.6':
+  '@514labs/moose-cli-linux-arm64@0.5.9':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.5.6':
+  '@514labs/moose-cli-linux-x64@0.5.9':
     optional: true
 
-  '@514labs/moose-cli@0.5.6':
+  '@514labs/moose-cli@0.5.9':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.5.6
-      '@514labs/moose-cli-darwin-x64': 0.5.6
-      '@514labs/moose-cli-linux-arm64': 0.5.6
-      '@514labs/moose-cli-linux-x64': 0.5.6
+      '@514labs/moose-cli-darwin-arm64': 0.5.9
+      '@514labs/moose-cli-darwin-x64': 0.5.9
+      '@514labs/moose-cli-linux-arm64': 0.5.9
+      '@514labs/moose-cli-linux-x64': 0.5.9
 
-  '@514labs/moose-lib@0.5.6(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.5.9(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -5955,7 +5972,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.5.6(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.5.9(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -7639,7 +7656,7 @@ snapshots:
 
   '@supabase/realtime-js@2.11.15':
     dependencies:
-      '@supabase/node-fetch': 2.6.15
+      '@supabase/node-fetch': 2.6.13
       '@types/phoenix': 1.6.6
       '@types/ws': 8.18.1
       isows: 1.0.7(ws@8.18.3)
@@ -7659,6 +7676,16 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@supabase/realtime-js@2.15.0':
+    dependencies:
+      '@supabase/node-fetch': 2.6.13
+      '@types/phoenix': 1.6.6
+      '@types/ws': 8.18.1
+      ws: 8.18.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   '@supabase/storage-js@2.10.4':
     dependencies:
       '@supabase/node-fetch': 2.6.15
@@ -7670,6 +7697,18 @@ snapshots:
       '@supabase/node-fetch': 2.6.15
       '@supabase/postgrest-js': 1.19.4
       '@supabase/realtime-js': 2.11.15
+      '@supabase/storage-js': 2.10.4
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@supabase/supabase-js@2.54.0':
+    dependencies:
+      '@supabase/auth-js': 2.71.1
+      '@supabase/functions-js': 2.4.5
+      '@supabase/node-fetch': 2.6.15
+      '@supabase/postgrest-js': 1.19.4
+      '@supabase/realtime-js': 2.15.0
       '@supabase/storage-js': 2.10.4
     transitivePeerDependencies:
       - bufferutil
@@ -8943,15 +8982,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3):
+  drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3)(postgres@3.4.7):
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/pg': 8.15.5
       pg: 8.16.3
+      postgres: 3.4.7
 
-  drizzle-zod@0.5.1(drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3))(zod@3.25.76):
+  drizzle-zod@0.5.1(drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3)(postgres@3.4.7))(zod@3.25.76):
     dependencies:
-      drizzle-orm: 0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3)
+      drizzle-orm: 0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(pg@8.16.3)(postgres@3.4.7)
       zod: 3.25.76
 
   dunder-proto@1.0.1:
@@ -9746,6 +9786,8 @@ snapshots:
     optionalDependencies:
       graceful-fs: 4.2.11
 
+  jwt-decode@4.0.0: {}
+
   kafkajs@2.2.4: {}
 
   keyv@4.5.4:
@@ -10241,6 +10283,8 @@ snapshots:
   postgres-interval@1.2.0:
     dependencies:
       xtend: 4.0.2
+
+  postgres@3.4.7: {}
 
   prelude-ls@1.2.1: {}
 

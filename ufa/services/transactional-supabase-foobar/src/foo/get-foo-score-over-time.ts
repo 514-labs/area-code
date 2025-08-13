@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo } from "../database/schema";
 import {
   GetFoosScoreOverTimeParams,
@@ -8,7 +8,8 @@ import {
 } from "@workspace/models/foo";
 
 async function getFooScoreOverTime(
-  params: GetFoosScoreOverTimeParams
+  params: GetFoosScoreOverTimeParams,
+  authToken?: string
 ): Promise<GetFoosScoreOverTimeResponse> {
   const days = params.days || 90;
 
@@ -29,20 +30,23 @@ async function getFooScoreOverTime(
   const endDateStr = endDate.toISOString().split("T")[0];
 
   // Query to get daily score aggregations using PostgreSQL date functions
-  const result = await db
-    .select({
-      date: sql<string>`DATE(created_at)`,
-      averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
-      totalCount: sql<number>`COUNT(*)`,
-    })
-    .from(foo)
-    .where(
-      sql`DATE(created_at) >= ${startDateStr} 
-          AND DATE(created_at) <= ${endDateStr}
-          AND score IS NOT NULL`
-    )
-    .groupBy(sql`DATE(created_at)`)
-    .orderBy(sql`DATE(created_at) ASC`);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const result = await client.runTransaction(async (tx) => {
+    return await tx
+      .select({
+        date: sql<string>`DATE(created_at)`,
+        averageScore: sql<number>`AVG(CAST(score AS DECIMAL))`,
+        totalCount: sql<number>`COUNT(*)`,
+      })
+      .from(foo)
+      .where(
+        sql`DATE(created_at) >= ${startDateStr} 
+            AND DATE(created_at) <= ${endDateStr}
+            AND score IS NOT NULL`
+      )
+      .groupBy(sql`DATE(created_at)`)
+      .orderBy(sql`DATE(created_at) ASC`);
+  });
 
   const endTime = Date.now();
   const queryTime = endTime - startTime;
@@ -65,7 +69,8 @@ export function getFooScoreOverTimeEndpoint(fastify: FastifyInstance) {
     Reply: GetFoosScoreOverTimeResponse | { error: string };
   }>("/foo/score-over-time", async (request, reply) => {
     try {
-      const result = await getFooScoreOverTime(request.query);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await getFooScoreOverTime(request.query, authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Error calculating score over time:", error);

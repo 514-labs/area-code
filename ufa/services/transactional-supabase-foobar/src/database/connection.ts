@@ -1,40 +1,103 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import * as schema from "./schema";
+import { DrizzleConfig, sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { JwtPayload, jwtDecode } from "jwt-decode";
+import postgres from "postgres";
+import { getSupabaseConnectionString, getEnforceAuth } from "../env-vars.js";
+import * as schema from "./schema.js";
 
-let _db: ReturnType<typeof drizzle> | null = null;
-let _pool: Pool | null = null;
-
-function initConnection() {
-  if (_db && _pool) return { db: _db, pool: _pool };
-
-  if (!process.env.SUPABASE_CONNECTION_STRING) {
-    throw new Error("SUPABASE_CONNECTION_STRING is not set");
+function getIsTokenValid(token: any): boolean {
+  if (!token || typeof token !== "object") {
+    return false;
   }
 
-  const connectionString: string = process.env.SUPABASE_CONNECTION_STRING;
+  if (token.sub && typeof token.sub !== "string") {
+    return false;
+  }
 
-  _pool = new Pool({
-    connectionString,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-  });
+  if (token.role && typeof token.role !== "string") {
+    return false;
+  }
 
-  _db = drizzle(_pool, { schema });
-  return { db: _db, pool: _pool };
+  // Check for SQL metacharacters and injection patterns
+  const sqlKeywords =
+    /\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT|JAVASCRIPT)\b/i;
+
+  if (sqlKeywords.test(token.sub)) {
+    return false;
+  }
+
+  return true;
 }
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
-  get(target, prop) {
-    const { db } = initConnection();
-    return db[prop as keyof typeof db];
-  },
+const config = {
+  casing: "snake_case",
+  schema,
+} satisfies DrizzleConfig<typeof schema>;
+
+const adminClient = drizzle({
+  client: postgres(getSupabaseConnectionString(), { prepare: false }),
+  ...config,
 });
 
-export const pool = new Proxy({} as Pool, {
-  get(target, prop) {
-    const { pool } = initConnection();
-    return pool[prop as keyof typeof pool];
-  },
+const rlsClient = drizzle({
+  client: postgres(getSupabaseConnectionString(), { prepare: false }),
+  ...config,
 });
+
+export async function getDrizzleSupabaseAdminClient() {
+  const runTransaction = ((transaction, config) => {
+    return adminClient.transaction(transaction, config);
+  }) as typeof adminClient.transaction;
+
+  return {
+    runTransaction,
+  };
+}
+
+export async function getDrizzleSupabaseClient(accessToken?: string) {
+  if (!getEnforceAuth()) {
+    return getDrizzleSupabaseAdminClient();
+  }
+
+  const token = decode(accessToken || "");
+
+  if (accessToken && !getIsTokenValid(token)) {
+    throw new Error("Invalid JWT token format");
+  }
+
+  const runTransaction = ((transaction, config) => {
+    return rlsClient.transaction(async (tx) => {
+      try {
+        // Set up Supabase auth context
+        await tx.execute(sql`
+          select set_config('request.jwt.claims', '${sql.raw(
+            JSON.stringify(token)
+          )}', TRUE);
+          select set_config('request.jwt.claim.sub', '${sql.raw(
+            token.sub ?? ""
+          )}', TRUE);
+        `);
+
+        return await transaction(tx);
+      } finally {
+        // Clean up
+        await tx.execute(sql`
+          select set_config('request.jwt.claims', NULL, TRUE);
+          select set_config('request.jwt.claim.sub', NULL, TRUE);
+        `);
+      }
+    }, config);
+  }) as typeof rlsClient.transaction;
+
+  return {
+    runTransaction,
+  };
+}
+
+function decode(accessToken: string) {
+  try {
+    return jwtDecode<JwtPayload & { role: string }>(accessToken);
+  } catch {
+    return { role: "anon" } as JwtPayload & { role: string };
+  }
+}

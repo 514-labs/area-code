@@ -5,7 +5,7 @@
     "target": "ES2022",
     "lib": ["ES2022"],
     "types": ["node"],
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "paths": {
