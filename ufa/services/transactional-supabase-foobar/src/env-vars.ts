@@ -27,18 +27,6 @@ export function getSupabaseConnectionString(): string {
   return getEnvVar("SUPABASE_CONNECTION_STRING");
 }
 
-export function getSupabaseUrl(): string {
-  return getEnvVar("SUPABASE_URL");
-}
-
-export function getSupabaseAnonKey(): string {
-  return getEnvVar("SUPABASE_ANON_KEY");
-}
-
-export function getSupabaseServiceRoleKey(): string {
-  return getEnvVar("SUPABASE_SERVICE_ROLE_KEY");
-}
-
 export function getEnforceAuth(): boolean {
   return getEnvVar("ENFORCE_AUTH") === "true";
 }
