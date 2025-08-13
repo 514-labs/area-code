@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import {
   bar,
   foo,
@@ -9,21 +9,24 @@ import {
   type CreateBar,
 } from "../database/schema";
 
-async function createBar(data: CreateBar): Promise<Bar> {
+async function createBar(data: CreateBar, authToken?: string): Promise<Bar> {
   const validatedData = insertBarSchema.parse(data);
 
-  // Verify that foo exists
-  const fooExists = await db
-    .select()
-    .from(foo)
-    .where(eq(foo.id, validatedData.foo_id))
-    .limit(1);
+  // Verify that foo exists and create bar in transaction
+  const client = await getDrizzleSupabaseClient(authToken);
+  const newBar = await client.runTransaction(async (tx) => {
+    const fooExists = await tx
+      .select()
+      .from(foo)
+      .where(eq(foo.id, validatedData.foo_id))
+      .limit(1);
 
-  if (fooExists.length === 0) {
-    throw new Error("Referenced foo does not exist");
-  }
+    if (fooExists.length === 0) {
+      throw new Error("Referenced foo does not exist");
+    }
 
-  const newBar = await db.insert(bar).values(validatedData).returning();
+    return await tx.insert(bar).values(validatedData).returning();
+  });
 
   return newBar[0];
 }
@@ -33,7 +36,8 @@ export function createBarEndpoint(fastify: FastifyInstance) {
     "/bar",
     async (request, reply) => {
       try {
-        const result = await createBar(request.body);
+        const authToken = request.headers.authorization?.replace("Bearer ", "");
+        const result = await createBar(request.body, authToken);
         return reply.status(201).send(result);
       } catch (error) {
         console.error("Create bar error:", error);

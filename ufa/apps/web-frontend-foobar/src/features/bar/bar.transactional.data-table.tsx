@@ -78,6 +78,7 @@ import {
 import { format } from "date-fns";
 import { NumericFormat } from "react-number-format";
 import { Bar, BarWithFoo, GetBarsResponse } from "@workspace/models/bar";
+import { useAuth } from "@/auth/auth-context";
 
 // API Functions
 const fetchBars = async (
@@ -252,6 +253,7 @@ export default function BarTransactionalDataTable({
   disableCache?: boolean;
   selectableRows?: boolean;
 }) {
+  const { isAdmin } = useAuth();
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -562,7 +564,7 @@ export default function BarTransactionalDataTable({
         <div className="flex items-center justify-between px-2">
           {selectableRows && (
             <div className="flex-1 text-sm text-muted-foreground">
-              {selectedBars.length > 0 ? (
+              {selectedBars.length > 0 && isAdmin ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
                   onOpenChange={setIsDeleteDialogOpen}
@@ -727,6 +729,7 @@ function BarCellViewer({
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
+  const { isAdmin } = useAuth();
   const [isSaving, setIsSaving] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
 
@@ -735,35 +738,49 @@ function BarCellViewer({
 
     setIsSaving(true);
     try {
-      const updatedItem = {
-        id: item.id,
-        foo_id: formData.get("foo_id") as string,
-        value: parseInt(formData.get("value") as string),
-        label: (formData.get("label") as string) || null,
-        notes: (formData.get("notes") as string) || null,
-        is_enabled: formData.get("is_enabled") === "on",
-      };
-
-      console.log("Sending update request:", updatedItem);
-
-      const response = await fetch(`${editApiEndpoint}/${item.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedItem),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API Error:", response.status, errorText);
-        throw new Error(
-          `Failed to update item: ${response.status} ${errorText}`
+      if (!isAdmin) {
+        // For anonymous users, use the anonymous update endpoint
+        const response = await fetch(
+          `${editApiEndpoint}/${item.id}/anonymous-update`,
+          {
+            method: "PUT",
+          }
         );
-      }
 
-      const result = await response.json();
-      console.log("Update successful:", result);
+        if (!response.ok) {
+          throw new Error("Failed to update item anonymously");
+        }
+      } else {
+        // For authenticated users, use the regular update endpoint
+        const updatedItem = {
+          foo_id: formData.get("foo_id") as string,
+          value: parseInt(formData.get("value") as string),
+          label: (formData.get("label") as string) || null,
+          notes: (formData.get("notes") as string) || null,
+          is_enabled: formData.get("is_enabled") === "on",
+        };
+
+        console.log("Sending update request:", updatedItem);
+
+        const response = await fetch(`${editApiEndpoint}/${item.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedItem),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API Error:", response.status, errorText);
+          throw new Error(
+            `Failed to update item: ${response.status} ${errorText}`
+          );
+        }
+
+        const result = await response.json();
+        console.log("Update successful:", result);
+      }
 
       // Close the drawer on success
       onOpenChange?.(false);
@@ -800,6 +817,14 @@ function BarCellViewer({
           <DrawerTitle>{item.label || "Untitled Bar"}</DrawerTitle>
           <DrawerDescription>Bar details - ID: {item.id}</DrawerDescription>
         </DrawerHeader>
+        {!isAdmin && (
+          <div className="mx-4 mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              As an anonymous user, the label of the Bar is updated for you, you
+              can click the save button at the bottom to test CDC updates
+            </p>
+          </div>
+        )}
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
           <form
             ref={formRef}
@@ -817,8 +842,13 @@ function BarCellViewer({
               <Input
                 id="label"
                 name="label"
-                defaultValue={item.label || ""}
+                defaultValue={
+                  isAdmin
+                    ? item.label || ""
+                    : `${item.label || "Untitled"} (edited)`
+                }
                 placeholder="Enter label"
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -828,6 +858,7 @@ function BarCellViewer({
                 name="value"
                 type="number"
                 defaultValue={item.value}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -837,6 +868,7 @@ function BarCellViewer({
                 name="foo_id"
                 defaultValue={item.foo_id}
                 placeholder="Foo ID"
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -847,6 +879,7 @@ function BarCellViewer({
                 defaultValue={item.notes || ""}
                 placeholder="Add notes..."
                 rows={3}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -854,6 +887,7 @@ function BarCellViewer({
                 id="is_enabled"
                 name="is_enabled"
                 defaultChecked={item.is_enabled}
+                disabled={!isAdmin}
               />
               <Label htmlFor="is_enabled">Is Enabled</Label>
             </div>

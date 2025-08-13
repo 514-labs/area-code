@@ -3,7 +3,9 @@ import { getBarAverageValueEndpoint } from "../bar/get-bar-average-value";
 import { getAllBarsEndpoint } from "../bar/get-all-bars";
 import { getBarByIdEndpoint } from "../bar/get-bar-by-id";
 import { createBarEndpoint } from "../bar/create-bar";
+import { anonymousCreateBarEndpoint } from "../bar/anonymous-create-bar";
 import { updateBarEndpoint } from "../bar/update-bar";
+import { anonymousUpdateBarEndpoint } from "../bar/anonymous-update-bar";
 import { deleteBarEndpoint } from "../bar/delete-bar";
 import { bulkDeleteBarsEndpoint } from "../bar/bulk-delete-bars";
 
@@ -12,7 +14,9 @@ export async function barRoutes(fastify: FastifyInstance) {
   getAllBarsEndpoint(fastify);
   getBarByIdEndpoint(fastify);
   createBarEndpoint(fastify);
+  anonymousCreateBarEndpoint(fastify);
   updateBarEndpoint(fastify);
+  anonymousUpdateBarEndpoint(fastify);
   deleteBarEndpoint(fastify);
   bulkDeleteBarsEndpoint(fastify);
 }

@@ -1,11 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { foo, type Foo } from "../database/schema";
 import { convertDbFooToModel } from "./foo-utils";
 
-async function getFooById(id: string): Promise<Foo> {
-  const fooItem = await db.select().from(foo).where(eq(foo.id, id)).limit(1);
+async function getFooById(id: string, authToken?: string): Promise<Foo> {
+  const client = await getDrizzleSupabaseClient(authToken);
+  const fooItem = await client.runTransaction(async (tx) => {
+    return await tx.select().from(foo).where(eq(foo.id, id)).limit(1);
+  });
 
   if (fooItem.length === 0) {
     throw new Error("Foo not found");
@@ -20,7 +23,8 @@ export function getFooByIdEndpoint(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { id } = request.params;
-        const result = await getFooById(id);
+        const authToken = request.headers.authorization?.replace("Bearer ", "");
+        const result = await getFooById(id, authToken);
         return reply.send(result);
       } catch (error) {
         console.error("Fetch error:", error);

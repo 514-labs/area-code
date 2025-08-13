@@ -39,3 +39,13 @@ export interface UpdateBar {
   is_enabled?: boolean;
   updated_at?: Date;
 }
+
+// Anonymous bar data for unauthenticated users
+export const anonymousBar: CreateBar = {
+  foo_id: "demo-foo-id", // This will need to be set to an actual foo ID at runtime
+  value: 100,
+  label: "Anonymous Demo Bar",
+  notes:
+    "This is a demo bar created by an anonymous user to test CDC functionality",
+  is_enabled: true,
+};

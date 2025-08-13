@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import {
   foo,
   type Foo,
@@ -8,13 +8,8 @@ import {
 } from "../database/schema";
 import { convertDbFooToModel, convertModelToDbFoo } from "./foo-utils";
 
-async function createFoo(data: CreateFoo): Promise<Foo> {
-  console.log("Received request body:", JSON.stringify(data, null, 2));
-
-  // Convert API data to database format - minimal conversion now needed
+async function createFoo(data: CreateFoo, authToken?: string): Promise<Foo> {
   const dbData = convertModelToDbFoo(data);
-
-  // Manually ensure all types are correct for database insert
   const insertData: NewDbFoo = {
     name: dbData.name || data.name,
     description: dbData.description ?? null,
@@ -29,9 +24,13 @@ async function createFoo(data: CreateFoo): Promise<Foo> {
     large_text: dbData.large_text || "",
   };
 
-  const newFoo = await db.insert(foo).values(insertData).returning();
+  const client = await getDrizzleSupabaseClient(authToken);
+  const newFoo = await client.runTransaction(async (tx) => {
+    const result = await tx.insert(foo).values(insertData).returning();
+    return result[0];
+  });
 
-  return convertDbFooToModel(newFoo[0]);
+  return convertDbFooToModel(newFoo);
 }
 
 export function createFooEndpoint(fastify: FastifyInstance) {
@@ -40,10 +39,26 @@ export function createFooEndpoint(fastify: FastifyInstance) {
     Reply: Foo | { error: string; details?: string; received?: CreateFoo };
   }>("/foo", async (request, reply) => {
     try {
-      const result = await createFoo(request.body);
+      const authHeader = request.headers.authorization;
+      const authToken = authHeader?.startsWith("Bearer ")
+        ? authHeader.substring(7)
+        : undefined;
+
+      const result = await createFoo(request.body, authToken);
       return reply.status(201).send(result);
     } catch (error) {
       console.error("Validation error:", error);
+
+      if (
+        error instanceof Error &&
+        error.message.includes("permission denied")
+      ) {
+        return reply.status(403).send({
+          error: "Permission denied",
+          details: "Insufficient permissions to create foo",
+        });
+      }
+
       return reply.status(400).send({
         error: "Invalid foo data",
         details: error instanceof Error ? error.message : "Unknown error",

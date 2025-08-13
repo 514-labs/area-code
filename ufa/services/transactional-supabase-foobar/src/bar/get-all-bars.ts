@@ -1,6 +1,6 @@
 import { eq, desc, asc, sql } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { bar, foo } from "../database/schema";
 import {
   GetBarsParams,
@@ -8,7 +8,10 @@ import {
   BarWithFoo,
 } from "@workspace/models/bar";
 
-async function getAllBars(params: GetBarsParams): Promise<GetBarsResponse> {
+async function getAllBars(
+  params: GetBarsParams,
+  authToken?: string
+): Promise<GetBarsResponse> {
   const limit = Number(params.limit) || 10;
   const offset = Number(params.offset) || 0;
 
@@ -55,42 +58,47 @@ async function getAllBars(params: GetBarsParams): Promise<GetBarsResponse> {
   const startTime = Date.now();
 
   // Execute query with sorting and pagination using normal Drizzle query builder
-  const barItems = await db
-    .select({
-      id: bar.id,
-      foo_id: bar.foo_id,
-      value: bar.value,
-      label: bar.label,
-      notes: bar.notes,
-      is_enabled: bar.is_enabled,
-      created_at: bar.created_at,
-      updated_at: bar.updated_at,
-      foo: {
-        id: foo.id,
-        name: foo.name,
-        description: foo.description,
-        status: foo.status,
-        priority: foo.priority,
-        is_active: foo.is_active,
-        metadata: foo.metadata,
-        tags: foo.tags,
-        created_at: foo.created_at,
-        updated_at: foo.updated_at,
-        score: foo.score,
-        large_text: foo.large_text,
-      },
-    })
-    .from(bar)
-    .innerJoin(foo, eq(bar.foo_id, foo.id))
-    .orderBy(orderByClause)
-    .limit(limit)
-    .offset(offset);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const { barItems, totalResult } = await client.runTransaction(async (tx) => {
+    const barItems = await tx
+      .select({
+        id: bar.id,
+        foo_id: bar.foo_id,
+        value: bar.value,
+        label: bar.label,
+        notes: bar.notes,
+        is_enabled: bar.is_enabled,
+        created_at: bar.created_at,
+        updated_at: bar.updated_at,
+        foo: {
+          id: foo.id,
+          name: foo.name,
+          description: foo.description,
+          status: foo.status,
+          priority: foo.priority,
+          is_active: foo.is_active,
+          metadata: foo.metadata,
+          tags: foo.tags,
+          created_at: foo.created_at,
+          updated_at: foo.updated_at,
+          score: foo.score,
+          large_text: foo.large_text,
+        },
+      })
+      .from(bar)
+      .innerJoin(foo, eq(bar.foo_id, foo.id))
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset);
 
-  // Get total count for pagination metadata
-  const totalResult = await db
-    .select({ count: sql<number>`cast(count(*) as int)` })
-    .from(bar)
-    .innerJoin(foo, eq(bar.foo_id, foo.id));
+    // Get total count for pagination metadata
+    const totalResult = await tx
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(bar)
+      .innerJoin(foo, eq(bar.foo_id, foo.id));
+
+    return { barItems, totalResult };
+  });
 
   const queryTime = Date.now() - startTime;
 
@@ -115,7 +123,8 @@ export function getAllBarsEndpoint(fastify: FastifyInstance) {
     Reply: GetBarsResponse | { error: string };
   }>("/bar", async (request, reply) => {
     try {
-      const result = await getAllBars(request.query);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await getAllBars(request.query, authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Error fetching bars:", error);

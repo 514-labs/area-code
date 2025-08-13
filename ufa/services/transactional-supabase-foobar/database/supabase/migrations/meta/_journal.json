@@ -15,6 +15,13 @@
       "when": 1754657210108,
       "tag": "0001_careful_onslaught",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754879004884,
+      "tag": "0002_great_ozymandias",
+      "breakpoints": true
     }
   ]
 }

@@ -1,10 +1,11 @@
 import { inArray } from "drizzle-orm";
 import { FastifyInstance } from "fastify";
-import { db } from "../database/connection";
+import { getDrizzleSupabaseClient } from "../database/connection";
 import { bar } from "../database/schema";
 
 async function bulkDeleteBars(
-  ids: string[]
+  ids: string[],
+  authToken?: string
 ): Promise<{ success: boolean; deletedCount: number }> {
   if (!Array.isArray(ids) || ids.length === 0) {
     throw new Error("Invalid or empty ids array");
@@ -16,10 +17,10 @@ async function bulkDeleteBars(
   }
 
   // Delete multiple bar items using the inArray helper from drizzle-orm
-  const deletedBars = await db
-    .delete(bar)
-    .where(inArray(bar.id, ids))
-    .returning();
+  const client = await getDrizzleSupabaseClient(authToken);
+  const deletedBars = await client.runTransaction(async (tx) => {
+    return await tx.delete(bar).where(inArray(bar.id, ids)).returning();
+  });
 
   return {
     success: true,
@@ -33,7 +34,8 @@ export function bulkDeleteBarsEndpoint(fastify: FastifyInstance) {
     Reply: { success: boolean; deletedCount: number } | { error: string };
   }>("/bar", async (request, reply) => {
     try {
-      const result = await bulkDeleteBars(request.body.ids);
+      const authToken = request.headers.authorization?.replace("Bearer ", "");
+      const result = await bulkDeleteBars(request.body.ids, authToken);
       return reply.status(200).send(result);
     } catch (error) {
       console.error("Bulk delete bars error:", error);
