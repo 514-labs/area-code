@@ -1,0 +1,45 @@
+name: Supabase Migration Deployment (Production)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ufa/services/transactional-supabase-foobar/database/supabase/migrations/**"
+      - "ufa/services/transactional-supabase-foobar/src/database/schema.ts"
+
+jobs:
+  deploy-migrations:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ufa/services/transactional-supabase-foobar
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.31.8
+
+      - name: Link to Supabase project
+        run: |
+          echo "🔗 Linking to Supabase project..."
+          cd database/supabase
+          supabase link --project-ref "$PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Deploy migrations to production
+        run: |
+          echo "🚀 Deploying migrations to production database..."
+          cd database/supabase
+          supabase db push
+          echo "✅ Migrations successfully deployed to production!"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
