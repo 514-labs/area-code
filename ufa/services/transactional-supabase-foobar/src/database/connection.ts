@@ -2,7 +2,7 @@ import { DrizzleConfig, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { JwtPayload, jwtDecode } from "jwt-decode";
 import postgres from "postgres";
-import { getSupabaseConnectionString } from "../env-vars.js";
+import { getSupabaseConnectionString, getEnforceAuth } from "../env-vars.js";
 import * as schema from "./schema.js";
 
 const config = {
@@ -22,11 +22,21 @@ const rlsClient = drizzle({
   ...config,
 });
 
-export function getDrizzleSupabaseAdminClient() {
-  return adminClient;
+export async function getDrizzleSupabaseAdminClient() {
+  const runTransaction = ((transaction, config) => {
+    return adminClient.transaction(transaction, config);
+  }) as typeof adminClient.transaction;
+
+  return {
+    runTransaction,
+  };
 }
 
 export async function getDrizzleSupabaseClient(accessToken?: string) {
+  if (!getEnforceAuth()) {
+    return getDrizzleSupabaseAdminClient();
+  }
+
   const token = decode(accessToken || "");
 
   const runTransaction = ((transaction, config) => {
