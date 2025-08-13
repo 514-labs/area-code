@@ -94,8 +94,6 @@ async function createProductionAuroraMCPClient(
   const CLICKHOUSE_PORT = getClickhousePort();
   const CLICKHOUSE_USER = getClickhouseUser();
 
-  console.log("CLICKHOUSE_DATABASE", CLICKHOUSE_DATABASE);
-
   console.log("Creating Aurora MCP client with remote ClickHouse tools only");
 
   const mcpClient = await createMCPClient({
