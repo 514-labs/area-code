@@ -38,21 +38,7 @@ export function getFooAverageScoreEndpoint(fastify: FastifyInstance) {
     Reply: GetFoosAverageScoreResponse | { error: string };
   }>("/foo/average-score", async (request, reply) => {
     try {
-      console.log("🔍 Request headers:", {
-        authorization: request.headers.authorization
-          ? `${request.headers.authorization.substring(0, 30)}...`
-          : null,
-        cookie: request.headers.cookie ? "present" : null,
-        "x-supabase-auth": request.headers["x-supabase-auth"]
-          ? "present"
-          : null,
-      });
-
       const authToken = request.headers.authorization?.replace("Bearer ", "");
-      console.log(
-        "🔍 Extracted authToken:",
-        authToken ? `${authToken.substring(0, 20)}...` : null
-      );
 
       const result = await getFooAverageScore(authToken);
       return reply.send(result);

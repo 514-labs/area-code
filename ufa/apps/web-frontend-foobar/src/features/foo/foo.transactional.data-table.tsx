@@ -343,6 +343,7 @@ export default function FooTransactionalDataTable({
   disableCache?: boolean;
   selectableRows?: boolean;
 }) {
+  const { isAdmin } = useAuth();
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -707,7 +708,7 @@ export default function FooTransactionalDataTable({
         <div className="flex items-center justify-between px-4">
           {selectableRows && (
             <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-              {selectedFoos.length > 0 ? (
+              {selectedFoos.length > 0 && isAdmin ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
                   onOpenChange={setIsDeleteDialogOpen}
@@ -862,18 +863,16 @@ function TableCellViewer({
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-
-  const isAuthenticated = !!user;
 
   const handleSave = async (formData: FormData) => {
     if (!editApiEndpoint) return;
 
     setIsSaving(true);
     try {
-      if (!isAuthenticated) {
+      if (!isAdmin) {
         // For anonymous users, use the anonymous update endpoint
         const response = await fetch(
           `${editApiEndpoint}/${item.id}/anonymous-update`,
@@ -950,7 +949,7 @@ function TableCellViewer({
           <DrawerTitle>{item.name}</DrawerTitle>
           <DrawerDescription>Foo details - ID: {item.id}</DrawerDescription>
         </DrawerHeader>
-        {!isAuthenticated && (
+        {!isAdmin && (
           <div className="mx-4 mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               As an anonymous user, the name of the Foo is updated for you, you
@@ -975,10 +974,8 @@ function TableCellViewer({
               <Input
                 id="name"
                 name="name"
-                defaultValue={
-                  isAuthenticated ? item.name : `${item.name} (edited)`
-                }
-                disabled={!isAuthenticated}
+                defaultValue={isAdmin ? item.name : `${item.name} (edited)`}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -988,7 +985,7 @@ function TableCellViewer({
                 name="description"
                 defaultValue={item.description || ""}
                 placeholder="No description provided"
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -997,7 +994,7 @@ function TableCellViewer({
                 <Select
                   name="status"
                   defaultValue={item.status}
-                  disabled={!isAuthenticated}
+                  disabled={!isAdmin}
                 >
                   <SelectTrigger id="status" className="w-full">
                     <SelectValue placeholder="Select a status" />
@@ -1017,7 +1014,7 @@ function TableCellViewer({
                   name="priority"
                   type="number"
                   defaultValue={item.priority}
-                  disabled={!isAuthenticated}
+                  disabled={!isAdmin}
                 />
               </div>
             </div>
@@ -1030,7 +1027,7 @@ function TableCellViewer({
                   type="number"
                   step="0.01"
                   defaultValue={item.score}
-                  disabled={!isAuthenticated}
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -1038,7 +1035,7 @@ function TableCellViewer({
                   id="is_active"
                   name="is_active"
                   defaultChecked={item.is_active}
-                  disabled={!isAuthenticated}
+                  disabled={!isAdmin}
                 />
                 <Label htmlFor="is_active">Is Active</Label>
               </div>
@@ -1050,7 +1047,7 @@ function TableCellViewer({
                 name="tags"
                 defaultValue={item.tags?.join(", ") || ""}
                 placeholder="Comma-separated tags"
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -1060,7 +1057,7 @@ function TableCellViewer({
                 name="large_text"
                 defaultValue={item.large_text}
                 rows={4}
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">

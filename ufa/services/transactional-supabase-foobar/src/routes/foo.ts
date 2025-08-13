@@ -4,6 +4,7 @@ import { getFooScoreOverTimeEndpoint } from "../foo/get-foo-score-over-time";
 import { getAllFoosEndpoint } from "../foo/get-all-foos";
 import { getFooByIdEndpoint } from "../foo/get-foo-by-id";
 import { createFooEndpoint } from "../foo/create-foo";
+import { anonymousCreateFooEndpoint } from "../foo/anonymous-create-foo";
 import { updateFooEndpoint } from "../foo/update-foo";
 import { anonymousUpdateFooEndpoint } from "../foo/anonymous-update-foo";
 import { deleteFooEndpoint } from "../foo/delete-foo";
@@ -15,6 +16,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
   getAllFoosEndpoint(fastify);
   getFooByIdEndpoint(fastify);
   createFooEndpoint(fastify);
+  anonymousCreateFooEndpoint(fastify);
   updateFooEndpoint(fastify);
   anonymousUpdateFooEndpoint(fastify);
   deleteFooEndpoint(fastify);

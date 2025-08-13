@@ -20,8 +20,9 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Plus } from "lucide-react";
-import { Bar, CreateBar } from "@workspace/models";
+import { Bar, CreateBar, anonymousBar } from "@workspace/models";
 import { getTransactionApiBase } from "../../env-vars";
+import { useAuth } from "../../auth/auth-context";
 
 interface Foo {
   id: string;
@@ -41,6 +42,15 @@ const createBar = async (data: CreateBar): Promise<Bar> => {
   return response.json();
 };
 
+const createAnonymousBar = async (): Promise<Bar> => {
+  const API_BASE = getTransactionApiBase();
+  const response = await fetch(`${API_BASE}/bar/anonymous-create`, {
+    method: "POST",
+  });
+  if (!response.ok) throw new Error("Failed to create anonymous bar");
+  return response.json();
+};
+
 const fetchFoos = async (): Promise<Foo[]> => {
   const API_BASE = getTransactionApiBase();
   const response = await fetch(`${API_BASE}/foo`);
@@ -57,14 +67,20 @@ interface BarCreateFormProps {
 
 export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<CreateBar>({
-    foo_id: "",
-    value: 0,
-    label: "",
-    notes: "",
-    is_enabled: true,
-  });
+
+  const [formData, setFormData] = useState<CreateBar>(
+    isAdmin
+      ? {
+          foo_id: "",
+          value: 0,
+          label: "",
+          notes: "",
+          is_enabled: true,
+        }
+      : anonymousBar
+  );
 
   // Fetch foos for the dropdown
   const {
@@ -77,7 +93,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
   });
 
   const createMutation = useMutation({
-    mutationFn: createBar,
+    mutationFn: isAdmin ? createBar : () => createAnonymousBar(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bars"] });
       setIsOpen(false);
@@ -87,13 +103,17 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
   });
 
   const resetForm = () => {
-    setFormData({
-      foo_id: "",
-      value: 0,
-      label: "",
-      notes: "",
-      is_enabled: true,
-    });
+    setFormData(
+      isAdmin
+        ? {
+            foo_id: "",
+            value: 0,
+            label: "",
+            notes: "",
+            is_enabled: true,
+          }
+        : anonymousBar
+    );
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -120,6 +140,15 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
             Add a new bar to your collection.
           </DialogDescription>
         </DialogHeader>
+        {!isAdmin && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              As an anonymous user, this form is pre-filled with demo data. You
+              can click the create button to test CDC updates with the anonymous
+              bar.
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Associated Foo */}
           <div className="space-y-2">
@@ -129,6 +158,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
               onValueChange={(value) =>
                 setFormData({ ...formData, foo_id: value })
               }
+              disabled={!isAdmin}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a foo" />
@@ -158,6 +188,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
               onChange={(e) =>
                 setFormData({ ...formData, label: e.target.value })
               }
+              disabled={!isAdmin}
             />
           </div>
 
@@ -176,6 +207,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
                 })
               }
               required
+              disabled={!isAdmin}
             />
           </div>
 
@@ -189,6 +221,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
                 setFormData({ ...formData, notes: e.target.value })
               }
               rows={3}
+              disabled={!isAdmin}
             />
           </div>
 
@@ -201,6 +234,7 @@ export function BarCreateForm({ trigger, onSuccess }: BarCreateFormProps) {
               onChange={(e) =>
                 setFormData({ ...formData, is_enabled: e.target.checked })
               }
+              disabled={!isAdmin}
             />
             <Label htmlFor="is_enabled">Is Enabled</Label>
           </div>

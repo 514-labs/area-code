@@ -5,35 +5,37 @@ import { bar, foo } from "../database/schema";
 import { BarWithFoo } from "@workspace/models/bar";
 
 async function getBarById(id: string, authToken?: string): Promise<BarWithFoo> {
-  const db = getDrizzleSupabaseClient(authToken);
-  const barWithFoo = await db
-    .select({
-      id: bar.id,
-      foo_id: bar.foo_id,
-      value: bar.value,
-      label: bar.label,
-      notes: bar.notes,
-      is_enabled: bar.is_enabled,
-      created_at: bar.created_at,
-      updated_at: bar.updated_at,
-      foo: {
-        id: foo.id,
-        name: foo.name,
-        description: foo.description,
-        status: foo.status,
-        priority: foo.priority,
-        is_active: foo.is_active,
-        metadata: foo.metadata,
-        tags: foo.tags,
-        created_at: foo.created_at,
-        updated_at: foo.updated_at,
-        score: foo.score,
-      },
-    })
-    .from(bar)
-    .innerJoin(foo, eq(bar.foo_id, foo.id))
-    .where(eq(bar.id, id))
-    .limit(1);
+  const client = await getDrizzleSupabaseClient(authToken);
+  const barWithFoo = await client.runTransaction(async (tx) => {
+    return await tx
+      .select({
+        id: bar.id,
+        foo_id: bar.foo_id,
+        value: bar.value,
+        label: bar.label,
+        notes: bar.notes,
+        is_enabled: bar.is_enabled,
+        created_at: bar.created_at,
+        updated_at: bar.updated_at,
+        foo: {
+          id: foo.id,
+          name: foo.name,
+          description: foo.description,
+          status: foo.status,
+          priority: foo.priority,
+          is_active: foo.is_active,
+          metadata: foo.metadata,
+          tags: foo.tags,
+          created_at: foo.created_at,
+          updated_at: foo.updated_at,
+          score: foo.score,
+        },
+      })
+      .from(bar)
+      .innerJoin(foo, eq(bar.foo_id, foo.id))
+      .where(eq(bar.id, id))
+      .limit(1);
+  });
 
   if (barWithFoo.length === 0) {
     throw new Error("Bar not found");
@@ -48,9 +50,8 @@ export function getBarByIdEndpoint(fastify: FastifyInstance) {
     Reply: BarWithFoo | { error: string };
   }>("/bar/:id", async (request, reply) => {
     try {
-      const { id } = request.params;
       const authToken = request.headers.authorization?.replace("Bearer ", "");
-      const result = await getBarById(id, authToken);
+      const result = await getBarById(request.params.id, authToken);
       return reply.send(result);
     } catch (error) {
       console.error("Error fetching bar:", error);

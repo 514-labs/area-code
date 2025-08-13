@@ -253,6 +253,7 @@ export default function BarTransactionalDataTable({
   disableCache?: boolean;
   selectableRows?: boolean;
 }) {
+  const { isAdmin } = useAuth();
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -563,7 +564,7 @@ export default function BarTransactionalDataTable({
         <div className="flex items-center justify-between px-2">
           {selectableRows && (
             <div className="flex-1 text-sm text-muted-foreground">
-              {selectedBars.length > 0 ? (
+              {selectedBars.length > 0 && isAdmin ? (
                 <AlertDialog
                   open={isDeleteDialogOpen}
                   onOpenChange={setIsDeleteDialogOpen}
@@ -728,18 +729,16 @@ function BarCellViewer({
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const [isSaving, setIsSaving] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
-
-  const isAuthenticated = !!user;
 
   const handleSave = async (formData: FormData) => {
     if (!editApiEndpoint) return;
 
     setIsSaving(true);
     try {
-      if (!isAuthenticated) {
+      if (!isAdmin) {
         // For anonymous users, use the anonymous update endpoint
         const response = await fetch(
           `${editApiEndpoint}/${item.id}/anonymous-update`,
@@ -754,7 +753,6 @@ function BarCellViewer({
       } else {
         // For authenticated users, use the regular update endpoint
         const updatedItem = {
-          id: item.id,
           foo_id: formData.get("foo_id") as string,
           value: parseInt(formData.get("value") as string),
           label: (formData.get("label") as string) || null,
@@ -819,7 +817,7 @@ function BarCellViewer({
           <DrawerTitle>{item.label || "Untitled Bar"}</DrawerTitle>
           <DrawerDescription>Bar details - ID: {item.id}</DrawerDescription>
         </DrawerHeader>
-        {!isAuthenticated && (
+        {!isAdmin && (
           <div className="mx-4 mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
             <p className="text-sm text-blue-800 dark:text-blue-200">
               As an anonymous user, the label of the Bar is updated for you, you
@@ -845,12 +843,12 @@ function BarCellViewer({
                 id="label"
                 name="label"
                 defaultValue={
-                  isAuthenticated
+                  isAdmin
                     ? item.label || ""
                     : `${item.label || "Untitled"} (edited)`
                 }
                 placeholder="Enter label"
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -860,7 +858,7 @@ function BarCellViewer({
                 name="value"
                 type="number"
                 defaultValue={item.value}
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -870,7 +868,7 @@ function BarCellViewer({
                 name="foo_id"
                 defaultValue={item.foo_id}
                 placeholder="Foo ID"
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -881,7 +879,7 @@ function BarCellViewer({
                 defaultValue={item.notes || ""}
                 placeholder="Add notes..."
                 rows={3}
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -889,7 +887,7 @@ function BarCellViewer({
                 id="is_enabled"
                 name="is_enabled"
                 defaultChecked={item.is_enabled}
-                disabled={!isAuthenticated}
+                disabled={!isAdmin}
               />
               <Label htmlFor="is_enabled">Is Enabled</Label>
             </div>

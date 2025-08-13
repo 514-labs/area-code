@@ -23,6 +23,25 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Plus, X } from "lucide-react";
 import { Foo, FooStatus, CreateFoo } from "@workspace/models";
 import { getTransactionApiBase } from "../../env-vars";
+import { useAuth } from "../../auth/auth-context";
+
+export const anonymousFoo: CreateFoo = {
+  name: "Anonymous Demo Foo",
+  description:
+    "This is a demo foo created by an anonymous user to test CDC functionality",
+  status: "active" as FooStatus,
+  priority: 42,
+  is_active: true,
+  metadata: {
+    source: "anonymous",
+    demo: true,
+    timestamp: new Date().toISOString(),
+  },
+  tags: ["demo", "anonymous", "test"],
+  score: 88.5,
+  large_text:
+    "This is some sample large text content for the anonymous demo foo. It demonstrates how the CDC system works when anonymous users create new records.",
+};
 
 const createFoo = async (data: CreateFoo): Promise<Foo> => {
   const API_BASE = getTransactionApiBase();
@@ -35,6 +54,15 @@ const createFoo = async (data: CreateFoo): Promise<Foo> => {
   return response.json();
 };
 
+const createAnonymousFoo = async (): Promise<Foo> => {
+  const API_BASE = getTransactionApiBase();
+  const response = await fetch(`${API_BASE}/foo/anonymous-create`, {
+    method: "POST",
+  });
+  if (!response.ok) throw new Error("Failed to create anonymous foo");
+  return response.json();
+};
+
 interface FooCreateFormProps {
   trigger?: ReactNode;
   onSuccess?: () => void;
@@ -42,24 +70,30 @@ interface FooCreateFormProps {
 
 export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<CreateFoo>({
-    name: "",
-    description: "",
-    status: FooStatus.ACTIVE,
-    priority: 1,
-    is_active: true,
-    metadata: {},
-    tags: [],
-    score: 0,
-    large_text: "",
-  });
+
+  const [formData, setFormData] = useState<CreateFoo>(
+    isAdmin
+      ? {
+          name: "",
+          description: "",
+          status: FooStatus.ACTIVE,
+          priority: 1,
+          is_active: true,
+          metadata: {},
+          tags: [],
+          score: 0,
+          large_text: "",
+        }
+      : anonymousFoo
+  );
   const [newTag, setNewTag] = useState("");
   const [metadataKey, setMetadataKey] = useState("");
   const [metadataValue, setMetadataValue] = useState("");
 
   const createMutation = useMutation({
-    mutationFn: createFoo,
+    mutationFn: isAdmin ? createFoo : () => createAnonymousFoo(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["foos"] });
       setIsOpen(false);
@@ -69,17 +103,21 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
   });
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      status: FooStatus.ACTIVE,
-      priority: 1,
-      is_active: true,
-      metadata: {},
-      tags: [],
-      score: 0,
-      large_text: "",
-    });
+    setFormData(
+      isAdmin
+        ? {
+            name: "",
+            description: "",
+            status: FooStatus.ACTIVE,
+            priority: 1,
+            is_active: true,
+            metadata: {},
+            tags: [],
+            score: 0,
+            large_text: "",
+          }
+        : anonymousFoo
+    );
     setNewTag("");
     setMetadataKey("");
     setMetadataValue("");
@@ -149,6 +187,15 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
             Add a new foo to your collection.
           </DialogDescription>
         </DialogHeader>
+        {!isAdmin && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              As an anonymous user, this form is pre-filled with demo data. You
+              can click the create button to test CDC updates with the anonymous
+              foo.
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div className="space-y-2">
@@ -160,6 +207,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                 setFormData({ ...formData, name: e.target.value })
               }
               required
+              disabled={!isAdmin}
             />
           </div>
 
@@ -173,6 +221,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                 setFormData({ ...formData, description: e.target.value })
               }
               rows={3}
+              disabled={!isAdmin}
             />
           </div>
 
@@ -184,6 +233,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
               onValueChange={(value: FooStatus) =>
                 setFormData({ ...formData, status: value })
               }
+              disabled={!isAdmin}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
@@ -212,6 +262,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                   priority: parseInt(e.target.value) || 1,
                 })
               }
+              disabled={!isAdmin}
             />
           </div>
 
@@ -229,6 +280,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                   score: parseFloat(e.target.value) || 0,
                 })
               }
+              disabled={!isAdmin}
             />
           </div>
 
@@ -241,6 +293,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
               onChange={(e) =>
                 setFormData({ ...formData, is_active: e.target.checked })
               }
+              disabled={!isAdmin}
             />
             <Label htmlFor="is_active">Is Active</Label>
           </div>
@@ -259,8 +312,9 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                     addTag();
                   }
                 }}
+                disabled={!isAdmin}
               />
-              <Button type="button" onClick={addTag}>
+              <Button type="button" onClick={addTag} disabled={!isAdmin}>
                 Add
               </Button>
             </div>
@@ -272,10 +326,12 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                   className="flex items-center space-x-1"
                 >
                   <span>{tag}</span>
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => removeTag(tag)}
-                  />
+                  {isAdmin && (
+                    <X
+                      className="h-3 w-3 cursor-pointer"
+                      onClick={() => removeTag(tag)}
+                    />
+                  )}
                 </Badge>
               ))}
             </div>
@@ -289,13 +345,15 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                 placeholder="Key"
                 value={metadataKey}
                 onChange={(e) => setMetadataKey(e.target.value)}
+                disabled={!isAdmin}
               />
               <Input
                 placeholder="Value"
                 value={metadataValue}
                 onChange={(e) => setMetadataValue(e.target.value)}
+                disabled={!isAdmin}
               />
-              <Button type="button" onClick={addMetadata}>
+              <Button type="button" onClick={addMetadata} disabled={!isAdmin}>
                 Add
               </Button>
             </div>
@@ -308,10 +366,12 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                   <span className="text-sm">
                     <strong>{key}:</strong> {String(value)}
                   </span>
-                  <X
-                    className="h-4 w-4 cursor-pointer text-red-500"
-                    onClick={() => removeMetadata(key)}
-                  />
+                  {isAdmin && (
+                    <X
+                      className="h-4 w-4 cursor-pointer text-red-500"
+                      onClick={() => removeMetadata(key)}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -327,6 +387,7 @@ export function FooCreateForm({ trigger, onSuccess }: FooCreateFormProps) {
                 setFormData({ ...formData, large_text: e.target.value })
               }
               rows={4}
+              disabled={!isAdmin}
             />
           </div>
 

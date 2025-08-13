@@ -9,8 +9,6 @@ import {
 import { convertDbFooToModel, convertModelToDbFoo } from "./foo-utils";
 
 async function createFoo(data: CreateFoo, authToken?: string): Promise<Foo> {
-  console.log("Received request body:", JSON.stringify(data, null, 2));
-
   const dbData = convertModelToDbFoo(data);
   const insertData: NewDbFoo = {
     name: dbData.name || data.name,

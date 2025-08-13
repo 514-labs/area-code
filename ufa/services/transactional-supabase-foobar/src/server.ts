@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { fooRoutes } from "./routes/foo";
 import { barRoutes } from "./routes/bar";
 import { chatRoutes } from "./routes/chat";
+import { authRoutes } from "./routes/auth";
 import {
   bootstrapAuroraMCPClient,
   shutdownAuroraMCPClient,
@@ -123,6 +124,7 @@ fastify.get("/", async () => {
 await fastify.register(fooRoutes, { prefix: "/api" });
 await fastify.register(barRoutes, { prefix: "/api" });
 await fastify.register(chatRoutes, { prefix: "/api" });
+await fastify.register(authRoutes, { prefix: "/api" });
 
 // Manual OpenAPI documentation endpoints
 fastify.get("/documentation/json", async () => {
