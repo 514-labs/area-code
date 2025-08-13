@@ -5,18 +5,40 @@ import postgres from "postgres";
 import { getSupabaseConnectionString, getEnforceAuth } from "../env-vars.js";
 import * as schema from "./schema.js";
 
+function getIsTokenValid(token: any): boolean {
+  if (!token || typeof token !== "object") {
+    return false;
+  }
+
+  if (token.sub && typeof token.sub !== "string") {
+    return false;
+  }
+
+  if (token.role && typeof token.role !== "string") {
+    return false;
+  }
+
+  // Check for SQL metacharacters and injection patterns
+  const sqlKeywords =
+    /\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT|JAVASCRIPT)\b/i;
+
+  if (sqlKeywords.test(token.sub)) {
+    return false;
+  }
+
+  return true;
+}
+
 const config = {
   casing: "snake_case",
   schema,
 } satisfies DrizzleConfig<typeof schema>;
 
-// Admin client bypasses RLS
 const adminClient = drizzle({
   client: postgres(getSupabaseConnectionString(), { prepare: false }),
   ...config,
 });
 
-// RLS protected client
 const rlsClient = drizzle({
   client: postgres(getSupabaseConnectionString(), { prepare: false }),
   ...config,
@@ -39,6 +61,10 @@ export async function getDrizzleSupabaseClient(accessToken?: string) {
 
   const token = decode(accessToken || "");
 
+  if (accessToken && !getIsTokenValid(token)) {
+    throw new Error("Invalid JWT token format");
+  }
+
   const runTransaction = ((transaction, config) => {
     return rlsClient.transaction(async (tx) => {
       try {
@@ -50,7 +76,6 @@ export async function getDrizzleSupabaseClient(accessToken?: string) {
           select set_config('request.jwt.claim.sub', '${sql.raw(
             token.sub ?? ""
           )}', TRUE);
-          set local role ${sql.raw(token.role ?? "anon")};
         `);
 
         return await transaction(tx);
@@ -59,7 +84,6 @@ export async function getDrizzleSupabaseClient(accessToken?: string) {
         await tx.execute(sql`
           select set_config('request.jwt.claims', NULL, TRUE);
           select set_config('request.jwt.claim.sub', NULL, TRUE);
-          reset role;
         `);
       }
     }, config);
