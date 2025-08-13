@@ -83,6 +83,7 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { ReactNode, useState, useRef } from "react";
 import { NumericFormat } from "react-number-format";
 import { format } from "date-fns";
+import { useAuth } from "@/auth/auth-context";
 
 // Add a sortable header component
 const SortableHeader = ({
@@ -861,39 +862,57 @@ function TableCellViewer({
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const isAuthenticated = !!user;
 
   const handleSave = async (formData: FormData) => {
     if (!editApiEndpoint) return;
 
     setIsSaving(true);
     try {
-      const updatedItem = {
-        ...item,
-        name: formData.get("name") as string,
-        description: formData.get("description") as string,
-        status: formData.get("status") as string,
-        priority: parseInt(formData.get("priority") as string),
-        score: parseFloat(formData.get("score") as string),
-        is_active: formData.get("is_active") === "on",
-        tags: (formData.get("tags") as string)
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag),
-        large_text: formData.get("large_text") as string,
-      };
+      if (!isAuthenticated) {
+        // For anonymous users, use the anonymous update endpoint
+        const response = await fetch(
+          `${editApiEndpoint}/${item.id}/anonymous-update`,
+          {
+            method: "PUT",
+          }
+        );
 
-      const response = await fetch(`${editApiEndpoint}/${item.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedItem),
-      });
+        if (!response.ok) {
+          throw new Error("Failed to update item anonymously");
+        }
+      } else {
+        // For authenticated users, use the regular update endpoint
+        const updatedItem = {
+          ...item,
+          name: formData.get("name") as string,
+          description: formData.get("description") as string,
+          status: formData.get("status") as string,
+          priority: parseInt(formData.get("priority") as string),
+          score: parseFloat(formData.get("score") as string),
+          is_active: formData.get("is_active") === "on",
+          tags: ((formData.get("tags") as string) || "")
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag),
+          large_text: formData.get("large_text") as string,
+        };
 
-      if (!response.ok) {
-        throw new Error("Failed to update item");
+        const response = await fetch(`${editApiEndpoint}/${item.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedItem),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update item");
+        }
       }
 
       // Close the drawer on success
@@ -931,6 +950,14 @@ function TableCellViewer({
           <DrawerTitle>{item.name}</DrawerTitle>
           <DrawerDescription>Foo details - ID: {item.id}</DrawerDescription>
         </DrawerHeader>
+        {!isAuthenticated && (
+          <div className="mx-4 mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              As an anonymous user, the name of the Foo is updated for you, you
+              can click the save button at the bottom to test CDC updates
+            </p>
+          </div>
+        )}
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
           <form
             ref={formRef}
@@ -945,7 +972,14 @@ function TableCellViewer({
           >
             <div className="flex flex-col gap-3">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" defaultValue={item.name} />
+              <Input
+                id="name"
+                name="name"
+                defaultValue={
+                  isAuthenticated ? item.name : `${item.name} (edited)`
+                }
+                disabled={!isAuthenticated}
+              />
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="description">Description</Label>
@@ -954,12 +988,17 @@ function TableCellViewer({
                 name="description"
                 defaultValue={item.description || ""}
                 placeholder="No description provided"
+                disabled={!isAuthenticated}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
                 <Label htmlFor="status">Status</Label>
-                <Select name="status" defaultValue={item.status}>
+                <Select
+                  name="status"
+                  defaultValue={item.status}
+                  disabled={!isAuthenticated}
+                >
                   <SelectTrigger id="status" className="w-full">
                     <SelectValue placeholder="Select a status" />
                   </SelectTrigger>
@@ -978,6 +1017,7 @@ function TableCellViewer({
                   name="priority"
                   type="number"
                   defaultValue={item.priority}
+                  disabled={!isAuthenticated}
                 />
               </div>
             </div>
@@ -990,6 +1030,7 @@ function TableCellViewer({
                   type="number"
                   step="0.01"
                   defaultValue={item.score}
+                  disabled={!isAuthenticated}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -997,6 +1038,7 @@ function TableCellViewer({
                   id="is_active"
                   name="is_active"
                   defaultChecked={item.is_active}
+                  disabled={!isAuthenticated}
                 />
                 <Label htmlFor="is_active">Is Active</Label>
               </div>
@@ -1006,8 +1048,9 @@ function TableCellViewer({
               <Input
                 id="tags"
                 name="tags"
-                defaultValue={item.tags.join(", ")}
+                defaultValue={item.tags?.join(", ") || ""}
                 placeholder="Comma-separated tags"
+                disabled={!isAuthenticated}
               />
             </div>
             <div className="flex flex-col gap-3">
@@ -1017,6 +1060,7 @@ function TableCellViewer({
                 name="large_text"
                 defaultValue={item.large_text}
                 rows={4}
+                disabled={!isAuthenticated}
               />
             </div>
             <div className="flex flex-col gap-3">

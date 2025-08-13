@@ -5,6 +5,7 @@ import { getAllFoosEndpoint } from "../foo/get-all-foos";
 import { getFooByIdEndpoint } from "../foo/get-foo-by-id";
 import { createFooEndpoint } from "../foo/create-foo";
 import { updateFooEndpoint } from "../foo/update-foo";
+import { anonymousUpdateFooEndpoint } from "../foo/anonymous-update-foo";
 import { deleteFooEndpoint } from "../foo/delete-foo";
 import { bulkDeleteFoosEndpoint } from "../foo/bulk-delete-foos";
 
@@ -15,6 +16,7 @@ export async function fooRoutes(fastify: FastifyInstance) {
   getFooByIdEndpoint(fastify);
   createFooEndpoint(fastify);
   updateFooEndpoint(fastify);
+  anonymousUpdateFooEndpoint(fastify);
   deleteFooEndpoint(fastify);
   bulkDeleteFoosEndpoint(fastify);
 }

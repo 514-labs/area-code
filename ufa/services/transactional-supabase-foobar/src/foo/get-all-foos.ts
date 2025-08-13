@@ -67,22 +67,24 @@ async function getAllFoos(
 
   // Get total count for pagination
   const client = await getDrizzleSupabaseClient(authToken);
-  const { totalCountResult, fooItemsFromQuery } = await client.runTransaction(async (tx) => {
-    const totalCountQuery = tx.select({ count: count() }).from(foo);
-    const totalCountResult = await totalCountQuery;
-    
-    const fooItemsQuery = tx
-      .select()
-      .from(foo)
-      .orderBy(orderByClause)
-      .limit(limit)
-      .offset(offset);
-    
-    const fooItemsFromQuery = await fooItemsQuery;
-    
-    return { totalCountResult, fooItemsFromQuery };
-  });
-  
+  const { totalCountResult, fooItemsFromQuery } = await client.runTransaction(
+    async (tx) => {
+      const totalCountQuery = tx.select({ count: count() }).from(foo);
+      const totalCountResult = await totalCountQuery;
+
+      const fooItemsQuery = tx
+        .select()
+        .from(foo)
+        .orderBy(orderByClause)
+        .limit(limit)
+        .offset(offset);
+
+      const fooItemsFromQuery = await fooItemsQuery;
+
+      return { totalCountResult, fooItemsFromQuery };
+    }
+  );
+
   const total = totalCountResult[0]?.count || 0;
 
   const convertedFoo = fooItemsFromQuery.map(convertDbFooToModel);
