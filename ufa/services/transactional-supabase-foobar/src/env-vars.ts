@@ -23,6 +23,10 @@ function getEnvVar(name: string): string {
   return value;
 }
 
+export function getNodeEnv(): string {
+  return getEnvVar("NODE_ENV");
+}
+
 export function getSupabaseConnectionString(): string {
   return getEnvVar("SUPABASE_CONNECTION_STRING");
 }
@@ -33,4 +37,24 @@ export function getEnforceAuth(): boolean {
 
 export function getAnthropicApiKey(): string {
   return getEnvVar("ANTHROPIC_API_KEY");
+}
+
+export function getClickhouseDatabase(): string {
+  return getEnvVar("CLICKHOUSE_DATABASE");
+}
+
+export function getClickhouseHost(): string {
+  return getEnvVar("CLICKHOUSE_HOST");
+}
+
+export function getClickhousePassword(): string {
+  return getEnvVar("CLICKHOUSE_PASSWORD");
+}
+
+export function getClickhousePort(): string {
+  return getEnvVar("CLICKHOUSE_PORT");
+}
+
+export function getClickhouseUser(): string {
+  return getEnvVar("CLICKHOUSE_USER");
 }
