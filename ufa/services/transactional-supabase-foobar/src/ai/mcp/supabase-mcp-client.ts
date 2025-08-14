@@ -1,10 +1,10 @@
 import { experimental_createMCPClient as createMCPClient } from "ai";
 import { Experimental_StdioMCPTransport as StdioClientTransport } from "ai/mcp-stdio";
+import { getSupabaseConnectionString } from "../../env-vars";
 
 type MCPClient = Awaited<ReturnType<typeof createMCPClient>>;
 type McpToolSet = Awaited<ReturnType<MCPClient["tools"]>>;
 
-// Singleton instance storage
 let mcpClientInstance: {
   mcpClient: MCPClient;
   tools: McpToolSet;
@@ -19,18 +19,9 @@ async function createSupabaseLocalMCPClient(): Promise<{
   mcpClient: MCPClient;
   tools: McpToolSet;
 }> {
-  // Default connection string for local Supabase instance
-  const defaultConnectionString =
-    "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+  const connectionString = getSupabaseConnectionString();
 
-  // Allow override via environment variable if needed
-  const connectionString =
-    process.env.LOCAL_SUPABASE_DB_URL || defaultConnectionString;
-
-  console.log("Creating PostgreSQL MCP client for local Supabase...");
-  console.log(
-    `Connecting to: ${connectionString.replace(/postgres:postgres/, "postgres:***")}`
-  );
+  console.log("Creating PostgreSQL MCP client for postgres database...");
 
   const mcpClient = await createMCPClient({
     name: "supabase-local-postgres-mcp",
@@ -40,7 +31,6 @@ async function createSupabaseLocalMCPClient(): Promise<{
     }),
   });
 
-  // Get tools from PostgreSQL MCP server
   const tools = await mcpClient.tools();
 
   console.log("Local Supabase PostgreSQL MCP client connected successfully");
@@ -48,10 +38,6 @@ async function createSupabaseLocalMCPClient(): Promise<{
   return { mcpClient, tools };
 }
 
-/**
- * Bootstrap the Supabase Local MCP client during server startup.
- * Should be called once when the server starts.
- */
 export async function bootstrapSupabaseLocalMCPClient(): Promise<void> {
   if (mcpClientInstance) {
     console.log("Supabase Local MCP client already bootstrapped");
@@ -77,10 +63,6 @@ export async function bootstrapSupabaseLocalMCPClient(): Promise<void> {
   }
 }
 
-/**
- * Get the Supabase Local MCP client instance.
- * Returns the singleton instance created during bootstrap.
- */
 export async function getSupabaseLocalMCPClient(): Promise<{
   mcpClient: MCPClient;
   tools: McpToolSet;
@@ -102,10 +84,6 @@ export async function getSupabaseLocalMCPClient(): Promise<{
   return mcpClientInstance;
 }
 
-/**
- * Shutdown the Supabase Local MCP client during server shutdown.
- * Should be called once when the server is shutting down.
- */
 export async function shutdownSupabaseLocalMCPClient(): Promise<void> {
   if (!mcpClientInstance) {
     console.log(

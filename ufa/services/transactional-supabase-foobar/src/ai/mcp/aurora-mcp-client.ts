@@ -1,10 +1,19 @@
 import { experimental_createMCPClient as createMCPClient } from "ai";
 import { Experimental_StdioMCPTransport as StdioClientTransport } from "ai/mcp-stdio";
+import {
+  getAnthropicApiKey,
+  getClickhouseDatabase,
+  getClickhouseHost,
+  getClickhousePassword,
+  getClickhousePort,
+  getClickhouseUser,
+  getNodeEnv,
+} from "../../env-vars.js";
+import fs from "fs";
+import { findAnalyticalMooseServicePath } from "./moose-location-utils.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
 import { execSync } from "child_process";
-import { findAnalyticalMooseServicePath } from "./moose-location-utils.js";
 
 // Get current directory in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -73,14 +82,51 @@ function getToolPaths() {
   };
 }
 
-async function createAuroraMCPClient(): Promise<{
+async function createProductionAuroraMCPClient(
+  ANTHROPIC_API_KEY: string
+): Promise<{
   mcpClient: MCPClient;
   tools: McpToolSet;
 }> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error("ANTHROPIC_API_KEY environment variable is not set");
-  }
+  const CLICKHOUSE_DATABASE = getClickhouseDatabase();
+  const CLICKHOUSE_HOST = getClickhouseHost();
+  const CLICKHOUSE_PASSWORD = getClickhousePassword();
+  const CLICKHOUSE_PORT = getClickhousePort();
+  const CLICKHOUSE_USER = getClickhouseUser();
 
+  console.log("Creating Aurora MCP client with remote ClickHouse tools only");
+
+  const mcpClient = await createMCPClient({
+    name: "aurora-mcp",
+    transport: new StdioClientTransport({
+      command: "npx",
+      args: [
+        "@514labs/aurora-mcp@latest",
+        "--remote-clickhouse-tools",
+        "--experimental-context",
+      ],
+      env: {
+        ANTHROPIC_API_KEY,
+        CLICKHOUSE_HOST: CLICKHOUSE_HOST,
+        CLICKHOUSE_PORT: CLICKHOUSE_PORT,
+        CLICKHOUSE_USER: CLICKHOUSE_USER,
+        CLICKHOUSE_PASSWORD: CLICKHOUSE_PASSWORD,
+        CLICKHOUSE_DATABASE: CLICKHOUSE_DATABASE,
+      },
+    }),
+  });
+
+  const tools = await mcpClient.tools();
+
+  return { mcpClient, tools };
+}
+
+async function createDevelopmentAuroraMCPClient(
+  ANTHROPIC_API_KEY: string
+): Promise<{
+  mcpClient: MCPClient;
+  tools: McpToolSet;
+}> {
   const analyticalServicePath = findAnalyticalMooseServicePath(__dirname);
   const toolPaths = getToolPaths();
 
@@ -97,12 +143,12 @@ async function createAuroraMCPClient(): Promise<{
         analyticalServicePath,
       ],
       env: {
-        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-        CLICKHOUSE_DATABASE: process.env.CLICKHOUSE_DATABASE || "",
-        CLICKHOUSE_HOST: process.env.CLICKHOUSE_HOST || "",
-        CLICKHOUSE_PASSWORD: process.env.CLICKHOUSE_PASSWORD || "",
-        CLICKHOUSE_PORT: process.env.CLICKHOUSE_PORT || "",
-        CLICKHOUSE_USER: process.env.CLICKHOUSE_USER || "",
+        ANTHROPIC_API_KEY,
+        CLICKHOUSE_DATABASE: "",
+        CLICKHOUSE_HOST: "",
+        CLICKHOUSE_PASSWORD: "",
+        CLICKHOUSE_PORT: "",
+        CLICKHOUSE_USER: "",
         ...toolPaths,
       },
     }),
@@ -114,8 +160,20 @@ async function createAuroraMCPClient(): Promise<{
   return { mcpClient, tools };
 }
 
+async function createAuroraMCPClient(): Promise<{
+  mcpClient: MCPClient;
+  tools: McpToolSet;
+}> {
+  const ANTHROPIC_API_KEY = getAnthropicApiKey();
+
+  if (getNodeEnv() === "production") {
+    return createProductionAuroraMCPClient(ANTHROPIC_API_KEY);
+  } else {
+    return createDevelopmentAuroraMCPClient(ANTHROPIC_API_KEY);
+  }
+}
+
 /**
- * Should be called once when the server starts.
  * Will not throw errors - server can continue running even if Aurora MCP fails to bootstrap.
  */
 export async function bootstrapAuroraMCPClient(): Promise<void> {
@@ -153,9 +211,12 @@ export async function bootstrapAuroraMCPClient(): Promise<void> {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+type EmptyMcpToolSet = {};
+
 export async function getAuroraMCPClient(): Promise<{
   mcpClient: MCPClient | null;
-  tools: McpToolSet | {};
+  tools: McpToolSet | EmptyMcpToolSet;
 }> {
   if (!mcpClientInstance) {
     if (initializationPromise) {

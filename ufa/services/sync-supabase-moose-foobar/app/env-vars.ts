@@ -65,10 +65,6 @@ export function getServiceRoleKey(): string {
   return key;
 }
 
-export function getAnonKey(): string {
-  return process.env.ANON_KEY || "";
-}
-
 export function getDbSchema(): string {
   return process.env.DB_SCHEMA || "public";
 }
