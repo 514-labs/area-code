@@ -3,9 +3,6 @@ name: Supabase Migration Validation (PR)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - "ufa/services/transactional-supabase-foobar/database/supabase/migrations/**"
-      - "ufa/services/transactional-supabase-foobar/src/database/schema.ts"
 
 jobs:
   validate-migrations:
