@@ -4,8 +4,6 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { writeFileSync } from "fs";
 import { resolve } from "path";
-import { fileURLToPath } from "url";
-
 import { fooRoutes } from "./routes/foo";
 import { barRoutes } from "./routes/bar";
 import { chatRoutes } from "./routes/chat";
@@ -18,21 +16,11 @@ import {
   bootstrapSupabaseLocalMCPClient,
   shutdownSupabaseLocalMCPClient,
 } from "./ai/mcp/supabase-mcp-client";
-
-// Load environment variables FIRST, before importing anything that might need them
-import { config as dotenvConfig } from "dotenv";
 import path from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-//Load environment variables from .env files in order of precedence
-dotenvConfig({ path: path.resolve(__dirname, "../.env") });
-dotenvConfig({ path: path.resolve(__dirname, "../.env.development") });
-dotenvConfig({ path: path.resolve(__dirname, "../.env.local") });
+import { getNodeEnv } from "./env-vars";
 
 // Watch for .env file changes in development
-if (process.env.NODE_ENV === "development") {
+if (getNodeEnv() === "development") {
   import("fs").then(({ watch, utimes }) => {
     const envFiles = [".env", ".env.development", ".env.local"];
 
