@@ -68,10 +68,7 @@ if (process.env.NODE_ENV === "development") {
 const fastify = Fastify({
   logger: {
     level: "info",
-    transport:
-      process.env.NODE_ENV === "development"
-        ? { target: "pino-pretty" }
-        : undefined,
+    transport: { target: "pino-pretty" },
   },
 });
 
