@@ -10,15 +10,18 @@ export interface AdminStatusResponse {
 async function checkAdminStatus(
   authToken?: string
 ): Promise<AdminStatusResponse> {
+  console.log("Checking admin status...");
   const enforceAuth = getEnforceAuth();
 
   if (!enforceAuth) {
+    console.log("Admin status check: Enforce auth is disabled");
     return {
       isAdmin: true,
     };
   }
 
   if (!authToken) {
+    console.log("Admin status check: No auth token provided");
     return {
       isAdmin: false,
     };
@@ -32,6 +35,8 @@ async function checkAdminStatus(
     });
 
     const isAdmin = userResult.length > 0 && userResult[0].role === "admin";
+
+    console.log("Admin status check: User is admin:", isAdmin);
 
     return {
       isAdmin,
