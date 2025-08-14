@@ -1,0 +1,45 @@
+name: Supabase Migration Validation (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "ufa/services/transactional-supabase-foobar/database/supabase/migrations/**"
+      - "ufa/services/transactional-supabase-foobar/src/database/schema.ts"
+
+jobs:
+  validate-migrations:
+    name: Validate Database Migrations
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ufa/services/transactional-supabase-foobar
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.31.8
+
+      - name: Link to Supabase project
+        run: |
+          echo "🔗 Linking to Supabase project..."
+          cd database/supabase
+          supabase link --project-ref "$PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Validate migrations (dry run)
+        run: |
+          echo "🧪 Testing migrations against production database (dry run)..."
+          cd database/supabase
+          supabase db push --dry-run
+          echo "✅ Migration validation successful - ready for deployment"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
