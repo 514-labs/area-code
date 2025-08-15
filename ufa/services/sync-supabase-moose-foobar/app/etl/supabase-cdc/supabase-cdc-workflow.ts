@@ -218,6 +218,7 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
     try {
       const realtimeUrl = `${supabaseConfig.supabaseUrl}/realtime/v1/websocket?apikey=${supabaseConfig.supabaseKey}`;
       const testResponse = await fetch(realtimeUrl);
+      console.log("🔄 Realtime service check failed:", testResponse);
 
       // For WebSocket endpoints, getting a 426 "Upgrade Required" or similar is actually good
       // It means the endpoint exists and is responding

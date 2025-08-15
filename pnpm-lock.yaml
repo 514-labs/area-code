@@ -190,6 +190,7 @@ importers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 =======
         version: 0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.2.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
@@ -209,6 +210,9 @@ importers:
 =======
         version: 0.5.20(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3))
 >>>>>>> 567050d (regen lock)
+=======
+        version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3))
+>>>>>>> 2b20c65 (retrigger)
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -425,6 +429,7 @@ importers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 =======
         version: 0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
@@ -444,6 +449,9 @@ importers:
 =======
         version: 0.5.20(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))
 >>>>>>> 567050d (regen lock)
+=======
+        version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))
+>>>>>>> 2b20c65 (retrigger)
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -459,6 +467,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -484,6 +493,9 @@ importers:
 =======
         version: 0.5.20
 >>>>>>> 567050d (regen lock)
+=======
+        version: 0.5.23
+>>>>>>> 2b20c65 (retrigger)
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -547,6 +559,7 @@ importers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
 =======
         version: 0.5.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.9)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(typescript@5.8.3))
@@ -566,6 +579,9 @@ importers:
 =======
         version: 0.5.20(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))
 >>>>>>> 567050d (regen lock)
+=======
+        version: 0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))
+>>>>>>> 2b20c65 (retrigger)
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.55.0
@@ -596,6 +612,7 @@ importers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         version: 0.5.23
 =======
         version: 0.5.4
@@ -615,6 +632,9 @@ importers:
 =======
         version: 0.5.20
 >>>>>>> 567050d (regen lock)
+=======
+        version: 0.5.23
+>>>>>>> 2b20c65 (retrigger)
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -718,6 +738,7 @@ packages:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@514labs/moose-cli-darwin-arm64@0.5.23':
     resolution: {integrity: sha512-co4IfDQhjdeZaP25MFJ0fewuy6VXKjvAT/PNTX8ZnzpZMaNpAKL6sNgbE4DuiGRYVaxO5eCeevmkHpz4ddlx7Q==}
     cpu: [arm64]
@@ -767,28 +788,33 @@ packages:
   '@514labs/moose-cli-darwin-arm64@0.5.20':
     resolution: {integrity: sha512-nLsK+nXk17dqGX2ZBYqULw4xTkATk3UX0IQtVCs8UeO1W3qgbOAYBHx/1ypWgzVIYdfsznrunfQYM2rlM85j2g==}
 >>>>>>> 567050d (regen lock)
+=======
+  '@514labs/moose-cli-darwin-arm64@0.5.23':
+    resolution: {integrity: sha512-co4IfDQhjdeZaP25MFJ0fewuy6VXKjvAT/PNTX8ZnzpZMaNpAKL6sNgbE4DuiGRYVaxO5eCeevmkHpz4ddlx7Q==}
+>>>>>>> 2b20c65 (retrigger)
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.5.20':
-    resolution: {integrity: sha512-JIgirRgP1b9dd4FDLRcAu1LqUJVxpHpqEysx2UOFV+9hb4pOM/vkPTkhq0gZVy1uiNGGoch7oR/xBMYK4oJW+w==}
+  '@514labs/moose-cli-darwin-x64@0.5.23':
+    resolution: {integrity: sha512-omA5k6M1vsbqP9MWrTIH7xFYFKvr6TUWVM9PFxuRKKbYABZTmxaGo37FgVK2iXqWZpN2P3V3oPbSrZ3Mn3rakA==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.5.20':
-    resolution: {integrity: sha512-vzHShDa7qqNpuCryJ1dcq2SxH53lhyQ/RJGYJ787TKXF6W8oQImwd/akdPB1jSB1Z3ULinU0C+GCNAsHcsMsUw==}
+  '@514labs/moose-cli-linux-arm64@0.5.23':
+    resolution: {integrity: sha512-AswZ1Qub8pYHjqM8k8pbGnqtNe3SoaTgedWjzH+vgmN2+7IbyMwT0ft7IuxxzsUe6T0p8OsGm99vYYWyp2l8Fg==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.5.20':
-    resolution: {integrity: sha512-wlIdKKqA4aG2iAy7UAHMhbKHTOqGvWfW4zMdfmB/fnIoaScnXJ2OseKDdpd5hFoPUk4Aikv78r7uAG//iDOnCw==}
+  '@514labs/moose-cli-linux-x64@0.5.23':
+    resolution: {integrity: sha512-4yAlowmZRWTjFQoz64Z5Dl+QBOM1Um+QjH7W4dLAdjUk5lI/w9BMPCtYrQmNyitc5o755isJRGV5lxZod/ESCw==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.5.20':
-    resolution: {integrity: sha512-o92zN0JESnWPvrTtyJ+UeOzaI1mGMErYejBltRFk38foVCd/Q3rAq2V/C5EJjMxyP2lmNloF4jSWgWOJmlTXuQ==}
+  '@514labs/moose-cli@0.5.23':
+    resolution: {integrity: sha512-U8v4lDXISwUnaxaE+iF3S8Dt7BxfvEReR2rlP1BZbDUsUHgP3LfFRREJ9cN7SdKDAFKr0qoObCkxQ5I0KFujtQ==}
     hasBin: true
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -827,6 +853,10 @@ packages:
   '@514labs/moose-lib@0.5.20':
     resolution: {integrity: sha512-a8vVDnVqGaOmXwzimbRLHspqAIHkDFNrHmdVKrY4G0LxsW8qArcswx0mpYT5o4CmbnmM7UoogNzYcJ+q1rRbeg==}
 >>>>>>> 567050d (regen lock)
+=======
+  '@514labs/moose-lib@0.5.23':
+    resolution: {integrity: sha512-B6peQMfJ7BefgGAUFIsZ3s2Jsa9H1AUNJv+4moH39p3iCUNpnU84aTMsw/qC+ARadFTNE6V2zjk82EmG+EABEA==}
+>>>>>>> 2b20c65 (retrigger)
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
@@ -6135,6 +6165,7 @@ snapshots:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   '@514labs/moose-cli-darwin-arm64@0.5.23':
     optional: true
 
@@ -6172,24 +6203,28 @@ snapshots:
 =======
   '@514labs/moose-cli-darwin-arm64@0.5.20':
 >>>>>>> 567050d (regen lock)
+=======
+  '@514labs/moose-cli-darwin-arm64@0.5.23':
+>>>>>>> 2b20c65 (retrigger)
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.5.20':
+  '@514labs/moose-cli-darwin-x64@0.5.23':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.5.20':
+  '@514labs/moose-cli-linux-arm64@0.5.23':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.5.20':
+  '@514labs/moose-cli-linux-x64@0.5.23':
     optional: true
 
-  '@514labs/moose-cli@0.5.20':
+  '@514labs/moose-cli@0.5.23':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.5.20
-      '@514labs/moose-cli-darwin-x64': 0.5.20
-      '@514labs/moose-cli-linux-arm64': 0.5.20
-      '@514labs/moose-cli-linux-x64': 0.5.20
+      '@514labs/moose-cli-darwin-arm64': 0.5.23
+      '@514labs/moose-cli-darwin-x64': 0.5.23
+      '@514labs/moose-cli-linux-arm64': 0.5.23
+      '@514labs/moose-cli-linux-x64': 0.5.23
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -6274,6 +6309,9 @@ snapshots:
 =======
   '@514labs/moose-lib@0.5.20(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))':
 >>>>>>> 567050d (regen lock)
+=======
+  '@514labs/moose-lib@0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))':
+>>>>>>> 2b20c65 (retrigger)
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -6302,7 +6340,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.5.20(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.5.23(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0

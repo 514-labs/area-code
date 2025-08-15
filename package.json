@@ -28,6 +28,15 @@
     "turbo": "^2.5.4",
     "typescript": "5.8.3"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "supabase"
+    ],
+    "ignoredBuiltDependencies": [
+      "@swc/core",
+      "esbuild"
+    ]
+  },
   "packageManager": "pnpm@10.14.0",
   "engines": {
     "node": ">=18"

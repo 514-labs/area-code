@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "module": "CommonJS",
+    "module": "ESNext",
     "moduleResolution": "Node",
     "target": "ES2020"
   },

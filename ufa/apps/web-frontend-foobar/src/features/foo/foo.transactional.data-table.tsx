@@ -28,7 +28,8 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { Foo, FooStatus, GetFoosResponse } from "@workspace/models/foo";
+import { Foo, GetFoosResponse } from "@workspace/models";
+import { FooStatus } from "@workspace/models/foo";
 import { getTransactionApiBase } from "@/env-vars";
 
 import { useIsMobile } from "@workspace/ui/hooks/use-mobile";

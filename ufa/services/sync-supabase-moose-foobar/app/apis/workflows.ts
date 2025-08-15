@@ -8,7 +8,7 @@ interface WorkflowResponse {
 }
  
 const triggerApi = new ConsumptionApi<{}, WorkflowResponse>(
-  "trigger-workflow",
+  "start-workflow",
   async (_, { client }) => {
     // Trigger the workflow with input parameters
     const workflowExecution = await client.workflow.execute("supabase-listener", {}); 
@@ -19,5 +19,18 @@ const triggerApi = new ConsumptionApi<{}, WorkflowResponse>(
     };
   }
 );
+
+const terminateAPI = new ConsumptionApi<{}, WorkflowResponse>(
+  "terminate-workflow",
+  async (_, { client }) => {
+    // Trigger the workflow with input parameters
+    const workflowExecution = await client.workflow.execute("supabase-listener", {}); 
  
-export default triggerApi;
+    return {
+      workflowId: workflowExecution.body,
+      status: "terminated"
+    };
+  }
+);
+ 
+export { triggerApi, terminateAPI };

@@ -30,7 +30,7 @@ import {
   FooStatus,
   FooWithCDC,
   GetFoosWithCDCResponse,
-} from "@workspace/models/foo";
+} from "@workspace/models";
 import { getAnalyticalConsumptionApiBase } from "@/env-vars";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
