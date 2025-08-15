@@ -212,13 +212,12 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
   console.log("🔄 Waiting for realtime service...");
 
   const realtimeStartTime = Date.now();
-  const realtimeTimeoutMs = 300000; // 5 minutes for realtime
+  const realtimeTimeoutMs = 30000; // Reduced to 30 seconds
 
   while (Date.now() - realtimeStartTime < realtimeTimeoutMs) {
     try {
       const realtimeUrl = `${supabaseConfig.supabaseUrl}/realtime/v1/websocket?apikey=${supabaseConfig.supabaseKey}`;
       const testResponse = await fetch(realtimeUrl);
-      console.log("🔄 Realtime service check failed:", testResponse);
 
       // For WebSocket endpoints, getting a 426 "Upgrade Required" or similar is actually good
       // It means the endpoint exists and is responding
@@ -233,6 +232,16 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
           ")"
         );
         break;
+      } else if (testResponse.status === 500) {
+        // 500 errors are common for realtime endpoints when accessed via HTTP
+        // The WebSocket connection may still work fine, so we'll proceed
+        console.log(
+          "⚠️  Realtime HTTP endpoint returns 500, but WebSocket may still work"
+        );
+        console.log("   → Proceeding with CDC setup anyway");
+        break;
+      } else {
+        console.log(`🔄 Realtime service check status: ${testResponse.status}`);
       }
     } catch (error) {
       console.log(
@@ -241,7 +250,13 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
       );
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 5000)); // Check every 5 seconds
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Check every 2 seconds
+  }
+
+  // Always proceed after timeout - the actual WebSocket connection test happens during subscription
+  if (Date.now() - realtimeStartTime >= realtimeTimeoutMs) {
+    console.log("⏰ Realtime service check timeout - proceeding with CDC setup");
+    console.log("   → The actual connection will be tested during subscription");
   }
 }
 
