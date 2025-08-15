@@ -24,7 +24,7 @@ const terminateAPI = new ConsumptionApi<{}, WorkflowResponse>(
   "terminate-workflow",
   async (_, { client }) => {
     // Trigger the workflow with input parameters
-    const workflowExecution = await client.workflow.execute("supabase-listener", {}); 
+    const workflowExecution = await client.workflow.terminate("supabase-listener", {}); 
  
     return {
       workflowId: workflowExecution.body,
