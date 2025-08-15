@@ -6,14 +6,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenvConfig({ path: path.resolve(__dirname, "../.env") });
-dotenvConfig({
-  path: path.resolve(__dirname, "../.env.development"),
-  override: true,
-});
-dotenvConfig({
-  path: path.resolve(__dirname, "../.env.local"),
-  override: true,
-});
+if (process.env.NODE_ENV === "development") {
+  dotenvConfig({
+    path: path.resolve(__dirname, "../.env.development"),
+    override: true,
+  });
+  dotenvConfig({
+    path: path.resolve(__dirname, "../.env.local"),
+    override: true,
+  });
+}
 
 function getEnvVar(name: string): string {
   const value = process.env[name];
