@@ -118,12 +118,8 @@ function AIOutput({
                 );
               }
 
-              // Fallback for unknown part types
-              return (
-                <div key={index} className="text-muted-foreground text-xs">
-                  Unknown message part type: {part.type}
-                </div>
-              );
+              console.log("unknown part type", part.type);
+              return null;
           }
         })
       ) : (

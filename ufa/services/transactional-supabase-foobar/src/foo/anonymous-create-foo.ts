@@ -19,13 +19,12 @@ export const anonymousFoo: CreateFoo = {
     timestamp: new Date().toISOString(),
   },
   tags: ["demo", "anonymous", "test"],
-  score: 88.5,
+  score: 50.0,
   large_text:
     "This is some sample large text content for the anonymous demo foo. It demonstrates how the CDC system works when anonymous users create new records.",
 };
 
 async function anonymousCreateFoo(): Promise<Foo> {
-  // Use admin client (no auth token) to bypass RLS
   const client = await getDrizzleSupabaseAdminClient();
 
   const result = await client.runTransaction(async (tx) => {
