@@ -76,6 +76,10 @@ pnpm --filter retrieval-base dev          # Search API only
 | **Real-time**        | Supabase Realtime                                   |
 | **Build Tool**       | Turborepo, pnpm                                     |
 
+## 🏛️ Reference Architecture
+
+![Reference architecture: User-facing analytics (with AI)](../ufa-architecture-diagram.png)
+
 ## 📁 Project Structure
 
 ```

@@ -21,6 +21,10 @@ Backend & Data:
 Sync & Streaming: Moose Workflows (with Temporal) | Moose Stream (with Redpanda) | Supabase Realtime
 Frontend: Vite | React 19 | TypeScript | TanStack (Router, Query, Form) | Tailwind CSS
 
+### Reference Architecture
+
+![Reference architecture: User-facing analytics (with AI)](ufa-architecture-diagram.png)
+
 ## Operational Data Warehouse
 
 The odw project is a starter kit for an operational data warehouse, using the Moose framework to ingest data from various sources (Blobs, Events, Logs) into an analytical backend (ClickHouse).
