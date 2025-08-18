@@ -56,10 +56,10 @@ pnpm ufa:dev:clean        # Clean all services
 pnpm ufa:dev:seed         # Seed databases with sample data
 
 # Individual services
-pnpm --filter vite-web-base dev          # Frontend only
-pnpm --filter transactional-base dev      # Transactional API only
-pnpm --filter analytical-base dev         # Analytical API only
-pnpm --filter retrieval-base dev          # Search API only
+pnpm --filter web-frontend-foobar dev          # Frontend only
+pnpm --filter transactional-supabase-foobar dev      # Transactional API only
+pnpm --filter analytical-moose-foobar dev         # Analytical API only
+pnpm --filter retrieval-elasticsearch-foobar dev          # Search API only
 ```
 
 ## 🏗️ Tech Stack
@@ -76,19 +76,22 @@ pnpm --filter retrieval-base dev          # Search API only
 | **Real-time**        | Supabase Realtime                                   |
 | **Build Tool**       | Turborepo, pnpm                                     |
 
+## 🏛️ Reference Architecture
+
+![Reference architecture: User-facing analytics (with AI)](../ufa-architecture-diagram.png)
+
 ## 📁 Project Structure
 
 ```
 area-code/
 ├── ufa/                    # User-Facing Analytics
 │   ├── apps/              # Frontend applications
-│   │   └── vite-web-base/ # React + Vite frontend
+│   │   └── web-frontend-foobar/ # React + Vite frontend
 │   ├── services/          # Backend services
-│   │   ├── transactional-base/  # PostgreSQL + Fastify API
-│   │   ├── analytical-base/     # ClickHouse + Moose API
-│   │   ├── retrieval-base/      # Elasticsearch search API
-│   │   ├── sync-base/           # Data synchronization
-│   │   └── transactional-database/ # PostgreSQL setup
+│   │   ├── transactional-supabase-foobar/  # PostgreSQL + Fastify API
+│   │   ├── analytical-moose-foobar/     # ClickHouse + Moose API
+│   │   ├── retrieval-elasticsearch-foobar/      # Elasticsearch search API
+│   │   └── sync-supabase-moose-foobar/           # Data synchronization
 │   ├── packages/          # Shared packages
 │   │   ├── models/        # Shared data models
 │   │   ├── ui/            # Shared UI components
@@ -100,14 +103,14 @@ area-code/
 
 ## 🔧 Services Overview
 
-### Frontend (vite-web-base)
+### Frontend (web-frontend-foobar)
 
 - Modern React application with TanStack Router
 - Real-time data visualization with Recharts
 - Form handling with TanStack Form
 - Data tables with TanStack Table
 
-### Transactional Base
+### Transactional Supabase Foobar
 
 - Fastify-based REST API
 - PostgreSQL database with Drizzle ORM
@@ -115,18 +118,18 @@ area-code/
 - OpenAPI/Swagger documentation
 - Transactional business logic
 
-### Analytical Base
+### Analytical Moose Foobar
 
 - [Moose analytical APIs + ClickHouse](https://docs.fiveonefour.com/moose/building/consumption-apis) with automatic OpenAPI/Swagger docs
 - [Moose streaming Ingest Pipelines + Redpanda](https://docs.fiveonefour.com/moose/building/ingestion) for routing change data events from PostgreSQL to ClickHouse
 
-### Retrieval Base
+### Retrieval Elasticsearch Foobar
 
 - Elasticsearch search API
 - Full-text search capabilities
 - Real-time indexing
 
-### Sync Base
+### Sync Supabase Moose Foobar
 
 - [Moose workflows + Temporal](https://docs.fiveonefour.com/moose/building/workflows) for durable long-running data synchronization
 - Real-time replication with Supabase Realtime
