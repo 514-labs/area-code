@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenvConfig({ path: path.resolve(__dirname, "../.env") });
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV !== "production") {
   dotenvConfig({
     path: path.resolve(__dirname, "../.env.development"),
     override: true,
