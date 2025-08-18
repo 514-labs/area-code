@@ -71,7 +71,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
 
       return createUIMessageStreamResponse({ stream });
     } catch (error) {
-      fastify.log.error("Chat error:", error);
+      console.error("Chat error:", error);
       reply.status(500).send({
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
