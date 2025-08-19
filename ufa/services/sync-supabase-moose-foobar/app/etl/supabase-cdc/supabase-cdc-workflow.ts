@@ -140,11 +140,11 @@ async function registerSupabaseCDCListeners(
 
   console.log("\n🎯 Supabase realtime listeners are now active!");
 
-  // Keep the task running indefinitely
-  return new Promise<void>(() => {
-    // This promise never resolves, keeping the task alive
-    // The task will only end when the workflow is terminated
-  });
+  // Keep the task running indefinitely with non-blocking loop
+  while (true) {
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+    // This allows heartbeats and other async operations to process
+  }
 }
 
 async function cleanupSupabaseCDCListeners() {
