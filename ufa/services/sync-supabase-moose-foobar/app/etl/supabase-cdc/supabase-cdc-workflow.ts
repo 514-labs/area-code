@@ -269,7 +269,9 @@ async function workflowSetup(
   await waitForSupabase(supabaseClient);
   await waitForRealtimeService(supabaseConfig);
 
-  await setupRealtimeReplication(pgClient);
+  if (process.env.NODE_ENV === "development") {
+    await setupRealtimeReplication(pgClient);
+  }
 }
 
 async function taskExecution() {
