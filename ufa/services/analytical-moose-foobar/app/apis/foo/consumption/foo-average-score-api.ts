@@ -21,7 +21,7 @@ export const fooAverageScoreApi = new ConsumptionApi<
         AVG(score) as averageScore,
         COUNT(*) as count
       FROM ${FooPipeline.table!}
-      WHERE score IS NOT NULL
+      WHERE score IS NOT NULL AND cdc_operation != 'DELETE'
     `;
 
     const resultSet = await client.query.execute<{
