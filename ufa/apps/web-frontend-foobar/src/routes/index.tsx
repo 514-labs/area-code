@@ -15,6 +15,8 @@ import BarAverageValue from "@/features/bar/bar.average-value";
 import BarTransactionalDataTable from "@/features/bar/bar.transactional.data-table";
 import FooAnalyticalDataTable from "@/features/foo/foo.analytical.data-table";
 import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
+import { FooRollingSegmentationGraph } from "@/features/foo/foo.rolling-segmentation.graph";
+import { FooCubeAggregationsTable } from "@/features/foo/foo.cube-aggregations.table";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -125,14 +127,6 @@ function IndexPage() {
 
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5 h-full overflow-auto pt-0.5">
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
-      </TransactionalHighlightWrapper>
-
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
-      </AnalyticalHighlightWrapper>
-
       <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalFooScoreOverTimeGraph cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
@@ -142,15 +136,23 @@ function IndexPage() {
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <FooAnalyticalDataTable disableCache={!cacheEnabled} />
+        <FooCubeAggregationsTable disableCache={!cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12">
-        <FooTransactionalDataTable
-          disableCache={!cacheEnabled}
-          selectableRows={true}
-        />
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
+        <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
+
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
+        <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
+      </AnalyticalHighlightWrapper>
+
+      <AnalyticalHighlightWrapper className="col-span-12">
+        <FooRollingSegmentationGraph
+          apiEndpoint={`${getAnalyticalConsumptionApiBase()}/foo-rolling-segmentation`}
+          disableCache={!cacheEnabled}
+        />
+      </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
@@ -159,17 +161,6 @@ function IndexPage() {
       <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
-
-      <AnalyticalHighlightWrapper className="col-span-12">
-        <BarAnalyticalDataTable disableCache={!cacheEnabled} />
-      </AnalyticalHighlightWrapper>
-
-      <TransactionalHighlightWrapper className="col-span-12">
-        <BarTransactionalDataTable
-          disableCache={!cacheEnabled}
-          selectableRows={true}
-        />
-      </TransactionalHighlightWrapper>
     </div>
   );
 }
