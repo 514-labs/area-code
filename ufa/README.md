@@ -8,9 +8,7 @@
 
 Area Code is a production-ready starter repository with all the necessary building blocks for building multi-modal applications with real-time analytics, transactional data, and search capabilities.
 
-## Prerequisites
-
-### Anthropic API Key Setup
+### (Optional - needed if you want to use the AI Chat feature) Anthropic API Key Setup
 
 The UFA application includes AI-powered chat functionality that requires an Anthropic API key:
 
