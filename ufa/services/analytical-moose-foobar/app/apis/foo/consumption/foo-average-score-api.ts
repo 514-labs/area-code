@@ -1,5 +1,5 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { FooCurrentStateView } from "../../../index";
+import { FooCurrentStateView, FooPipeline } from "../../../index";
 import { GetFoosAverageScoreResponse } from "@workspace/models/foo";
 
 // eslint-disable-next-line
@@ -18,10 +18,10 @@ export const fooAverageScoreApi = new ConsumptionApi<
 
     const query = sql`
       SELECT 
-        AVG(${FooCurrentStateView.targetTable.columns.score}) as averageScore,
+        AVG(score) as averageScore,
         COUNT(*) as count
-      FROM ${FooCurrentStateView.targetTable}
-      WHERE cdc_operation != 'DELETE'
+      FROM ${FooPipeline.table!}
+      WHERE score IS NOT NULL AND cdc_operation != 'DELETE'
     `;
 
     const resultSet = await client.query.execute<{
