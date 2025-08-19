@@ -269,7 +269,7 @@ async function workflowSetup(
   await waitForSupabase(supabaseClient);
   await waitForRealtimeService(supabaseConfig);
 
-  // await setupRealtimeReplication(pgClient);
+  await setupRealtimeReplication(pgClient);
 }
 
 async function taskExecution() {
