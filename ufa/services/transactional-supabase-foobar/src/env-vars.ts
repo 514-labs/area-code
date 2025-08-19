@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenvConfig({ path: path.resolve(__dirname, "../.env") });
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV === "development") {
   dotenvConfig({
     path: path.resolve(__dirname, "../.env.development"),
     override: true,
@@ -26,7 +26,7 @@ function getEnvVar(name: string): string {
 }
 
 export function getNodeEnv(): string {
-  return getEnvVar("NODE_ENV");
+  return process.env.NODE_ENV || "development";
 }
 
 export function getSupabaseConnectionString(): string {

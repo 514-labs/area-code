@@ -29,7 +29,7 @@ const __dirname = path.dirname(__filename);
 //Load environment variables from .env files in order of precedence
 dotenvConfig({ path: path.resolve(__dirname, "../.env") });
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV === "development") {
   dotenvConfig({
     path: path.resolve(__dirname, "../.env.development"),
     override: true,

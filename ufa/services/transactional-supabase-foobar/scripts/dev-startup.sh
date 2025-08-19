@@ -52,7 +52,7 @@ start_server() {
     echo "Starting Fastify server..."
     
     # Start server with .env file watching
-    pnpm dev:fastify
+    NODE_ENV=development pnpm dev:fastify
 }
 
 # Main execution
