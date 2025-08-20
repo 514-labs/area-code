@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "ufa:dev": "./scripts/dev-startup.sh",
+    "ufa:dev": "NODE_ENV=development ./scripts/dev-startup.sh",
     "ufa:dev:clean": "pnpm db:stop",
     "build": "tsup src/server.ts --format esm --clean --out-dir dist",
     "ufa:prod:seed": "./database/scripts/run-sql-seed-external.sh",

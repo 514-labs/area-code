@@ -1,2 +1,2 @@
-export * from "./bar";
-export * from "./bar-api-contracts";
+export * from "./bar.js";
+export * from "./bar-api-contracts.js";

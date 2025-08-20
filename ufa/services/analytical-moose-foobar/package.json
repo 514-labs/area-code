@@ -5,7 +5,7 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "ufa:dev": "moose-cli dev",
+    "ufa:dev": "NODE_ENV=development moose-cli dev",
     "ufa:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'"
   },
   "dependencies": {

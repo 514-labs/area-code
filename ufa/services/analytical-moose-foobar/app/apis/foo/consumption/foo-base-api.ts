@@ -4,7 +4,7 @@ import {
   FooWithCDCForConsumption,
   GetFoosWithCDCParams,
   GetFoosWithCDCForConsumptionResponse,
-} from "@workspace/models/foo";
+} from "@workspace/models";
 import { FooPipeline } from "../../../index";
 
 // Consumption API following Moose documentation pattern

@@ -140,11 +140,11 @@ async function registerSupabaseCDCListeners(
 
   console.log("\n🎯 Supabase realtime listeners are now active!");
 
-  // Keep the task running indefinitely
-  return new Promise<void>(() => {
-    // This promise never resolves, keeping the task alive
-    // The task will only end when the workflow is terminated
-  });
+  // Keep the task running indefinitely with non-blocking loop
+  while (true) {
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+    // This allows heartbeats and other async operations to process
+  }
 }
 
 async function cleanupSupabaseCDCListeners() {
@@ -183,7 +183,9 @@ async function onCancel() {
   const pgClient = createProgresClient();
 
   await cleanupSupabaseCDCListeners();
-  await cleanupRealtimeReplication(pgClient);
+  if (process.env.NODE_ENV === "development") {
+    await cleanupRealtimeReplication(pgClient);
+  }
 
   console.log("🧹 Cleanup complete - all resources released");
 }
@@ -212,7 +214,7 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
   console.log("🔄 Waiting for realtime service...");
 
   const realtimeStartTime = Date.now();
-  const realtimeTimeoutMs = 300000; // 5 minutes for realtime
+  const realtimeTimeoutMs = 30000; // Reduced to 30 seconds
 
   while (Date.now() - realtimeStartTime < realtimeTimeoutMs) {
     try {
@@ -232,6 +234,16 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
           ")"
         );
         break;
+      } else if (testResponse.status === 500) {
+        // 500 errors are common for realtime endpoints when accessed via HTTP
+        // The WebSocket connection may still work fine, so we'll proceed
+        console.log(
+          "⚠️  Realtime HTTP endpoint returns 500, but WebSocket may still work"
+        );
+        console.log("   → Proceeding with CDC setup anyway");
+        break;
+      } else {
+        console.log(`🔄 Realtime service check status: ${testResponse.status}`);
       }
     } catch (error) {
       console.log(
@@ -240,7 +252,13 @@ async function waitForRealtimeService(supabaseConfig: SupabaseConfig) {
       );
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 5000)); // Check every 5 seconds
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Check every 2 seconds
+  }
+
+  // Always proceed after timeout - the actual WebSocket connection test happens during subscription
+  if (Date.now() - realtimeStartTime >= realtimeTimeoutMs) {
+    console.log("⏰ Realtime service check timeout - proceeding with CDC setup");
+    console.log("   → The actual connection will be tested during subscription");
   }
 }
 
@@ -253,7 +271,9 @@ async function workflowSetup(
   await waitForSupabase(supabaseClient);
   await waitForRealtimeService(supabaseConfig);
 
-  await setupRealtimeReplication(pgClient);
+  if (process.env.NODE_ENV === "development") {
+    await setupRealtimeReplication(pgClient);
+  }
 }
 
 async function taskExecution() {

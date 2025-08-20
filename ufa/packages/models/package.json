@@ -1,9 +1,17 @@
 {
   "name": "@workspace/models",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./foo": "./src/foo/index.ts",
-    "./bar": "./src/bar/index.ts"
+    ".": "./dist/index.js",
+    "./foo": "./dist/foo/index.js",
+    "./bar": "./dist/bar/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "postinstall": "pnpm build"
   },
   "dependencies": {
     "@514labs/moose-lib": "latest"
