@@ -350,7 +350,7 @@ export function FooCubeAggregationsTable({
               <Select
                 value={status ?? "ALL"}
                 onValueChange={(v) => setStatus(v === "ALL" ? undefined : v)}
-                disabled={isFetching || isFetching || isFilterValuesLoading}
+                disabled={isFetching || isFilterValuesLoading}
               >
                 <SelectTrigger className="w-40" size="sm">
                   <SelectValue placeholder="Filter status" />
