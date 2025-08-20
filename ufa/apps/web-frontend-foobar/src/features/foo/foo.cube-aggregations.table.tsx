@@ -480,7 +480,7 @@ export function FooCubeAggregationsTable({
               </Table>
 
               {/* Loading Overlay */}
-              {(isLoading || isFetching || isLoading || isFetching) && (
+              {(isLoading || isFetching) && (
                 <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20">
                   <IconLoader className="animate-spin h-5 w-5" />
                 </div>
