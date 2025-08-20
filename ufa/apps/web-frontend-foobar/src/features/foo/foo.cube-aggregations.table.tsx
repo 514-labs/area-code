@@ -409,7 +409,7 @@ export function FooCubeAggregationsTable({
               <Select
                 value={String(months)}
                 onValueChange={(v) => setMonths(Number(v))}
-                disabled={isFetching || isFetching}
+                disabled={isFetching}
               >
                 <SelectTrigger className="w-36" size="sm">
                   <SelectValue placeholder="Months" />
