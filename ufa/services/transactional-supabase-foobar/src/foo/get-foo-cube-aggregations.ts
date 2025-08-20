@@ -73,44 +73,26 @@ async function getFooCubeAggregations(
 
   const sortDir = sortOrder.toUpperCase() === "DESC" ? sql`DESC` : sql`ASC`;
   const whereClause = sql.join(conditions, sql` AND `);
-  const tagFilter = tag ? sql`WHERE tag = ${tag}` : sql``;
 
   const client = await getDrizzleSupabaseClient(authToken);
 
   const result = await client.runTransaction(async (tx) => {
+    // Optimization: Single query with conditional tag filtering (matching ClickHouse version)
     return await tx.execute(sql`
-      WITH exploded AS (
-        SELECT
-          date_trunc('month', created_at) AS month,
-          status,
-          unnest(tags) AS tag,
-          priority,
-          CAST(score AS DECIMAL) AS score
-        FROM ${foo}
-        WHERE ${whereClause}
-      ),
-      aggregated AS (
-        SELECT
-          CASE 
-            WHEN month IS NULL THEN NULL 
-            ELSE to_char(month, 'YYYY-MM-01') 
-          END AS month,
-          status,
-          tag,
-          priority,
-          count(*) AS n,
-          avg(score) AS "avgScore",
-          percentile_cont(0.5) WITHIN GROUP (ORDER BY score) AS p50,
-          percentile_cont(0.9) WITHIN GROUP (ORDER BY score) AS p90
-        FROM exploded
-        ${tagFilter}
-        GROUP BY CUBE (month, status, tag, priority)
-        HAVING month IS NOT NULL AND status IS NOT NULL AND tag IS NOT NULL AND priority IS NOT NULL
-      )
       SELECT
-        *,
+        to_char(date_trunc('month', created_at), 'YYYY-MM-01') AS month,
+        status,
+        unnest(tags) AS tag,
+        priority,
+        count(*) AS n,
+        avg(CAST(score AS DECIMAL)) AS "avgScore",
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY CAST(score AS DECIMAL)) AS p50,
+        percentile_cont(0.9) WITHIN GROUP (ORDER BY CAST(score AS DECIMAL)) AS p90,
         COUNT(*) OVER() AS total
-      FROM aggregated
+      FROM ${foo}
+      WHERE ${whereClause}
+      GROUP BY month, status, tag, priority
+      ${tag ? sql`HAVING tag = ${tag}` : sql``}
       ORDER BY ${sortColumn} ${sortDir}
       LIMIT ${limited} OFFSET ${pagedOffset}
     `);

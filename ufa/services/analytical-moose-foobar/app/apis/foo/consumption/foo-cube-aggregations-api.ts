@@ -68,43 +68,25 @@ export const fooCubeAggregationsApi = new ConsumptionApi<
     const sortDir = sql([sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC"]);
 
     const query = sql`
-      WITH exploded AS (
-        SELECT
-          toStartOfMonth(created_at) AS month,
-          status,
-          arrayJoin(tags) AS tag,
-          priority,
-          score
-        FROM ${FooPipeline.table!}
-        WHERE toDate(created_at) >= toDate(${startDateStr})
-          AND toDate(created_at) <= toDate(${endDateStr})
-          AND score IS NOT NULL
-          AND cdc_operation != 'DELETE'
-          ${statusFilter}
-          ${priorityFilter}
-      ),
-      aggregated AS (
-        SELECT
-          CASE 
-            WHEN month IS NULL THEN NULL 
-            ELSE formatDateTime(month, '%Y-%m-01') 
-          END AS month,
-          toNullable(status) AS status,
-          toNullable(tag) AS tag,
-          toNullable(priority) AS priority,
-          count() AS n,
-          avg(score) AS avgScore,
-          quantileTDigest(0.5)(score) AS p50,
-          quantileTDigest(0.9)(score) AS p90
-        FROM exploded
-        ${tag ? sql`WHERE tag = ${tag}` : sql``}
-        GROUP BY CUBE(month, status, tag, priority)
-        HAVING month IS NOT NULL AND status IS NOT NULL AND tag IS NOT NULL AND priority IS NOT NULL
-      )
       SELECT
-        *,
+        formatDateTime(toStartOfMonth(created_at), '%Y-%m-01') AS month,
+        status,
+        arrayJoin(tags) AS tag,
+        priority,
+        count() AS n,
+        avg(score) AS avgScore,
+        quantileTDigest(0.5)(score) AS p50,
+        quantileTDigest(0.9)(score) AS p90,
         COUNT() OVER() AS total
-      FROM aggregated
+      FROM ${FooPipeline.table!}
+      WHERE toDate(created_at) >= toDate(${startDateStr})
+        AND toDate(created_at) <= toDate(${endDateStr})
+        AND score IS NOT NULL
+        AND cdc_operation != 'DELETE'
+        ${statusFilter}
+        ${priorityFilter}
+      GROUP BY month, status, tag, priority
+      ${tag ? sql`HAVING tag = ${tag}` : sql``}
       ORDER BY ${sortColumn} ${sortDir}
       LIMIT ${limited} OFFSET ${pagedOffset}
     `;
