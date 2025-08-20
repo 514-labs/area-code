@@ -63,6 +63,7 @@ export type GetFoosScoreOverTimeResponse = {
 export type GetFooRollingSegmentationParams = {
   days?: number;
   windowDays?: number;
+  priority?: number; // optional filter
 };
 
 export type FooRollingSegmentationPoint = {
@@ -85,7 +86,6 @@ export type GetFooCubeAggregationsParams = {
   status?: string; // optional filter
   tag?: string; // optional filter
   priority?: number; // optional filter
-  includeTotals?: boolean; // include CUBE subtotal rows (NULLs) when true
   limit?: number; // max rows returned
   offset?: number; // pagination offset
   sortBy?:
@@ -117,6 +117,7 @@ export type GetFooCubeAggregationsResponse = {
   pagination: {
     limit: number;
     offset: number;
+    total: number;
   };
 };
 
@@ -128,14 +129,5 @@ export type GetFooFiltersValuesParams = {
 export type GetFooFiltersValuesResponse = {
   status: string[];
   tags: string[];
-};
-
-// Total count API for cube aggregations
-export type GetFooCubeAggregationsTotalParams = Omit<
-  GetFooCubeAggregationsParams,
-  "limit" | "offset" | "sortBy" | "sortOrder"
->;
-
-export type GetFooCubeAggregationsTotalResponse = {
-  total: number;
+  priorities: number[];
 };

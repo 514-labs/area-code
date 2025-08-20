@@ -3,10 +3,8 @@
 import * as React from "react";
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useQuery } from "@tanstack/react-query";
-import { useIsMobile } from "@workspace/ui/hooks/use-mobile";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -30,6 +28,7 @@ import { NumericFormat } from "react-number-format";
 import {
   GetFooRollingSegmentationParams,
   GetFooRollingSegmentationResponse,
+  GetFooFiltersValuesResponse,
 } from "@workspace/models/foo";
 
 const fetchData = async (
@@ -39,8 +38,22 @@ const fetchData = async (
   const query = new URLSearchParams();
   if (params.days) query.set("days", String(params.days));
   if (params.windowDays) query.set("windowDays", String(params.windowDays));
+  if (params.priority !== undefined)
+    query.set("priority", String(params.priority));
   const response = await fetch(`${apiEndpoint}?${query.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch data");
+  return response.json();
+};
+
+const fetchFilterValues = async (
+  apiEndpoint: string
+): Promise<GetFooFiltersValuesResponse> => {
+  const baseEndpoint = apiEndpoint.replace(
+    "foo-rolling-segmentation",
+    "foo-filters-values"
+  );
+  const response = await fetch(baseEndpoint);
+  if (!response.ok) throw new Error("Failed to fetch filter values");
   return response.json();
 };
 
@@ -57,17 +70,31 @@ export function FooRollingSegmentationGraph({
 }) {
   const [days, setDays] = React.useState<number>(90);
   const [windowDays, setWindowDays] = React.useState<number>(90);
+  const [priority, setPriority] = React.useState<number | undefined>(undefined);
   const [selectedSegment, setSelectedSegment] =
     React.useState<string>("all-active");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["foo-rolling-segmentation", apiEndpoint, days, windowDays],
-    queryFn: () => fetchData(apiEndpoint, { days, windowDays }),
+    queryKey: [
+      "foo-rolling-segmentation",
+      apiEndpoint,
+      days,
+      windowDays,
+      priority,
+    ],
+    queryFn: () => fetchData(apiEndpoint, { days, windowDays, priority }),
     placeholderData: (prev) => prev,
     staleTime: disableCache ? 0 : 1000 * 60 * 5,
     gcTime: disableCache ? 0 : 1000 * 60 * 10,
     refetchOnMount: disableCache ? "always" : false,
     refetchOnWindowFocus: false,
+  });
+
+  const { data: filterValues } = useQuery({
+    queryKey: ["foo-filter-values", apiEndpoint],
+    queryFn: () => fetchFilterValues(apiEndpoint),
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 
   const queryTime = data?.queryTime;
@@ -149,7 +176,7 @@ export function FooRollingSegmentationGraph({
           Select a segment to view its rolling average
         </CardDescription>
       </CardHeader>
-      <CardContent className="overflow-hidden gap-5 flex flex-col">
+      <CardContent className="gap-5 flex flex-col">
         <div className="flex gap-2">
           <Select
             value={String(days)}
@@ -176,6 +203,24 @@ export function FooRollingSegmentationGraph({
               <SelectItem value="7">7-day window</SelectItem>
               <SelectItem value="30">30-day window</SelectItem>
               <SelectItem value="90">90-day window</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={priority !== undefined ? String(priority) : "all"}
+            onValueChange={(v) =>
+              setPriority(v === "all" ? undefined : Number(v))
+            }
+          >
+            <SelectTrigger className="w-32" size="sm">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all">All priorities</SelectItem>
+              {filterValues?.priorities?.map((p) => (
+                <SelectItem key={p} value={String(p)}>
+                  Priority {p}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={selectedSegment} onValueChange={setSelectedSegment}>

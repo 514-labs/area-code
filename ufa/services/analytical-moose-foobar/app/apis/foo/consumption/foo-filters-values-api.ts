@@ -23,7 +23,6 @@ export const fooFiltersValuesApi = new ConsumptionApi<
     const startDateStr = startDate.toISOString().split("T")[0];
     const endDateStr = endDate.toISOString().split("T")[0];
 
-    // Query for distinct status and tag values
     const statusQuery = sql`
       SELECT DISTINCT status
       FROM ${FooPipeline.table!}
@@ -44,20 +43,34 @@ export const fooFiltersValuesApi = new ConsumptionApi<
       ORDER BY tag
     `;
 
-    const [statusSet, tagsSet] = await Promise.all([
+    const prioritiesQuery = sql`
+      SELECT DISTINCT priority
+      FROM ${FooPipeline.table!}
+      WHERE toDate(created_at) >= toDate(${startDateStr})
+        AND toDate(created_at) <= toDate(${endDateStr})
+        AND priority IS NOT NULL
+        AND cdc_operation != 'DELETE'
+      ORDER BY priority
+    `;
+
+    const [statusSet, tagsSet, prioritiesSet] = await Promise.all([
       client.query.execute<{ status: string }>(statusQuery),
       client.query.execute<{ tag: string }>(tagsQuery),
+      client.query.execute<{ priority: number }>(prioritiesQuery),
     ]);
 
     const statusRows = (await statusSet.json()) as { status: string }[];
     const tagRows = (await tagsSet.json()) as { tag: string }[];
+    const priorityRows = (await prioritiesSet.json()) as { priority: number }[];
 
     const possibleStatuses = statusRows.map((row) => row.status);
     const possibleTags = tagRows.map((row) => row.tag);
+    const possiblePriorities = priorityRows.map((row) => row.priority);
 
     return {
       status: possibleStatuses,
       tags: possibleTags,
+      priorities: possiblePriorities,
     };
   }
 );

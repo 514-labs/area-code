@@ -3,8 +3,6 @@ import { FooPipeline } from "../../../index";
 import {
   GetFooCubeAggregationsParams,
   GetFooCubeAggregationsResponse,
-  GetFooCubeAggregationsTotalParams,
-  GetFooCubeAggregationsTotalResponse,
 } from "@workspace/models/foo";
 
 export const fooCubeAggregationsApi = new ConsumptionApi<
@@ -18,7 +16,6 @@ export const fooCubeAggregationsApi = new ConsumptionApi<
       status,
       tag,
       priority,
-      includeTotals = false,
       limit = 20,
       offset = 0,
       sortBy,
@@ -85,23 +82,29 @@ export const fooCubeAggregationsApi = new ConsumptionApi<
           AND cdc_operation != 'DELETE'
           ${statusFilter}
           ${priorityFilter}
+      ),
+      aggregated AS (
+        SELECT
+          CASE 
+            WHEN month IS NULL THEN NULL 
+            ELSE formatDateTime(month, '%Y-%m-01') 
+          END AS month,
+          toNullable(status) AS status,
+          toNullable(tag) AS tag,
+          toNullable(priority) AS priority,
+          count() AS n,
+          avg(score) AS avgScore,
+          quantileTDigest(0.5)(score) AS p50,
+          quantileTDigest(0.9)(score) AS p90
+        FROM exploded
+        ${tag ? sql`WHERE tag = ${tag}` : sql``}
+        GROUP BY CUBE(month, status, tag, priority)
+        HAVING month IS NOT NULL AND status IS NOT NULL AND tag IS NOT NULL AND priority IS NOT NULL
       )
       SELECT
-        CASE 
-          WHEN month IS NULL THEN NULL 
-          ELSE formatDateTime(month, '%Y-%m-01') 
-        END AS month,
-        status,
-        tag,
-        priority,
-        count() AS n,
-        avg(score) AS avgScore,
-        quantileTDigest(0.5)(score) AS p50,
-        quantileTDigest(0.9)(score) AS p90
-      FROM exploded
-      ${tag ? sql`WHERE tag = ${tag}` : sql``}
-      GROUP BY CUBE(month, status, tag, priority)
-      ${includeTotals ? sql`` : sql`HAVING month IS NOT NULL AND status IS NOT NULL AND tag IS NOT NULL AND priority IS NOT NULL`}
+        *,
+        COUNT() OVER() AS total
+      FROM aggregated
       ORDER BY ${sortColumn} ${sortDir}
       LIMIT ${limited} OFFSET ${pagedOffset}
     `;
@@ -115,6 +118,7 @@ export const fooCubeAggregationsApi = new ConsumptionApi<
       avgScore: number;
       p50: number;
       p90: number;
+      total: number;
     }>(query);
 
     const rows = (await resultSet.json()) as {
@@ -126,9 +130,11 @@ export const fooCubeAggregationsApi = new ConsumptionApi<
       avgScore: number;
       p50: number;
       p90: number;
+      total: number;
     }[];
 
     const queryTime = Date.now() - startTime;
+    const total = rows.length > 0 ? Number(rows[0].total) : 0;
 
     return {
       data: rows.map((r) => ({
@@ -145,72 +151,8 @@ export const fooCubeAggregationsApi = new ConsumptionApi<
       pagination: {
         limit: limited,
         offset: pagedOffset,
+        total,
       },
-    };
-  }
-);
-
-export const fooCubeAggregationsTotalApi = new ConsumptionApi<
-  GetFooCubeAggregationsTotalParams,
-  GetFooCubeAggregationsTotalResponse
->(
-  "foo-cube-aggregations-total",
-  async (
-    {
-      months = 6,
-      status,
-      tag,
-      priority,
-      includeTotals = false,
-    }: GetFooCubeAggregationsTotalParams,
-    { client, sql }
-  ): Promise<GetFooCubeAggregationsTotalResponse> => {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setMonth(
-      startDate.getMonth() - Math.max(1, Math.min(months, 36))
-    );
-
-    const startDateStr = startDate.toISOString().split("T")[0];
-    const endDateStr = endDate.toISOString().split("T")[0];
-
-    // Build optional WHERE fragments
-    const statusFilter = status ? sql`AND status = ${status}` : sql``;
-    const priorityFilter =
-      typeof priority === "number" ? sql`AND priority = ${priority}` : sql``;
-
-    const totalQuery = sql`
-      WITH exploded AS (
-        SELECT
-          toStartOfMonth(created_at) AS month,
-          status,
-          arrayJoin(tags) AS tag,
-          priority,
-          score
-        FROM ${FooPipeline.table!}
-        WHERE toDate(created_at) >= toDate(${startDateStr})
-          AND toDate(created_at) <= toDate(${endDateStr})
-          AND score IS NOT NULL
-          AND cdc_operation != 'DELETE'
-          ${statusFilter}
-          ${priorityFilter}
-      )
-      SELECT count() AS total
-      FROM (
-        SELECT month, status, tag, priority 
-        FROM exploded
-        ${tag ? sql`WHERE tag = ${tag}` : sql``}
-        GROUP BY CUBE(month, status, tag, priority)
-        ${includeTotals ? sql`` : sql`HAVING month IS NOT NULL AND status IS NOT NULL AND tag IS NOT NULL AND priority IS NOT NULL`}
-      )
-    `;
-
-    const resultSet = await client.query.execute<{ total: number }>(totalQuery);
-    const totalRows = (await resultSet.json()) as { total: number }[];
-    const total = totalRows[0]?.total ?? 0;
-
-    return {
-      total,
     };
   }
 );

@@ -9,6 +9,7 @@ import { updateFooEndpoint } from "../foo/update-foo";
 import { anonymousUpdateFooEndpoint } from "../foo/anonymous-update-foo";
 import { deleteFooEndpoint } from "../foo/delete-foo";
 import { bulkDeleteFoosEndpoint } from "../foo/bulk-delete-foos";
+import { getFooCubeAggregationsEndpoint } from "../foo/get-foo-cube-aggregations";
 
 export async function fooRoutes(fastify: FastifyInstance) {
   getFooAverageScoreEndpoint(fastify);
@@ -21,4 +22,5 @@ export async function fooRoutes(fastify: FastifyInstance) {
   anonymousUpdateFooEndpoint(fastify);
   deleteFooEndpoint(fastify);
   bulkDeleteFoosEndpoint(fastify);
+  getFooCubeAggregationsEndpoint(fastify);
 }

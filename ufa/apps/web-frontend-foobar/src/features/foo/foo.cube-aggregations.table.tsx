@@ -7,8 +7,6 @@ import { format, parseISO } from "date-fns";
 import {
   GetFooCubeAggregationsParams,
   GetFooCubeAggregationsResponse,
-  GetFooCubeAggregationsTotalParams,
-  GetFooCubeAggregationsTotalResponse,
   GetFooFiltersValuesParams,
   GetFooFiltersValuesResponse,
 } from "@workspace/models/foo";
@@ -52,9 +50,9 @@ import { Card, CardContent } from "@workspace/ui";
 import { cn } from "@workspace/ui/lib/utils";
 
 const fetchData = async (
-  params: GetFooCubeAggregationsParams
+  params: GetFooCubeAggregationsParams,
+  apiUrl: string
 ): Promise<GetFooCubeAggregationsResponse> => {
-  const apiEndpoint = `${getAnalyticalConsumptionApiBase()}/foo-cube-aggregations`;
   const query = new URLSearchParams();
   if (params.months) query.set("months", String(params.months));
   if (params.status) query.set("status", params.status);
@@ -65,29 +63,10 @@ const fetchData = async (
     query.set("limit", String(params.limit));
   if (typeof params.offset === "number")
     query.set("offset", String(params.offset));
-  if (typeof params.includeTotals === "boolean")
-    query.set("includeTotals", String(params.includeTotals));
   if (params.sortBy) query.set("sortBy", params.sortBy);
   if (params.sortOrder) query.set("sortOrder", params.sortOrder);
-  const res = await fetch(`${apiEndpoint}?${query.toString()}`);
+  const res = await fetch(`${apiUrl}?${query.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch cube data");
-  return res.json();
-};
-
-const fetchTotal = async (
-  params: GetFooCubeAggregationsTotalParams
-): Promise<GetFooCubeAggregationsTotalResponse> => {
-  const apiEndpoint = `${getAnalyticalConsumptionApiBase()}/foo-cube-aggregations-total`;
-  const query = new URLSearchParams();
-  if (params.months) query.set("months", String(params.months));
-  if (params.status) query.set("status", params.status);
-  if (params.tag) query.set("tag", params.tag);
-  if (typeof params.priority === "number")
-    query.set("priority", String(params.priority));
-  if (typeof params.includeTotals === "boolean")
-    query.set("includeTotals", String(params.includeTotals));
-  const res = await fetch(`${apiEndpoint}?${query.toString()}`);
-  if (!res.ok) throw new Error("Failed to fetch total count");
   return res.json();
 };
 
@@ -233,8 +212,14 @@ const columnDefs: ColumnDef<CubeRow>[] = [
 
 export function FooCubeAggregationsTable({
   disableCache = false,
+  apiUrl,
+  title = "High-dimensional cube aggregations",
+  subtitle = "Month × Status × Tag × Priority with percentiles",
 }: {
   disableCache?: boolean;
+  apiUrl: string;
+  title?: string;
+  subtitle?: string;
 }) {
   const [months, setMonths] = React.useState(6);
   const [status, setStatus] = React.useState<string | undefined>(undefined);
@@ -259,6 +244,7 @@ export function FooCubeAggregationsTable({
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: [
       "foo-cube-aggregations",
+      apiUrl,
       months,
       status,
       tag,
@@ -276,40 +262,20 @@ export function FooCubeAggregationsTable({
         : sorting[0]?.id
           ? "asc"
           : undefined;
-      return fetchData({
-        months,
-        status,
-        tag,
-        priority,
-        limit,
-        offset,
-        includeTotals: false,
-        sortBy,
-        sortOrder,
-      });
+      return fetchData(
+        {
+          months,
+          status,
+          tag,
+          priority,
+          limit,
+          offset,
+          sortBy,
+          sortOrder,
+        },
+        apiUrl
+      );
     },
-    placeholderData: (prev) => prev,
-    staleTime: disableCache ? 0 : 1000 * 60 * 5,
-    gcTime: disableCache ? 0 : 1000 * 60 * 10,
-    refetchOnMount: disableCache ? "always" : false,
-    refetchOnWindowFocus: false,
-  });
-
-  const {
-    data: totalData,
-    isLoading: isTotalLoading,
-    isFetching: isTotalFetching,
-    error: totalError,
-  } = useQuery({
-    queryKey: ["foo-cube-aggregations-total", months, status, tag, priority],
-    queryFn: () =>
-      fetchTotal({
-        months,
-        status,
-        tag,
-        priority,
-        includeTotals: false,
-      }),
     placeholderData: (prev) => prev,
     staleTime: disableCache ? 0 : 1000 * 60 * 5,
     gcTime: disableCache ? 0 : 1000 * 60 * 10,
@@ -331,15 +297,7 @@ export function FooCubeAggregationsTable({
   const rows = data?.data ?? [];
   const queryTime = data?.queryTime;
   const filterValues = filterValuesData;
-  const total = totalData?.total ?? 0;
-
-  // Combine pagination data from main query with total from separate query
-  const serverPagination = data?.pagination
-    ? {
-        ...data.pagination,
-        total,
-      }
-    : undefined;
+  const serverPagination = data?.pagination;
 
   const table = useReactTable({
     data: rows,
@@ -373,7 +331,7 @@ export function FooCubeAggregationsTable({
               {typeof queryTime === "number" && (
                 <div className="inline-flex items-baseline gap-2">
                   <span className="leading-none font-semibold text-card-foreground text-[16px]">
-                    High-dimensional cube aggregations
+                    {title}
                   </span>
                   <span className="text-xs font-normal text-green-500">
                     Latest query:{" "}
@@ -387,20 +345,18 @@ export function FooCubeAggregationsTable({
                 </div>
               )}
               <div className="text-sm text-muted-foreground mt-1">
-                Month × Status × Tag × Priority with percentiles
+                {subtitle}
               </div>
             </div>
           </div>
 
-          <div className="relative flex flex-col gap-4 overflow-auto">
+          <div className="relative flex flex-col gap-4">
             {/* Filter controls */}
             <div className="flex flex-wrap gap-2">
               <Select
                 value={status ?? "ALL"}
                 onValueChange={(v) => setStatus(v === "ALL" ? undefined : v)}
-                disabled={
-                  isFetching || isTotalFetching || isFilterValuesLoading
-                }
+                disabled={isFetching || isFetching || isFilterValuesLoading}
               >
                 <SelectTrigger className="w-40" size="sm">
                   <SelectValue placeholder="Filter status" />
@@ -418,9 +374,7 @@ export function FooCubeAggregationsTable({
               <Select
                 value={tag ?? "ALL"}
                 onValueChange={(v) => setTag(v === "ALL" ? undefined : v)}
-                disabled={
-                  isFetching || isTotalFetching || isFilterValuesLoading
-                }
+                disabled={isFetching || isFetching || isFilterValuesLoading}
               >
                 <SelectTrigger className="w-40" size="sm">
                   <SelectValue placeholder="Filter tag" />
@@ -440,26 +394,28 @@ export function FooCubeAggregationsTable({
                 onValueChange={(v) =>
                   setPriority(v === "ALL" ? undefined : Number(v))
                 }
-                disabled={isFetching || isTotalFetching}
+                disabled={isFetching || isFetching || isFilterValuesLoading}
               >
                 <SelectTrigger className="w-40" size="sm">
                   <SelectValue placeholder="Filter priority" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
                   <SelectItem value="ALL">All priorities</SelectItem>
-                  <SelectItem value="0">0</SelectItem>
-                  <SelectItem value="1">1</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="3">3</SelectItem>
-                  <SelectItem value="4">4</SelectItem>
-                  <SelectItem value="5">5</SelectItem>
+                  {filterValues?.priorities?.map((priorityValue) => (
+                    <SelectItem
+                      key={priorityValue}
+                      value={String(priorityValue)}
+                    >
+                      Priority {priorityValue}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
               <Select
                 value={String(months)}
                 onValueChange={(v) => setMonths(Number(v))}
-                disabled={isFetching || isTotalFetching}
+                disabled={isFetching || isFetching}
               >
                 <SelectTrigger className="w-36" size="sm">
                   <SelectValue placeholder="Months" />
@@ -473,7 +429,6 @@ export function FooCubeAggregationsTable({
               </Select>
             </div>
 
-            {/* Table */}
             <div className="overflow-hidden rounded-lg border relative">
               <Table key="foo-cube-aggregations-table">
                 <TableHeader className="bg-muted sticky top-0 z-10">
@@ -493,14 +448,14 @@ export function FooCubeAggregationsTable({
                   ))}
                 </TableHeader>
                 <TableBody>
-                  {error || totalError ? (
+                  {error ? (
                     <TableRow>
                       <TableCell
                         colSpan={columnDefs.length}
                         className="h-24 text-center"
                       >
                         <div className="text-red-500">
-                          Error loading data: {String(error || totalError)}
+                          Error loading data: {String(error)}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -517,10 +472,7 @@ export function FooCubeAggregationsTable({
                         ))}
                       </TableRow>
                     ))
-                  ) : !isLoading &&
-                    !isFetching &&
-                    !isTotalLoading &&
-                    !isTotalFetching ? (
+                  ) : !isLoading && !isFetching && !isLoading && !isFetching ? (
                     <TableRow>
                       <TableCell
                         colSpan={columnDefs.length}
@@ -534,10 +486,7 @@ export function FooCubeAggregationsTable({
               </Table>
 
               {/* Loading Overlay */}
-              {(isLoading ||
-                isFetching ||
-                isTotalLoading ||
-                isTotalFetching) && (
+              {(isLoading || isFetching || isLoading || isFetching) && (
                 <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-20">
                   <IconLoader className="animate-spin h-5 w-5" />
                 </div>
@@ -594,7 +543,7 @@ export function FooCubeAggregationsTable({
                   >
                     <SelectTrigger
                       className="h-8 w-[70px]"
-                      disabled={isFetching || isTotalFetching}
+                      disabled={isFetching || isFetching}
                     >
                       <SelectValue
                         placeholder={table.getState().pagination.pageSize}
@@ -631,9 +580,7 @@ export function FooCubeAggregationsTable({
                     className="hidden h-8 w-8 p-0 lg:flex"
                     onClick={() => table.setPageIndex(0)}
                     disabled={
-                      !table.getCanPreviousPage() ||
-                      isFetching ||
-                      isTotalFetching
+                      !table.getCanPreviousPage() || isFetching || isFetching
                     }
                   >
                     <span className="sr-only">Go to first page</span>
@@ -644,9 +591,7 @@ export function FooCubeAggregationsTable({
                     className="h-8 w-8 p-0"
                     onClick={() => table.previousPage()}
                     disabled={
-                      !table.getCanPreviousPage() ||
-                      isFetching ||
-                      isTotalFetching
+                      !table.getCanPreviousPage() || isFetching || isFetching
                     }
                   >
                     <span className="sr-only">Go to previous page</span>
@@ -657,7 +602,7 @@ export function FooCubeAggregationsTable({
                     className="h-8 w-8 p-0"
                     onClick={() => table.nextPage()}
                     disabled={
-                      !table.getCanNextPage() || isFetching || isTotalFetching
+                      !table.getCanNextPage() || isFetching || isFetching
                     }
                   >
                     <span className="sr-only">Go to next page</span>
@@ -668,7 +613,7 @@ export function FooCubeAggregationsTable({
                     className="hidden h-8 w-8 p-0 lg:flex"
                     onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                     disabled={
-                      !table.getCanNextPage() || isFetching || isTotalFetching
+                      !table.getCanNextPage() || isFetching || isFetching
                     }
                   >
                     <span className="sr-only">Go to last page</span>

@@ -136,8 +136,22 @@ function IndexPage() {
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <FooCubeAggregationsTable disableCache={!cacheEnabled} />
+        <FooCubeAggregationsTable
+          disableCache={!cacheEnabled}
+          apiUrl={`${getAnalyticalConsumptionApiBase()}/foo-cube-aggregations`}
+          title="Analytical Cube Aggregations"
+          subtitle="Month × Status × Tag × Priority with percentiles"
+        />
       </AnalyticalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12">
+        <FooCubeAggregationsTable
+          disableCache={!cacheEnabled}
+          apiUrl={`${getTransactionApiBase()}/foo/cube-aggregations`}
+          title="Transactional Cube Aggregations"
+          subtitle="Month × Status × Tag × Priority with percentiles"
+        />
+      </TransactionalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />

@@ -14,14 +14,16 @@ export const fooRollingSegmentationApi = new ConsumptionApi<
     params: GetFooRollingSegmentationParams,
     { client, sql }
   ): Promise<GetFooRollingSegmentationResponse> => {
-    const { days = 90, windowDays = 90 } = params || {};
+    const { days = 90, windowDays = 90, priority } = params || {};
     const startTime = Date.now();
 
-    // Use ClickHouse-relative dates to avoid driver param issues
     const daysRaw = sql([String(days)]);
 
     const windowRows = Math.max(1, Math.min(windowDays, 365)) - 1; // number of preceding rows
     const windowRowsLiteral = sql([String(windowRows)]);
+
+    const priorityFilter =
+      typeof priority === "number" ? sql`AND priority = ${priority}` : sql``;
 
     const query = sql`
       WITH exploded AS (
@@ -36,6 +38,7 @@ export const fooRollingSegmentationApi = new ConsumptionApi<
           AND toDate(created_at) <= today()
           AND score IS NOT NULL
           AND cdc_operation != 'DELETE'
+          ${priorityFilter}
       ),
       daily AS (
         SELECT
