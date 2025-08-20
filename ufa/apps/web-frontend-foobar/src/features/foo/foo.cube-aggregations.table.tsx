@@ -388,7 +388,7 @@ export function FooCubeAggregationsTable({
                 onValueChange={(v) =>
                   setPriority(v === "ALL" ? undefined : Number(v))
                 }
-                disabled={isFetching || isFetching || isFilterValuesLoading}
+                disabled={isFetching || isFilterValuesLoading}
               >
                 <SelectTrigger className="w-40" size="sm">
                   <SelectValue placeholder="Filter priority" />
