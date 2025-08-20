@@ -574,7 +574,7 @@ export function FooCubeAggregationsTable({
                     className="hidden h-8 w-8 p-0 lg:flex"
                     onClick={() => table.setPageIndex(0)}
                     disabled={
-                      !table.getCanPreviousPage() || isFetching || isFetching
+                      !table.getCanPreviousPage() || isFetching
                     }
                   >
                     <span className="sr-only">Go to first page</span>
