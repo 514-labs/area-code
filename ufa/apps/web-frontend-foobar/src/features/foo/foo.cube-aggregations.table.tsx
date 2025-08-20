@@ -607,7 +607,7 @@ export function FooCubeAggregationsTable({
                     className="hidden h-8 w-8 p-0 lg:flex"
                     onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                     disabled={
-                      !table.getCanNextPage() || isFetching || isFetching
+                      !table.getCanNextPage() || isFetching
                     }
                   >
                     <span className="sr-only">Go to last page</span>
