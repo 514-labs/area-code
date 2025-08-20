@@ -13,12 +13,14 @@ COPY ufa/packages/models/package.json ./ufa/packages/models/
 COPY ufa/packages/eslint-config/package.json ./ufa/packages/eslint-config/
 COPY ufa/packages/typescript-config/package.json ./ufa/packages/typescript-config/
 
+# Copy packages source code (needed before install due to postinstall build scripts)
+COPY ufa/packages ./ufa/packages
+
 # Install all dependencies (including dev dependencies like tsx)
 RUN pnpm install
 
-# Copy source code
+# Copy service source code
 COPY ufa/services/retrieval-elasticsearch-foobar ./ufa/services/retrieval-elasticsearch-foobar
-COPY ufa/packages ./ufa/packages
 
 # Set working directory to the service
 WORKDIR /app/ufa/services/retrieval-elasticsearch-foobar
