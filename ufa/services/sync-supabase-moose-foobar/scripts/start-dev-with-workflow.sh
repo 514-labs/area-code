@@ -17,7 +17,7 @@ echo "🚀 Starting moose dev server..."
 rm -f /tmp/workflow_started
 
 # Start moose dev - this will show all its output
-moose-cli dev | while IFS= read -r line; do
+NODE_ENV=${NODE_ENV:-development} moose-cli dev | while IFS= read -r line; do
     echo "$line"
     
     # Check if moose is ready by testing health endpoint in background
@@ -28,6 +28,6 @@ moose-cli dev | while IFS= read -r line; do
         echo "----------------------------------------"
         
         # Start workflow in background so we can continue showing moose output
-        pnpm dev:workflow &
+        NODE_ENV=${NODE_ENV:-development} pnpm dev:workflow &
     fi
 done

@@ -5,7 +5,7 @@ import {
   type DbFoo,
   type NewDbFoo,
 } from "../database/schema";
-import { FooStatus } from "@workspace/models/foo";
+import { FooStatus } from "@workspace/models";
 
 export function convertDbFooToModel(dbFoo: DbFoo): Foo {
   return {
