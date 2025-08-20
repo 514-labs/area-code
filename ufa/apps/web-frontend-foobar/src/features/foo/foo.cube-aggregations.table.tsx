@@ -230,10 +230,15 @@ export function FooCubeAggregationsTable({
     pageSize: 10,
   });
 
-  // Reset to first page when filters or page size change
-  React.useEffect(() => {
+  const handleFilterOnChange = (updateFilter: () => void) => {
+    updateFilter();
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  }, [months, status, tag, priority, pagination.pageSize]);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    table.setPageSize(newPageSize);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
 
   const limit = pagination.pageSize;
   const offset = pagination.pageIndex * pagination.pageSize;
@@ -349,7 +354,11 @@ export function FooCubeAggregationsTable({
             <div className="flex flex-wrap gap-2">
               <Select
                 value={status ?? "ALL"}
-                onValueChange={(v) => setStatus(v === "ALL" ? undefined : v)}
+                onValueChange={(v) =>
+                  handleFilterOnChange(() =>
+                    setStatus(v === "ALL" ? undefined : v)
+                  )
+                }
                 disabled={isFetching || isFilterValuesLoading}
               >
                 <SelectTrigger className="w-40" size="sm">
@@ -367,7 +376,11 @@ export function FooCubeAggregationsTable({
 
               <Select
                 value={tag ?? "ALL"}
-                onValueChange={(v) => setTag(v === "ALL" ? undefined : v)}
+                onValueChange={(v) =>
+                  handleFilterOnChange(() =>
+                    setTag(v === "ALL" ? undefined : v)
+                  )
+                }
                 disabled={isFetching || isFilterValuesLoading}
               >
                 <SelectTrigger className="w-40" size="sm">
@@ -386,7 +399,9 @@ export function FooCubeAggregationsTable({
               <Select
                 value={priority === undefined ? "ALL" : String(priority)}
                 onValueChange={(v) =>
-                  setPriority(v === "ALL" ? undefined : Number(v))
+                  handleFilterOnChange(() =>
+                    setPriority(v === "ALL" ? undefined : Number(v))
+                  )
                 }
                 disabled={isFetching || isFilterValuesLoading}
               >
@@ -408,7 +423,9 @@ export function FooCubeAggregationsTable({
 
               <Select
                 value={String(months)}
-                onValueChange={(v) => setMonths(Number(v))}
+                onValueChange={(v) =>
+                  handleFilterOnChange(() => setMonths(Number(v)))
+                }
                 disabled={isFetching}
               >
                 <SelectTrigger className="w-36" size="sm">
@@ -531,9 +548,9 @@ export function FooCubeAggregationsTable({
                   <p className="text-sm font-medium">Rows per page</p>
                   <Select
                     value={`${table.getState().pagination.pageSize}`}
-                    onValueChange={(value) => {
-                      table.setPageSize(Number(value));
-                    }}
+                    onValueChange={(value) =>
+                      handlePageSizeChange(Number(value))
+                    }
                   >
                     <SelectTrigger
                       className="h-8 w-[70px]"
@@ -573,9 +590,7 @@ export function FooCubeAggregationsTable({
                     variant="outline"
                     className="hidden h-8 w-8 p-0 lg:flex"
                     onClick={() => table.setPageIndex(0)}
-                    disabled={
-                      !table.getCanPreviousPage() || isFetching
-                    }
+                    disabled={!table.getCanPreviousPage() || isFetching}
                   >
                     <span className="sr-only">Go to first page</span>
                     <IconChevronsLeft className="h-4 w-4" />
@@ -584,9 +599,7 @@ export function FooCubeAggregationsTable({
                     variant="outline"
                     className="h-8 w-8 p-0"
                     onClick={() => table.previousPage()}
-                    disabled={
-                      !table.getCanPreviousPage() || isFetching
-                    }
+                    disabled={!table.getCanPreviousPage() || isFetching}
                   >
                     <span className="sr-only">Go to previous page</span>
                     <IconChevronLeft className="h-4 w-4" />
@@ -595,9 +608,7 @@ export function FooCubeAggregationsTable({
                     variant="outline"
                     className="h-8 w-8 p-0"
                     onClick={() => table.nextPage()}
-                    disabled={
-                      !table.getCanNextPage() || isFetching
-                    }
+                    disabled={!table.getCanNextPage() || isFetching}
                   >
                     <span className="sr-only">Go to next page</span>
                     <IconChevronRight className="h-4 w-4" />
@@ -606,9 +617,7 @@ export function FooCubeAggregationsTable({
                     variant="outline"
                     className="hidden h-8 w-8 p-0 lg:flex"
                     onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                    disabled={
-                      !table.getCanNextPage() || isFetching
-                    }
+                    disabled={!table.getCanNextPage() || isFetching}
                   >
                     <span className="sr-only">Go to last page</span>
                     <IconChevronsRight className="h-4 w-4" />
