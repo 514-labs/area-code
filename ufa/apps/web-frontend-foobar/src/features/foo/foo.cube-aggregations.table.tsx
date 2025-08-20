@@ -466,7 +466,7 @@ export function FooCubeAggregationsTable({
                         ))}
                       </TableRow>
                     ))
-                  ) : !isLoading && !isFetching && !isLoading && !isFetching ? (
+                  ) : !isLoading && !isFetching ? (
                     <TableRow>
                       <TableCell
                         colSpan={columnDefs.length}
