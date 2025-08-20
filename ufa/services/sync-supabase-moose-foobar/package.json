@@ -5,7 +5,7 @@
     "moose": "moose-cli",
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
-    "ufa:dev": "bash scripts/start-dev-with-workflow.sh",
+    "ufa:dev": "NODE_ENV=development bash scripts/start-dev-with-workflow.sh",
     "ufa:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'",
     "dev:workflow": "moose-cli workflow run supabase-listener",
     "dev:workflow:stop": "moose-cli workflow terminate supabase-listener"

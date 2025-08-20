@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
-    "ufa:dev": "pnpm es:start && PORT=8083 tsx watch src/server.ts",
+    "ufa:dev": "NODE_ENV=development pnpm es:start && PORT=8083 tsx watch src/server.ts",
     "ufa:prod:seed": "./database/scripts/prod-migration.sh",
     "dev:server-only": "SKIP_ES_WAIT=true PORT=8083 tsx watch src/server.ts",
     "ufa:dev:clean": "pnpm es:stop",

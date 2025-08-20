@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "postinstall": "npm run build"
+    "postinstall": "pnpm build"
   },
   "dependencies": {
     "@514labs/moose-lib": "latest"

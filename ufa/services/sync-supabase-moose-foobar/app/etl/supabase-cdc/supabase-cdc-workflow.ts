@@ -183,7 +183,9 @@ async function onCancel() {
   const pgClient = createProgresClient();
 
   await cleanupSupabaseCDCListeners();
-  await cleanupRealtimeReplication(pgClient);
+  if (process.env.NODE_ENV === "development") {
+    await cleanupRealtimeReplication(pgClient);
+  }
 
   console.log("🧹 Cleanup complete - all resources released");
 }
