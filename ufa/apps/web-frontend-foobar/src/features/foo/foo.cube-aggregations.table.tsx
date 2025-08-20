@@ -537,7 +537,7 @@ export function FooCubeAggregationsTable({
                   >
                     <SelectTrigger
                       className="h-8 w-[70px]"
-                      disabled={isFetching || isFetching}
+                      disabled={isFetching}
                     >
                       <SelectValue
                         placeholder={table.getState().pagination.pageSize}
