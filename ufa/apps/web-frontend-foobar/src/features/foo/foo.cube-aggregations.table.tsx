@@ -585,7 +585,7 @@ export function FooCubeAggregationsTable({
                     className="h-8 w-8 p-0"
                     onClick={() => table.previousPage()}
                     disabled={
-                      !table.getCanPreviousPage() || isFetching || isFetching
+                      !table.getCanPreviousPage() || isFetching
                     }
                   >
                     <span className="sr-only">Go to previous page</span>
