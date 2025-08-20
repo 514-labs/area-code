@@ -3,7 +3,7 @@ import { FooPipeline } from "../../../index";
 import {
   GetFooFiltersValuesParams,
   GetFooFiltersValuesResponse,
-} from "@workspace/models/foo";
+} from "@workspace/models";
 
 export const fooFiltersValuesApi = new ConsumptionApi<
   GetFooFiltersValuesParams,

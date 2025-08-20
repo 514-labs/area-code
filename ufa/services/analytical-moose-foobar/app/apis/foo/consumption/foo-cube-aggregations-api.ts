@@ -3,7 +3,7 @@ import { FooPipeline } from "../../../index";
 import {
   GetFooCubeAggregationsParams,
   GetFooCubeAggregationsResponse,
-} from "@workspace/models/foo";
+} from "@workspace/models";
 
 export const fooCubeAggregationsApi = new ConsumptionApi<
   GetFooCubeAggregationsParams,

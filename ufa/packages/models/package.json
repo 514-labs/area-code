@@ -9,6 +9,7 @@
     "./bar": "./dist/bar/index.js"
   },
   "scripts": {
+    "ufa:dev": "tsc --watch",
     "build": "tsc",
     "clean": "rm -rf dist",
     "postinstall": "pnpm build"

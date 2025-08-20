@@ -3,7 +3,7 @@ import { FooPipeline } from "../../../index";
 import {
   GetFooRollingSegmentationParams,
   GetFooRollingSegmentationResponse,
-} from "@workspace/models/foo";
+} from "@workspace/models";
 
 export const fooRollingSegmentationApi = new ConsumptionApi<
   GetFooRollingSegmentationParams,
