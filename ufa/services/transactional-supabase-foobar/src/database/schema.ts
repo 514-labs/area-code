@@ -81,6 +81,7 @@ export const foo = pgTable(
     index("foo_created_at_idx").on(table.created_at),
     index("foo_score_idx").on(table.score),
     index("foo_score_time_idx").on(table.created_at, table.score),
+    index("foo_tags_gin_idx").using("gin", table.tags),
     // RLS policies
     pgPolicy("foo_read_all", {
       for: "select",
