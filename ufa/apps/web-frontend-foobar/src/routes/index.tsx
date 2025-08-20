@@ -10,12 +10,7 @@ import {
   AnalyticalHighlightWrapper,
 } from "../features/origin-highlights/origin-highlights-wrappers";
 import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph";
-import FooTransactionalDataTable from "@/features/foo/foo.transactional.data-table";
 import BarAverageValue from "@/features/bar/bar.average-value";
-import BarTransactionalDataTable from "@/features/bar/bar.transactional.data-table";
-import FooAnalyticalDataTable from "@/features/foo/foo.analytical.data-table";
-import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
-import { FooRollingSegmentationGraph } from "@/features/foo/foo.rolling-segmentation.graph";
 import { FooCubeAggregationsTable } from "@/features/foo/foo.cube-aggregations.table";
 
 function TransactionalFooAverageScore({
@@ -159,13 +154,6 @@ function IndexPage() {
 
       <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
-      </AnalyticalHighlightWrapper>
-
-      <AnalyticalHighlightWrapper className="col-span-12">
-        <FooRollingSegmentationGraph
-          apiEndpoint={`${getAnalyticalConsumptionApiBase()}/foo-rolling-segmentation`}
-          disableCache={!cacheEnabled}
-        />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
