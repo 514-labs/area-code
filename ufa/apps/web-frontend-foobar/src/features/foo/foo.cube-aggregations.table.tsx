@@ -33,7 +33,6 @@ import {
   getCoreRowModel,
   useReactTable,
   Column,
-  VisibilityState,
 } from "@tanstack/react-table";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -213,21 +212,19 @@ const columnDefs: ColumnDef<CubeRow>[] = [
 export function FooCubeAggregationsTable({
   disableCache = false,
   apiUrl,
-  title = "High-dimensional cube aggregations",
+  title,
   subtitle = "Month × Status × Tag × Priority with percentiles",
 }: {
   disableCache?: boolean;
   apiUrl: string;
-  title?: string;
+  title: string;
   subtitle?: string;
 }) {
   const [months, setMonths] = React.useState(6);
   const [status, setStatus] = React.useState<string | undefined>(undefined);
   const [tag, setTag] = React.useState<string | undefined>(undefined);
-  const [priority, setPriority] = React.useState<number | undefined>(undefined);
+  const [priority, setPriority] = React.useState<number | undefined>(10);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -304,14 +301,12 @@ export function FooCubeAggregationsTable({
     columns: columnDefs,
     state: {
       sorting,
-      columnVisibility,
       pagination,
     },
     onSortingChange: (updater) => {
       setSorting(updater);
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
     },
-    onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
@@ -325,7 +320,6 @@ export function FooCubeAggregationsTable({
     <Card>
       <CardContent>
         <div className="w-full flex flex-col justify-start gap-6">
-          {/* Header with title, query time, and filters */}
           <div className="flex items-start justify-between gap-3">
             <div>
               {typeof queryTime === "number" && (

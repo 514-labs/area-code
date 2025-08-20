@@ -73,7 +73,7 @@ async function getFooCubeAggregations(
 
   const sortDir = sortOrder.toUpperCase() === "DESC" ? sql`DESC` : sql`ASC`;
   const whereClause = sql.join(conditions, sql` AND `);
-  const tagFilter = tag ? sql`AND tag = ${tag}` : sql``;
+  const tagFilter = tag ? sql`WHERE tag = ${tag}` : sql``;
 
   const client = await getDrizzleSupabaseClient(authToken);
 
@@ -103,7 +103,7 @@ async function getFooCubeAggregations(
           percentile_cont(0.5) WITHIN GROUP (ORDER BY score) AS p50,
           percentile_cont(0.9) WITHIN GROUP (ORDER BY score) AS p90
         FROM exploded
-        WHERE true ${tagFilter}
+        ${tagFilter}
         GROUP BY CUBE (month, status, tag, priority)
         HAVING month IS NOT NULL AND status IS NOT NULL AND tag IS NOT NULL AND priority IS NOT NULL
       )
@@ -159,7 +159,19 @@ export function getFooCubeAggregationsEndpoint(fastify: FastifyInstance) {
   }>("/foo/cube-aggregations", async (request, reply) => {
     try {
       const authToken = request.headers.authorization?.replace("Bearer ", "");
-      const params = request.query;
+      const rawParams = request.query as any;
+
+      // Convert string parameters to proper types
+      const params: GetFooCubeAggregationsParams = {
+        months: rawParams.months ? Number(rawParams.months) : undefined,
+        status: rawParams.status || undefined,
+        tag: rawParams.tag || undefined,
+        priority: rawParams.priority ? Number(rawParams.priority) : undefined,
+        limit: rawParams.limit ? Number(rawParams.limit) : undefined,
+        offset: rawParams.offset ? Number(rawParams.offset) : undefined,
+        sortBy: rawParams.sortBy || undefined,
+        sortOrder: rawParams.sortOrder || undefined,
+      };
 
       const result = await getFooCubeAggregations(params, authToken);
       return reply.send(result);
