@@ -4,13 +4,19 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    typescript:
+      specifier: 5.9.2
+      version: 5.9.2
+
 importers:
 
   .:
     devDependencies:
       '@turbo/gen':
         specifier: ^1.13.4
-        version: 1.13.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.8.3)
+        version: 1.13.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.9.2)
       eslint:
         specifier: ^8.57.1
         version: 8.57.1
@@ -21,8 +27,8 @@ importers:
         specifier: ^2.5.4
         version: 2.5.6
       typescript:
-        specifier: 5.8.3
-        version: 5.8.3
+        specifier: 5.9.2
+        version: 5.9.2
 
   odw/apps/dw-frontend: {}
 
@@ -156,8 +162,8 @@ importers:
         specifier: ^1.3.4
         version: 1.3.7
       typescript:
-        specifier: 5.5.4
-        version: 5.5.4
+        specifier: 'catalog:'
+        version: 5.9.2
       vite:
         specifier: ^5.2.0
         version: 5.4.19(@types/node@24.3.0)(lightningcss@1.30.1)(terser@5.43.1)
@@ -169,10 +175,10 @@ importers:
         version: 9.33.0
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.0.0
-        version: 8.40.0(@typescript-eslint/parser@8.40.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)
+        version: 8.40.0(@typescript-eslint/parser@8.40.0(eslint@8.57.1)(typescript@5.9.2))(eslint@8.57.1)(typescript@5.9.2)
       '@typescript-eslint/parser':
         specifier: ^8.0.0
-        version: 8.40.0(eslint@8.57.1)(typescript@5.8.3)
+        version: 8.40.0(eslint@8.57.1)(typescript@5.9.2)
       eslint-config-prettier:
         specifier: ^9.1.0
         version: 9.1.2(eslint@8.57.1)
@@ -184,7 +190,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.5.29(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3))
+        version: 0.6.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2))
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -193,8 +199,8 @@ importers:
         specifier: workspace:*
         version: link:../typescript-config
       typescript:
-        specifier: ^5.3.3
-        version: 5.8.3
+        specifier: 'catalog:'
+        version: 5.9.2
 
   ufa/packages/typescript-config: {}
 
@@ -395,7 +401,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.5.29(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))
+        version: 0.6.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -407,17 +413,17 @@ importers:
         version: 3.3.0
       typia:
         specifier: ^7.6.0
-        version: 7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3)
+        version: 7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2)
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.5.29
+        version: 0.6.2
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
       typescript:
-        specifier: 5.8.3
-        version: 5.8.3
+        specifier: 'catalog:'
+        version: 5.9.2
 
   ufa/services/retrieval-elasticsearch-foobar:
     dependencies:
@@ -457,19 +463,19 @@ importers:
         version: 8.57.1
       tsup:
         specifier: ^8.0.0
-        version: 8.5.0(@swc/core@1.13.3(@swc/helpers@0.5.17))(jiti@2.5.1)(postcss@8.5.6)(tsx@4.20.4)(typescript@5.8.3)(yaml@2.8.1)
+        version: 8.5.0(@swc/core@1.13.3(@swc/helpers@0.5.17))(jiti@2.5.1)(postcss@8.5.6)(tsx@4.20.4)(typescript@5.9.2)(yaml@2.8.1)
       tsx:
         specifier: ^4.6.2
         version: 4.20.4
       typescript:
-        specifier: ^5.3.3
-        version: 5.8.3
+        specifier: 'catalog:'
+        version: 5.9.2
 
   ufa/services/sync-supabase-moose-foobar:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.5.29(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))
+        version: 0.6.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.55.0
@@ -490,11 +496,11 @@ importers:
         version: 3.3.0
       typia:
         specifier: ^7.6.0
-        version: 7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3)
+        version: 7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2)
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.5.29
+        version: 0.6.2
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -502,8 +508,8 @@ importers:
         specifier: ^8.10.0
         version: 8.15.5
       typescript:
-        specifier: 5.8.3
-        version: 5.8.3
+        specifier: 'catalog:'
+        version: 5.9.2
 
   ufa/services/transactional-supabase-foobar:
     dependencies:
@@ -582,46 +588,46 @@ importers:
         version: 2.34.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.0(@swc/core@1.13.3(@swc/helpers@0.5.17))(jiti@2.5.1)(postcss@8.5.6)(tsx@4.20.4)(typescript@5.8.3)(yaml@2.8.1)
+        version: 8.5.0(@swc/core@1.13.3(@swc/helpers@0.5.17))(jiti@2.5.1)(postcss@8.5.6)(tsx@4.20.4)(typescript@5.9.2)(yaml@2.8.1)
       tsx:
         specifier: ^4.7.0
         version: 4.20.4
       typescript:
-        specifier: ^5.3.0
-        version: 5.8.3
+        specifier: 'catalog:'
+        version: 5.9.2
 
 packages:
 
-  '@514labs/moose-cli-darwin-arm64@0.5.29':
-    resolution: {integrity: sha512-BX1AMotyskdYLIJD5AyTXX1hiOU3lW2fBtUspsnrOKzfkj1kHepXTNPdwv9qC58BepH7Qm3/akZo3D25qrKsQA==}
+  '@514labs/moose-cli-darwin-arm64@0.6.2':
+    resolution: {integrity: sha512-KBixHWdS4KdyoYyC+tmGOAEcxNdzihoDNGgSrwpYAjN0RKFFVJeuvuIElUQUGZ4lCCcMZ1HerSKoIMVd7Tx0Mw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.5.29':
-    resolution: {integrity: sha512-B3VWE+gMLlpkLrsB4hwdfSMb60dQMY0UBo4urL5orhanYqxWSAWSNdg4cIXMkWbWV+D29/1LSNjHu1xjulcEqw==}
+  '@514labs/moose-cli-darwin-x64@0.6.2':
+    resolution: {integrity: sha512-394naFblHchBTCXwRPW8OzUAvBZMhcy21+/4qPWFEIa4+44hHoKM+fQWYrKJ8LZOwlOnHPEwLVMFrs5ggtzPXw==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.5.29':
-    resolution: {integrity: sha512-lPCMWse9PpGns7vGPjy7wny7a+xjGkhYWbidI0+l2iFOHTez8l3TKXllR7OgdFdlSy84eW3aIF8aXAhQLQOPYQ==}
+  '@514labs/moose-cli-linux-arm64@0.6.2':
+    resolution: {integrity: sha512-kefPqrg0f7vCQWj/mVDDXkSiGmYKaMkgoE56aKvD++vWQfxvs9bEbbDK1JLjgQNkVKFZCnXmbzJwlLGDcLYxkg==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.5.29':
-    resolution: {integrity: sha512-uyZxywGdO6+qr0j+Z2b8mR8Ayo0ArBb4ujcyNt7YCIp33QAsU0UEEYep3KEtQXfddC28baHeCfC+dmATdNtyKg==}
+  '@514labs/moose-cli-linux-x64@0.6.2':
+    resolution: {integrity: sha512-I4vif9znpn9htILX4Orm4hm3TI+NsTHN+wyaZ/YAP9iMPhkjxPlNjL4Cy8Vt+KEi8blP7KYMP73zbkLju2Cqbw==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.5.29':
-    resolution: {integrity: sha512-/9KZ5J6Q4SnYUBnN0ZUpDiYIRjJPHVGIHArVwF1BX14xcjuozf15OBL9XI8XQYdnxRHi4zqRHWl3MZQOFwjyUA==}
+  '@514labs/moose-cli@0.6.2':
+    resolution: {integrity: sha512-Ea00xzL10T2Wpcn0D+vdjgRn0gquat4Z/JYrq8O+LqiMwcCeN/Bx9D+9LjM8Ap5jSVwS53CJazQwsq1AFvvZNg==}
     hasBin: true
 
-  '@514labs/moose-lib@0.5.29':
-    resolution: {integrity: sha512-TeWmWoVT+5SzqsqU8YQgQMAhS7laRm+qjyWpcTisF4vU3D32nK3EPL9P4ydnbh0iSGDmbm1L1Mm6PPL6GG118Q==}
+  '@514labs/moose-lib@0.6.2':
+    resolution: {integrity: sha512-OXzfopABVxURtclLamTAXYqvfl1VE6N+qU2zWRPvZ4Qkh4mo7hM9hhosQKYRiIP2X4/zaB0+TuFr7R6BlsN8vg==}
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
-      typia: ^7.6.0
+      typia: ^9.6.1
 
   '@ai-sdk/anthropic@2.0.0-beta.10':
     resolution: {integrity: sha512-P7uuGQjU7ouh833wfVS5oBn5/oE6JZZoe6wjaI8BvrHukvgEKWWk+qBlD77mqMzEAsde+v11PExqeAuNn02JOA==}
@@ -5627,18 +5633,8 @@ packages:
     resolution: {integrity: sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==}
     engines: {node: '>=10'}
 
-  typescript@5.5.4:
-    resolution: {integrity: sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
-  typescript@5.7.3:
-    resolution: {integrity: sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
-  typescript@5.8.3:
-    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+  typescript@5.9.2:
+    resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -5920,26 +5916,26 @@ packages:
 
 snapshots:
 
-  '@514labs/moose-cli-darwin-arm64@0.5.29':
+  '@514labs/moose-cli-darwin-arm64@0.6.2':
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.5.29':
+  '@514labs/moose-cli-darwin-x64@0.6.2':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.5.29':
+  '@514labs/moose-cli-linux-arm64@0.6.2':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.5.29':
+  '@514labs/moose-cli-linux-x64@0.6.2':
     optional: true
 
-  '@514labs/moose-cli@0.5.29':
+  '@514labs/moose-cli@0.6.2':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.5.29
-      '@514labs/moose-cli-darwin-x64': 0.5.29
-      '@514labs/moose-cli-linux-arm64': 0.5.29
-      '@514labs/moose-cli-linux-x64': 0.5.29
+      '@514labs/moose-cli-darwin-arm64': 0.6.2
+      '@514labs/moose-cli-darwin-x64': 0.6.2
+      '@514labs/moose-cli-linux-arm64': 0.6.2
+      '@514labs/moose-cli-linux-x64': 0.6.2
 
-  '@514labs/moose-lib@0.5.29(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.6.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -5955,10 +5951,10 @@ snapshots:
       kafkajs: 2.2.4
       redis: 4.7.1
       toml: 3.0.0
-      ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@20.19.11)(typescript@5.7.3)
+      ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@20.19.11)(typescript@5.9.2)
       ts-patch: 3.3.0
-      typescript: 5.7.3
-      typia: 7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3)
+      typescript: 5.9.2
+      typia: 7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2)
     transitivePeerDependencies:
       - '@swc/core'
       - '@swc/helpers'
@@ -5968,7 +5964,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.5.29(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3))':
+  '@514labs/moose-lib@0.6.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -5984,10 +5980,10 @@ snapshots:
       kafkajs: 2.2.4
       redis: 4.7.1
       toml: 3.0.0
-      ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.7.3)
+      ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.9.2)
       ts-patch: 3.3.0
-      typescript: 5.7.3
-      typia: 7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3)
+      typescript: 5.9.2
+      typia: 7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2)
     transitivePeerDependencies:
       - '@swc/core'
       - '@swc/helpers'
@@ -8091,7 +8087,7 @@ snapshots:
 
   '@tsconfig/node16@1.0.4': {}
 
-  '@turbo/gen@1.13.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.8.3)':
+  '@turbo/gen@1.13.4(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.9.2)':
     dependencies:
       '@turbo/workspaces': 1.13.4(@types/node@24.3.0)
       chalk: 2.4.2
@@ -8101,7 +8097,7 @@ snapshots:
       minimatch: 9.0.5
       node-plop: 0.26.3
       proxy-agent: 6.5.0
-      ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.8.3)
+      ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.9.2)
       update-check: 1.5.4
       validate-npm-package-name: 5.0.1
     transitivePeerDependencies:
@@ -8243,41 +8239,41 @@ snapshots:
     dependencies:
       '@types/node': 20.19.11
 
-  '@typescript-eslint/eslint-plugin@8.40.0(@typescript-eslint/parser@8.40.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)':
+  '@typescript-eslint/eslint-plugin@8.40.0(@typescript-eslint/parser@8.40.0(eslint@8.57.1)(typescript@5.9.2))(eslint@8.57.1)(typescript@5.9.2)':
     dependencies:
       '@eslint-community/regexpp': 4.12.1
-      '@typescript-eslint/parser': 8.40.0(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/parser': 8.40.0(eslint@8.57.1)(typescript@5.9.2)
       '@typescript-eslint/scope-manager': 8.40.0
-      '@typescript-eslint/type-utils': 8.40.0(eslint@8.57.1)(typescript@5.8.3)
-      '@typescript-eslint/utils': 8.40.0(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/type-utils': 8.40.0(eslint@8.57.1)(typescript@5.9.2)
+      '@typescript-eslint/utils': 8.40.0(eslint@8.57.1)(typescript@5.9.2)
       '@typescript-eslint/visitor-keys': 8.40.0
       eslint: 8.57.1
       graphemer: 1.4.0
       ignore: 7.0.5
       natural-compare: 1.4.0
-      ts-api-utils: 2.1.0(typescript@5.8.3)
-      typescript: 5.8.3
+      ts-api-utils: 2.1.0(typescript@5.9.2)
+      typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/parser@8.40.0(eslint@8.57.1)(typescript@5.8.3)':
+  '@typescript-eslint/parser@8.40.0(eslint@8.57.1)(typescript@5.9.2)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.40.0
       '@typescript-eslint/types': 8.40.0
-      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.8.3)
+      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.9.2)
       '@typescript-eslint/visitor-keys': 8.40.0
       debug: 4.4.1
       eslint: 8.57.1
-      typescript: 5.8.3
+      typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/project-service@8.40.0(typescript@5.8.3)':
+  '@typescript-eslint/project-service@8.40.0(typescript@5.9.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.8.3)
+      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.9.2)
       '@typescript-eslint/types': 8.40.0
       debug: 4.4.1
-      typescript: 5.8.3
+      typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
 
@@ -8286,28 +8282,28 @@ snapshots:
       '@typescript-eslint/types': 8.40.0
       '@typescript-eslint/visitor-keys': 8.40.0
 
-  '@typescript-eslint/tsconfig-utils@8.40.0(typescript@5.8.3)':
+  '@typescript-eslint/tsconfig-utils@8.40.0(typescript@5.9.2)':
     dependencies:
-      typescript: 5.8.3
+      typescript: 5.9.2
 
-  '@typescript-eslint/type-utils@8.40.0(eslint@8.57.1)(typescript@5.8.3)':
+  '@typescript-eslint/type-utils@8.40.0(eslint@8.57.1)(typescript@5.9.2)':
     dependencies:
       '@typescript-eslint/types': 8.40.0
-      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.8.3)
-      '@typescript-eslint/utils': 8.40.0(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.9.2)
+      '@typescript-eslint/utils': 8.40.0(eslint@8.57.1)(typescript@5.9.2)
       debug: 4.4.1
       eslint: 8.57.1
-      ts-api-utils: 2.1.0(typescript@5.8.3)
-      typescript: 5.8.3
+      ts-api-utils: 2.1.0(typescript@5.9.2)
+      typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
 
   '@typescript-eslint/types@8.40.0': {}
 
-  '@typescript-eslint/typescript-estree@8.40.0(typescript@5.8.3)':
+  '@typescript-eslint/typescript-estree@8.40.0(typescript@5.9.2)':
     dependencies:
-      '@typescript-eslint/project-service': 8.40.0(typescript@5.8.3)
-      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.8.3)
+      '@typescript-eslint/project-service': 8.40.0(typescript@5.9.2)
+      '@typescript-eslint/tsconfig-utils': 8.40.0(typescript@5.9.2)
       '@typescript-eslint/types': 8.40.0
       '@typescript-eslint/visitor-keys': 8.40.0
       debug: 4.4.1
@@ -8315,19 +8311,19 @@ snapshots:
       is-glob: 4.0.3
       minimatch: 9.0.5
       semver: 7.7.2
-      ts-api-utils: 2.1.0(typescript@5.8.3)
-      typescript: 5.8.3
+      ts-api-utils: 2.1.0(typescript@5.9.2)
+      typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@8.40.0(eslint@8.57.1)(typescript@5.8.3)':
+  '@typescript-eslint/utils@8.40.0(eslint@8.57.1)(typescript@5.9.2)':
     dependencies:
       '@eslint-community/eslint-utils': 4.7.0(eslint@8.57.1)
       '@typescript-eslint/scope-manager': 8.40.0
       '@typescript-eslint/types': 8.40.0
-      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.8.3)
+      '@typescript-eslint/typescript-estree': 8.40.0(typescript@5.9.2)
       eslint: 8.57.1
-      typescript: 5.8.3
+      typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
 
@@ -10897,13 +10893,13 @@ snapshots:
 
   tree-kill@1.2.2: {}
 
-  ts-api-utils@2.1.0(typescript@5.8.3):
+  ts-api-utils@2.1.0(typescript@5.9.2):
     dependencies:
-      typescript: 5.8.3
+      typescript: 5.9.2
 
   ts-interface-checker@0.1.13: {}
 
-  ts-node@10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@20.19.11)(typescript@5.7.3):
+  ts-node@10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@20.19.11)(typescript@5.9.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -10917,13 +10913,13 @@ snapshots:
       create-require: 1.1.1
       diff: 4.0.2
       make-error: 1.3.6
-      typescript: 5.7.3
+      typescript: 5.9.2
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     optionalDependencies:
       '@swc/core': 1.13.3(@swc/helpers@0.5.17)
 
-  ts-node@10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.7.3):
+  ts-node@10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.9.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -10937,27 +10933,7 @@ snapshots:
       create-require: 1.1.1
       diff: 4.0.2
       make-error: 1.3.6
-      typescript: 5.7.3
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optionalDependencies:
-      '@swc/core': 1.13.3(@swc/helpers@0.5.17)
-
-  ts-node@10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.0)(typescript@5.8.3):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.11
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 24.3.0
-      acorn: 8.15.0
-      acorn-walk: 8.3.4
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 5.8.3
+      typescript: 5.9.2
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     optionalDependencies:
@@ -10976,7 +10952,7 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsup@8.5.0(@swc/core@1.13.3(@swc/helpers@0.5.17))(jiti@2.5.1)(postcss@8.5.6)(tsx@4.20.4)(typescript@5.8.3)(yaml@2.8.1):
+  tsup@8.5.0(@swc/core@1.13.3(@swc/helpers@0.5.17))(jiti@2.5.1)(postcss@8.5.6)(tsx@4.20.4)(typescript@5.9.2)(yaml@2.8.1):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.25.9)
       cac: 6.7.14
@@ -10998,7 +10974,7 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.13.3(@swc/helpers@0.5.17)
       postcss: 8.5.6
-      typescript: 5.8.3
+      typescript: 5.9.2
     transitivePeerDependencies:
       - jiti
       - supports-color
@@ -11049,13 +11025,9 @@ snapshots:
 
   type-fest@0.21.3: {}
 
-  typescript@5.5.4: {}
+  typescript@5.9.2: {}
 
-  typescript@5.7.3: {}
-
-  typescript@5.8.3: {}
-
-  typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.8.3):
+  typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2):
     dependencies:
       '@samchon/openapi': 2.5.3
       commander: 10.0.1
@@ -11063,11 +11035,11 @@ snapshots:
       inquirer: 8.2.7(@types/node@20.19.11)
       package-manager-detector: 0.2.11
       randexp: 0.5.3
-      typescript: 5.8.3
+      typescript: 5.9.2
     transitivePeerDependencies:
       - '@types/node'
 
-  typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.8.3):
+  typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2):
     dependencies:
       '@samchon/openapi': 2.5.3
       commander: 10.0.1
@@ -11075,7 +11047,7 @@ snapshots:
       inquirer: 8.2.7(@types/node@24.3.0)
       package-manager-detector: 0.2.11
       randexp: 0.5.3
-      typescript: 5.8.3
+      typescript: 5.9.2
     transitivePeerDependencies:
       - '@types/node'
 

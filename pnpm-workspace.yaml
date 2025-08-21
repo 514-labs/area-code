@@ -6,3 +6,5 @@ packages:
   - ufa/services/*
   - ufa/packages/*
 
+catalog:
+  typescript: 5.9.2
