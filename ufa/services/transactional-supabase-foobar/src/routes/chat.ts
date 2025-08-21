@@ -5,20 +5,20 @@ import {
   createUIMessageStream,
   createUIMessageStreamResponse,
 } from "ai";
-import { getAnthropicAgentStreamTextOptions } from "../ai/agent/anthropic-agent";
+import { getC1AgentStreamTextOptions } from "../ai/agent/thesys-agent";
 
 interface ChatBody {
   messages: UIMessage[];
 }
 
 export async function chatRoutes(fastify: FastifyInstance) {
-  // Endpoint to check if Anthropic key is available
+  // Endpoint to check if Thesys key is available
   fastify.get("/chat/status", async () => {
-    const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+    const hasThesysKey = !!process.env.THESYS_API_KEY;
 
     return {
-      anthropicKeyAvailable: hasAnthropicKey,
-      status: hasAnthropicKey ? "ready" : "missing_key",
+      thesysKeyAvailable: hasThesysKey,
+      status: hasThesysKey ? "ready" : "missing_key",
     };
   });
 
@@ -29,8 +29,7 @@ export async function chatRoutes(fastify: FastifyInstance) {
     try {
       const { messages } = request.body;
 
-      const streamTextOptions =
-        await getAnthropicAgentStreamTextOptions(messages);
+      const streamTextOptions = await getC1AgentStreamTextOptions(messages);
 
       let stepStartTime = Date.now();
       let stepCount = 0;

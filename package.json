@@ -21,6 +21,12 @@
     "odw:dev:clean": "turbo run odw:dev:clean",
     "odw:dev:seed": "./odw/scripts/dev-seed.sh"
   },
+  "dependencies": {
+    "@crayonai/react-core": "^0.7.6",
+    "@crayonai/react-ui": "^0.8.24",
+    "@thesysai/genui-sdk": "^0.6.30",
+    "lucide-react": "^0.469.0"
+  },
   "devDependencies": {
     "@turbo/gen": "^1.13.4",
     "eslint": "^8.57.1",

@@ -1,16 +1,19 @@
 import { cn } from "@workspace/ui";
 import type { UIMessage } from "@ai-sdk/react";
+import "@crayonai/react-ui/styles/index.css";
 import { ToolInvocation } from "./tool-invocation";
 import { ReasoningSection } from "./reasoning-section";
 import { SourceSection } from "./source-section";
 import { TextFormatter } from "./text-formatter";
 import { ChatStatus } from "ai";
+import { C1Component } from "@thesysai/genui-sdk";
 
 type ChatOutputAreaProps = {
   messages: UIMessage[];
   status?: ChatStatus;
   className?: string;
   toolTimings?: Record<string, number>;
+  isStreaming?: boolean;
 };
 
 function getTextFromParts(parts: any[]): string {
@@ -73,10 +76,16 @@ function UserOutput({ message }: { message: UIMessage }) {
 function AIOutput({
   message,
   toolTimings = {},
+  isStreaming,
 }: {
   message: UIMessage;
   toolTimings?: Record<string, number>;
+  isStreaming?: boolean;
 }) {
+  const content = message.parts
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .join("");
+
   return (
     <div className="space-y-3">
       {message.parts && message.parts.length > 0 ? (
@@ -84,12 +93,10 @@ function AIOutput({
           switch (part.type) {
             case "text":
               return (
-                <div
-                  key={index}
-                  className="text-sm leading-relaxed text-foreground"
-                >
-                  <TextFormatter text={part.text} />
-                </div>
+                <C1Component
+                  c1Response={content}
+                  isStreaming={isStreaming ?? false}
+                />
               );
 
             case "reasoning":
@@ -98,6 +105,10 @@ function AIOutput({
             case "source-url":
             case "source-document":
               return <SourceSection key={index} part={part} />;
+
+            case "data-tool-timing":
+              // Do not render anything for data-tool-timing part type since it is consumed separately
+              return null;
 
             case "step-start":
             case "step-finish":
@@ -188,6 +199,7 @@ export default function ChatOutputArea({
                   <OutputComponent
                     message={message}
                     toolTimings={toolTimings}
+                    isStreaming={showLoading}
                   />
                 )}
               </div>

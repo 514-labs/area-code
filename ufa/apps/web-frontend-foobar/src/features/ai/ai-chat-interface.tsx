@@ -3,20 +3,22 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { MessageSquare, X, AlertTriangle } from "lucide-react";
-import { Button } from "@workspace/ui";
+import { Button, useTheme } from "@workspace/ui";
 import { getTransactionApiBase } from "@/env-vars";
 import ChatOutputArea from "./chat-output-area";
 import { SuggestedPrompt } from "./suggested-prompt";
+import { ThemeProvider } from "@thesysai/genui-sdk";
 import ChatInput from "./chat-input";
-import { useAnthropicStatus } from "./use-anthropic-status";
-import { useState } from "react";
+import { useThesysStatus } from "./use-thesys-status";
+import { useEffect, useMemo, useState } from "react";
+import { generateC1Typography } from "@/utils/generateC1Typography";
 
 function MissingKeyMessage() {
   return (
     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-background border rounded-lg p-6 max-w-md mx-4 text-center shadow-lg">
         <AlertTriangle className="w-8 h-8 text-yellow-500 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Anthropic Key Missing</h3>
+        <h3 className="text-lg font-semibold mb-2">Thesys Key Missing</h3>
         <p className="text-muted-foreground mb-4">
           If you want to use the agent and the MCPs, follow the /ufa readme to
           add the key.
@@ -31,8 +33,22 @@ type AiChatInterfaceProps = {
 };
 
 export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
-  const { data: anthropicStatus, isLoading: isStatusLoading } =
-    useAnthropicStatus();
+  const { data: thesysStatus, isLoading: isStatusLoading } = useThesysStatus();
+  const [c1ThemeMode, setC1ThemeMode] = useState<"dark" | "light">("light");
+  const theme = useTheme();
+
+  useEffect(() => {
+    if (theme.theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
+
+      setC1ThemeMode(systemTheme);
+    } else {
+      setC1ThemeMode(theme.theme);
+    }
+  }, [theme]);
 
   const [toolTimings, setToolTimings] = useState<Record<string, number>>({});
 
@@ -64,9 +80,18 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
 
   const isEmptyState = messages.length === 0;
   const showKeyMissingOverlay =
-    !isStatusLoading &&
-    anthropicStatus &&
-    !anthropicStatus.anthropicKeyAvailable;
+    !isStatusLoading && thesysStatus && !thesysStatus.thesysKeyAvailable;
+
+  const commonSystemTheme = {
+    ...generateC1Typography("system-ui"),
+    defaultChartPalette: [
+      "#F54900",
+      "#009689",
+      "#104E64",
+      "#FFB900",
+      "#FE9A00",
+    ],
+  };
 
   return (
     <div className="w-full h-full flex flex-col bg-sidebar text-foreground overflow-hidden relative">
@@ -92,11 +117,17 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
 
       <div className="flex-1 min-h-0 overflow-hidden py-3">
         <div className="max-w-full overflow-y-auto h-full pl-2.5 pr-4">
-          <ChatOutputArea
-            messages={messages}
-            status={status}
-            toolTimings={toolTimings}
-          />
+          <ThemeProvider
+            mode={c1ThemeMode}
+            darkTheme={{ ...commonSystemTheme }}
+            theme={{ ...commonSystemTheme }}
+          >
+            <ChatOutputArea
+              messages={messages}
+              status={status}
+              toolTimings={toolTimings}
+            />
+          </ThemeProvider>
         </div>
       </div>
 
@@ -106,7 +137,7 @@ export default function AiChatInterface({ onClose }: AiChatInterfaceProps) {
 
       <ChatInput sendMessage={handleSendMessage} status={status} />
 
-      {/* Overlay when Anthropic key is missing */}
+      {/* Overlay when Thesys key is missing */}
       {showKeyMissingOverlay && <MissingKeyMessage />}
     </div>
   );

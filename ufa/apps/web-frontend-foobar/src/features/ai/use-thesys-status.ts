@@ -1,25 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 import { getTransactionApiBase } from "@/env-vars";
 
-interface AnthropicStatus {
-  anthropicKeyAvailable: boolean;
+interface ThesysStatus {
+  thesysKeyAvailable: boolean;
   status: "ready" | "missing_key";
 }
 
-async function fetchAnthropicStatus(): Promise<AnthropicStatus> {
+async function fetchThesysStatus(): Promise<ThesysStatus> {
   const response = await fetch(`${getTransactionApiBase()}/chat/status`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch Anthropic status: ${response.statusText}`);
+    throw new Error(`Failed to fetch Thesys status: ${response.statusText}`);
   }
 
   return response.json();
 }
 
-export function useAnthropicStatus() {
+export function useThesysStatus() {
   return useQuery({
-    queryKey: ["anthropic-status"],
-    queryFn: fetchAnthropicStatus,
+    queryKey: ["thesys-status"],
+    queryFn: fetchThesysStatus,
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache the data
     refetchOnMount: true, // Always refetch when component mounts
