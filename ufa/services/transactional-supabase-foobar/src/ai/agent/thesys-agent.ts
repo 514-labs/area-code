@@ -40,7 +40,6 @@ export async function getC1AgentStreamTextOptions(
   return {
     // If Thesys is configured, include a default model; caller may override
     model: thesys
-      // ? thesys("c1/anthropic/claude-sonnet-4/v-20250617")
       ? thesys("c1/anthropic/claude-sonnet-4/v-20250815")
       : undefined,
     system: getAISystemPrompt(),
