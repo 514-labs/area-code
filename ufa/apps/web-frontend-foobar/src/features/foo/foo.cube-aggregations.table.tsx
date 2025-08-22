@@ -53,15 +53,12 @@ const fetchData = async (
   apiUrl: string
 ): Promise<GetFooCubeAggregationsResponse> => {
   const query = new URLSearchParams();
-  if (params.months) query.set("months", String(params.months));
+  if (params.months != null) query.set("months", String(params.months));
   if (params.status) query.set("status", params.status);
   if (params.tag) query.set("tag", params.tag);
-  if (typeof params.priority === "number")
-    query.set("priority", String(params.priority));
-  if (typeof params.limit === "number")
-    query.set("limit", String(params.limit));
-  if (typeof params.offset === "number")
-    query.set("offset", String(params.offset));
+  if (params.priority != null) query.set("priority", String(params.priority));
+  if (params.limit != null) query.set("limit", String(params.limit));
+  if (params.offset != null) query.set("offset", String(params.offset));
   if (params.sortBy) query.set("sortBy", params.sortBy);
   if (params.sortOrder) query.set("sortOrder", params.sortOrder);
   const res = await fetch(`${apiUrl}?${query.toString()}`);

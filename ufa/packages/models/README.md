@@ -23,8 +23,6 @@ pnpm add @workspace/models
 ### Import specific models
 
 ```typescript
-import { Foo, CreateFoo } from "@workspace/models/foo";
-import { Bar, CreateBar } from "@workspace/models/bar";
 import { Foo, CreateFoo } from "@workspace/models";
 ```
 
