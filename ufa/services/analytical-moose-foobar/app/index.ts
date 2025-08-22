@@ -31,3 +31,5 @@ export * from "./apis/bar/consumption/bar-base-api";
 export * from "./apis/foo/consumption/foo-average-score-api";
 export * from "./apis/foo/consumption/foo-base-api";
 export * from "./apis/foo/consumption/foo-score-over-time-api";
+export * from "./apis/foo/consumption/foo-cube-aggregations-api";
+export * from "./apis/foo/consumption/foo-filters-values-api";

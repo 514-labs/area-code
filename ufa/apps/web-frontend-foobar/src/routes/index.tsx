@@ -10,11 +10,8 @@ import {
   AnalyticalHighlightWrapper,
 } from "../features/origin-highlights/origin-highlights-wrappers";
 import { FooScoreOverTimeGraph } from "@/features/foo/foo.score-over-time.graph";
-import FooTransactionalDataTable from "@/features/foo/foo.transactional.data-table";
 import BarAverageValue from "@/features/bar/bar.average-value";
-import BarTransactionalDataTable from "@/features/bar/bar.transactional.data-table";
-import FooAnalyticalDataTable from "@/features/foo/foo.analytical.data-table";
-import BarAnalyticalDataTable from "@/features/bar/bar.analytical.data-table";
+import { FooCubeAggregationsTable } from "@/features/foo/foo.cube-aggregations.table";
 
 function TransactionalFooAverageScore({
   cacheEnabled,
@@ -125,14 +122,6 @@ function IndexPage() {
 
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5 h-full overflow-auto pt-0.5">
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
-      </TransactionalHighlightWrapper>
-
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
-      </AnalyticalHighlightWrapper>
-
       <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalFooScoreOverTimeGraph cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
@@ -142,15 +131,30 @@ function IndexPage() {
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">
-        <FooAnalyticalDataTable disableCache={!cacheEnabled} />
+        <FooCubeAggregationsTable
+          disableCache={!cacheEnabled}
+          apiUrl={`${getAnalyticalConsumptionApiBase()}/foo-cube-aggregations`}
+          title="Analytical Cube Aggregations"
+          subtitle="Month × Status × Tag × Priority with percentiles"
+        />
       </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12">
-        <FooTransactionalDataTable
+        <FooCubeAggregationsTable
           disableCache={!cacheEnabled}
-          selectableRows={true}
+          apiUrl={`${getTransactionApiBase()}/foo/cube-aggregations`}
+          title="Transactional Cube Aggregations"
+          subtitle="Month × Status × Tag × Priority with percentiles"
         />
       </TransactionalHighlightWrapper>
+
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
+        <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
+      </TransactionalHighlightWrapper>
+
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
+        <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
+      </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
@@ -159,17 +163,6 @@ function IndexPage() {
       <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
         <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
-
-      <AnalyticalHighlightWrapper className="col-span-12">
-        <BarAnalyticalDataTable disableCache={!cacheEnabled} />
-      </AnalyticalHighlightWrapper>
-
-      <TransactionalHighlightWrapper className="col-span-12">
-        <BarTransactionalDataTable
-          disableCache={!cacheEnabled}
-          selectableRows={true}
-        />
-      </TransactionalHighlightWrapper>
     </div>
   );
 }
