@@ -23,7 +23,7 @@ type MCPClient = Awaited<ReturnType<typeof createMCPClient>>;
 type McpToolSet = Awaited<ReturnType<MCPClient["tools"]>>;
 
 // Status enum for tracking bootstrap state
-export enum AuroraMCPStatus {
+export enum SloanMCPStatus {
   NOT_STARTED = "not_started",
   IN_PROGRESS = "in_progress",
   SUCCESS = "success",
@@ -42,7 +42,7 @@ let initializationPromise: Promise<{
 }> | null = null;
 
 // Track the current status of the MCP client
-let auroraMCPCurrentStatus: AuroraMCPStatus = AuroraMCPStatus.NOT_STARTED;
+let sloanMCPCurrentStatus: SloanMCPStatus = SloanMCPStatus.NOT_STARTED;
 
 function discoverToolPath(toolName: string): string | null {
   try {
@@ -82,7 +82,7 @@ function getToolPaths() {
   };
 }
 
-async function createProductionAuroraMCPClient(
+async function createProductionSloanMCPClient(
   ANTHROPIC_API_KEY: string
 ): Promise<{
   mcpClient: MCPClient;
@@ -94,14 +94,14 @@ async function createProductionAuroraMCPClient(
   const CLICKHOUSE_PORT = getClickhousePort();
   const CLICKHOUSE_USER = getClickhouseUser();
 
-  console.log("Creating Aurora MCP client with remote ClickHouse tools only");
+  console.log("Creating Sloan MCP client with remote ClickHouse tools only");
 
   const mcpClient = await createMCPClient({
-    name: "aurora-mcp",
+    name: "sloan-mcp",
     transport: new StdioClientTransport({
       command: "npx",
       args: [
-        "@514labs/aurora-mcp@latest",
+        "@514labs/sloan-mcp@latest",
         "--remote-clickhouse-tools",
         "--experimental-context",
       ],
@@ -121,7 +121,7 @@ async function createProductionAuroraMCPClient(
   return { mcpClient, tools };
 }
 
-async function createDevelopmentAuroraMCPClient(
+async function createDevelopmentSloanMCPClient(
   ANTHROPIC_API_KEY: string
 ): Promise<{
   mcpClient: MCPClient;
@@ -130,14 +130,14 @@ async function createDevelopmentAuroraMCPClient(
   const analyticalServicePath = findAnalyticalMooseServicePath(__dirname);
   const toolPaths = getToolPaths();
 
-  console.log("Creating Aurora MCP client at:", analyticalServicePath);
+  console.log("Creating Sloan MCP client at:", analyticalServicePath);
 
   const mcpClient = await createMCPClient({
-    name: "aurora-mcp",
+    name: "sloan-mcp",
     transport: new StdioClientTransport({
       command: "npx",
       args: [
-        "@514labs/aurora-mcp@latest",
+        "@514labs/sloan-mcp@latest",
         "--moose-read-tools",
         "--remote-clickhouse-tools",
         analyticalServicePath,
@@ -154,36 +154,36 @@ async function createDevelopmentAuroraMCPClient(
     }),
   });
 
-  // Get tools from Aurora MCP server
+  // Get tools from Sloan MCP server
   const tools = await mcpClient.tools();
 
   return { mcpClient, tools };
 }
 
-async function createAuroraMCPClient(): Promise<{
+async function createSloanMCPClient(): Promise<{
   mcpClient: MCPClient;
   tools: McpToolSet;
 }> {
   const ANTHROPIC_API_KEY = getAnthropicApiKey();
 
   if (getNodeEnv() === "production") {
-    return createProductionAuroraMCPClient(ANTHROPIC_API_KEY);
+    return createProductionSloanMCPClient(ANTHROPIC_API_KEY);
   } else {
-    return createDevelopmentAuroraMCPClient(ANTHROPIC_API_KEY);
+    return createDevelopmentSloanMCPClient(ANTHROPIC_API_KEY);
   }
 }
 
 /**
- * Will not throw errors - server can continue running even if Aurora MCP fails to bootstrap.
+ * Will not throw errors - server can continue running even if Sloan MCP fails to bootstrap.
  */
-export async function bootstrapAuroraMCPClient(): Promise<void> {
+export async function bootstrapSloanMCPClient(): Promise<void> {
   if (mcpClientInstance) {
-    console.log("Aurora MCP client already bootstrapped");
+    console.log("Sloan MCP client already bootstrapped");
     return;
   }
 
   if (initializationPromise) {
-    console.log("Aurora MCP client bootstrap in progress, waiting...");
+    console.log("Sloan MCP client bootstrap in progress, waiting...");
     try {
       await initializationPromise;
     } catch (error) {
@@ -192,19 +192,19 @@ export async function bootstrapAuroraMCPClient(): Promise<void> {
     return;
   }
 
-  console.log("Bootstrapping Aurora MCP client...");
-  auroraMCPCurrentStatus = AuroraMCPStatus.IN_PROGRESS;
+  console.log("Bootstrapping Sloan MCP client...");
+  sloanMCPCurrentStatus = SloanMCPStatus.IN_PROGRESS;
 
-  initializationPromise = createAuroraMCPClient();
+  initializationPromise = createSloanMCPClient();
 
   try {
     mcpClientInstance = await initializationPromise;
-    auroraMCPCurrentStatus = AuroraMCPStatus.SUCCESS;
-    console.log("✅ Aurora MCP client successfully bootstrapped");
+    sloanMCPCurrentStatus = SloanMCPStatus.SUCCESS;
+    console.log("✅ Sloan MCP client successfully bootstrapped");
   } catch (error) {
-    auroraMCPCurrentStatus = AuroraMCPStatus.FAILED;
+    sloanMCPCurrentStatus = SloanMCPStatus.FAILED;
     console.warn(
-      "⚠️ Failed to bootstrap Aurora MCP client - server will continue without Aurora MCP tools:",
+      "⚠️ Failed to bootstrap Sloan MCP client - server will continue without Sloan MCP tools:",
       error
     );
     initializationPromise = null;
@@ -214,14 +214,14 @@ export async function bootstrapAuroraMCPClient(): Promise<void> {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type EmptyMcpToolSet = {};
 
-export async function getAuroraMCPClient(): Promise<{
+export async function getSloanMCPClient(): Promise<{
   mcpClient: MCPClient | null;
   tools: McpToolSet | EmptyMcpToolSet;
 }> {
   if (!mcpClientInstance) {
     if (initializationPromise) {
       // Bootstrap is in progress, wait for it
-      console.log("Aurora MCP client not ready, waiting for bootstrap...");
+      console.log("Sloan MCP client not ready, waiting for bootstrap...");
       try {
         mcpClientInstance = await initializationPromise;
       } catch (error) {
@@ -229,13 +229,13 @@ export async function getAuroraMCPClient(): Promise<{
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         console.log(
-          `Aurora MCP client bootstrap failed, returning null client: ${errorMessage}`
+          `Sloan MCP client bootstrap failed, returning null client: ${errorMessage}`
         );
         return { mcpClient: null, tools: {} };
       }
     } else {
       // Client was never bootstrapped or failed to bootstrap
-      console.log("Aurora MCP client not available, returning null client");
+      console.log("Sloan MCP client not available, returning null client");
       return { mcpClient: null, tools: {} };
     }
   }
@@ -243,34 +243,34 @@ export async function getAuroraMCPClient(): Promise<{
   return mcpClientInstance;
 }
 
-export function getAuroraMCPStatus(): {
-  status: AuroraMCPStatus;
+export function getSloanMCPStatus(): {
+  status: SloanMCPStatus;
   isAvailable: boolean;
 } {
   return {
-    status: auroraMCPCurrentStatus,
+    status: sloanMCPCurrentStatus,
     isAvailable:
-      auroraMCPCurrentStatus === AuroraMCPStatus.SUCCESS &&
+      sloanMCPCurrentStatus === SloanMCPStatus.SUCCESS &&
       mcpClientInstance !== null,
   };
 }
 
-export async function shutdownAuroraMCPClient(): Promise<void> {
+export async function shutdownSloanMCPClient(): Promise<void> {
   if (!mcpClientInstance) {
-    console.log("Aurora MCP client not initialized, nothing to shutdown");
+    console.log("Sloan MCP client not initialized, nothing to shutdown");
     return;
   }
 
-  console.log("Shutting down Aurora MCP client...");
+  console.log("Shutting down Sloan MCP client...");
   try {
     // Close the MCP client connection
     await mcpClientInstance.mcpClient.close();
-    console.log("✅ Aurora MCP client successfully shut down");
+    console.log("✅ Sloan MCP client successfully shut down");
   } catch (error) {
-    console.error("❌ Error shutting down Aurora MCP client:", error);
+    console.error("❌ Error shutting down Sloan MCP client:", error);
   } finally {
     mcpClientInstance = null;
     initializationPromise = null;
-    auroraMCPCurrentStatus = AuroraMCPStatus.NOT_STARTED;
+    sloanMCPCurrentStatus = SloanMCPStatus.NOT_STARTED;
   }
 }

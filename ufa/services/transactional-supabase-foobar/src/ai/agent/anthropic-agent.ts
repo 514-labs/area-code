@@ -1,6 +1,6 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, UIMessage, stepCountIs } from "ai";
-import { getAuroraMCPClient } from "../mcp/aurora-mcp-client";
+import { getSloanMCPClient } from "../mcp/sloan-mcp-client";
 import { getSupabaseLocalMCPClient } from "../mcp/supabase-mcp-client";
 import { getAISystemPrompt } from "./ai-system-prompt";
 
@@ -15,7 +15,7 @@ export async function getAnthropicAgentStreamTextOptions(
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
-  const { tools: auroraTools } = await getAuroraMCPClient();
+  const { tools: sloanTools } = await getSloanMCPClient();
 
   let supabaseTools = {};
   try {
@@ -30,7 +30,7 @@ export async function getAnthropicAgentStreamTextOptions(
   }
 
   const allTools = {
-    ...auroraTools,
+    ...sloanTools,
     ...supabaseTools,
   };
 

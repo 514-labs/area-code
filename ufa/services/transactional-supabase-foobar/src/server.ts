@@ -11,9 +11,9 @@ import { barRoutes } from "./routes/bar";
 import { chatRoutes } from "./routes/chat";
 import { authRoutes } from "./routes/auth";
 import {
-  bootstrapAuroraMCPClient,
-  shutdownAuroraMCPClient,
-} from "./ai/mcp/aurora-mcp-client";
+  bootstrapSloanMCPClient,
+  shutdownSloanMCPClient,
+} from "./ai/mcp/sloan-mcp-client";
 import {
   bootstrapSupabaseLocalMCPClient,
   shutdownSupabaseLocalMCPClient,
@@ -168,7 +168,7 @@ async function bootstrapMCPClients() {
 
     // Bootstrap both MCP clients in parallel
     await Promise.all([
-      bootstrapAuroraMCPClient(),
+      bootstrapSloanMCPClient(),
       bootstrapSupabaseLocalMCPClient(),
     ]);
 
@@ -229,7 +229,7 @@ const gracefulShutdown = async (signal: string) => {
     // Shutdown MCP clients first
     fastify.log.info("🔧 Shutting down MCP clients...");
     await Promise.all([
-      shutdownAuroraMCPClient(),
+      shutdownSloanMCPClient(),
       shutdownSupabaseLocalMCPClient(),
     ]);
     fastify.log.info("✅ All MCP clients successfully shut down");
