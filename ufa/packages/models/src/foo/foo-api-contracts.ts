@@ -59,35 +59,13 @@ export type GetFoosScoreOverTimeResponse = {
   queryTime: number;
 };
 
-// Rolling time-series with multi-dimensional segmentation
-export type GetFooRollingSegmentationParams = {
-  days?: number;
-  windowDays?: number;
-  priority?: number; // optional filter
-};
-
-export type FooRollingSegmentationPoint = {
-  date: string;
-  status: string;
-  tag: string;
-  avgScoreRolling: number;
-  volatilityRolling: number;
-  usersRolling: number;
-};
-
-export type GetFooRollingSegmentationResponse = {
-  data: FooRollingSegmentationPoint[];
-  queryTime: number;
-};
-
-// High-dimensional cube aggregations
 export type GetFooCubeAggregationsParams = {
-  months?: number; // how many recent months to include
-  status?: string; // optional filter
-  tag?: string; // optional filter
-  priority?: number; // optional filter
-  limit?: number; // max rows returned
-  offset?: number; // pagination offset
+  months?: number;
+  status?: string;
+  tag?: string;
+  priority?: number;
+  limit?: number;
+  offset?: number;
   sortBy?:
     | "month"
     | "status"
@@ -121,9 +99,8 @@ export type GetFooCubeAggregationsResponse = {
   };
 };
 
-// Filter values API
 export type GetFooFiltersValuesParams = {
-  months?: number; // how many recent months to include
+  months?: number;
 };
 
 export type GetFooFiltersValuesResponse = {
