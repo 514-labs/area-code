@@ -10,25 +10,25 @@
 - Node.js 20+
 - Docker 2.23.1+
 
-
 ## Quick Start
 
 (If you haven't already, navigate to odw root directory `cd ../..`, and make sure Docker Desktop is running)
 
 **Full Setup**:
-   ```bash
-   pnpm odw:dev
-   ```
-   This will:
-   - Install all dependencies
-   - Start the data warehouse service (moose app)
-   - Start the data warehouse frontend (streamlit in apps/dw-frontend)
 
+```bash
+pnpm odw:dev
+```
+
+This will:
+
+- Install all dependencies
+- Start the data warehouse service (moose app)
+- Start the data warehouse frontend (streamlit in apps/dw-frontend)
 
 ## Presenter - walkthrough docs
 
 [Presenter - walkthrough docs](./docs/README.md)
-
 
 ## Project Overview
 
@@ -43,7 +43,7 @@ The codebase is **commented** to help you understand each component and pattern.
 This project is **intentionally focused** on demonstrating key concepts rather than implementing the full reference architecture shown above. It provides enough practical insights and working examples to help developers understand how to:
 
 - Build data ingestion pipelines with Moose
-- Implement stream processing workflows 
+- Implement stream processing workflows
 - Create analytical APIs and consumption endpoints
 - Integrate multiple data sources into a unified warehouse
 
@@ -68,6 +68,7 @@ The current state represents a **simplified but functional** implementation that
 - **Stream Processing**: Real-time data transformation and enrichment
 
 ### Demo presentation walkthrough
+
 See: [Presenter - walkthrough docs](./docs/README.md)
 
 ## Project Structure
@@ -108,7 +109,7 @@ For a high-level architectural overview of the system, see [high-level-overview.
 ## Other Commands
 
 | Command              | Description        |
-|----------------------|--------------------|
+| -------------------- | ------------------ |
 | `pnpm odw:dev:clean` | Clean all services |
 
 ## Installing Aurora AI Support
@@ -116,7 +117,6 @@ For a high-level architectural overview of the system, see [high-level-overview.
 Aurora AI is an optional enhancement that extends your copilot's AI capabilities an MCP with specialized tools for Moose workflows, ClickHouse queries, and RedPanda integration. This provides intelligent assistance for the creation and maintenance of data warehouse operations.
 
 For setup instructions, see [Aurora docs](https://docs.fiveonefour.com/aurora).
-
 
 ## LLM Configuration
 
@@ -131,9 +131,11 @@ This project includes **LLM-powered unstructured data extraction** using Anthrop
 1. **Get an Anthropic API key**: Sign up at [console.anthropic.com](https://console.anthropic.com) and create an API key
 
 2. **Configure LLM settings**: Copy the example configuration and customize as needed:
+
    ```bash
    cp env.example .env
    ```
+
    Then edit `.env` to set your API key and configure LLM parameters. See `env.example` for detailed configuration options including batch processing, model selection, and validation settings.
 
 3. **Verify setup**: The LLM service will be automatically initialized when processing unstructured data
@@ -141,7 +143,7 @@ This project includes **LLM-powered unstructured data extraction** using Anthrop
 ### LLM Features
 
 - **Extraction**: Convert unstructured documents (text, PDFs, images) to structured JSON using natural language instructions
-- **Validation**: Validate extracted data against business rules specified in plain English  
+- **Validation**: Validate extracted data against business rules specified in plain English
 - **Transformation**: Modify and enrich extracted data using natural language transformations
 - **Routing**: Intelligently route data based on content analysis
 - **Batch Processing**: Process multiple files efficiently with configurable batch sizes for improved performance
@@ -161,7 +163,7 @@ The LLM service supports extensive configuration through the `.env` file:
 **Note**: LLM features are optional. When the API key is not configured, the system will:
 
 - Return structured metadata about the content (file type, content preview, processing timestamps)
-- Preserve original data with informational notes about the disabled LLM service  
+- Preserve original data with informational notes about the disabled LLM service
 - Continue processing without intelligent extraction, validation, or transformation
 - Provide clear guidance on enabling LLM features through logging messages
 
@@ -189,12 +191,14 @@ signature_version = "s3v4"
 ### Setup for Different Storage Types
 
 **For MinIO (Development/Testing):**
+
 - Set `endpoint_url` to your MinIO server (e.g., `http://localhost:9500`)
 - Use MinIO admin credentials or create specific access keys
 - Ensure the bucket exists in MinIO
 
 **For AWS S3 (Production):**
-- Set `endpoint_url` to an empty string `""` 
+
+- Set `endpoint_url` to an empty string `""`
 - Use your AWS access key and secret key
 - Set the appropriate AWS region
 - Ensure the S3 bucket exists and your credentials have read access
@@ -207,7 +211,7 @@ The system now accepts multiple path formats for unstructured data:
 # S3 paths
 s3://bucket-name/path/to/file.txt
 
-# MinIO paths  
+# MinIO paths
 minio://bucket-name/path/to/file.txt
 ```
 
