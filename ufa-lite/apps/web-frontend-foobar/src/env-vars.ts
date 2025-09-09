@@ -18,15 +18,7 @@ export function getAnalyticalConsumptionApiBase() {
   return value;
 }
 
-export function getRetrievalApiBase() {
-  const value = import.meta.env.VITE_RETRIEVAL_API_BASE;
-
-  if (!value) {
-    throw new Error("Missing env var: VITE_RETRIEVAL_API_BASE");
-  }
-
-  return value;
-}
+// Retrieval API base is omitted in ufa-lite
 
 export function getSupabaseUrl() {
   const value = import.meta.env.VITE_SUPABASE_URL;
