@@ -1,0 +1,6 @@
+# Vite cache files
+vite.config.*.timestamp-*.mjs
+server/dist
+public/dist
+
+.tanstack

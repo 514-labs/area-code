@@ -1,0 +1,25 @@
+{
+  "name": "analytical-moose-foobar-lite",
+  "version": "0.0",
+  "scripts": {
+    "moose": "moose-cli",
+    "build": "moose-cli build --docker",
+    "dev": "moose-cli dev",
+    "ufa:dev": "NODE_ENV=development moose-cli dev",
+    "ufa:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'",
+    "ufa-lite:dev": "NODE_ENV=development moose-cli dev",
+    "ufa-lite:dev:clean": "moose-cli clean || echo \"Note: moose-cli clean failed (infrastructure may not be running)\""
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "ts-patch": "^3.3.0",
+    "@514labs/moose-lib": "latest",
+    "typia": "^7.6.0",
+    "@workspace/models": "workspace:*"
+  },
+  "devDependencies": {
+    "@514labs/moose-cli": "latest",
+    "@types/node": "^20.12.12",
+    "typescript": "catalog:"
+  }
+}

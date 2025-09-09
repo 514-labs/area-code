@@ -1,0 +1,34 @@
+{
+  "name": "sync-supabase-moose-foobar-lite",
+  "version": "0.0",
+  "scripts": {
+    "moose": "moose-cli",
+    "build": "moose-cli build --docker",
+    "dev": "moose-cli dev",
+    "ufa:dev": "NODE_ENV=development bash scripts/start-dev-with-workflow.sh",
+    "ufa:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'",
+    "dev:workflow": "moose-cli workflow run supabase-listener",
+    "dev:workflow:stop": "moose-cli workflow terminate supabase-listener",
+    "ufa-lite:dev": "NODE_ENV=development bash scripts/start-dev-with-workflow.sh",
+    "ufa-lite:dev:clean": "moose-cli clean || echo \"Note: moose-cli clean failed (infrastructure may not be running)\""
+  },
+  "dependencies": {
+    "@514labs/moose-lib": "latest",
+    "@supabase/supabase-js": "^2.39.0",
+    "@workspace/models": "workspace:*",
+    "axios": "^1.7.7",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
+    "ts-patch": "^3.3.0",
+    "typia": "^7.6.0"
+  },
+  "devDependencies": {
+    "@514labs/moose-cli": "latest",
+    "@types/node": "^20.12.12",
+    "@types/pg": "^8.10.0",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

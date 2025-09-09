@@ -5,6 +5,8 @@ packages:
   - ufa/apps/*
   - ufa/services/*
   - ufa/packages/*
+  - ufa-lite/apps/*
+  - ufa-lite/services/*
 
 catalog:
   typescript: 5.9.2

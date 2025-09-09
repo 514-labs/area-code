@@ -1,0 +1,14 @@
+{
+  "name": "area-code-ufa-lite",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "ufa-lite:dev": "cd .. && pnpm ufa-lite:dev",
+    "ufa-lite:dev:clean": "cd .. && pnpm ufa-lite:dev:clean",
+    "ufa-lite:dev:seed": "cd .. && pnpm ufa-lite:dev:seed"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
