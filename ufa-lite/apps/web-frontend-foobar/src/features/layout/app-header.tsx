@@ -1,6 +1,6 @@
 import { Separator } from "@workspace/ui/components/separator";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
-import { RetrievalHighlightWrapper } from "@/features/origin-highlights/origin-highlights-wrappers";
+// Retrieval highlight wrapper is not used when search is omitted
 import { useChatLayout } from "./resizable-chat-layout";
 import { Button } from "@workspace/ui";
 
