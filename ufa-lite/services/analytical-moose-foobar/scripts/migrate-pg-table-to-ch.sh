@@ -17,6 +17,19 @@ CH_PASSWORD=${CH_PASSWORD:-pandapass}
 # Will be set after parsing command line arguments
 CH_DB=""
 
+# Detect the ClickHouse container name (handles ufa vs ufa-lite)
+detect_clickhouse_container() {
+    # Prefer ufa-lite container name
+    if docker ps --format "{{.Names}}" | grep -q "analytical-moose-foobar-lite-clickhousedb"; then
+        docker ps --format "{{.Names}}" | grep "analytical-moose-foobar-lite-clickhousedb" | head -1
+    # Fallback to non-lite name used in UFA
+    elif docker ps --format "{{.Names}}" | grep -q "analytical-moose-foobar-clickhousedb"; then
+        docker ps --format "{{.Names}}" | grep "analytical-moose-foobar-clickhousedb" | head -1
+    else
+        echo ""
+    fi
+}
+
 # Detect which PostgreSQL container to use (Supabase CLI vs Production Docker)
 detect_postgres_container() {
     # Check for Supabase CLI container first (more specific)
@@ -144,6 +157,8 @@ else
         exit 1
     fi
     echo "🐳 Using PostgreSQL container: $PG_CONTAINER"
+    # Pre-resolve ClickHouse container for dev mode
+    CH_CONTAINER=$(detect_clickhouse_container)
 fi
 
 # Create temp directory
@@ -231,14 +246,20 @@ run_clickhouse_query() {
         fi
     else
         # Development mode: Use Docker connection
+        # Resolve ClickHouse container dynamically
+        CH_CONTAINER=${CH_CONTAINER:-$(detect_clickhouse_container)}
+        if [ -z "$CH_CONTAINER" ]; then
+            echo "❌ No ClickHouse container found. Ensure analytical ClickHouse is running." >&2
+            return 1
+        fi
         if [ -n "$CH_PASSWORD" ]; then
-            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query" 2>&1); then
+            if ! result=$(docker exec -i "$CH_CONTAINER" clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "$query" 2>&1); then
                 echo "❌ ClickHouse query failed: $query" >&2
                 echo "   Error: $result" >&2
                 return 1
             fi
         else
-            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query" 2>&1); then
+            if ! result=$(docker exec -i "$CH_CONTAINER" clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "$query" 2>&1); then
                 echo "❌ ClickHouse query failed: $query" >&2
                 echo "   Error: $result" >&2
                 return 1
@@ -287,15 +308,21 @@ import_to_clickhouse() {
         fi
     else
         # Development mode: Use Docker connection
+        # Resolve ClickHouse container dynamically
+        CH_CONTAINER=${CH_CONTAINER:-$(detect_clickhouse_container)}
+        if [ -z "$CH_CONTAINER" ]; then
+            echo "❌ No ClickHouse container found. Ensure analytical ClickHouse is running." >&2
+            return 1
+        fi
         if [ -n "$CH_PASSWORD" ]; then
-            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+            if ! result=$(docker exec -i "$CH_CONTAINER" clickhouse-client --user "$CH_USER" --password "$CH_PASSWORD" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
                 echo "❌ Failed to import data to ClickHouse table: $table" >&2
                 echo "   File: $file" >&2
                 echo "   Error: $result" >&2
                 return 1
             fi
         else
-            if ! result=$(docker exec -i analytical-moose-foobar-clickhousedb-1 clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
+            if ! result=$(docker exec -i "$CH_CONTAINER" clickhouse-client --user "$CH_USER" --database "$CH_DB" --query "INSERT INTO $table FORMAT JSONEachRow" < "$file" 2>&1); then
                 echo "❌ Failed to import data to ClickHouse table: $table" >&2
                 echo "   File: $file" >&2
                 echo "   Error: $result" >&2
