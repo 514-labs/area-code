@@ -172,7 +172,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.42(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
+        version: 0.6.43(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../../ufa/packages/models
@@ -188,7 +188,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.6.42
+        version: 0.6.43
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -200,7 +200,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.42(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
+        version: 0.6.43(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.55.0
@@ -225,7 +225,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.6.42
+        version: 0.6.43
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -473,7 +473,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.42(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2))
+        version: 0.6.43(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2))
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -505,10 +505,10 @@ importers:
         specifier: ^5.1.1
         version: 5.2.1(react-hook-form@7.62.0(react@19.1.1))
       '@radix-ui/react-accordion':
-        specifier: ^1.2.11
+        specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-alert-dialog':
-        specifier: ^1.1.14
+        specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-aspect-ratio':
         specifier: ^1.1.7
@@ -517,70 +517,70 @@ importers:
         specifier: ^1.1.10
         version: 1.1.10(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-checkbox':
-        specifier: ^1.3.2
+        specifier: ^1.3.3
         version: 1.3.3(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-collapsible':
-        specifier: ^1.1.11
+        specifier: ^1.1.12
         version: 1.1.12(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-context-menu':
         specifier: ^2.2.15
         version: 2.2.16(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-dialog':
-        specifier: ^1.1.14
+        specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-dropdown-menu':
-        specifier: ^2.1.15
+        specifier: ^2.1.16
         version: 2.1.16(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-hover-card':
-        specifier: ^1.1.14
+        specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-label':
         specifier: ^2.1.7
         version: 2.1.7(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-menubar':
-        specifier: ^1.1.15
+        specifier: ^1.1.16
         version: 1.1.16(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-navigation-menu':
-        specifier: ^1.2.13
+        specifier: ^1.2.14
         version: 1.2.14(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-popover':
-        specifier: ^1.1.14
+        specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-progress':
         specifier: ^1.1.7
         version: 1.1.7(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-radio-group':
-        specifier: ^1.3.7
+        specifier: ^1.3.8
         version: 1.3.8(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-scroll-area':
-        specifier: ^1.2.9
+        specifier: ^1.2.10
         version: 1.2.10(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-select':
-        specifier: ^2.2.5
+        specifier: ^2.2.6
         version: 2.2.6(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-separator':
         specifier: ^1.1.7
         version: 1.1.7(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-slider':
-        specifier: ^1.3.5
+        specifier: ^1.3.6
         version: 1.3.6(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-slot':
         specifier: ^1.2.3
         version: 1.2.3(@types/react@19.1.10)(react@19.1.1)
       '@radix-ui/react-switch':
-        specifier: ^1.2.5
+        specifier: ^1.2.6
         version: 1.2.6(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-tabs':
-        specifier: ^1.1.12
+        specifier: ^1.1.13
         version: 1.1.13(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-toggle':
-        specifier: ^1.1.9
+        specifier: ^1.1.10
         version: 1.1.10(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-toggle-group':
-        specifier: ^1.1.10
+        specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-tooltip':
-        specifier: ^1.2.7
+        specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.1.7(@types/react@19.1.10))(@types/react@19.1.10)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@tabler/icons-react':
         specifier: ^3.34.0
@@ -619,16 +619,16 @@ importers:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react-day-picker:
-        specifier: ^9.8.0
+        specifier: ^9.9.0
         version: 9.9.0(react@19.1.1)
       react-dom:
         specifier: ^19.1.0
         version: 19.1.1(react@19.1.1)
       react-hook-form:
-        specifier: ^7.60.0
+        specifier: ^7.62.0
         version: 7.62.0(react@19.1.1)
       react-resizable-panels:
-        specifier: ^3.0.3
+        specifier: ^3.0.4
         version: 3.0.4(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       recharts:
         specifier: ^3.0.2
@@ -684,7 +684,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.42(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
+        version: 0.6.43(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -700,7 +700,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.6.42
+        version: 0.6.43
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -758,7 +758,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.42(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
+        version: 0.6.43(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.55.0
@@ -783,7 +783,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.6.42
+        version: 0.6.43
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -881,32 +881,32 @@ importers:
 
 packages:
 
-  '@514labs/moose-cli-darwin-arm64@0.6.42':
-    resolution: {integrity: sha512-O0P6HZwhWHilstjyTtoGCI/XFg7B5FKfvzkZ5RGk7kp/4LHicIjkQyp80BBHsspcD1uyzRmI9iYf3y4ImS0U+g==}
+  '@514labs/moose-cli-darwin-arm64@0.6.43':
+    resolution: {integrity: sha512-A48Yyu/tlPCqJpV8ECtoK3j6YEkYCDdzKxcla1rHMuPrAorF3mGZHwK3s+QtiMq16Aj0kTk+6iVCYdI6kCX5/w==}
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.6.42':
-    resolution: {integrity: sha512-k5QdBk/1xfj+Z/IQ8sNjdsDNXFcBn446+Ji0qc4GYMPOPIdF5KkqsJG9s+piuGjC08w24DxAQR3FNm/jecxKGQ==}
+  '@514labs/moose-cli-darwin-x64@0.6.43':
+    resolution: {integrity: sha512-5W+Uo7L+9J2WNIZ27Yl9hT6HZoV2nR3uaCftWcfGDgpL1Geiisjb1ipLRDzb4xwewvfzb/ADcHndp4bkLK0pSw==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.6.42':
-    resolution: {integrity: sha512-swyFe83dA1P8PjlljYn6YgNMdGR58SfiGIsUUd4kEgsMWogt1I9PlSnw8b/ZD96JR0Gmu2gspELU4txG6baXuw==}
+  '@514labs/moose-cli-linux-arm64@0.6.43':
+    resolution: {integrity: sha512-GJyXKnQ/ApGHPJyp2OxjtP8xa/TB9ywpHRhRRLfo/2KxkV4co0luY8tuCkM3IBKODAlLskTYOPTyaE9cMb4ZfQ==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.6.42':
-    resolution: {integrity: sha512-M0UTQhuZy50VZwBy/idvBsWY1av9Ka37PxkxVV6Ee8CPjKkLowQ0qqeXAg1QVb5JSZOf4nOsuFsPUhcGhaNctg==}
+  '@514labs/moose-cli-linux-x64@0.6.43':
+    resolution: {integrity: sha512-DOrecMlxa4xAlcBZkA3eHkBbS3F4PQjSEALGiwkQh5iXSoXf+eKSY128c/qa8fdOKvs1iI90vB2Trl0UUNIWxQ==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.6.42':
-    resolution: {integrity: sha512-IEaw86uZ+fQaZyEw1XKSfZWUNG7oR305NCS+TaB7mmAMi09WuNQJ5Y9PtZ98an/9pXXrNl/eqG8rrhZ6SdbG/Q==}
+  '@514labs/moose-cli@0.6.43':
+    resolution: {integrity: sha512-Z3yIUTHr/3F3LAp/mZ1v9EllHbqttq2kuZDeY4DI0dzt9kqKcUCKUfd0MhlZu+G7xC96aqjQk2fwRpcJhmcF9g==}
     hasBin: true
 
-  '@514labs/moose-lib@0.6.42':
-    resolution: {integrity: sha512-XkanNaX9kejrofz6NhdyOUHrj6wgCkM6iT2Bu/d4jdpvNZPzleayy15iDoycKO1VfH4PEx6a6SlvXxjUMrRSYA==}
+  '@514labs/moose-lib@0.6.43':
+    resolution: {integrity: sha512-vv3+cB4OCxJdVJAkD0MVFvtX0xj9DYywYndGQnXJf6q6uwQZkHqR2xUZb2/8ZwSIVsf1JXv/nd082r771uib4Q==}
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
@@ -6199,26 +6199,26 @@ packages:
 
 snapshots:
 
-  '@514labs/moose-cli-darwin-arm64@0.6.42':
+  '@514labs/moose-cli-darwin-arm64@0.6.43':
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.6.42':
+  '@514labs/moose-cli-darwin-x64@0.6.43':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.6.42':
+  '@514labs/moose-cli-linux-arm64@0.6.43':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.6.42':
+  '@514labs/moose-cli-linux-x64@0.6.43':
     optional: true
 
-  '@514labs/moose-cli@0.6.42':
+  '@514labs/moose-cli@0.6.43':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.6.42
-      '@514labs/moose-cli-darwin-x64': 0.6.42
-      '@514labs/moose-cli-linux-arm64': 0.6.42
-      '@514labs/moose-cli-linux-x64': 0.6.42
+      '@514labs/moose-cli-darwin-arm64': 0.6.43
+      '@514labs/moose-cli-darwin-x64': 0.6.43
+      '@514labs/moose-cli-linux-arm64': 0.6.43
+      '@514labs/moose-cli-linux-x64': 0.6.43
 
-  '@514labs/moose-lib@0.6.42(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))':
+  '@514labs/moose-lib@0.6.43(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@20.19.11)(typescript@5.9.2))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -6247,7 +6247,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.6.42(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2))':
+  '@514labs/moose-lib@0.6.43(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.0)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@2.5.3)(@types/node@24.3.0)(typescript@5.9.2))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
