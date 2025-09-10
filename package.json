@@ -19,7 +19,7 @@
     "ufa:dev:seed:transactional-supabase-foobar": "./ufa/scripts/dev-seed.sh --service=transactional-supabase-foobar",
     "ufa:dev:seed:analytical-moose-foobar": "./ufa/scripts/dev-seed.sh --service=analytical-moose-foobar",
     "ufa:dev:seed:retrieval-elasticsearch-foobar": "./ufa/scripts/dev-seed.sh --service=retrieval-elasticsearch-foobar",
-    "ufa-lite:dev": "NODE_ENV=development turbo run ufa-lite:dev --ui=tui",
+    "ufa-lite:dev": "NODE_ENV=development turbo run ufa-lite:dev",
     "ufa-lite:dev:clean": "turbo run ufa-lite:dev:clean && find . -name 'node_modules' -type d -exec rm -rf {} + && find . -name '.moose' -type d -exec rm -rf {} + && find . -name '.ts-node' -type d -exec rm -rf {} +",
     "ufa-lite:dev:seed": "./ufa-lite/scripts/dev-seed.sh",
     "ufa-lite:dev:seed:transactional-supabase-foobar": "./ufa-lite/scripts/dev-seed.sh --service=transactional-supabase-foobar-lite",
@@ -41,6 +41,7 @@
     ],
     "ignoredBuiltDependencies": [
       "@swc/core",
+      "core-js-pure",
       "esbuild"
     ]
   },
