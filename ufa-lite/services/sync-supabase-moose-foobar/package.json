@@ -28,6 +28,6 @@
     "typescript": "catalog:"
   },
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   }
 }

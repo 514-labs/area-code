@@ -20,5 +20,5 @@
     "@types/node": "^20.12.12",
     "typescript": "catalog:"
   },
-  "engines": { "node": "20.x" }
+  "engines": { "node": "22.x" }
 }

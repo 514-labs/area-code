@@ -62,5 +62,5 @@
   ],
   "author": "",
   "license": "MIT",
-  "engines": { "node": "20.x" }
+  "engines": { "node": "22.x" }
 }
