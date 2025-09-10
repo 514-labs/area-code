@@ -137,7 +137,7 @@ EOSQL
 }
 
 seed_analytical() {
-  echo "📈 Migrating data into analytical-moose-foobar-lite (ClickHouse)..."
+  echo "📈 Migrating data into analytical-moose-foobar-lite (ClickHouse @ 4410/4411/5411)..."
   if ! is_service_running "analytical-moose-foobar-lite"; then
     echo "⚠️  analytical-moose-foobar-lite is not running (http://localhost:4410). Start dev first."; return 0
   fi

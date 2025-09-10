@@ -43,7 +43,7 @@ pnpm -w run ufa-lite:dev
 ### Notes
 - No Elasticsearch or retrieval service in ufa-lite.
 - Uses the same local containers as UFA (Supabase, ClickHouse, Redpanda, Temporal). No local Postgres install needed.
-- ClickHouse DB name: `local_ufa_lite`; Redis prefix: `MSLITE`.
+- ClickHouse DB name: `local`; Redis prefix: `MSLITE`.
 - Temporal/Redpanda are shared; avoid cross-stack workflow/topic collisions.
 
 

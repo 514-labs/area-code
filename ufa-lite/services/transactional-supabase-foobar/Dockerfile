@@ -8,7 +8,7 @@ RUN npm install -g pnpm
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY ufa/services/transactional-supabase-foobar/package.json ./ufa/services/transactional-supabase-foobar/
+COPY ufa-lite/services/transactional-supabase-foobar/package.json ./ufa-lite/services/transactional-supabase-foobar/
 COPY ufa/packages/models/package.json ./ufa/packages/models/
 COPY ufa/packages/eslint-config/package.json ./ufa/packages/eslint-config/
 COPY ufa/packages/typescript-config/package.json ./ufa/packages/typescript-config/
@@ -20,10 +20,10 @@ COPY ufa/packages ./ufa/packages
 RUN pnpm install
 
 # Copy service source code
-COPY ufa/services/transactional-supabase-foobar ./ufa/services/transactional-supabase-foobar
+COPY ufa-lite/services/transactional-supabase-foobar ./ufa-lite/services/transactional-supabase-foobar
 
 # Set working directory to the service
-WORKDIR /app/ufa/services/transactional-supabase-foobar
+WORKDIR /app/ufa-lite/services/transactional-supabase-foobar
 
 # Build the TypeScript code
 RUN pnpm build

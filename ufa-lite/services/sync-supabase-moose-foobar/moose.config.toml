@@ -17,12 +17,12 @@ native_port = 9000
 
 [http_server_config]
 host = "localhost"
-port = 4000
-management_port = 5001
+port = 4400
+management_port = 5401
 
 [redis_config]
 url = "redis://127.0.0.1:6379"
-key_prefix = "MS"
+key_prefix = "MSLITE"
 
 [git_config]
 main_branch_name = "main"

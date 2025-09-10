@@ -17,12 +17,12 @@ native_port = 9000
 
 [http_server_config]
 host = "localhost"
-port = 4100
-management_port = 5101
-proxy_port = 4101
+port = 4410
+management_port = 5411
+proxy_port = 4411
 
 [redis_config]
-key_prefix = "MS"
+key_prefix = "MSLITE"
 hostname = "127.0.0.1"
 # The Redis port has been intentionally changed from the default 6379 to 6740.
 port = 6740
