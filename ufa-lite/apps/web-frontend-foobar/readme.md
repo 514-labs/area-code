@@ -16,3 +16,13 @@ pnpm preview    # Preview production build locally
 # Code quality
 pnpm lint       # Run ESLint on TypeScript source files
 ```
+
+## Environment
+
+Create a `.env.development` file in this folder with:
+
+```
+VITE_TRANSACTIONAL_API_BASE=http://localhost:8082/api
+VITE_ANALYTICAL_CONSUMPTION_API_BASE=http://localhost:4100/consumption
+VITE_RETRIEVAL_API_BASE=http://localhost:8083
+```
