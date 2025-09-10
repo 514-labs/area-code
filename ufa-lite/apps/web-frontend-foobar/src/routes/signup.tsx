@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, FormEvent } from "react";
 import { Button, Input, Label, Card } from "@workspace/ui";
-import { supabase } from "@/auth/supabase";
 
 function validateEmailFormat(email: string) {
   return /\S+@\S+\.\S+/.test(email);
@@ -36,15 +35,8 @@ function SignUpPage() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    // In ufa-lite, signup does not call Supabase; simulate success
     setLoading(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
     setSuccess("Account created. You can now sign in.");
     setTimeout(() => navigate({ to: "/signin" }), 800);
   }

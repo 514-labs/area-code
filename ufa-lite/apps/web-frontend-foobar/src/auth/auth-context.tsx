@@ -5,13 +5,10 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
 import { getTransactionApiBase } from "../env-vars";
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  token: string | null;
   loading: boolean;
   isAdmin: boolean;
   adminLoading: boolean;
@@ -21,22 +18,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
 
-  const checkAdminStatus = async (authSession: Session | null) => {
+  const checkAdminStatus = async (bearer: string | null) => {
     setAdminLoading(true);
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
 
-      if (authSession?.access_token) {
-        headers.Authorization = `Bearer ${authSession.access_token}`;
-      }
+      if (bearer) headers.Authorization = `Bearer ${bearer}`;
 
       const API_BASE = getTransactionApiBase();
       const response = await fetch(`${API_BASE}/auth/admin-status`, {
@@ -59,34 +53,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      checkAdminStatus(session);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      checkAdminStatus(session);
-    });
-
-    return () => subscription.unsubscribe();
+    const t = localStorage.getItem("auth_token");
+    setToken(t);
+    setLoading(false);
+    checkAdminStatus(t);
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem("auth_token");
+    setToken(null);
+    setIsAdmin(false);
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, session, loading, isAdmin, adminLoading, signOut }}
+      value={{ token, loading, isAdmin, adminLoading, signOut }}
     >
       {children}
     </AuthContext.Provider>

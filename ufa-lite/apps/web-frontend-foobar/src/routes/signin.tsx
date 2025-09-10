@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useState } from "react";
 import { Button, Input, Label, Card } from "@workspace/ui";
-import { supabase } from "@/auth/supabase";
 
 function SignInPage() {
   const navigate = useNavigate();
@@ -15,15 +14,16 @@ function SignInPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
+    // Temporary: accept any credentials and set dev bearer
+    try {
+      const fakeToken = btoa(`${email}:${password}:${Date.now()}`);
+      localStorage.setItem("auth_token", fakeToken);
+    } catch (err: any) {
+      setError("Failed to set auth token");
+      setLoading(false);
       return;
     }
+    setLoading(false);
     navigate({ to: "/" });
   }
 

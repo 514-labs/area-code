@@ -4,7 +4,6 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "@workspace/ui/components/theme-provider";
-import { supabase } from "./auth/supabase";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -14,26 +13,13 @@ import "./index.css";
 // Create a new router instance
 const router = createRouter({ routeTree });
 
-// Override fetch globally to include auth headers
+// Override fetch globally to include optional dev bearer from localStorage
 const originalFetch = window.fetch;
 window.fetch = async (input, init = {}) => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const headers = {
-    ...init.headers,
-  };
-
-  if (session?.access_token) {
-    (headers as Record<string, string>)["Authorization"] =
-      `Bearer ${session.access_token}`;
-  }
-
-  return originalFetch(input, {
-    ...init,
-    headers,
-  });
+  const headers = { ...init.headers } as Record<string, string>;
+  const token = localStorage.getItem("auth_token");
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return originalFetch(input, { ...init, headers });
 };
 
 // Create a client

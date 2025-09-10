@@ -39,19 +39,11 @@ is_service_running() {
 }
 
 cleanup_existing_workflows() {
-  echo "🛑 Stopping lite workflows..."
-  cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || return 0
-  pnpm dev:workflow:stop >/dev/null 2>&1 || true
-  pkill -f "supabase-listener" 2>/dev/null || true
-  pkill -f "moose-cli workflow run" 2>/dev/null || true
-  cd "$PROJECT_ROOT"
+  echo "🛑 CDC disabled in ufa-lite; skipping workflow stop"
 }
 
 restart_workflows() {
-  echo "🔄 Restarting lite workflows..."
-  cd "$PROJECT_ROOT/services/sync-supabase-moose-foobar" || return 0
-  nohup pnpm dev:workflow >> "$SEED_LOG" 2>&1 &
-  cd "$PROJECT_ROOT"
+  echo "🔄 CDC disabled in ufa-lite; skipping workflow start"
 }
 
 detect_db_container() {
@@ -165,11 +157,8 @@ cleanup_existing_workflows
 
 case "$SERVICE" in
   "transactional-supabase-foobar-lite")
-    seed_transactional ;;
-  "analytical-moose-foobar-lite")
-    seed_analytical ;;
-  "" )
-    seed_transactional
+    echo "Transactional service disabled in ufa-lite; skipping" ;;
+  "analytical-moose-foobar-lite"|"")
     seed_analytical ;;
   *)
     echo "Unknown service: $SERVICE"; exit 1 ;;
