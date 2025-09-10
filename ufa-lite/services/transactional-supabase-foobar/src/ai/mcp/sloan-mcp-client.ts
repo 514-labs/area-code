@@ -30,6 +30,10 @@ export enum SloanMCPStatus {
   FAILED = "failed",
 }
 
+function isSloanMCPDisabled(): boolean {
+  return process.env.DISABLE_SLOAN_MCP === "true";
+}
+
 // Singleton instance storage
 let mcpClientInstance: {
   mcpClient: MCPClient;
@@ -177,6 +181,11 @@ async function createSloanMCPClient(): Promise<{
  * Will not throw errors - server can continue running even if Sloan MCP fails to bootstrap.
  */
 export async function bootstrapSloanMCPClient(): Promise<void> {
+  if (isSloanMCPDisabled()) {
+    console.log("Sloan MCP disabled via DISABLE_SLOAN_MCP=true; skipping bootstrap");
+    sloanMCPCurrentStatus = SloanMCPStatus.NOT_STARTED;
+    return;
+  }
   if (mcpClientInstance) {
     console.log("Sloan MCP client already bootstrapped");
     return;
