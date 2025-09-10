@@ -1,11 +1,9 @@
 import { Separator } from "@workspace/ui/components/separator";
 import { SidebarTrigger } from "@workspace/ui/components/sidebar";
 import { RetrievalHighlightWrapper } from "@/features/origin-highlights/origin-highlights-wrappers";
-import { useChatLayout } from "./resizable-chat-layout";
 import { Button } from "@workspace/ui";
 
 export function AppHeader() {
-  const { isChatOpen, toggleChat } = useChatLayout();
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -19,10 +17,7 @@ export function AppHeader() {
 
         {/* Search removed in ufa-lite */}
 
-        <Button size="sm" onClick={toggleChat} className="ml-auto">
-          {isChatOpen ? "Close Chat" : "Open Chat"}
-          <span className="sr-only">Toggle Chat</span>
-        </Button>
+        <div className="ml-auto" />
       </div>
     </header>
   );

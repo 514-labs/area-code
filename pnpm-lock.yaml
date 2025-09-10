@@ -40,9 +40,6 @@ importers:
 
   ufa-lite/apps/web-frontend-foobar:
     dependencies:
-      '@ai-sdk/react':
-        specifier: 2.0.0-beta.28
-        version: 2.0.0-beta.28(react@19.1.1)(zod@3.25.76)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -85,9 +82,6 @@ importers:
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../../ufa/packages/ui
-      ai:
-        specifier: 5.0.0-beta.28
-        version: 5.0.0-beta.28(zod@3.25.76)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

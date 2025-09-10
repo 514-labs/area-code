@@ -8,7 +8,6 @@ import { CSSProperties, ReactNode } from "react";
 import { navigationConfig } from "./navigation-config";
 import { AppHeader } from "./app-header";
 import AreaCodeLogo from "@/components/logos/area-code-logo";
-import ResizableChatLayout from "./resizable-chat-layout";
 
 interface LayoutProps {
   children: ReactNode;
@@ -36,7 +35,7 @@ function MainContent({ children }: { children: ReactNode }) {
         topHero={
           <Link to="/" className="flex items-center gap-2">
             <AreaCodeLogo className="w-[32.5px] h-[16px] text-black dark:text-white" />
-            <span className="text-base font-semibold">Area Code</span>
+            <span className="text-base font-semibold">Area Code Lite</span>
           </Link>
         }
       />
@@ -56,12 +55,10 @@ function MainContent({ children }: { children: ReactNode }) {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <ResizableChatLayout>
-      <div className="flex flex-col h-full max-h-screen">
-        <div className="h-full overflow-auto">
-          <MainContent>{children}</MainContent>
-        </div>
+    <div className="flex flex-col h-full max-h-screen">
+      <div className="h-full overflow-auto">
+        <MainContent>{children}</MainContent>
       </div>
-    </ResizableChatLayout>
+    </div>
   );
 }
