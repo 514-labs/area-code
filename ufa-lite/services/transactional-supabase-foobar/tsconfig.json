@@ -1,0 +1,24 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "paths": {
+      "@workspace/models": ["../../packages/models/src/index"],
+      "@workspace/models/*": ["../../packages/models/src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "../../packages/models/src/**/*",
+    "tests/test-realtime.ts",
+    "tests/test-realtime-postgres-changes.ts",
+    "tests/test-simple-realtime.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

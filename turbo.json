@@ -27,6 +27,18 @@
       "cache": false,
       "persistent": true
     },
+    "ufa-lite:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "ufa-lite:dev:clean": {
+      "cache": false,
+      "persistent": true
+    },
+    "ufa-lite:dev:seed": {
+      "cache": false,
+      "persistent": true
+    },
     "odw:dev": {
       "cache": false,
       "persistent": true

@@ -1,0 +1,34 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1751588048630,
+      "tag": "0000_violet_sersi",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1754657210108,
+      "tag": "0001_careful_onslaught",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754879004884,
+      "tag": "0002_great_ozymandias",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1755699781517,
+      "tag": "0003_pink_gideon",
+      "breakpoints": true
+    }
+  ]
+}
