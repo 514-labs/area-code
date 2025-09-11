@@ -1,9 +1,19 @@
 import { Api } from "@514labs/moose-lib";
-import {
-  FoosScoreOverTimeDataPoint,
-  GetFoosScoreOverTimeParams,
-  GetFoosScoreOverTimeResponse,
-} from "@workspace/models";
+
+export type FoosScoreOverTimeDataPoint = {
+  date: string;
+  averageScore: number;
+  totalCount: number;
+};
+
+export type GetFoosScoreOverTimeParams = {
+  days?: number;
+};
+
+export type GetFoosScoreOverTimeResponse = {
+  data: FoosScoreOverTimeDataPoint[];
+  queryTime: number;
+};
 
 // Score over time consumption API
 export const scoreOverTimeApi = new Api<

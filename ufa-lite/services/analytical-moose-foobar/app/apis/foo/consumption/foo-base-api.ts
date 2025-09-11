@@ -1,10 +1,38 @@
 import { Api } from "@514labs/moose-lib";
-import {
-  Foo,
-  FooWithCDCForConsumption,
-  GetFoosWithCDCParams,
-  GetFoosWithCDCForConsumptionResponse,
-} from "@workspace/models";
+import { foo } from "../../../externalModels"
+
+export type GetFoosParams = {
+  limit?: number;
+  offset?: number;
+  sortBy?: keyof foo;
+  sortOrder?: "ASC" | "DESC" | "asc" | "desc";
+};
+
+export type FooWithCDCForConsumption = Omit<foo, "status"> & {
+  status: string;
+};
+
+export type GetFoosWithCDCParams = Omit<GetFoosParams, "sortBy"> & {
+  sortBy?: keyof foo;
+};
+
+export type GetFoosResponse = {
+  data: foo[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+  queryTime: number;
+};
+
+export type GetFoosWithCDCForConsumptionResponse = Omit<
+  GetFoosResponse,
+  "data"
+> & {
+  data: FooWithCDCForConsumption[];
+};
 
 // Consumption API following Moose documentation pattern
 export const fooConsumptionApi = new Api<

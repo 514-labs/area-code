@@ -1,8 +1,14 @@
 import { Api } from "@514labs/moose-lib";
-import {
-  GetFooFiltersValuesParams,
-  GetFooFiltersValuesResponse,
-} from "@workspace/models";
+
+export type GetFooFiltersValuesParams = {
+  months?: number;
+};
+
+export type GetFooFiltersValuesResponse = {
+  status: string[];
+  tags: string[];
+  priorities: number[];
+};
 
 export const fooFiltersValuesApi = new Api<
   GetFooFiltersValuesParams,
@@ -28,7 +34,6 @@ export const fooFiltersValuesApi = new Api<
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND status IS NOT NULL
-        AND cdc_operation != 'DELETE'
       ORDER BY status
     `;
 
@@ -38,7 +43,6 @@ export const fooFiltersValuesApi = new Api<
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND tags IS NOT NULL
-        AND cdc_operation != 'DELETE'
       ORDER BY tag
     `;
 
@@ -48,7 +52,6 @@ export const fooFiltersValuesApi = new Api<
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND priority IS NOT NULL
-        AND cdc_operation != 'DELETE'
       ORDER BY priority
     `;
 
