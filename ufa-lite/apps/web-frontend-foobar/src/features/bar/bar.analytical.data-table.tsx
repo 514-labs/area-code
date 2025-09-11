@@ -221,7 +221,7 @@ export default function BarAnalyticalDataTable({
   selectableRows?: boolean;
 }) {
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "cdc_timestamp", desc: true },
+    { id: "created_at", desc: true },
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});

@@ -1,4 +1,5 @@
 import { Api } from "@514labs/moose-lib";
+import { FooTable } from "../../../externalModels";
 
 export type GetFooCubeAggregationsParams = {
   months?: number;
@@ -110,10 +111,10 @@ export const fooCubeAggregationsApi = new Api<
         priority,
         count() AS n,
         avg(score) AS avgScore,
-        quantileTDigest(0.5)(score) AS p50,
-        quantileTDigest(0.9)(score) AS p90,
+        quantileTDigest(0.5)(toFloat64(score)) AS p50,
+        quantileTDigest(0.9)(toFloat64(score)) AS p90,
         COUNT() OVER() AS total
-      FROM foo
+      FROM ${FooTable}
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND score IS NOT NULL
