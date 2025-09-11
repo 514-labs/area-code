@@ -59,26 +59,32 @@ export interface users {
 
 export const PeerdbRawMirrorA4Be3C5E1Df345E4805BCb363B330B4ETable = new OlapTable<_peerdb_raw_mirror_a4be3c5e__1df3__45e4__805b__cb363b330b4e>("_peerdb_raw_mirror_a4be3c5e__1df3__45e4__805b__cb363b330b4e", {
     orderByFields: ["_peerdb_batch_id", "_peerdb_destination_table_name"],
+    settings: { index_granularity: "8192" },
     lifeCycle: LifeCycle.EXTERNALLY_MANAGED,
 });
 
 export const BarTable = new OlapTable<bar>("bar", {
     orderByFields: ["id"],
     engine: ClickHouseEngines.ReplacingMergeTree,
+    ver: "_peerdb_version",
+    settings: { index_granularity: "8192" },
     lifeCycle: LifeCycle.EXTERNALLY_MANAGED,
 });
 
 export const FooTable = new OlapTable<foo>("foo", {
     orderByFields: ["id"],
     engine: ClickHouseEngines.ReplacingMergeTree,
+    ver: "_peerdb_version",
+    settings: { index_granularity: "8192" },
     lifeCycle: LifeCycle.EXTERNALLY_MANAGED,
 });
 
 export const UsersTable = new OlapTable<users>("users", {
     orderByFields: ["id"],
     engine: ClickHouseEngines.ReplacingMergeTree,
+    ver: "_peerdb_version",
+    settings: { index_granularity: "8192" },
     lifeCycle: LifeCycle.EXTERNALLY_MANAGED,
 });
-
 
 
