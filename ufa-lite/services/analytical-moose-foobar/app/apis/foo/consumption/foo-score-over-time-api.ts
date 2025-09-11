@@ -1,4 +1,4 @@
-import { ConsumptionApi } from "@514labs/moose-lib";
+import { Api } from "@514labs/moose-lib";
 import {
   FoosScoreOverTimeDataPoint,
   GetFoosScoreOverTimeParams,
@@ -6,7 +6,7 @@ import {
 } from "@workspace/models";
 
 // Score over time consumption API
-export const scoreOverTimeApi = new ConsumptionApi<
+export const scoreOverTimeApi = new Api<
   GetFoosScoreOverTimeParams,
   GetFoosScoreOverTimeResponse
 >(

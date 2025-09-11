@@ -1,12 +1,17 @@
-import { ConsumptionApi } from "@514labs/moose-lib";
-import { BarPipeline } from "../../../index";
-import { GetBarsAverageValueResponse } from "@workspace/models";
+import { Api } from "@514labs/moose-lib";
+import { BarTable } from "../../../externalModels";
 
 // Type for endpoints with no parameters
 // eslint-disable-next-line
 type EmptyParams = {};
 
-export const barAverageValueApi = new ConsumptionApi<
+export type GetBarsAverageValueResponse = {
+  averageValue: number;
+  queryTime: number;
+  count: number;
+};
+
+export const barAverageValueApi = new Api<
   EmptyParams,
   GetBarsAverageValueResponse
 >(
@@ -21,7 +26,7 @@ export const barAverageValueApi = new ConsumptionApi<
       SELECT 
         AVG(value) as averageValue,
         COUNT(*) as count
-      FROM ${BarPipeline.table!}
+      FROM ${BarTable}
       WHERE value IS NOT NULL
     `;
 

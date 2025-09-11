@@ -1,10 +1,10 @@
-import { ConsumptionApi } from "@514labs/moose-lib";
+import { Api } from "@514labs/moose-lib";
 import {
   GetFooCubeAggregationsParams,
   GetFooCubeAggregationsResponse,
 } from "@workspace/models";
 
-export const fooCubeAggregationsApi = new ConsumptionApi<
+export const fooCubeAggregationsApi = new Api<
   GetFooCubeAggregationsParams,
   GetFooCubeAggregationsResponse
 >(

@@ -1,4 +1,4 @@
-import { ConsumptionApi } from "@514labs/moose-lib";
+import { Api } from "@514labs/moose-lib";
 import {
   Foo,
   FooWithCDCForConsumption,
@@ -7,7 +7,7 @@ import {
 } from "@workspace/models";
 
 // Consumption API following Moose documentation pattern
-export const fooConsumptionApi = new ConsumptionApi<
+export const fooConsumptionApi = new Api<
   GetFoosWithCDCParams,
   GetFoosWithCDCForConsumptionResponse
 >(
