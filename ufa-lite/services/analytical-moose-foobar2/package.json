@@ -1,0 +1,19 @@
+{
+  "name": "analytical-moose-foobar2",
+  "version": "0.0",
+  "scripts": {
+    "dev": "moose-cli dev",
+    "build": "moose-cli build --docker",
+    "moose": "moose-cli"
+  },
+  "dependencies": {
+    "@514labs/moose-lib": "latest",
+    "ts-patch": "^3.3.0",
+    "typia": "^9.6.1",
+    "axios": "^1.7.7"
+  },
+  "devDependencies": {
+    "@514labs/moose-cli": "latest",
+    "@types/node": "^20.12.12"
+  }
+}
