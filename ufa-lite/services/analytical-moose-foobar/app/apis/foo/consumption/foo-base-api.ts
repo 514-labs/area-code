@@ -5,7 +5,6 @@ import {
   GetFoosWithCDCParams,
   GetFoosWithCDCForConsumptionResponse,
 } from "@workspace/models";
-import { FooPipeline } from "../../../index";
 
 // Consumption API following Moose documentation pattern
 export const fooConsumptionApi = new ConsumptionApi<
@@ -17,7 +16,7 @@ export const fooConsumptionApi = new ConsumptionApi<
     {
       limit = 10,
       offset = 0,
-      sortBy = "cdc_timestamp",
+      sortBy = "created_at",
       sortOrder = "DESC",
     }: GetFoosWithCDCParams,
     { client, sql }
@@ -27,7 +26,7 @@ export const fooConsumptionApi = new ConsumptionApi<
 
     const countQuery = sql`
       SELECT count() as total
-      FROM ${FooPipeline.table!}
+      FROM foo
     `;
 
     const countResultSet = await client.query.execute<{
@@ -42,12 +41,9 @@ export const fooConsumptionApi = new ConsumptionApi<
 
     // Build dynamic query including CDC fields
     const query = sql`
-      SELECT *,
-             cdc_id,
-             cdc_operation,
-             cdc_timestamp
-      FROM ${FooPipeline.table!}
-      ORDER BY ${sortBy === "cdc_operation" || sortBy === "cdc_timestamp" ? sql([sortBy]) : FooPipeline.columns[sortBy as keyof Foo]!} ${upperSortOrder}
+      SELECT *
+      FROM foo
+      ORDER BY ${sortBy} ${upperSortOrder}
       LIMIT ${limit}
       OFFSET ${offset}
     `;

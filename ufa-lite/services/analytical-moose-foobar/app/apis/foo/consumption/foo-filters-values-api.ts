@@ -1,5 +1,4 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { FooPipeline } from "../../../index";
 import {
   GetFooFiltersValuesParams,
   GetFooFiltersValuesResponse,
@@ -25,7 +24,7 @@ export const fooFiltersValuesApi = new ConsumptionApi<
 
     const statusQuery = sql`
       SELECT DISTINCT status
-      FROM ${FooPipeline.table!}
+      FROM foo
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND status IS NOT NULL
@@ -35,7 +34,7 @@ export const fooFiltersValuesApi = new ConsumptionApi<
 
     const tagsQuery = sql`
       SELECT DISTINCT arrayJoin(tags) AS tag
-      FROM ${FooPipeline.table!}
+      FROM foo
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND tags IS NOT NULL
@@ -45,7 +44,7 @@ export const fooFiltersValuesApi = new ConsumptionApi<
 
     const prioritiesQuery = sql`
       SELECT DISTINCT priority
-      FROM ${FooPipeline.table!}
+      FROM foo
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND priority IS NOT NULL

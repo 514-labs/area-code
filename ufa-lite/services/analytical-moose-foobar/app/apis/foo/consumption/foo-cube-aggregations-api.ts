@@ -1,5 +1,4 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { FooPipeline } from "../../../index";
 import {
   GetFooCubeAggregationsParams,
   GetFooCubeAggregationsResponse,
@@ -78,7 +77,7 @@ export const fooCubeAggregationsApi = new ConsumptionApi<
         quantileTDigest(0.5)(score) AS p50,
         quantileTDigest(0.9)(score) AS p90,
         COUNT() OVER() AS total
-      FROM ${FooPipeline.table!}
+      FROM foo
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND score IS NOT NULL

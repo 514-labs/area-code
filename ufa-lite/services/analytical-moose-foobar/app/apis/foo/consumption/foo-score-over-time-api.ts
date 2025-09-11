@@ -1,5 +1,4 @@
 import { ConsumptionApi } from "@514labs/moose-lib";
-import { FooPipeline } from "../../../index";
 import {
   FoosScoreOverTimeDataPoint,
   GetFoosScoreOverTimeParams,
@@ -31,7 +30,7 @@ export const scoreOverTimeApi = new ConsumptionApi<
         toDate(created_at) as date,
         AVG(score) as averageScore,
         COUNT(*) as totalCount
-      FROM ${FooPipeline.table!}
+      FROM foo
       WHERE toDate(created_at) >= toDate(${startDateStr})
         AND toDate(created_at) <= toDate(${endDateStr})
         AND score IS NOT NULL

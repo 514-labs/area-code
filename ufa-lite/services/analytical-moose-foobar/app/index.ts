@@ -24,11 +24,8 @@
 // Need help? Check out the quickstart guide:
 // → docs.fiveonefour.com/moose/getting-started/quickstart
 
-export * from "./pipelines/eventsPipeline";
-export * from "./views/foo-current-state-materialized-view";
 export * from "./apis/bar/consumption/bar-average-value-api";
 export * from "./apis/bar/consumption/bar-base-api";
-export * from "./apis/foo/consumption/foo-average-score-api";
 export * from "./apis/foo/consumption/foo-base-api";
 export * from "./apis/foo/consumption/foo-score-over-time-api";
 export * from "./apis/foo/consumption/foo-cube-aggregations-api";
@@ -54,4 +51,5 @@ export interface dish {
 
 export const DishTable = new OlapTable<dish>("dish", {
     orderByFields: ["id"],
+    settings: { index_granularity: "8192" },
 });
