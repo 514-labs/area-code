@@ -148,13 +148,9 @@ function IndexPage() {
         />
       </TransactionalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
+      <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
-
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
-      </AnalyticalHighlightWrapper>
 
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />

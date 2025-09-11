@@ -5,10 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import FooTransactionalDataTable from "../features/foo/foo.transactional.data-table";
 import FooAnalyticalDataTable from "../features/foo/foo.analytical.data-table";
 import { FooCreateForm } from "../features/foo/foo.create";
-import {
-  getAnalyticalConsumptionApiBase,
-  getTransactionApiBase,
-} from "../env-vars";
+import { getTransactionApiBase } from "../env-vars";
 import FooAverageScore from "@/features/foo/foo.average-score";
 import { useFrontendCaching } from "@/features/frontend-caching/cache-context";
 import {
@@ -34,23 +31,7 @@ function TransactionalFooAverageScore({
   );
 }
 
-function AnalyticalConsumptionFooAverageScore({
-  cacheEnabled,
-}: {
-  cacheEnabled: boolean;
-}) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const apiEndpoint = `${API_BASE}/foo-average-score`;
-
-  return (
-    <FooAverageScore
-      title="Foo Average Score"
-      description="Foo Current State Materialized View"
-      apiEndpoint={apiEndpoint}
-      disableCache={!cacheEnabled}
-    />
-  );
-}
+// Removed analytical Foo Average Score panel for material views
 
 function FooPage() {
   const { cacheEnabled } = useFrontendCaching();
@@ -73,13 +54,11 @@ function FooPage() {
         <FooCreateForm />
       </div>
 
-      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
+      <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
-      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <AnalyticalConsumptionFooAverageScore cacheEnabled={cacheEnabled} />
-      </AnalyticalHighlightWrapper>
+      {/* Removed analytical Foo Average Score panel for material views */}
 
       <AnalyticalHighlightWrapper className="col-span-12">
         <FooAnalyticalDataTable disableCache={!cacheEnabled} />
