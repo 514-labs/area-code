@@ -51,3 +51,7 @@ streaming_engine = true
 workflows = false
 data_model_v2 = true
 olap = true
+ddl_plan = false
+
+[typescript_config]
+package_manager = "pnpm"
