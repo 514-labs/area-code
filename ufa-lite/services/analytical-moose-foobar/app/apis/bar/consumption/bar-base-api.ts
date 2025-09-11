@@ -1,4 +1,4 @@
-import { ConsumptionApi } from "@514labs/moose-lib";
+import { Api } from "@514labs/moose-lib";
 import { bar, BarTable } from "../../../externalModels";
 
 export type GetBarsParams = {
@@ -19,7 +19,7 @@ export type GetBarsResponse = {
   queryTime: number;
 };
 
-export const barConsumptionApi = new ConsumptionApi<
+export const barConsumptionApi = new Api<
   GetBarsParams,
   GetBarsResponse
 >(
