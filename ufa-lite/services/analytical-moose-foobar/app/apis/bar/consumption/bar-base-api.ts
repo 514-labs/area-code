@@ -8,6 +8,10 @@ export type GetBarsParams = {
   sortOrder?: "ASC" | "DESC" | "asc" | "desc";
 };
 
+export type GetBarsWithCDCParams = Omit<GetBarsParams, "sortBy"> & {
+  sortBy?: keyof bar;
+};
+
 export type GetBarsResponse = {
   data: bar[];
   pagination: {
@@ -19,9 +23,13 @@ export type GetBarsResponse = {
   queryTime: number;
 };
 
+export type GetBarsWithCDCResponse = Omit<GetBarsResponse, "data"> & {
+  data: bar[];
+};
+
 export const barConsumptionApi = new Api<
-  GetBarsParams,
-  GetBarsResponse
+  GetBarsWithCDCParams,
+  GetBarsWithCDCResponse
 >(
   "bar",
   async (
