@@ -31,7 +31,7 @@ export * from "./apis/foo/consumption/foo-score-over-time-api";
 export * from "./apis/foo/consumption/foo-cube-aggregations-api";
 export * from "./apis/foo/consumption/foo-filters-values-api";
 
-// Import externalModels for its side effects: registers additional data models required for pipeline and API setup.
+// Import externalModels for its side effects: registers additional data models required for pipeline and API setup. 
 import "./externalModels";
 
 import { IngestPipeline, OlapTable, Key, ClickHouseInt, ClickHouseDecimal, ClickHousePrecision, ClickHouseByteSize, ClickHouseNamedTuple, ClickHouseEngines, ClickHouseDefault, WithDefault, LifeCycle } from "@514labs/moose-lib";
