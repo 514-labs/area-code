@@ -163,7 +163,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.50(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@9.7.2(@types/node@20.19.11)(typescript@5.9.2))
+        version: 0.6.56(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@9.7.2(@types/node@20.19.11)(typescript@5.9.2))
       axios:
         specifier: ^1.7.7
         version: 1.11.0
@@ -176,7 +176,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.6.50
+        version: 0.6.56
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -336,7 +336,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.50(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.1)(ts-patch@3.3.0)(typia@9.7.2(@types/node@24.3.1)(typescript@5.9.2))
+        version: 0.6.56(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.1)(ts-patch@3.3.0)(typia@9.7.2(@types/node@24.3.1)(typescript@5.9.2))
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -547,7 +547,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.50(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@4.7.1)(@types/node@20.19.11)(typescript@5.9.2))
+        version: 0.6.56(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@4.7.1)(@types/node@20.19.11)(typescript@5.9.2))
       '@workspace/models':
         specifier: workspace:*
         version: link:../../packages/models
@@ -563,7 +563,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.6.50
+        version: 0.6.56
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -621,7 +621,7 @@ importers:
     dependencies:
       '@514labs/moose-lib':
         specifier: latest
-        version: 0.6.50(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@4.7.1)(@types/node@20.19.11)(typescript@5.9.2))
+        version: 0.6.56(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@4.7.1)(@types/node@20.19.11)(typescript@5.9.2))
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.55.0
@@ -646,7 +646,7 @@ importers:
     devDependencies:
       '@514labs/moose-cli':
         specifier: latest
-        version: 0.6.50
+        version: 0.6.56
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.11
@@ -744,32 +744,32 @@ importers:
 
 packages:
 
-  '@514labs/moose-cli-darwin-arm64@0.6.50':
-    resolution: {integrity: sha512-im99w6FSakzp7TFfgQvLhoRFinEVJOWpHpwlv9PSFvxV95tDBILBIEfk9mUkJlpBQPWjoI9u2k6S3wESTx4RyQ==}
+  '@514labs/moose-cli-darwin-arm64@0.6.56':
+    resolution: {integrity: sha512-aWioA+djxnTvPXwrUILmBn7e/M01VVAwOmIyMDFMrBJBTNWEb/UUELUtk4uYlavapHvRhTZvYcFweY52opbDqQ==}
     cpu: [arm64]
     os: [darwin]
 
-  '@514labs/moose-cli-darwin-x64@0.6.50':
-    resolution: {integrity: sha512-HXF0DM5RzFSI4W02D/3vEbEE3a6oACF6FQS5gOqqytvbLhmmXMTdyj0Ensow+4w1QwC8pNSw80G6P7BjG/KNLw==}
+  '@514labs/moose-cli-darwin-x64@0.6.56':
+    resolution: {integrity: sha512-aJi2ckjyAWQVdydAaneTXgQEXNQwJWU+Fejha26RfuMrKGSrK/febeIUxpEFh4+hqLaNswIZU3lNL0ForkGRdw==}
     cpu: [x64]
     os: [darwin]
 
-  '@514labs/moose-cli-linux-arm64@0.6.50':
-    resolution: {integrity: sha512-3oygqC+72tEwF/2lpwJOxAir/XCTTmUUO15pPNVDvjsaS3x1xnQR4tSOMfEL6bpC6R7ofS6UwFg2ZSy84UWVxw==}
+  '@514labs/moose-cli-linux-arm64@0.6.56':
+    resolution: {integrity: sha512-EAQXyCNJvhiFEEeHXYMJ04YDbxzJDMJ3KlfUwmCdCHh+16FBKqQ8ZEhJ5YRpQow6AWoDlopN1MTThPOOGQnrew==}
     cpu: [arm64]
     os: [linux]
 
-  '@514labs/moose-cli-linux-x64@0.6.50':
-    resolution: {integrity: sha512-/iBMLtOn7yg4jRVN3p/bAqh/+wR6KWSt2hpIrf0TiYAyt4u8EYqFfbi7MNvrtwl0XpCQ/qF45XEGD/7DEMu8/A==}
+  '@514labs/moose-cli-linux-x64@0.6.56':
+    resolution: {integrity: sha512-cdA17HILmBQii13p8nwtdLW1gRpz0olv8MJqi7o1w9uzuQNYlGmvoya+EDCYYQFusyXDaZlLFrcd+CEVTa5FsA==}
     cpu: [x64]
     os: [linux]
 
-  '@514labs/moose-cli@0.6.50':
-    resolution: {integrity: sha512-Yd3yISZMwCU30WYJatUTX05WIuNOrnGw6NB0LoBn5X1E1yOe6rvneIWdT7mVL5YH+wuVTmY/skW2TadqKrA1qA==}
+  '@514labs/moose-cli@0.6.56':
+    resolution: {integrity: sha512-KzZndfuxNCTR0skXCtHnQVJh/6XbuGcdfWjmbhCJTja7305uRtPH+Py9T1gFZDB88t+QEtv/r5I5IWgSRa6t6w==}
     hasBin: true
 
-  '@514labs/moose-lib@0.6.50':
-    resolution: {integrity: sha512-xI18d9H2abBTDWw28gp0/urKT8YtTtv0IO1QTggdzs3CGDrT8ZQY0WUQATWQGCNyD9YMx7rW6G8w8iFY9q20NA==}
+  '@514labs/moose-lib@0.6.56':
+    resolution: {integrity: sha512-DTzvEmtENIbk09UsGIZpw+31jigfRTsfzFGWHJbmGAIvjx9zBvjbhWG/cxwCGeA5c/87UQmGpGvw+8Hv9MWW7Q==}
     hasBin: true
     peerDependencies:
       ts-patch: ^3.3.0
@@ -4996,6 +4996,10 @@ packages:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
 
+  parse-ms@4.0.0:
+    resolution: {integrity: sha512-TXfryirbmq34y8QBwgqCVLi+8oA3oWx2eAnSn62ITyEhEYaWRlVZ2DvMM9eZbMs/RfxPu/PK/aBLyGj4IrqMHw==}
+    engines: {node: '>=18'}
+
   pascal-case@2.0.1:
     resolution: {integrity: sha512-qjS4s8rBOJa2Xm0jmxXiyh1+OFf6ekCWOvUaRgAQSktzlTbMotS0nmG9gyYAybCWBcuP4fsBeRCKNwGBnMe2OQ==}
 
@@ -5151,6 +5155,10 @@ packages:
     resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
     engines: {node: '>=14'}
     hasBin: true
+
+  pretty-ms@9.2.0:
+    resolution: {integrity: sha512-4yf0QO/sllf/1zbZWYnvWw3NxCQwLXKzIj0G849LSufP15BXKM0rbD2Z3wVnkMfjdn/CB0Dpp444gYAACdsplg==}
+    engines: {node: '>=18'}
 
   proc-log@5.0.0:
     resolution: {integrity: sha512-Azwzvl90HaF0aCz1JrDdXQykFakSSNPaPoiZ9fm5qJIMHioDZEi7OAdRwSm6rSoPtY3Qutnm3L7ogmg3dc+wbQ==}
@@ -6147,26 +6155,26 @@ packages:
 
 snapshots:
 
-  '@514labs/moose-cli-darwin-arm64@0.6.50':
+  '@514labs/moose-cli-darwin-arm64@0.6.56':
     optional: true
 
-  '@514labs/moose-cli-darwin-x64@0.6.50':
+  '@514labs/moose-cli-darwin-x64@0.6.56':
     optional: true
 
-  '@514labs/moose-cli-linux-arm64@0.6.50':
+  '@514labs/moose-cli-linux-arm64@0.6.56':
     optional: true
 
-  '@514labs/moose-cli-linux-x64@0.6.50':
+  '@514labs/moose-cli-linux-x64@0.6.56':
     optional: true
 
-  '@514labs/moose-cli@0.6.50':
+  '@514labs/moose-cli@0.6.56':
     optionalDependencies:
-      '@514labs/moose-cli-darwin-arm64': 0.6.50
-      '@514labs/moose-cli-darwin-x64': 0.6.50
-      '@514labs/moose-cli-linux-arm64': 0.6.50
-      '@514labs/moose-cli-linux-x64': 0.6.50
+      '@514labs/moose-cli-darwin-arm64': 0.6.56
+      '@514labs/moose-cli-darwin-x64': 0.6.56
+      '@514labs/moose-cli-linux-arm64': 0.6.56
+      '@514labs/moose-cli-linux-x64': 0.6.56
 
-  '@514labs/moose-lib@0.6.50(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@4.7.1)(@types/node@20.19.11)(typescript@5.9.2))':
+  '@514labs/moose-lib@0.6.56(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@7.6.4(@samchon/openapi@4.7.1)(@types/node@20.19.11)(typescript@5.9.2))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -6180,6 +6188,7 @@ snapshots:
       fastq: 1.17.1
       jose: 5.9.2
       kafkajs: 2.2.4
+      pretty-ms: 9.2.0
       redis: 4.7.1
       toml: 3.0.0
       ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@20.19.11)(typescript@5.9.2)
@@ -6195,7 +6204,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.6.50(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@9.7.2(@types/node@20.19.11)(typescript@5.9.2))':
+  '@514labs/moose-lib@0.6.56(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@20.19.11)(ts-patch@3.3.0)(typia@9.7.2(@types/node@20.19.11)(typescript@5.9.2))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -6209,6 +6218,7 @@ snapshots:
       fastq: 1.17.1
       jose: 5.9.2
       kafkajs: 2.2.4
+      pretty-ms: 9.2.0
       redis: 4.7.1
       toml: 3.0.0
       ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@20.19.11)(typescript@5.9.2)
@@ -6224,7 +6234,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@514labs/moose-lib@0.6.50(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.1)(ts-patch@3.3.0)(typia@9.7.2(@types/node@24.3.1)(typescript@5.9.2))':
+  '@514labs/moose-lib@0.6.56(@swc/core@1.13.3(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@types/node@24.3.1)(ts-patch@3.3.0)(typia@9.7.2(@types/node@24.3.1)(typescript@5.9.2))':
     dependencies:
       '@clickhouse/client': 1.8.1
       '@clickhouse/client-web': 1.5.0
@@ -6238,6 +6248,7 @@ snapshots:
       fastq: 1.17.1
       jose: 5.9.2
       kafkajs: 2.2.4
+      pretty-ms: 9.2.0
       redis: 4.7.1
       toml: 3.0.0
       ts-node: 10.9.2(@swc/core@1.13.3(@swc/helpers@0.5.17))(@types/node@24.3.1)(typescript@5.9.2)
@@ -10532,6 +10543,8 @@ snapshots:
     dependencies:
       callsites: 3.1.0
 
+  parse-ms@4.0.0: {}
+
   pascal-case@2.0.1:
     dependencies:
       camel-case: 3.0.0
@@ -10680,6 +10693,10 @@ snapshots:
   prelude-ls@1.2.1: {}
 
   prettier@3.6.2: {}
+
+  pretty-ms@9.2.0:
+    dependencies:
+      parse-ms: 4.0.0
 
   proc-log@5.0.0: {}
 
