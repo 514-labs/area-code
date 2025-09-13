@@ -1,5 +1,5 @@
 import { Api } from "@514labs/moose-lib";
-import { FooTable } from "../../../externalModels";
+import { FooTable } from "../../externalModels";
 
 export type GetFooCubeAggregationsParams = {
   months?: number;

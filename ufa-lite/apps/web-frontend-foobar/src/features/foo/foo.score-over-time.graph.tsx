@@ -31,20 +31,42 @@ import {
 } from "@workspace/ui/components/toggle-group";
 import { IconLoader } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
-import { GetFoosScoreOverTimeResponse } from "@workspace/models/foo";
+import {
+  getApiFooScoreOverTime,
+  GetApiFooScoreOverTimeQueryParams,
+  GetFoosScoreOverTimeResponse as ApiGetFoosScoreOverTimeResponse,
+} from "@/analytical-api-client";
 
 const fetchChartData = async (
-  fetchApiEndpoint: string,
+  baseUrl?: string,
+  fetchApiEndpoint?: string,
   days: number = 90
-): Promise<GetFoosScoreOverTimeResponse> => {
-  const params = new URLSearchParams({
-    days: days.toString(),
-  });
+): Promise<ApiGetFoosScoreOverTimeResponse> => {
+  if (baseUrl) {
+    // Use new API client for analytical API
+    const params: GetApiFooScoreOverTimeQueryParams = {
+      days,
+    };
 
-  const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
-  if (!response.ok) throw new Error("Failed to fetch chart data");
+    const response: ApiGetFoosScoreOverTimeResponse =
+      await getApiFooScoreOverTime(params, {
+        baseURL: baseUrl,
+      });
 
-  return response.json();
+    return response;
+  } else if (fetchApiEndpoint) {
+    // Use old fetch approach for transactional API
+    const params = new URLSearchParams({
+      days: days.toString(),
+    });
+
+    const response = await fetch(`${fetchApiEndpoint}?${params.toString()}`);
+    if (!response.ok) throw new Error("Failed to fetch chart data");
+
+    return response.json();
+  } else {
+    throw new Error("Either baseUrl or fetchApiEndpoint must be provided");
+  }
 };
 
 const chartConfig = {
@@ -59,10 +81,12 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function FooScoreOverTimeGraph({
+  baseUrl,
   fetchApiEndpoint,
   disableCache = false,
 }: {
-  fetchApiEndpoint: string;
+  baseUrl?: string;
+  fetchApiEndpoint?: string;
   disableCache?: boolean;
 }) {
   const isMobile = useIsMobile();
@@ -73,8 +97,8 @@ export function FooScoreOverTimeGraph({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["foo-score-over-time", fetchApiEndpoint, days],
-    queryFn: () => fetchChartData(fetchApiEndpoint, days),
+    queryKey: ["foo-score-over-time", baseUrl || fetchApiEndpoint, days],
+    queryFn: () => fetchChartData(baseUrl, fetchApiEndpoint, days),
     placeholderData: (previousData) => previousData,
     staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
     gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled

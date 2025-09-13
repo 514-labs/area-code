@@ -1,0 +1,1 @@
+{"type":"object","properties":{"averageScore":{"type":"number"},"count":{"type":"number"},"queryTime":{"type":"number"}},"required":["averageScore","count","queryTime"],"x-readme-ref-name":"GetFoosAverageScoreResponse"}

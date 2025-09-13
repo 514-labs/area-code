@@ -10,7 +10,15 @@ import {
   GetFooFiltersValuesParams,
   GetFooFiltersValuesResponse,
 } from "@workspace/models/foo";
-import { getAnalyticalConsumptionApiBase } from "@/env-vars";
+import { getAnalyticalApiBase } from "@/env-vars";
+import {
+  getApiFooCubeAggregations,
+  getApiFooFiltersValues,
+  GetApiFooCubeAggregationsQueryParams,
+  GetApiFooFiltersValuesQueryParams,
+  GetFooCubeAggregationsResponse as ApiGetFooCubeAggregationsResponse,
+  GetFooFiltersValuesResponse as ApiGetFooFiltersValuesResponse,
+} from "@/analytical-api-client";
 import {
   Table,
   TableBody,
@@ -50,31 +58,63 @@ import { cn } from "@workspace/ui/lib/utils";
 
 const fetchData = async (
   params: GetFooCubeAggregationsParams,
-  apiUrl: string
+  baseUrl?: string,
+  apiUrl?: string
 ): Promise<GetFooCubeAggregationsResponse> => {
-  const query = new URLSearchParams();
-  if (params.months != null) query.set("months", String(params.months));
-  if (params.status) query.set("status", params.status);
-  if (params.tag) query.set("tag", params.tag);
-  if (params.priority != null) query.set("priority", String(params.priority));
-  if (params.limit != null) query.set("limit", String(params.limit));
-  if (params.offset != null) query.set("offset", String(params.offset));
-  if (params.sortBy) query.set("sortBy", params.sortBy);
-  if (params.sortOrder) query.set("sortOrder", params.sortOrder);
-  const res = await fetch(`${apiUrl}?${query.toString()}`);
-  if (!res.ok) throw new Error("Failed to fetch cube data");
-  return res.json();
+  if (baseUrl) {
+    // Use new API client for analytical API
+    const queryParams: GetApiFooCubeAggregationsQueryParams = {
+      months: params.months,
+      status: params.status,
+      tag: params.tag,
+      priority: params.priority,
+      limit: params.limit,
+      offset: params.offset,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+    };
+
+    const response: ApiGetFooCubeAggregationsResponse =
+      await getApiFooCubeAggregations(queryParams, {
+        baseURL: baseUrl,
+      });
+
+    return response;
+  } else if (apiUrl) {
+    // Use old fetch approach for transactional API
+    const query = new URLSearchParams();
+    if (params.months != null) query.set("months", String(params.months));
+    if (params.status) query.set("status", params.status);
+    if (params.tag) query.set("tag", params.tag);
+    if (params.priority != null) query.set("priority", String(params.priority));
+    if (params.limit != null) query.set("limit", String(params.limit));
+    if (params.offset != null) query.set("offset", String(params.offset));
+    if (params.sortBy) query.set("sortBy", params.sortBy);
+    if (params.sortOrder) query.set("sortOrder", params.sortOrder);
+    const res = await fetch(`${apiUrl}?${query.toString()}`);
+    if (!res.ok) throw new Error("Failed to fetch cube data");
+    return res.json();
+  } else {
+    throw new Error("Either baseUrl or apiUrl must be provided");
+  }
 };
 
 const fetchFilterValues = async (
   params: GetFooFiltersValuesParams
 ): Promise<GetFooFiltersValuesResponse> => {
-  const apiEndpoint = `${getAnalyticalConsumptionApiBase()}/foo-filters-values`;
-  const query = new URLSearchParams();
-  if (params.months) query.set("months", String(params.months));
-  const res = await fetch(`${apiEndpoint}?${query.toString()}`);
-  if (!res.ok) throw new Error("Failed to fetch filter values");
-  return res.json();
+  const baseUrl = getAnalyticalApiBase();
+  const queryParams: GetApiFooFiltersValuesQueryParams = {
+    months: params.months,
+  };
+
+  const response: ApiGetFooFiltersValuesResponse = await getApiFooFiltersValues(
+    queryParams,
+    {
+      baseURL: baseUrl,
+    }
+  );
+
+  return response;
 };
 
 type CubeRow = GetFooCubeAggregationsResponse["data"][number];
@@ -208,12 +248,14 @@ const columnDefs: ColumnDef<CubeRow>[] = [
 
 export function FooCubeAggregationsTable({
   disableCache = false,
+  baseUrl,
   apiUrl,
   title,
   subtitle = "Month × Status × Tag × Priority with percentiles",
 }: {
   disableCache?: boolean;
-  apiUrl: string;
+  baseUrl?: string;
+  apiUrl?: string;
   title: string;
   subtitle?: string;
 }) {
@@ -243,7 +285,7 @@ export function FooCubeAggregationsTable({
   const { data, isLoading, isFetching, error } = useQuery({
     queryKey: [
       "foo-cube-aggregations",
-      apiUrl,
+      baseUrl || apiUrl,
       months,
       status,
       tag,
@@ -272,6 +314,7 @@ export function FooCubeAggregationsTable({
           sortBy,
           sortOrder,
         },
+        baseUrl,
         apiUrl
       );
     },

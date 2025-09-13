@@ -6,7 +6,7 @@ import FooTransactionalDataTable from "../features/foo/foo.transactional.data-ta
 import FooAnalyticalDataTable from "../features/foo/foo.analytical.data-table";
 import { FooCreateForm } from "../features/foo/foo.create";
 import { getTransactionApiBase } from "../env-vars";
-import FooAverageScore from "@/features/foo/foo.average-score";
+import FooAverageScore from "@/features/foo/foo.average-value";
 import { useFrontendCaching } from "@/features/frontend-caching/cache-context";
 import {
   TransactionalHighlightWrapper,
@@ -25,7 +25,8 @@ function TransactionalFooAverageScore({
     <FooAverageScore
       title="Foo Average Score"
       description="Transactional"
-      apiEndpoint={apiEndpoint}
+      // apiEndpoint={apiEndpoint}
+      baseUrl={API_BASE}
       disableCache={!cacheEnabled}
     />
   );

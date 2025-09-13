@@ -1,5 +1,5 @@
 import { Api } from "@514labs/moose-lib";
-import { BarTable } from "../../../externalModels";
+import { BarTable } from "../../externalModels";
 
 // Type for endpoints with no parameters
 // eslint-disable-next-line

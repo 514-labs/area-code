@@ -31,7 +31,13 @@ import {
   FooWithCDC,
   GetFoosWithCDCResponse,
 } from "@workspace/models";
-import { getAnalyticalConsumptionApiBase } from "@/env-vars";
+import { getAnalyticalApiBase } from "@/env-vars";
+import {
+  getApiFoo,
+  GetApiFooQueryParams,
+  GetFoosResponse,
+  Foo as ApiFoo,
+} from "@/analytical-api-client";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -61,7 +67,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: Column<FooWithCDC, unknown>;
+  column: Column<ApiFoo, unknown>;
   children: React.ReactNode;
   className?: string;
 }) => {
@@ -92,28 +98,56 @@ const SortableHeader = ({
   );
 };
 
+// Convert API Foo to FooWithCDC format
+const convertApiFooToFooWithCDC = (apiFoo: ApiFoo): FooWithCDC => {
+  return {
+    id: apiFoo.id,
+    name: apiFoo.name,
+    description: apiFoo.description ?? null,
+    status: apiFoo.status as FooStatus,
+    priority: apiFoo.priority,
+    is_active: apiFoo.is_active,
+    metadata: apiFoo.metadata ? JSON.parse(apiFoo.metadata) : {},
+    tags: apiFoo.tags,
+    score: apiFoo.score ? parseFloat(apiFoo.score) : 0,
+    large_text: apiFoo.large_text ?? "",
+    created_at: new Date(apiFoo.created_at),
+    updated_at: new Date(apiFoo.updated_at),
+    // CDC fields - using the API fields as CDC fields since they represent change tracking
+    cdc_id: apiFoo.id, // Use the same ID as the primary key
+    cdc_operation: apiFoo._peerdb_is_deleted === 1 ? "DELETE" : "INSERT", // Assume INSERT if not deleted
+    cdc_timestamp: new Date(apiFoo._peerdb_synced_at),
+  };
+};
+
 const fetchFoos = async (
-  endpoint: string,
+  baseUrl: string,
   limit: number,
   offset: number,
   sortBy?: string,
   sortOrder?: string
-): Promise<GetFoosWithCDCResponse> => {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-    offset: offset.toString(),
+): Promise<GetFoosResponse> => {
+  const params: GetApiFooQueryParams = {
+    limit,
+    offset,
+    sortBy,
+    sortOrder,
+  };
+
+  const response: GetFoosResponse = await getApiFoo(params, {
+    baseURL: baseUrl,
   });
 
-  if (sortBy) params.append("sortBy", sortBy);
-  if (sortOrder) params.append("sortOrder", sortOrder);
-
-  const response = await fetch(`${endpoint}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch foos");
-  return response.json();
+  // Convert the response to match the expected format
+  return {
+    data: response.data,
+    pagination: response.pagination,
+    queryTime: response.queryTime,
+  };
 };
 
-const createColumns = (): ColumnDef<FooWithCDC>[] => {
-  const baseColumns: ColumnDef<FooWithCDC>[] = [
+const createColumns = (): ColumnDef<ApiFoo>[] => {
+  const baseColumns: ColumnDef<ApiFoo>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -143,9 +177,6 @@ const createColumns = (): ColumnDef<FooWithCDC>[] => {
       enableHiding: false,
     },
   ];
-
-  const cdcColumns = createCDCColumns<FooWithCDC>();
-  baseColumns.push(...cdcColumns);
 
   baseColumns.push(
     {
@@ -330,8 +361,7 @@ export default function FooAnalyticalDataTable({
   const [queryTime, setQueryTime] = useState<number | null>(null);
 
   // Internal API endpoint for analytical data (read-only)
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/foo`;
+  const API_BASE = getAnalyticalApiBase();
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
@@ -340,8 +370,8 @@ export default function FooAnalyticalDataTable({
     error,
   } = useQuery({
     queryKey: [
-      "foos-cdc",
-      fetchApiEndpoint,
+      "foos-analytical",
+      API_BASE,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
@@ -354,7 +384,7 @@ export default function FooAnalyticalDataTable({
           : "asc"
         : undefined;
       const result = await fetchFoos(
-        fetchApiEndpoint,
+        API_BASE,
         pagination.pageSize,
         pagination.pageIndex * pagination.pageSize,
         sortBy,

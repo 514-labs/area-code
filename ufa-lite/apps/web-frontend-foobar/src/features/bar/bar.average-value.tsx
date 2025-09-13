@@ -10,31 +10,50 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { IconClock, IconRefresh } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
-import { GetBarsAverageValueResponse } from "@workspace/models/bar";
+import {
+  getApiBarAverageValue,
+  GetApiBarAverageValueQueryResponse,
+} from "@/analytical-api-client";
 
 const fetchAverageValue = async (
-  apiEndpoint: string
-): Promise<GetBarsAverageValueResponse> => {
-  const response = await fetch(apiEndpoint);
+  baseUrl?: string,
+  fetchApiEndpoint?: string
+): Promise<GetApiBarAverageValueQueryResponse> => {
+  if (baseUrl) {
+    const response: GetApiBarAverageValueQueryResponse =
+      await getApiBarAverageValue({
+        baseURL: baseUrl,
+      });
 
-  if (!response.ok) throw new Error("Failed to fetch average value");
-  return response.json();
+    return response;
+  } else if (fetchApiEndpoint) {
+    // Use old fetch approach for transactional API
+
+    const response = await fetch(`${fetchApiEndpoint}`);
+    if (!response.ok) throw new Error("Failed to fetch chart data");
+
+    return response.json();
+  } else {
+    throw new Error("Either baseUrl or fetchApiEndpoint must be provided");
+  }
 };
 
 export default function BarAverageValue({
   title,
   description,
   apiEndpoint,
+  baseUrl,
   disableCache = false,
 }: {
   title: string;
   description: string;
-  apiEndpoint: string;
+  apiEndpoint?: string;
+  baseUrl?: string;
   disableCache?: boolean;
 }) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["bar-average-value", apiEndpoint],
-    queryFn: () => fetchAverageValue(apiEndpoint),
+    queryKey: ["bar-average-value", baseUrl],
+    queryFn: () => fetchAverageValue(baseUrl, apiEndpoint),
     staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
     gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
     refetchOnMount: disableCache ? "always" : false,

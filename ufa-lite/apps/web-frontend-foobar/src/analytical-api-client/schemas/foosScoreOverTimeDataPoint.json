@@ -1,0 +1,1 @@
+{"type":"object","properties":{"date":{"type":"string"},"averageScore":{"type":"number"},"totalCount":{"type":"number"}},"required":["date","averageScore","totalCount"],"x-readme-ref-name":"FoosScoreOverTimeDataPoint"}

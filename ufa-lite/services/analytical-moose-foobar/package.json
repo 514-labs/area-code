@@ -6,18 +6,28 @@
     "build": "moose-cli build --docker",
     "dev": "moose-cli dev",
     "ufa-lite:dev": "NODE_ENV=development moose-cli dev",
-    "ufa-lite:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'"
+    "ufa-lite:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'",
+    "generate-sdk": "kubb generate",
+    "seed-bar": "moose-cli seed clickhouse --connection-string $REMOTE_URL --table bar",
+    "seed-foo": "moose-cli seed clickhouse --connection-string $REMOTE_URL --table foo"
   },
   "dependencies": {
+    "@514labs/moose-lib": "latest",
     "axios": "^1.7.7",
     "ts-patch": "^3.3.0",
-    "@514labs/moose-lib": "latest",
     "typia": "^9.6.1"
   },
   "devDependencies": {
     "@514labs/moose-cli": "latest",
+    "@kubb/cli": "^3.18.3",
+    "@kubb/core": "^3.18.3",
+    "@kubb/plugin-client": "^3.18.3",
+    "@kubb/plugin-oas": "^3.18.3",
+    "@kubb/plugin-ts": "^3.18.3",
     "@types/node": "^20.12.12",
     "typescript": "catalog:"
   },
-  "engines": { "node": "22.x" }
+  "engines": {
+    "node": "22.x"
+  }
 }

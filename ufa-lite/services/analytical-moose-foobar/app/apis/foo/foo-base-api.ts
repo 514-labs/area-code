@@ -1,19 +1,11 @@
 import { Api } from "@514labs/moose-lib";
-import { foo } from "../../../externalModels"
+import { foo, FooTable } from "../../externalModels";
 
 export type GetFoosParams = {
   limit?: number;
   offset?: number;
   sortBy?: keyof foo;
   sortOrder?: "ASC" | "DESC" | "asc" | "desc";
-};
-
-export type FooWithCDCForConsumption = Omit<foo, "status"> & {
-  status: string;
-};
-
-export type GetFoosWithCDCParams = Omit<GetFoosParams, "sortBy"> & {
-  sortBy?: keyof foo;
 };
 
 export type GetFoosResponse = {
@@ -27,18 +19,8 @@ export type GetFoosResponse = {
   queryTime: number;
 };
 
-export type GetFoosWithCDCForConsumptionResponse = Omit<
-  GetFoosResponse,
-  "data"
-> & {
-  data: FooWithCDCForConsumption[];
-};
-
 // Consumption API following Moose documentation pattern
-export const fooConsumptionApi = new Api<
-  GetFoosWithCDCParams,
-  GetFoosWithCDCForConsumptionResponse
->(
+export const fooConsumptionApi = new Api<GetFoosParams, GetFoosResponse>(
   "foo",
   async (
     {
@@ -46,7 +28,7 @@ export const fooConsumptionApi = new Api<
       offset = 0,
       sortBy = "created_at",
       sortOrder = "DESC",
-    }: GetFoosWithCDCParams,
+    }: GetFoosParams,
     { client, sql }
   ) => {
     // Convert sortOrder to uppercase for consistency
@@ -54,7 +36,7 @@ export const fooConsumptionApi = new Api<
 
     const countQuery = sql`
       SELECT count() as total
-      FROM foo
+      FROM ${FooTable}
     `;
 
     const countResultSet = await client.query.execute<{
@@ -70,15 +52,14 @@ export const fooConsumptionApi = new Api<
     // Build dynamic query including CDC fields
     const query = sql`
       SELECT *
-      FROM foo
+      FROM ${FooTable}
       ORDER BY ${sortBy} ${upperSortOrder}
       LIMIT ${limit}
       OFFSET ${offset}
     `;
 
-    const resultSet =
-      await client.query.execute<FooWithCDCForConsumption>(query);
-    const results = (await resultSet.json()) as FooWithCDCForConsumption[];
+    const resultSet = await client.query.execute<foo>(query);
+    const results = (await resultSet.json()) as foo[];
 
     const queryTime = Date.now() - startTime;
 

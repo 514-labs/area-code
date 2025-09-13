@@ -23,7 +23,7 @@ import {
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { BarWithCDC, GetBarsWithCDCResponse } from "@workspace/models/bar";
-import { getAnalyticalConsumptionApiBase } from "@/env-vars";
+import { getAnalyticalApiBase } from "@/env-vars";
 import { format } from "date-fns";
 import { NumericFormat } from "react-number-format";
 import { createCDCColumns } from "../cdc/cdc-utils";
@@ -233,7 +233,7 @@ export default function BarAnalyticalDataTable({
   });
 
   // Internal API endpoint for analytical data (read-only)
-  const API_BASE = getAnalyticalConsumptionApiBase();
+  const API_BASE = getAnalyticalApiBase();
   const fetchApiEndpoint = `${API_BASE}/bar`;
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes

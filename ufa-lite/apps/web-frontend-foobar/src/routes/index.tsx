@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import FooAverageScore from "@/features/foo/foo.average-score";
-import {
-  getAnalyticalConsumptionApiBase,
-  getTransactionApiBase,
-} from "@/env-vars";
+import FooAverageScore from "@/features/foo/foo.average-value";
+import { getAnalyticalApiBase, getTransactionApiBase } from "@/env-vars";
 import { useFrontendCaching } from "../features/frontend-caching/cache-context";
 import {
   TransactionalHighlightWrapper,
@@ -36,14 +33,13 @@ function AnalyticalFooAverageScore({
 }: {
   cacheEnabled: boolean;
 }) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const apiEndpoint = `${API_BASE}/foo-average-score`;
+  const API_BASE = getAnalyticalApiBase();
 
   return (
     <FooAverageScore
       title="Foo Average Score"
-      description="Foo Current State Materialized View"
-      apiEndpoint={apiEndpoint}
+      description="Analytical"
+      baseUrl={API_BASE}
       disableCache={!cacheEnabled}
     />
   );
@@ -54,14 +50,10 @@ function AnalyticalFooScoreOverTimeGraph({
 }: {
   cacheEnabled: boolean;
 }) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const apiEndpoint = `${API_BASE}/foo-score-over-time`;
+  const API_BASE = getAnalyticalApiBase();
 
   return (
-    <FooScoreOverTimeGraph
-      fetchApiEndpoint={apiEndpoint}
-      disableCache={!cacheEnabled}
-    />
+    <FooScoreOverTimeGraph baseUrl={API_BASE} disableCache={!cacheEnabled} />
   );
 }
 
@@ -99,19 +91,18 @@ function TransactionalBarAverageValue({
   );
 }
 
-function AnalyticalConsumptionBarAverageValue({
+function AnalyticalBarAverageValue({
   cacheEnabled,
 }: {
   cacheEnabled: boolean;
 }) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar-average-value`;
+  const API_BASE = getAnalyticalApiBase();
 
   return (
     <BarAverageValue
       title="Bar Average Value"
-      description="CDC Analytical"
-      apiEndpoint={fetchApiEndpoint}
+      description="Analytical"
+      baseUrl={API_BASE}
       disableCache={!cacheEnabled}
     />
   );
@@ -122,6 +113,13 @@ function IndexPage() {
 
   return (
     <div className="grid grid-cols-12 px-4 lg:px-6 gap-5 h-full overflow-auto pt-0.5">
+      <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
+        <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
+      </TransactionalHighlightWrapper>
+
+      <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
+        <AnalyticalFooAverageScore cacheEnabled={cacheEnabled} />
+      </AnalyticalHighlightWrapper>
       <TransactionalHighlightWrapper className="col-span-12">
         <TransactionalFooScoreOverTimeGraph cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
@@ -133,7 +131,7 @@ function IndexPage() {
       <AnalyticalHighlightWrapper className="col-span-12">
         <FooCubeAggregationsTable
           disableCache={!cacheEnabled}
-          apiUrl={`${getAnalyticalConsumptionApiBase()}/foo-cube-aggregations`}
+          baseUrl={getAnalyticalApiBase()}
           title="Analytical Cube Aggregations"
           subtitle="Month × Status × Tag × Priority with percentiles"
         />
@@ -148,16 +146,12 @@ function IndexPage() {
         />
       </TransactionalHighlightWrapper>
 
-      <TransactionalHighlightWrapper className="col-span-12">
-        <TransactionalFooAverageScore cacheEnabled={cacheEnabled} />
-      </TransactionalHighlightWrapper>
-
       <TransactionalHighlightWrapper className="col-span-12 lg:col-span-6">
         <TransactionalBarAverageValue cacheEnabled={cacheEnabled} />
       </TransactionalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
+        <AnalyticalBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
     </div>
   );

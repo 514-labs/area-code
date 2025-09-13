@@ -1,0 +1,1 @@
+{"type":"object","properties":{"status":{"type":"array","items":{"type":"string"}},"tags":{"type":"array","items":{"type":"string"}},"priorities":{"type":"array","items":{"type":"number"}}},"required":["status","tags","priorities"],"x-readme-ref-name":"GetFooFiltersValuesResponse"}

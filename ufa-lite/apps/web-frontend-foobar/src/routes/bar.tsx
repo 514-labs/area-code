@@ -4,10 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import BarTransactionalDataTable from "../features/bar/bar.transactional.data-table";
 import { BarCreateForm } from "../features/bar/bar.create";
-import {
-  getAnalyticalConsumptionApiBase,
-  getTransactionApiBase,
-} from "../env-vars";
+import { getAnalyticalApiBase, getTransactionApiBase } from "../env-vars";
 import BarAverageValue from "@/features/bar/bar.average-value";
 import { useFrontendCaching } from "@/features/frontend-caching/cache-context";
 import {
@@ -34,18 +31,18 @@ function TransactionalBarAverageValue({
   );
 }
 
-function AnalyticalConsumptionBarAverageValue({
+function AnalyticalBarAverageValue({
   cacheEnabled,
 }: {
   cacheEnabled: boolean;
 }) {
-  const API_BASE = getAnalyticalConsumptionApiBase();
+  const API_BASE = getAnalyticalApiBase();
   const fetchApiEndpoint = `${API_BASE}/bar-average-value`;
 
   return (
     <BarAverageValue
       title="Bar Average Value"
-      description="CDC Analytical"
+      description="Analytical"
       apiEndpoint={fetchApiEndpoint}
       disableCache={!cacheEnabled}
     />
@@ -78,7 +75,7 @@ function BarPage() {
       </TransactionalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12 lg:col-span-6">
-        <AnalyticalConsumptionBarAverageValue cacheEnabled={cacheEnabled} />
+        <AnalyticalBarAverageValue cacheEnabled={cacheEnabled} />
       </AnalyticalHighlightWrapper>
 
       <AnalyticalHighlightWrapper className="col-span-12">

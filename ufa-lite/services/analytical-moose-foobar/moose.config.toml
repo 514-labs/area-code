@@ -20,6 +20,7 @@ host = "localhost"
 port = 4410
 management_port = 5411
 proxy_port = 4411
+on_reload_complete_script="pnpm generate-sdk"
 
 [redis_config]
 key_prefix = "MSLITE"

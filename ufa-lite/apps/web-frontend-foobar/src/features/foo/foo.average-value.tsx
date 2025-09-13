@@ -11,29 +11,57 @@ import { Button } from "@workspace/ui/components/button";
 import { IconClock, IconRefresh } from "@tabler/icons-react";
 import { NumericFormat } from "react-number-format";
 import { GetFoosAverageScoreResponse } from "@workspace/models/foo";
+import {
+  getApiFooAverageScore,
+  GetApiFooAverageScoreQueryResponse,
+} from "@/analytical-api-client";
+
+// const fetchAverageScore = async (
+//   apiEndpoint: string
+// ): Promise<GetFoosAverageScoreResponse> => {
+//   const response = await fetch(apiEndpoint);
+//   if (!response.ok) throw new Error("Failed to fetch average score");
+//   return response.json();
+// };
 
 const fetchAverageScore = async (
-  apiEndpoint: string
-): Promise<GetFoosAverageScoreResponse> => {
-  const response = await fetch(apiEndpoint);
-  if (!response.ok) throw new Error("Failed to fetch average score");
-  return response.json();
-};
+  baseUrl?: string,
+  fetchApiEndpoint?: string
+): Promise<GetApiFooAverageScoreQueryResponse> => {
+  if (baseUrl) {
+    const response: GetApiFooAverageScoreQueryResponse =
+      await getApiFooAverageScore({
+        baseURL: baseUrl,
+      });
 
+    return response;
+  } else if (fetchApiEndpoint) {
+    // Use old fetch approach for transactional API
+
+    const response = await fetch(`${fetchApiEndpoint}`);
+    if (!response.ok) throw new Error("Failed to fetch chart data");
+
+    return response.json();
+  } else {
+    throw new Error("Either baseUrl or fetchApiEndpoint must be provided");
+  }
+};
 export default function FooAverageScore({
   title,
   description,
   apiEndpoint,
+  baseUrl,
   disableCache = false,
 }: {
   title: string;
   description: string;
-  apiEndpoint: string;
+  apiEndpoint?: string;
+  baseUrl?: string;
   disableCache?: boolean;
 }) {
   const { data, isLoading, error, isFetching, refetch } = useQuery({
-    queryKey: ["foo-average-score", apiEndpoint],
-    queryFn: () => fetchAverageScore(apiEndpoint),
+    queryKey: ["foo-average-score", apiEndpoint || baseUrl],
+    queryFn: () => fetchAverageScore(baseUrl, apiEndpoint),
     staleTime: disableCache ? 0 : 1000 * 60 * 5, // 5 minutes when enabled
     gcTime: disableCache ? 0 : 1000 * 60 * 10, // 10 minutes when enabled
     refetchOnMount: disableCache ? "always" : false,

@@ -1,15 +1,11 @@
 import { Api } from "@514labs/moose-lib";
-import { bar, BarTable } from "../../../externalModels";
+import { bar, BarTable } from "../../externalModels";
 
 export type GetBarsParams = {
   limit?: number;
   offset?: number;
   sortBy?: keyof bar;
   sortOrder?: "ASC" | "DESC" | "asc" | "desc";
-};
-
-export type GetBarsWithCDCParams = Omit<GetBarsParams, "sortBy"> & {
-  sortBy?: keyof bar;
 };
 
 export type GetBarsResponse = {
@@ -23,14 +19,7 @@ export type GetBarsResponse = {
   queryTime: number;
 };
 
-export type GetBarsWithCDCResponse = Omit<GetBarsResponse, "data"> & {
-  data: bar[];
-};
-
-export const barConsumptionApi = new Api<
-  GetBarsWithCDCParams,
-  GetBarsWithCDCResponse
->(
+export const barConsumptionApi = new Api<GetBarsParams, GetBarsResponse>(
   "bar",
   async (
     {
