@@ -57,7 +57,7 @@ class dish(BaseModel):
     lowest_price: clickhouse_decimal(18, 3)
     highest_price: clickhouse_decimal(18, 3)
 
-dish_model = OlapTable[dish]("dish", OlapConfig(
+dish_table = OlapTable[dish]("dish", OlapConfig(
     order_by_fields=["id"],
     engine=MergeTreeEngine(),
     settings={"index_granularity": "8192"},
