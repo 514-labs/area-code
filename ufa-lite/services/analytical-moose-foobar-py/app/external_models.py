@@ -60,28 +60,28 @@ class users(BaseModel):
     UNDERSCORE_PREFIXED_peerdb_is_deleted: Annotated[int, "int8"] = Field(alias="_peerdb_is_deleted")
     UNDERSCORE_PREFIXED_peerdb_version: Annotated[int, "int64"] = Field(alias="_peerdb_version")
 
-peerdb_raw_mirror_a_4_be_3_c_5_e_1_df_3_45_e_4_805_b_cb_363_b_330_b_4_e_model = OlapTable[_peerdb_raw_mirror_a4be3c5e__1df3__45e4__805b__cb363b330b4e]("_peerdb_raw_mirror_a4be3c5e__1df3__45e4__805b__cb363b330b4e", OlapConfig(
+peerdb_raw_mirror_a_4_be_3_c_5_e_1_df_3_45_e_4_805_b_cb_363_b_330_b_4_e_table = OlapTable[_peerdb_raw_mirror_a4be3c5e__1df3__45e4__805b__cb363b330b4e]("_peerdb_raw_mirror_a4be3c5e__1df3__45e4__805b__cb363b330b4e", OlapConfig(
     order_by_fields=["_peerdb_batch_id", "_peerdb_destination_table_name"],
     life_cycle=LifeCycle.EXTERNALLY_MANAGED,
     engine=MergeTreeEngine(),
     settings={"index_granularity": "8192"},
 ))
 
-bar_model = OlapTable[bar]("bar", OlapConfig(
+bar_table = OlapTable[bar]("bar", OlapConfig(
     order_by_fields=["id"],
     life_cycle=LifeCycle.EXTERNALLY_MANAGED,
     engine=ReplacingMergeTreeEngine(ver="_peerdb_version"),
     settings={"index_granularity": "8192"},
 ))
 
-foo_model = OlapTable[foo]("foo", OlapConfig(
+foo_table = OlapTable[foo]("foo", OlapConfig(
     order_by_fields=["id"],
     life_cycle=LifeCycle.EXTERNALLY_MANAGED,
     engine=ReplacingMergeTreeEngine(ver="_peerdb_version"),
     settings={"index_granularity": "8192"},
 ))
 
-users_model = OlapTable[users]("users", OlapConfig(
+users_table = OlapTable[users]("users", OlapConfig(
     order_by_fields=["id"],
     life_cycle=LifeCycle.EXTERNALLY_MANAGED,
     engine=ReplacingMergeTreeEngine(ver="_peerdb_version"),

@@ -1,7 +1,7 @@
 from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel
-from app.external_models import foo, foo_model
+from app.external_models import foo, foo_table
 import time
 from datetime import datetime, timezone
 
@@ -101,7 +101,7 @@ def foo_consumption_api_handler(client: MooseClient, params: GetFoosParams) -> G
     upper_sort_order = params.sort_order.upper()
 
     # Get total count
-    count_query = f"SELECT count() as total FROM {foo_model.name}"
+    count_query = f"SELECT count() as total FROM {foo_table.name}"
     count_result = client.query(count_query, {})
     total_count = count_result[0]["total"] if count_result else 0
 
@@ -110,7 +110,7 @@ def foo_consumption_api_handler(client: MooseClient, params: GetFoosParams) -> G
     # Build dynamic query including CDC fields
     query = f"""
         SELECT *
-        FROM {foo_model.name}
+        FROM {foo_table.name}
         ORDER BY {params.sort_by} {upper_sort_order}
         LIMIT {params.limit}
         OFFSET {params.offset}

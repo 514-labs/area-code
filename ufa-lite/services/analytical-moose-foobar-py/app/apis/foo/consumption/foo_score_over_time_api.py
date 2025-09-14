@@ -1,7 +1,7 @@
 from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel
-from app.external_models import foo_model
+from app.external_models import foo_table
 import time
 from datetime import datetime, timedelta
 
@@ -39,15 +39,15 @@ def foo_score_over_time_api_handler(
     # Query to get daily score aggregations
     query = f"""
         SELECT 
-            formatDateTime(toDate({foo_model.columns.created_at}), '%Y-%m-%d') as date,
-            AVG({foo_model.columns.score}) as averageScore,
+            formatDateTime(toDate({foo_table.columns.created_at}), '%Y-%m-%d') as date,
+            AVG({foo_table.columns.score}) as averageScore,
             COUNT(*) as totalCount
-        FROM {foo_model.name}
-        WHERE toDate({foo_model.columns.created_at}) >= toDate('{start_date_str}')
-          AND toDate({foo_model.columns.created_at}) <= toDate('{end_date_str}')
-          AND {foo_model.columns.score} IS NOT NULL
-        GROUP BY toDate({foo_model.columns.created_at})
-        ORDER BY toDate({foo_model.columns.created_at}) ASC
+        FROM {foo_table.name}
+        WHERE toDate({foo_table.columns.created_at}) >= toDate('{start_date_str}')
+          AND toDate({foo_table.columns.created_at}) <= toDate('{end_date_str}')
+          AND {foo_table.columns.score} IS NOT NULL
+        GROUP BY toDate({foo_table.columns.created_at})
+        ORDER BY toDate({foo_table.columns.created_at}) ASC
     """
 
     start_time = time.time()

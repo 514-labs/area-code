@@ -1,7 +1,7 @@
 from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel
-from app.external_models import foo_model
+from app.external_models import foo_table
 from datetime import datetime, timedelta
 
 
@@ -31,32 +31,32 @@ def foo_filters_values_api_handler(
 
     # Build queries for distinct values
     date_filter = f"""
-        toDate({foo_model.columns.created_at}) >= toDate('{start_date_str}')
-        AND toDate({foo_model.columns.created_at}) <= toDate('{end_date_str}')
+        toDate({foo_table.columns.created_at}) >= toDate('{start_date_str}')
+        AND toDate({foo_table.columns.created_at}) <= toDate('{end_date_str}')
     """
 
     status_query = f"""
-        SELECT DISTINCT {foo_model.columns.status}
-        FROM {foo_model.name}
+        SELECT DISTINCT {foo_table.columns.status}
+        FROM {foo_table.name}
         WHERE {date_filter}
-          AND {foo_model.columns.status} IS NOT NULL
-        ORDER BY {foo_model.columns.status}
+          AND {foo_table.columns.status} IS NOT NULL
+        ORDER BY {foo_table.columns.status}
     """
 
     tags_query = f"""
-        SELECT DISTINCT arrayJoin({foo_model.columns.tags}) AS tag
-        FROM {foo_model.name}
+        SELECT DISTINCT arrayJoin({foo_table.columns.tags}) AS tag
+        FROM {foo_table.name}
         WHERE {date_filter}
-          AND {foo_model.columns.tags} IS NOT NULL
+          AND {foo_table.columns.tags} IS NOT NULL
         ORDER BY tag
     """
 
     priorities_query = f"""
-        SELECT DISTINCT {foo_model.columns.priority}
-        FROM {foo_model.name}
+        SELECT DISTINCT {foo_table.columns.priority}
+        FROM {foo_table.name}
         WHERE {date_filter}
-          AND {foo_model.columns.priority} IS NOT NULL
-        ORDER BY {foo_model.columns.priority}
+          AND {foo_table.columns.priority} IS NOT NULL
+        ORDER BY {foo_table.columns.priority}
     """
 
     # Execute queries

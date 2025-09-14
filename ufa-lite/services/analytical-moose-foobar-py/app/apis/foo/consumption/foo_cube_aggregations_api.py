@@ -1,7 +1,7 @@
 from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel
-from app.external_models import foo_model
+from app.external_models import foo_table
 import time
 from datetime import datetime, timedelta
 
@@ -52,16 +52,16 @@ def foo_cube_aggregations_api_handler(
 
     # Build optional WHERE fragments
     where_clauses = [
-        f"toDate({foo_model.columns.created_at}) >= toDate('{start_date_str}')",
-        f"toDate({foo_model.columns.created_at}) <= toDate('{end_date_str}')",
-        f"{foo_model.columns.score} IS NOT NULL"
+        f"toDate({foo_table.columns.created_at}) >= toDate('{start_date_str}')",
+        f"toDate({foo_table.columns.created_at}) <= toDate('{end_date_str}')",
+        f"{foo_table.columns.score} IS NOT NULL"
     ]
 
     if params.status:
-        where_clauses.append(f"{foo_model.columns.status} = '{params.status}'")
+        where_clauses.append(f"{foo_table.columns.status} = '{params.status}'")
 
     if params.priority is not None:
-        where_clauses.append(f"{foo_model.columns.priority} = {params.priority}")
+        where_clauses.append(f"{foo_table.columns.priority} = {params.priority}")
 
     limited = max(1, min(params.limit, 200))
     paged_offset = max(0, params.offset)
@@ -69,9 +69,9 @@ def foo_cube_aggregations_api_handler(
     # Map sort column safely
     sort_column = {
         "month": "month",
-        "status": f"{foo_model.columns.status}",
+        "status": f"{foo_table.columns.status}",
         "tag": "tag",
-        "priority": f"{foo_model.columns.priority}",
+        "priority": f"{foo_table.columns.priority}",
         "n": "n",
         "avgScore": "avgScore",
         "avg_score": "avgScore",
@@ -87,18 +87,18 @@ def foo_cube_aggregations_api_handler(
 
     query = f"""
         SELECT
-            formatDateTime(toStartOfMonth({foo_model.columns.created_at}), '%Y-%m-01') AS month,
-            {foo_model.columns.status},
-            arrayJoin({foo_model.columns.tags}) AS tag,
-            {foo_model.columns.priority},
+            formatDateTime(toStartOfMonth({foo_table.columns.created_at}), '%Y-%m-01') AS month,
+            {foo_table.columns.status},
+            arrayJoin({foo_table.columns.tags}) AS tag,
+            {foo_table.columns.priority},
             count() AS n,
-            avg({foo_model.columns.score}) AS avgScore,
-            quantileTDigest(0.5)(toFloat64({foo_model.columns.score})) AS p50,
-            quantileTDigest(0.9)(toFloat64({foo_model.columns.score})) AS p90,
+            avg({foo_table.columns.score}) AS avgScore,
+            quantileTDigest(0.5)(toFloat64({foo_table.columns.score})) AS p50,
+            quantileTDigest(0.9)(toFloat64({foo_table.columns.score})) AS p90,
             COUNT() OVER() AS total
-        FROM {foo_model.name}
+        FROM {foo_table.name}
         WHERE {where_clause}
-        GROUP BY month, {foo_model.columns.status}, tag, {foo_model.columns.priority}
+        GROUP BY month, {foo_table.columns.status}, tag, {foo_table.columns.priority}
         {having_clause}
         ORDER BY {sort_column} {sort_dir}
         LIMIT {limited} OFFSET {paged_offset}
