@@ -1,4 +1,4 @@
-from moose_lib import Api
+from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel
 from app.external_models import foo, foo_model
@@ -93,7 +93,7 @@ class GetFoosResponse(BaseModel):
     queryTime: int
 
 
-def foo_consumption_api_handler(context, params: GetFoosParams) -> GetFoosResponse:
+def foo_consumption_api_handler(client: MooseClient, params: GetFoosParams) -> GetFoosResponse:
     """
     Consumption API for foo data following Moose documentation pattern
     """
@@ -101,8 +101,8 @@ def foo_consumption_api_handler(context, params: GetFoosParams) -> GetFoosRespon
     upper_sort_order = params.sort_order.upper()
 
     # Get total count
-    count_query = f"SELECT count() as total FROM foo"
-    count_result = context.query(count_query, {})
+    count_query = f"SELECT count() as total FROM {foo_model.name}"
+    count_result = client.query(count_query, {})
     total_count = count_result[0]["total"] if count_result else 0
 
     start_time = time.time()
@@ -110,13 +110,13 @@ def foo_consumption_api_handler(context, params: GetFoosParams) -> GetFoosRespon
     # Build dynamic query including CDC fields
     query = f"""
         SELECT *
-        FROM foo
+        FROM {foo_model.name}
         ORDER BY {params.sort_by} {upper_sort_order}
         LIMIT {params.limit}
         OFFSET {params.offset}
     """
 
-    results = context.query(query, {})
+    results = client.query(query, {})
 
     query_time = int((time.time() - start_time) * 1000)  # Convert to milliseconds
 

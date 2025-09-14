@@ -1,4 +1,4 @@
-from moose_lib import Api
+from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from app.external_models import bar, bar_model
@@ -89,7 +89,7 @@ class GetBarsResponse(BaseModel):
     queryTime: int
 
 
-def bar_consumption_api_handler(context, params: GetBarsParams) -> GetBarsResponse:
+def bar_consumption_api_handler(client: MooseClient, params: GetBarsParams) -> GetBarsResponse:
     """
     Consumption API for bar data following Moose documentation pattern
     """
@@ -97,8 +97,8 @@ def bar_consumption_api_handler(context, params: GetBarsParams) -> GetBarsRespon
     upper_sort_order = params.sort_order.upper()
 
     # Get total count
-    count_query = f"SELECT count() as total FROM bar"
-    count_result = context.query(count_query, {})
+    count_query = f"SELECT count() as total FROM {bar_model.name}"
+    count_result = client.query(count_query, {})
     total_count = count_result[0]["total"] if count_result else 0
 
     start_time = time.time()
@@ -106,13 +106,13 @@ def bar_consumption_api_handler(context, params: GetBarsParams) -> GetBarsRespon
     # Build dynamic query including CDC fields
     query = f"""
         SELECT *
-        FROM bar
+        FROM {bar_model.name}
         ORDER BY {params.sort_by} {upper_sort_order}
         LIMIT {params.limit}
         OFFSET {params.offset}
     """
 
-    results = context.query(query, {})
+    results = client.query(query, {})
 
     query_time = int((time.time() - start_time) * 1000)  # Convert to milliseconds
 

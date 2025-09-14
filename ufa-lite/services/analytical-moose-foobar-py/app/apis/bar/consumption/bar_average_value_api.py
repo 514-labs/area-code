@@ -1,4 +1,4 @@
-from moose_lib import Api
+from moose_lib import Api, MooseClient
 from typing import Dict, Any
 from pydantic import BaseModel
 from app.external_models import bar_model
@@ -17,7 +17,7 @@ class GetBarsAverageValueResponse(BaseModel):
 
 
 def bar_average_value_api_handler(
-    context,
+    client: MooseClient,
     params: EmptyParams
 ) -> GetBarsAverageValueResponse:
     """
@@ -25,15 +25,15 @@ def bar_average_value_api_handler(
     """
     start_time = time.time()
 
-    query = """
+    query = f"""
         SELECT
-            AVG(value) as averageValue,
+            AVG({bar_model.columns.value}) as averageValue,
             COUNT(*) as count
-        FROM bar
-        WHERE value IS NOT NULL
+        FROM {bar_model.name}
+        WHERE {bar_model.columns.value} IS NOT NULL
     """
 
-    results = context.query(query, {})
+    results = client.query(query, {})
 
     query_time = int((time.time() - start_time) * 1000)
 

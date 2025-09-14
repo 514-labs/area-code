@@ -1,6 +1,7 @@
-from moose_lib import Api
+from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel
+from app.external_models import foo_model
 from datetime import datetime, timedelta
 
 
@@ -15,7 +16,7 @@ class GetFooFiltersValuesResponse(BaseModel):
 
 
 def foo_filters_values_api_handler(
-    context,
+    client: MooseClient,
     params: GetFooFiltersValuesParams
 ) -> GetFooFiltersValuesResponse:
     """
@@ -30,38 +31,38 @@ def foo_filters_values_api_handler(
 
     # Build queries for distinct values
     date_filter = f"""
-        toDate(created_at) >= toDate('{start_date_str}')
-        AND toDate(created_at) <= toDate('{end_date_str}')
+        toDate({foo_model.columns.created_at}) >= toDate('{start_date_str}')
+        AND toDate({foo_model.columns.created_at}) <= toDate('{end_date_str}')
     """
 
     status_query = f"""
-        SELECT DISTINCT status
-        FROM foo
+        SELECT DISTINCT {foo_model.columns.status}
+        FROM {foo_model.name}
         WHERE {date_filter}
-          AND status IS NOT NULL
-        ORDER BY status
+          AND {foo_model.columns.status} IS NOT NULL
+        ORDER BY {foo_model.columns.status}
     """
 
     tags_query = f"""
-        SELECT DISTINCT arrayJoin(tags) AS tag
-        FROM foo
+        SELECT DISTINCT arrayJoin({foo_model.columns.tags}) AS tag
+        FROM {foo_model.name}
         WHERE {date_filter}
-          AND tags IS NOT NULL
+          AND {foo_model.columns.tags} IS NOT NULL
         ORDER BY tag
     """
 
     priorities_query = f"""
-        SELECT DISTINCT priority
-        FROM foo
+        SELECT DISTINCT {foo_model.columns.priority}
+        FROM {foo_model.name}
         WHERE {date_filter}
-          AND priority IS NOT NULL
-        ORDER BY priority
+          AND {foo_model.columns.priority} IS NOT NULL
+        ORDER BY {foo_model.columns.priority}
     """
 
     # Execute queries
-    status_results = context.query(status_query, {})
-    tags_results = context.query(tags_query, {})
-    priorities_results = context.query(priorities_query, {})
+    status_results = client.query(status_query, {})
+    tags_results = client.query(tags_query, {})
+    priorities_results = client.query(priorities_query, {})
 
     # Extract values from results
     possible_statuses = [row["status"] for row in status_results]

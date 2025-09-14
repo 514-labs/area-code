@@ -1,4 +1,4 @@
-from moose_lib import Api
+from moose_lib import Api, MooseClient
 from typing import Optional, List
 from pydantic import BaseModel
 from app.external_models import foo_model
@@ -35,7 +35,7 @@ class GetFooCubeAggregationsResponse(BaseModel):
 
 
 def foo_cube_aggregations_api_handler(
-    context,
+    client: MooseClient,
     params: GetFooCubeAggregationsParams
 ) -> GetFooCubeAggregationsResponse:
     """
@@ -52,16 +52,16 @@ def foo_cube_aggregations_api_handler(
 
     # Build optional WHERE fragments
     where_clauses = [
-        f"toDate(created_at) >= toDate('{start_date_str}')",
-        f"toDate(created_at) <= toDate('{end_date_str}')",
-        "score IS NOT NULL"
+        f"toDate({foo_model.columns.created_at}) >= toDate('{start_date_str}')",
+        f"toDate({foo_model.columns.created_at}) <= toDate('{end_date_str}')",
+        f"{foo_model.columns.score} IS NOT NULL"
     ]
 
     if params.status:
-        where_clauses.append(f"status = '{params.status}'")
+        where_clauses.append(f"{foo_model.columns.status} = '{params.status}'")
 
     if params.priority is not None:
-        where_clauses.append(f"priority = {params.priority}")
+        where_clauses.append(f"{foo_model.columns.priority} = {params.priority}")
 
     limited = max(1, min(params.limit, 200))
     paged_offset = max(0, params.offset)
@@ -69,9 +69,9 @@ def foo_cube_aggregations_api_handler(
     # Map sort column safely
     sort_column = {
         "month": "month",
-        "status": "status",
+        "status": f"{foo_model.columns.status}",
         "tag": "tag",
-        "priority": "priority",
+        "priority": f"{foo_model.columns.priority}",
         "n": "n",
         "avgScore": "avgScore",
         "avg_score": "avgScore",
@@ -87,24 +87,24 @@ def foo_cube_aggregations_api_handler(
 
     query = f"""
         SELECT
-            formatDateTime(toStartOfMonth(created_at), '%Y-%m-01') AS month,
-            status,
-            arrayJoin(tags) AS tag,
-            priority,
+            formatDateTime(toStartOfMonth({foo_model.columns.created_at}), '%Y-%m-01') AS month,
+            {foo_model.columns.status},
+            arrayJoin({foo_model.columns.tags}) AS tag,
+            {foo_model.columns.priority},
             count() AS n,
-            avg(score) AS avgScore,
-            quantileTDigest(0.5)(toFloat64(score)) AS p50,
-            quantileTDigest(0.9)(toFloat64(score)) AS p90,
+            avg({foo_model.columns.score}) AS avgScore,
+            quantileTDigest(0.5)(toFloat64({foo_model.columns.score})) AS p50,
+            quantileTDigest(0.9)(toFloat64({foo_model.columns.score})) AS p90,
             COUNT() OVER() AS total
-        FROM foo
+        FROM {foo_model.name}
         WHERE {where_clause}
-        GROUP BY month, status, tag, priority
+        GROUP BY month, {foo_model.columns.status}, tag, {foo_model.columns.priority}
         {having_clause}
         ORDER BY {sort_column} {sort_dir}
         LIMIT {limited} OFFSET {paged_offset}
     """
 
-    results = context.query(query, {})
+    results = client.query(query, {})
 
     query_time = int((time.time() - start_time) * 1000)
     total = results[0]["total"] if results else 0
