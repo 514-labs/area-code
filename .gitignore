@@ -9,6 +9,7 @@ dist-ssr
 .env*
 .cache
 ./logs/
+venv/
 
 # Ignore scratch files - used for testing and development in Data Warehouse
 scratch*
@@ -33,6 +34,3 @@ nohup.out
 services/*/temp_migration/
 services/*/dev-*.log
 services/*/.moose/
-
-# Python virtual environments
-venv/
