@@ -24,7 +24,7 @@
 # Need help? Check out the quickstart guide:
 # → docs.fiveonefour.com/moose/getting-started/quickstart
 
-from external_models import *
+from .external_models import *
 
 
 from pydantic import BaseModel, Field
