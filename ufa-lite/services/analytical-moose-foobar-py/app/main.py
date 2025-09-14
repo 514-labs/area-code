@@ -24,7 +24,16 @@
 # Need help? Check out the quickstart guide:
 # → docs.fiveonefour.com/moose/getting-started/quickstart
 
+# Import external models for their side effects: registers additional data models required for pipeline and API setup
 from .external_models import *
+
+# Import and register all consumption APIs
+from .apis.bar.consumption.bar_average_value_api import bar_average_value_api
+from .apis.bar.consumption.bar_base_api import bar_consumption_api
+from .apis.foo.consumption.foo_base_api import foo_consumption_api
+from .apis.foo.consumption.foo_score_over_time_api import foo_score_over_time_api
+from .apis.foo.consumption.foo_cube_aggregations_api import foo_cube_aggregations_api
+from .apis.foo.consumption.foo_filters_values_api import foo_filters_values_api
 
 
 from pydantic import BaseModel, Field
