@@ -66,3 +66,6 @@ ddl_plan = false
 
 [typescript_config]
 package_manager = "npm"
+
+[authentication]
+admin_api_key = "199d13d8201f7418054de884f3a955c928122ab3"
