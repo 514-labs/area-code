@@ -1,0 +1,53 @@
+from moose_lib import Api, MooseClient
+from typing import Dict, Any
+from pydantic import BaseModel
+from app.external_models import bar_table
+import time
+
+
+class EmptyParams(BaseModel):
+    """Empty parameters for endpoints with no input parameters"""
+    pass
+
+
+class GetBarsAverageValueResponse(BaseModel):
+    averageValue: float
+    queryTime: int
+    count: int
+
+
+def bar_average_value_api_handler(
+    client: MooseClient,
+    params: EmptyParams
+) -> GetBarsAverageValueResponse:
+    """
+    API to get average value of all bars
+    """
+    start_time = time.time()
+
+    query = f"""
+        SELECT
+            AVG({bar_table.columns.value}) as averageValue,
+            COUNT(*) as count
+        FROM {bar_table.name}
+        WHERE {bar_table.columns.value} IS NOT NULL
+    """
+
+    results = client.query(query, {})
+
+    query_time = int((time.time() - start_time) * 1000)
+
+    result = results[0] if results else {"averageValue": 0, "count": 0}
+
+    return GetBarsAverageValueResponse(
+        averageValue=float(result["averageValue"]),
+        queryTime=query_time,
+        count=int(result["count"])
+    )
+
+
+# Create the API instance
+bar_average_value_api = Api[EmptyParams, GetBarsAverageValueResponse](
+    name="bar-average-value",
+    query_function=bar_average_value_api_handler
+)
