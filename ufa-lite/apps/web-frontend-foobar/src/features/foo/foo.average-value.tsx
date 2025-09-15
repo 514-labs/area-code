@@ -16,13 +16,6 @@ import {
   GetApiFooAverageScoreQueryResponse,
 } from "@/analytical-api-client";
 
-// const fetchAverageScore = async (
-//   apiEndpoint: string
-// ): Promise<GetFoosAverageScoreResponse> => {
-//   const response = await fetch(apiEndpoint);
-//   if (!response.ok) throw new Error("Failed to fetch average score");
-//   return response.json();
-// };
 
 const fetchAverageScore = async (
   baseUrl?: string,
