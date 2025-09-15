@@ -25,7 +25,6 @@ function TransactionalFooAverageScore({
     <FooAverageScore
       title="Foo Average Score"
       description="Transactional"
-      // apiEndpoint={apiEndpoint}
       baseUrl={API_BASE}
       disableCache={!cacheEnabled}
     />
