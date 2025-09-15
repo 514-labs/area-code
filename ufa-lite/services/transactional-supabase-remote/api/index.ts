@@ -1,10 +1,11 @@
+import { IncomingMessage, ServerResponse } from "http";
 import { getEnforceAuth } from "../src/env-vars";
 import { getAdminClient, getRlsClient } from "../src/database/connection";
 import { foo, bar } from "../src/database/schema";
 import { and, eq, desc } from "drizzle-orm";
 
-type NodeReq = any;
-type NodeRes = any;
+type NodeReq = IncomingMessage;
+type NodeRes = ServerResponse;
 
 function getAllowedOrigins(): string[] {
   const raw = process.env.ALLOWED_ORIGINS || "";
@@ -36,7 +37,6 @@ function badRequest(res: NodeRes, message: string) {
 }
 
 async function parseBody(req: NodeReq): Promise<any> {
-  if (req.body) return typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;
   return new Promise((resolve, reject) => {
     let data = "";
     req.on("data", (chunk: Buffer) => (data += chunk.toString("utf8")));
@@ -76,7 +76,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       return;
     }
 
-    const url = new URL(req.url, `http://${req.headers.host}`);
+    const url = new URL(req.url || "/", `http://${req.headers.host}`);
     const path = url.pathname.replace(/^.*\/api\/?/, "/");
     const segments = path.split("/").filter(Boolean);
     const token = getAuthToken(req);
