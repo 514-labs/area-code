@@ -9,10 +9,8 @@ export function OriginHighlightsCheckboxes() {
   const {
     transactionalEnabled,
     analyticalEnabled,
-    retrievalEnabled,
     toggleTransactional,
     toggleAnalytical,
-    toggleRetrieval,
   } = useOriginHighlights();
 
   return (
@@ -53,25 +51,6 @@ export function OriginHighlightsCheckboxes() {
             className="flex items-center space-x-2 cursor-pointer"
           >
             <span>Analytical</span>
-          </Label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="retrieval"
-            checked={retrievalEnabled}
-            onCheckedChange={() => toggleRetrieval()}
-            className={cn(
-              ORIGIN_HIGHLIGHT_COLORS.retrieval.background,
-              ORIGIN_HIGHLIGHT_COLORS.retrieval.border,
-              ORIGIN_HIGHLIGHT_COLORS.retrieval.text
-            )}
-          />
-          <Label
-            htmlFor="retrieval"
-            className="flex items-center space-x-2 cursor-pointer"
-          >
-            <span>Retrieval</span>
           </Label>
         </div>
       </CardContent>

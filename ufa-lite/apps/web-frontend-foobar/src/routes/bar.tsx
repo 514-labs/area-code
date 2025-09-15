@@ -37,13 +37,12 @@ function AnalyticalBarAverageValue({
   cacheEnabled: boolean;
 }) {
   const API_BASE = getAnalyticalApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar-average-value`;
 
   return (
     <BarAverageValue
       title="Bar Average Value"
       description="Analytical"
-      apiEndpoint={fetchApiEndpoint}
+      baseUrl={API_BASE}
       disableCache={!cacheEnabled}
     />
   );
