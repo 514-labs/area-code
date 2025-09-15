@@ -28,8 +28,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
   FooStatus,
-  FooWithCDC,
-  GetFoosWithCDCResponse,
 } from "@workspace/models";
 import { getAnalyticalApiBase } from "@/env-vars";
 import {
@@ -60,7 +58,6 @@ import {
 import React, { useState } from "react";
 import { NumericFormat } from "react-number-format";
 import { format } from "date-fns";
-import { createCDCColumns } from "../cdc/cdc-utils";
 
 const SortableHeader = ({
   column,
@@ -96,28 +93,6 @@ const SortableHeader = ({
       )}
     </Button>
   );
-};
-
-// Convert API Foo to FooWithCDC format
-const convertApiFooToFooWithCDC = (apiFoo: ApiFoo): FooWithCDC => {
-  return {
-    id: apiFoo.id,
-    name: apiFoo.name,
-    description: apiFoo.description ?? null,
-    status: apiFoo.status as FooStatus,
-    priority: apiFoo.priority,
-    is_active: apiFoo.is_active,
-    metadata: apiFoo.metadata ? JSON.parse(apiFoo.metadata) : {},
-    tags: apiFoo.tags,
-    score: apiFoo.score ? parseFloat(apiFoo.score) : 0,
-    large_text: apiFoo.large_text ?? "",
-    created_at: new Date(apiFoo.created_at),
-    updated_at: new Date(apiFoo.updated_at),
-    // CDC fields - using the API fields as CDC fields since they represent change tracking
-    cdc_id: apiFoo.id, // Use the same ID as the primary key
-    cdc_operation: apiFoo._peerdb_is_deleted === 1 ? "DELETE" : "INSERT", // Assume INSERT if not deleted
-    cdc_timestamp: new Date(apiFoo._peerdb_synced_at),
-  };
 };
 
 const fetchFoos = async (

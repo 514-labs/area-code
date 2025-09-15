@@ -22,11 +22,15 @@ import {
   Column,
 } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { BarWithCDC, GetBarsWithCDCResponse } from "@workspace/models/bar";
 import { getAnalyticalApiBase } from "@/env-vars";
+import {
+  getApiBar,
+  GetApiBarQueryParams,
+  GetBarsResponse,
+  Bar as ApiBar,
+} from "@/analytical-api-client";
 import { format } from "date-fns";
 import { NumericFormat } from "react-number-format";
-import { createCDCColumns } from "../cdc/cdc-utils";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
@@ -52,7 +56,7 @@ const SortableHeader = ({
   children,
   className,
 }: {
-  column: Column<BarWithCDC, unknown>;
+  column: Column<ApiBar, unknown>;
   children: ReactNode;
   className?: string;
 }) => {
@@ -84,28 +88,33 @@ const SortableHeader = ({
 };
 
 const fetchBars = async (
-  endpoint: string,
+  baseUrl: string,
   limit: number,
   offset: number,
   sortBy?: string,
   sortOrder?: string
-): Promise<GetBarsWithCDCResponse> => {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-    offset: offset.toString(),
+): Promise<GetBarsResponse> => {
+  const params: GetApiBarQueryParams = {
+    limit,
+    offset,
+    sortBy,
+    sortOrder,
+  };
+
+  const response: GetBarsResponse = await getApiBar(params, {
+    baseURL: baseUrl,
   });
 
-  if (sortBy) params.append("sortBy", sortBy);
-  if (sortOrder) params.append("sortOrder", sortOrder);
-
-  const response = await fetch(`${endpoint}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch bars");
-  return response.json();
+  return {
+    data: response.data,
+    pagination: response.pagination,
+    queryTime: response.queryTime,
+  };
 };
 
 // Create columns with CDC support
-const createColumns = (): ColumnDef<BarWithCDC>[] => {
-  const baseColumns: ColumnDef<BarWithCDC>[] = [
+const createColumns = (): ColumnDef<ApiBar>[] => {
+  const baseColumns: ColumnDef<ApiBar>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -135,10 +144,6 @@ const createColumns = (): ColumnDef<BarWithCDC>[] => {
       enableHiding: false,
     },
   ];
-
-  // Add CDC columns using shared utility
-  const cdcColumns = createCDCColumns<BarWithCDC>();
-  baseColumns.push(...cdcColumns);
 
   // Add main data columns
   baseColumns.push(
@@ -234,7 +239,6 @@ export default function BarAnalyticalDataTable({
 
   // Internal API endpoint for analytical data (read-only)
   const API_BASE = getAnalyticalApiBase();
-  const fetchApiEndpoint = `${API_BASE}/bar`;
 
   // Use React Query to fetch data - refetch will happen automatically when query key changes
   const {
@@ -243,8 +247,8 @@ export default function BarAnalyticalDataTable({
     error,
   } = useQuery({
     queryKey: [
-      "bars-cdc",
-      fetchApiEndpoint,
+      "bars-analytical",
+      API_BASE,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
@@ -253,7 +257,7 @@ export default function BarAnalyticalDataTable({
       const sortBy = sorting[0]?.id;
       const sortOrder = sorting[0]?.desc ? "desc" : "asc";
       const result = await fetchBars(
-        fetchApiEndpoint,
+        API_BASE,
         pagination.pageSize,
         pagination.pageIndex * pagination.pageSize,
         sortBy,
