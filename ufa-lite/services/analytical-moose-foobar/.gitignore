@@ -16,3 +16,4 @@ temp_migration/
 *_data.json
 
 prod-migration.env
+.vercel
