@@ -17,9 +17,9 @@ native_port = 9000
 
 [http_server_config]
 host = "localhost"
-port = 4000
-management_port = 5001
-proxy_port = 4001
+port = 4410
+management_port = 5411
+proxy_port = 4411
 max_request_body_size = 10485760
 
 [redis_config]
