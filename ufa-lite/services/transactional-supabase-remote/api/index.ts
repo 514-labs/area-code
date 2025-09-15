@@ -176,8 +176,12 @@ export default async function handler(req: NodeReq, res: NodeRes) {
         const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") || "50", 10), 1), 200);
         const offset = Math.max(parseInt(url.searchParams.get("offset") || "0", 10), 0);
         const rows = await client.runTransaction(async (tx) => {
-          const where = fooId ? and(eq(bar.foo_id, fooId)) : undefined as any;
-          return await tx.select().from(bar).where(where as any).orderBy(desc(bar.created_at)).limit(limit).offset(offset);
+          const baseQuery = tx.select().from(bar).orderBy(desc(bar.created_at)).limit(limit).offset(offset);
+          if (fooId) {
+            return await baseQuery.where(eq(bar.foo_id, fooId));
+          } else {
+            return await baseQuery;
+          }
         });
         res.setHeader("content-type", "application/json");
         res.end(JSON.stringify({ items: rows, limit, offset }));

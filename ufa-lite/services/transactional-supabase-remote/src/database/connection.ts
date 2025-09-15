@@ -13,9 +13,10 @@ function isTokenSafe(token: any): boolean {
   return true;
 }
 
-const base = postgres(getConnectionString(), { prepare: false });
-const adminClient = drizzle({ client: base } as DrizzleConfig);
-const rlsClient = drizzle({ client: base } as DrizzleConfig);
+const adminBase = postgres(getConnectionString(), { prepare: false });
+const rlsBase = postgres(getConnectionString(), { prepare: false });
+const adminClient = drizzle({ client: adminBase } as DrizzleConfig);
+const rlsClient = drizzle({ client: rlsBase } as DrizzleConfig);
 
 export async function getAdminClient() {
   const runTransaction = ((transaction, config) => {
@@ -33,8 +34,8 @@ export async function getRlsClient(accessToken?: string) {
     return rlsClient.transaction(async (tx) => {
       try {
         await tx.execute(sql`
-          select set_config('request.jwt.claims', '${sql.raw(JSON.stringify(token))}', TRUE);
-          select set_config('request.jwt.claim.sub', '${sql.raw(token.sub ?? "")}', TRUE);
+          select set_config('request.jwt.claims', ${JSON.stringify(token)}, TRUE);
+          select set_config('request.jwt.claim.sub', ${token.sub ?? ""}, TRUE);
         `);
         return await transaction(tx);
       } finally {
