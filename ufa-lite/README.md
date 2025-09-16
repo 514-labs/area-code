@@ -76,7 +76,7 @@ cd apps/web-frontend-foobar && pnpm dev
 **Transactional API** (`services/transactional-supabase-remote/.env.local`):
 
 ```env
-TRANSACTIONAL_DB_CONNECTION_STRING=postgresql://postgres.ufa_lite_readonly:ufa_lite_readonly_password@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+TRANSACTIONAL_DB_CONNECTION_STRING=your_postgres_connection_string_here
 ENFORCE_AUTH=true
 ALLOWED_ORIGINS=http://localhost:5173
 ```
