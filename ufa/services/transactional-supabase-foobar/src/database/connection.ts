@@ -61,6 +61,10 @@ export async function getDrizzleSupabaseClient(accessToken?: string) {
 
   const token = decode(accessToken || "");
 
+  if (!accessToken) {
+    throw new Error("No access token provided");
+  }
+
   if (accessToken && !getIsTokenValid(token)) {
     throw new Error("Invalid JWT token format");
   }
