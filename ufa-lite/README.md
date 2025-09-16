@@ -1,67 +1,149 @@
 # UFA‑Lite
 
-UFA‑Lite is a streamlined subset of the full UFA project. It focuses on the essentials needed to demo and develop the front‑end application and a minimal transactional backend without the full analytical/retrieval stack or local database infrastructure.
+**Reference architecture** for adding **MooseStack + ClickHouse** analytics to your existing web backend. React frontend + transactional API + analytical service.
 
-## What’s included
-- Apps
-  - `apps/web-frontend-foobar`: Vite + React front‑end that uses Supabase Auth and calls backend APIs
-- Services
-  - `services/transactional-supabase-remote`: a minimal transactional API, designed as a reference for working with a remote PostgreSQL/Supabase database (no local DB containers, no seeding, no Anthropic)
+## Two Ways to Use This
 
-## Transactional reference: remote Supabase/Postgres
-The `transactional-supabase-remote` service demonstrates a clean pattern for transactional CRUD with a remote database:
-- Uses Drizzle ORM with `postgres` client
-- Supports Supabase RLS by propagating the bearer token into Postgres via `set_config`
-- Provides separate admin and RLS clients to avoid session config conflicts
-- Exposes minimal CRUD endpoints for `foo` and `bar`
+### 1. **Reference Playground** (Use as-is)
 
-Key endpoints (served as Vercel functions):
-- `GET /api/health`
-- `GET /api/foo?limit=50&offset=0`
-- `POST /api/foo`
-- `GET /api/foo/:id`
-- `PATCH /api/foo/:id`
-- `DELETE /api/foo/:id`
-- `GET /api/bar?fooId=...&limit=50&offset=0`
-- `POST /api/bar`
-- `GET /api/bar/:id`
-- `PATCH /api/bar/:id`
-- `DELETE /api/bar/:id`
+- **Pre-configured** with read-only credentials
+- **Real production data** from our remote Postgres + ClickHouse
+- **Zero setup** - just run locally and experiment
+- **Perfect for** learning MooseStack + ClickHouse patterns
 
-### Service configuration
-Set these environment variables in `services/transactional-supabase-remote` (for local dev create `.env.local`):
-- `TRANSACTIONAL_DB_CONNECTION_STRING` (required): connection string to your remote Postgres/Supabase
-- `ENFORCE_AUTH` (default: `true`): when `true`, require `Authorization: Bearer <token>` and enable RLS context; when `false`, run as admin
-- `ALLOWED_ORIGINS` (comma‑separated): production origins for CORS (e.g. `https://app.example.com,https://www.example.com`)
+### 2. **Apply to Your Production** (Customize)
 
-Run locally with Vercel dev (recommended):
-```bash
-cd services/transactional-supabase-remote
-vercel dev
-# API at http://localhost:3000
-curl -i http://localhost:3000/api/health
+- Replace credentials with your own ClickHouse
+- Set up ClickPipes CDC against your production Postgres
+- Use this as a template for your actual use case
+
+## Reference Architecture
+
+- **Remote Postgres** (this repo uses Supabase)
+- **Remote ClickHouse** (data mirrored via ClickPipes CDC)
+- **Analytical models** pulled from remote ClickHouse
+
+### Playground Credentials
+
+**Use these read-only credentials to run the reference as-is with real data:**
+
+**ClickHouse:**
+
+```env
+REMOTE_CLICKHOUSE_CONNECTION_STRING='https://read_only_user:Ufa-Lite-123!@swtrnxdyro.us-central1.gcp.clickhouse.cloud:8443/test_supabase_cdc'
 ```
 
-Or run the Fastify server directly (non‑Vercel):
+**Note:** These are read-only credentials. You can view data but cannot create/modify records. This is so you can run `pnpm seed-foo` and `pnpm seed-bar` to seed the local ClickHouse instance with the data from the remote ClickHouse instance.
+
+## For Your Own Production Data
+
+**To apply this pattern to your actual use case:**
+
+1. **Set up ClickPipes CDC** against your production Postgres
+2. **Replace credentials** with your own Postgres + ClickHouse
+3. **Update analytical models** to match your data schema
+4. **Use this as a template** for your MooseStack + ClickHouse integration
+
+## Quick Start (Reference Playground)
+
+**Prerequisites:** Node.js 20.x, pnpm, Docker
+
 ```bash
-cd services/transactional-supabase-remote
-pnpm dev
-# Health at http://localhost:8082/health
+# Install
+pnpm install
+
+# Start everything with real data
+pnpm ufa-lite:dev
 ```
 
-### Front‑end configuration
-In `apps/web-frontend-foobar` set the transactional API base and Supabase creds (e.g. `.env.local`):
-- `VITE_TRANSACTIONAL_API_BASE` (e.g. `http://localhost:3000` when using `vercel dev`)
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+**Or start individually:**
 
-The front‑end forwards the Supabase session access token in the `Authorization` header to the transactional API when authenticated.
+```bash
+# Analytical service (MooseStack + ClickHouse)
+cd services/analytical-moose-foobar && pnpm dev
 
-## What’s explicitly out of scope in UFA‑Lite
-- Local Postgres/Supabase containers and DB seeding
-- Anthropic/chat integrations
-- Retrieval/Elastic and CDC workflows
+# Transactional API (remote Supabase)
+cd services/transactional-supabase-remote && vercel dev
 
-## Notes
-- Use Node 20 and pnpm
-- Follow the full UFA repo for advanced analytics, ingestion, and retrieval patterns
+# React frontend
+cd apps/web-frontend-foobar && pnpm dev
+```
+
+**Result:** You'll have a working app with real production data, perfect for experimenting with MooseStack + ClickHouse patterns.
+
+## Configuration (Reference Playground)
+
+**Transactional API** (`services/transactional-supabase-remote/.env.local`):
+
+```env
+TRANSACTIONAL_DB_CONNECTION_STRING=postgresql://postgres.ufa_lite_readonly:ufa_lite_readonly_password@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+ENFORCE_AUTH=true
+ALLOWED_ORIGINS=http://localhost:5173
+```
+
+**Frontend** (`apps/web-frontend-foobar/.env.local`):
+
+```env
+VITE_TRANSACTIONAL_API_BASE=http://localhost:3000
+VITE_ANALYTICAL_API_BASE=http://localhost:4410
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+**For your own production:** Replace these with your actual database credentials and ClickPipes CDC setup.
+
+## Data Flow
+
+```
+Postgres → ClickPipes CDC → ClickHouse
+```
+
+**Setup:**
+
+- Transactional API → remote Supabase (read-only)
+- Analytical API → remote ClickHouse (read-only)
+- Frontend → both local services
+- No local databases required
+
+## API Endpoints
+
+**Transactional** (`http://localhost:3000`):
+
+- `GET /api/foo` - List Foo entities
+- `POST /api/foo` - Create Foo
+- `PATCH /api/foo/:id` - Update Foo
+- `DELETE /api/foo/:id` - Delete Foo
+
+**Analytical** (`http://localhost:4410`):
+
+- `GET /api/foo` - Analytical Foo data
+- `GET /api/foo-average-score` - Average calculations
+- `GET /api/foo-score-over-time` - Time series analytics
+- `GET /api/foo-cube-aggregations` - Multi-dimensional analytics
+
+## Development
+
+**Add analytics APIs:**
+
+```typescript
+// services/analytical-moose-foobar/app/apis/
+export const getFooAnalytics = async (params: GetFooAnalyticsParams) => {
+  return await client.query(/* ClickHouse SQL */);
+};
+```
+
+**Frontend integration (using React Query):**
+
+```typescript
+// Transactional API
+const { data } = useQuery({
+  queryKey: ["foos-transactional"],
+  queryFn: () => FooApi.list(),
+});
+
+// Analytical API
+const { data } = useQuery({
+  queryKey: ["foos-analytical"],
+  queryFn: () => getApiFoo({ baseURL: analyticalApiBase }),
+});
+```

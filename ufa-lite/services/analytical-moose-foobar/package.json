@@ -8,8 +8,8 @@
     "ufa-lite:dev": "NODE_ENV=development moose-cli dev",
     "ufa-lite:dev:clean": "moose-cli clean || echo 'Note: moose-cli clean failed (infrastructure may not be running)'",
     "generate-sdk": "kubb generate",
-    "seed-bar": "moose-cli seed clickhouse --connection-string $REMOTE_URL --table bar",
-    "seed-foo": "moose-cli seed clickhouse --connection-string $REMOTE_URL --table foo"
+    "seed-bar": "moose-cli seed clickhouse --connection-string $REMOTE_CLICKHOUSE_CONNECTION_STRING --table bar",
+    "seed-foo": "moose-cli seed clickhouse --connection-string $REMOTE_CLICKHOUSE_CONNECTION_STRING --table foo"
   },
   "dependencies": {
     "@514labs/moose-lib": "latest",
