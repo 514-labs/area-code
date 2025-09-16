@@ -4,7 +4,7 @@ FROM node:slim
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.4
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
