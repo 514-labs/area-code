@@ -34,6 +34,7 @@ export function getSupabaseConnectionString(): string {
 }
 
 export function getEnforceAuth(): boolean {
+  console.log("ENFORCE_AUTH in env-vars.ts", process.env.ENFORCE_AUTH);
   return getEnvVar("ENFORCE_AUTH") === "true";
 }
 
