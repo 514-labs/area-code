@@ -182,6 +182,15 @@ async function bootstrapMCPClients() {
 // Start server
 const start = async () => {
   try {
+    console.log("Starting server...");
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+    console.log("ENFORCE_AUTH:", process.env.ENFORCE_AUTH);
+    console.log("PORT:", process.env.PORT);
+    console.log("HOST:", process.env.HOST);
+  } catch (error) {
+    console.error("Error starting server:", error);
+  }
+  try {
     const port = parseInt(process.env.PORT || "8082");
     const host = process.env.HOST || "0.0.0.0";
 
