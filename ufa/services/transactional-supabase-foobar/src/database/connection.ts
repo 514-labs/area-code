@@ -61,17 +61,16 @@ export async function getDrizzleSupabaseClient(accessToken?: string) {
 
   const token = decode(accessToken || "");
 
-  if (!accessToken) {
-    throw new Error("No access token provided");
-  }
-
   if (accessToken && !getIsTokenValid(token)) {
     throw new Error("Invalid JWT token format");
   }
 
+  const role = accessToken ? token.role : "anon";
+
   const runTransaction = ((transaction, config) => {
     return rlsClient.transaction(async (tx) => {
       try {
+        await tx.execute(sql`SET LOCAL ROLE ${sql.raw(role)}`);
         // Set up Supabase auth context
         await tx.execute(sql`
           select set_config('request.jwt.claims', '${sql.raw(
@@ -89,6 +88,8 @@ export async function getDrizzleSupabaseClient(accessToken?: string) {
           select set_config('request.jwt.claims', NULL, TRUE);
           select set_config('request.jwt.claim.sub', NULL, TRUE);
         `);
+
+        await tx.execute(sql`SET LOCAL ROLE postgres`);
       }
     }, config);
   }) as typeof rlsClient.transaction;
