@@ -55,10 +55,11 @@ export async function getDrizzleSupabaseAdminClient() {
 }
 
 export async function getDrizzleSupabaseClient(accessToken?: string) {
+  console.log("getDrizzleSupabaseClient enforce", getEnforceAuth());
   if (!getEnforceAuth()) {
     return getDrizzleSupabaseAdminClient();
   }
-
+  console.log("getDrizzleSupabaseClient accessToken", accessToken);
   const token = decode(accessToken || "");
 
   if (accessToken && !getIsTokenValid(token)) {
