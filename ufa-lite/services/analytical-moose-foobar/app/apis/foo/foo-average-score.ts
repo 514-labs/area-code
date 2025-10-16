@@ -38,6 +38,7 @@ export const fooAverageScoreApi = new Api<
       averageScore: number;
       count: number;
     }[];
+
     const queryTime = Date.now() - startTime;
 
     return {
