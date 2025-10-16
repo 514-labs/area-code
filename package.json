@@ -34,7 +34,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "supabase"
+      "supabase",
+      "@confluentinc/kafka-javascript"
     ],
     "ignoredBuiltDependencies": [
       "@swc/core",
