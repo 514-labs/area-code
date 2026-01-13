@@ -14,7 +14,7 @@
     "@514labs/moose-lib": "latest",
     "@supabase/supabase-js": "^2.39.0",
     "@workspace/models": "workspace:*",
-    "axios": "^1.7.7",
+    "axios": "^1.12.0",
     "dotenv": "^16.3.1",
     "pg": "^8.11.3",
     "ts-patch": "^3.3.0",
