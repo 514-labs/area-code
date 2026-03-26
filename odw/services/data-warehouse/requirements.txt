@@ -1,6 +1,6 @@
 kafka-python-ng==2.2.2
 clickhouse-connect==0.7.16
-requests==2.32.4
+requests==2.33.0
 moose-cli==0.4.310
 moose-lib==0.4.310
 Pillow>=10.0.0
