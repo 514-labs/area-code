@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "drizzle-orm": "^0.44.4",
-    "fastify": "^5.4.0",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.8.3",
     "jwt-decode": "^4.0.0",
     "postgres": "^3.4.7",
     "serverless-http": "^3.2.0",
